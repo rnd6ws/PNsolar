@@ -1,0 +1,88 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ===== NHÂN VIÊN (Employee) =====
+model DSNV {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  ma_nv         String    @unique
+  username      String    @unique
+  password      String    // bcrypt hash
+  hinh_ca_nhan  String?
+  ho_ten        String
+  chuc_vu       String    
+  so_dien_thoai String?
+  email         String?   
+  dia_chi       String?
+  role          Role      @default(STAFF)
+  isActive      Boolean   @default(true)
+  
+  // Soft Delete
+  deletedAt     DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  auditLogs     AuditLog[]
+
+  @@index([isActive, role])
+  @@fulltext([ho_ten, username, ma_nv])
+  @@map("dsnv")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+// ===== DANH MỤC HÀNG HÓA (Product Catalog) =====
+model DMHH {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  id_hh       String    @unique
+  phan_loai   String
+  dong_hang   String
+  ten         String
+  model       String
+  mo_ta       String?
+  don_vi_tinh String
+  hinh_anh    String?
+  xuat_xu     String?
+  bao_hanh    String?
+  
+  // Soft Delete
+  deletedAt   DateTime?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([deletedAt, phan_loai, dong_hang])
+  @@fulltext([ten, model, id_hh])
+  @@map("dmhh")
+}
+
+// ===== AUDIT LOG =====
+model AuditLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  action      String
+  userId      String   @db.ObjectId
+  user        DSNV     @relation(fields: [userId], references: [id])
+  userName    String?  // Denormalize
+  targetModel String?
+  targetId    String?
+  details     String
+  oldValue    Json?
+  newValue    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([targetModel, targetId, createdAt(sort: Desc)])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
