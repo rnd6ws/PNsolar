@@ -123,12 +123,12 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {mainNav.map((item) => {
-                                const isActive = pathname === item.href;
+                                const IS_ACTIVE = pathname === item.href;
                                 return (
                                     <SidebarMenuItem key={item.name}>
                                         <SidebarMenuButton
                                             asChild
-                                            isActive={isActive}
+                                            IS_ACTIVE={IS_ACTIVE}
                                             tooltip={item.name}
                                         >
                                             <Link href={item.href}>
@@ -148,12 +148,12 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {secondaryNav.map((item) => {
-                                const isActive = pathname === item.href;
+                                const IS_ACTIVE = pathname === item.href;
                                 return (
                                     <SidebarMenuItem key={item.name}>
                                         <SidebarMenuButton
                                             asChild
-                                            isActive={isActive}
+                                            IS_ACTIVE={IS_ACTIVE}
                                             tooltip={item.name}
                                         >
                                             <Link href={item.href}>

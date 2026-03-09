@@ -1,11 +1,12 @@
 "use client"
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { loginUserAction } from '@/features/auth/action';
-import { Command, LogIn } from 'lucide-react';
+import { Command, LogIn, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
     const [state, formAction] = useActionState(loginUserAction, { success: false, errors: { form: '' } });
+    const [showPassword, setShowPassword] = useState(false);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden font-sans">
@@ -30,7 +31,7 @@ export default function LoginPage() {
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Tên đăng nhập</label>
                             <input
-                                name="username"
+                                name="USER_NAME"
                                 required
                                 autoFocus
                                 className="input-modern bg-muted/30"
@@ -40,13 +41,24 @@ export default function LoginPage() {
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Mật khẩu</label>
-                            <input
-                                name="password"
-                                type="password"
-                                required
-                                className="input-modern bg-muted/30"
-                                placeholder="••••••••"
-                            />
+                            <div className="relative">
+                                <input
+                                    name="PASSWORD"
+                                    type={showPassword ? "text" : "password"}
+                                    required
+                                    className="input-modern bg-muted/30 pr-10"
+                                    placeholder="••••••••"
+                                    autoComplete="current-password"
+                                />
+                                <button
+                                    type="button"
+                                    tabIndex={-1}
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
 
                         {state.errors?.form && (

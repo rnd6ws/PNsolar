@@ -34,15 +34,15 @@ export default function NhanVienList({ employees }: { employees: any[] }) {
                             const mockRevenue = Math.round(mockGoal * (mockProgress / 100));
 
                             return (
-                                <tr key={emp.id} className="border-b border-border hover:bg-muted/30 transition-all data-[state=selected]:bg-muted group">
+                                <tr key={emp.ID} className="border-b border-border hover:bg-muted/30 transition-all data-[state=selected]:bg-muted group">
                                     <td className="p-5 align-middle">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-sm shadow-sm">
-                                                {emp.ho_ten.charAt(0)}
+                                                {emp.HO_TEN.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="font-medium text-foreground text-[14px] leading-tight mb-0.5">{emp.ho_ten}</p>
-                                                <p className="text-[12px] text-muted-foreground truncate max-w-[150px]">{emp.chuc_vu}</p>
+                                                <p className="font-medium text-foreground text-[14px] leading-tight mb-0.5">{emp.HO_TEN}</p>
+                                                <p className="text-[12px] text-muted-foreground truncate max-w-[150px]">{emp.CHUC_VU}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -50,26 +50,26 @@ export default function NhanVienList({ employees }: { employees: any[] }) {
                                     <td className="p-5 align-middle">
                                         <span className={cn(
                                             "inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide",
-                                            emp.role === 'ADMIN' ? 'bg-amber-100/50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                                                emp.role === 'MANAGER' ? 'bg-blue-100/50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                            emp.ROLE === 'ADMIN' ? 'bg-amber-100/50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                emp.ROLE === 'MANAGER' ? 'bg-blue-100/50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                                                     'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                                         )}>
-                                            {emp.role === 'MANAGER' ? 'Manager' : emp.role === 'ADMIN' ? 'Admin' : 'Staff'}
+                                            {emp.ROLE === 'MANAGER' ? 'Manager' : emp.ROLE === 'ADMIN' ? 'Admin' : 'Staff'}
                                         </span>
                                     </td>
 
                                     <td className="p-5 align-middle">
                                         <div className="flex flex-col gap-0.5">
                                             <div className="flex items-center gap-1.5">
-                                                <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", emp.isActive ? "bg-emerald-500" : "bg-slate-400")} />
+                                                <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", emp.IS_ACTIVE ? "bg-emerald-500" : "bg-slate-400")} />
                                                 <span className={cn(
                                                     "text-[12px] font-semibold whitespace-nowrap",
-                                                    emp.isActive ? "text-emerald-700 dark:text-emerald-500" : "text-muted-foreground"
+                                                    emp.IS_ACTIVE ? "text-emerald-700 dark:text-emerald-500" : "text-muted-foreground"
                                                 )}>
-                                                    {emp.isActive ? 'Đang' : 'Tạm nghỉ'}
+                                                    {emp.IS_ACTIVE ? 'Đang' : 'Tạm nghỉ'}
                                                 </span>
                                             </div>
-                                            <span className="text-[12px] text-muted-foreground pl-3">{emp.isActive ? 'hoạt động' : 'phép'}</span>
+                                            <span className="text-[12px] text-muted-foreground pl-3">{emp.IS_ACTIVE ? 'hoạt động' : 'phép'}</span>
                                         </div>
                                     </td>
 
@@ -109,7 +109,7 @@ export default function NhanVienList({ employees }: { employees: any[] }) {
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(emp.id, emp.ho_ten)}
+                                                onClick={() => handleDelete(emp.ID, emp.HO_TEN)}
                                                 className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors tooltip-trigger" title="Xóa nhân viên"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -136,25 +136,25 @@ export default function NhanVienList({ employees }: { employees: any[] }) {
                     const mockRevenue = Math.round(mockGoal * (mockProgress / 100));
 
                     return (
-                        <div key={emp.id} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-4">
+                        <div key={emp.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-4">
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-3 relative">
                                     <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg shadow-sm">
-                                        {emp.ho_ten.charAt(0)}
+                                        {emp.HO_TEN.charAt(0)}
                                     </div>
-                                    <div className={cn("absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-background", emp.isActive ? "bg-emerald-500" : "bg-slate-400")} />
+                                    <div className={cn("absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-background", emp.IS_ACTIVE ? "bg-emerald-500" : "bg-slate-400")} />
                                     <div>
-                                        <p className="font-medium text-foreground text-base leading-tight">{emp.ho_ten}</p>
-                                        <span className="text-sm text-muted-foreground mt-0.5 inline-block">{emp.chuc_vu}</span>
+                                        <p className="font-medium text-foreground text-base leading-tight">{emp.HO_TEN}</p>
+                                        <span className="text-sm text-muted-foreground mt-0.5 inline-block">{emp.CHUC_VU}</span>
                                     </div>
                                 </div>
                                 <span className={cn(
                                     "inline-flex items-center px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wider",
-                                    emp.role === 'ADMIN' ? 'bg-amber-100/50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                                        emp.role === 'MANAGER' ? 'bg-blue-100/50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                    emp.ROLE === 'ADMIN' ? 'bg-amber-100/50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                                        emp.ROLE === 'MANAGER' ? 'bg-blue-100/50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                                             'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
                                 )}>
-                                    {emp.role === 'MANAGER' ? 'Manager' : emp.role === 'ADMIN' ? 'Admin' : 'Staff'}
+                                    {emp.ROLE === 'MANAGER' ? 'Manager' : emp.ROLE === 'ADMIN' ? 'Admin' : 'Staff'}
                                 </span>
                             </div>
 
@@ -186,7 +186,7 @@ export default function NhanVienList({ employees }: { employees: any[] }) {
                                 <button className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
                                     <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
                                 </button>
-                                <button onClick={() => handleDelete(emp.id, emp.ho_ten)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
+                                <button onClick={() => handleDelete(emp.ID, emp.HO_TEN)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>

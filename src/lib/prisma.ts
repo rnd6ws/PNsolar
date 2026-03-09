@@ -17,30 +17,30 @@ export const prisma = basePrisma.$extends({
     name: 'softDelete',
     query: {
         dSNV: {
-            async delete({ args, query }) {
+            async delete({ args, query }: any) {
                 return (basePrisma as any).dSNV.update({
                     ...args,
-                    data: { deletedAt: new Date() },
+                    data: { DELETED_AT: new Date() },
                 });
             },
-            async deleteMany({ args, query }) {
+            async deleteMany({ args, query }: any) {
                 return (basePrisma as any).dSNV.updateMany({
                     ...args,
-                    data: { deletedAt: new Date() },
+                    data: { DELETED_AT: new Date() },
                 });
             },
         },
         dMHH: {
-            async delete({ args, query }) {
+            async delete({ args, query }: any) {
                 return (basePrisma as any).dMHH.update({
                     ...args,
-                    data: { deletedAt: new Date() },
+                    data: { DELETED_AT: new Date() },
                 });
             },
-            async deleteMany({ args, query }) {
+            async deleteMany({ args, query }: any) {
                 return (basePrisma as any).dMHH.updateMany({
                     ...args,
-                    data: { deletedAt: new Date() },
+                    data: { DELETED_AT: new Date() },
                 });
             },
         },

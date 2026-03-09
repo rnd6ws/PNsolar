@@ -9,35 +9,35 @@ import Pagination from '@/components/Pagination';
 import FilterSelect from '@/components/FilterSelect';
 
 interface Product {
-    id: string;
-    id_hh: string;
-    ten: string;
-    phan_loai: string;
-    dong_hang: string;
-    model: string;
-    don_vi_tinh: string;
-    mo_ta?: string | null;
-    hinh_anh?: string | null;
-    xuat_xu?: string | null;
-    bao_hanh?: string | null;
+    ID: string;
+    ID_HH: string;
+    TEN: string;
+    PHAN_LOAI: string;
+    DONG_HANG: string;
+    MODEL: string;
+    DON_VI_TINH: string;
+    MO_TA?: string | null;
+    HINH_ANH?: string | null;
+    XUAT_XU?: string | null;
+    BAO_HANH?: string | null;
 }
 
 interface FormData {
-    id_hh: string;
-    ten: string;
-    phan_loai: string;
-    dong_hang: string;
-    model: string;
-    don_vi_tinh: string;
-    mo_ta: string;
-    hinh_anh: string;
-    xuat_xu: string;
-    bao_hanh: string;
+    ID_HH: string;
+    TEN: string;
+    PHAN_LOAI: string;
+    DONG_HANG: string;
+    MODEL: string;
+    DON_VI_TINH: string;
+    MO_TA: string;
+    HINH_ANH: string;
+    XUAT_XU: string;
+    BAO_HANH: string;
 }
 
 const emptyForm: FormData = {
-    id_hh: '', ten: '', phan_loai: '', dong_hang: '',
-    model: '', don_vi_tinh: 'Cái', mo_ta: '', hinh_anh: '', xuat_xu: '', bao_hanh: '',
+    ID_HH: '', TEN: '', PHAN_LOAI: '', DONG_HANG: '',
+    MODEL: '', DON_VI_TINH: 'Cái', MO_TA: '', HINH_ANH: '', XUAT_XU: '', BAO_HANH: '',
 };
 
 function ProductModal({
@@ -57,10 +57,10 @@ function ProductModal({
         if (isOpen) {
             if (product) {
                 setForm({
-                    id_hh: product.id_hh, ten: product.ten, phan_loai: product.phan_loai,
-                    dong_hang: product.dong_hang, model: product.model, don_vi_tinh: product.don_vi_tinh,
-                    mo_ta: product.mo_ta || '', hinh_anh: product.hinh_anh || '',
-                    xuat_xu: product.xuat_xu || '', bao_hanh: product.bao_hanh || '',
+                    ID_HH: product.ID_HH, TEN: product.TEN, PHAN_LOAI: product.PHAN_LOAI,
+                    DONG_HANG: product.DONG_HANG, MODEL: product.MODEL, DON_VI_TINH: product.DON_VI_TINH,
+                    MO_TA: product.MO_TA || '', HINH_ANH: product.HINH_ANH || '',
+                    XUAT_XU: product.XUAT_XU || '', BAO_HANH: product.BAO_HANH || '',
                 });
             } else {
                 setForm(emptyForm);
@@ -81,7 +81,7 @@ function ProductModal({
         setError(null);
         try {
             const result = product
-                ? await updateProductAction(product.id, form)
+                ? await updateProductAction(product.ID, form)
                 : await createProductAction(form);
             console.log('[ProductModal] result:', result);
             if (result.success) {
@@ -114,7 +114,7 @@ function ProductModal({
                             {product ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
                         </h2>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            {product ? `Cập nhật thông tin cho "${product.ten}"` : 'Điền thông tin để thêm sản phẩm vào danh mục'}
+                            {product ? `Cập nhật thông tin cho "${product.TEN}"` : 'Điền thông tin để thêm sản phẩm vào danh mục'}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
@@ -139,8 +139,8 @@ function ProductModal({
                                 <input
                                     className={inputClass}
                                     placeholder="VD: SP-001"
-                                    value={form.id_hh}
-                                    onChange={e => handleChange('id_hh', e.target.value)}
+                                    value={form.ID_HH}
+                                    onChange={e => handleChange('ID_HH', e.target.value)}
                                     required
                                     disabled={!!product}
                                 />
@@ -149,8 +149,8 @@ function ProductModal({
                                 <label className={labelClass}>Đơn vị tính *</label>
                                 <select
                                     className={inputClass}
-                                    value={form.don_vi_tinh}
-                                    onChange={e => handleChange('don_vi_tinh', e.target.value)}
+                                    value={form.DON_VI_TINH}
+                                    onChange={e => handleChange('DON_VI_TINH', e.target.value)}
                                 >
                                     {['Cái', 'Bộ', 'Hộp', 'Cuộn', 'Mét', 'Kg', 'Tấm', 'Cụm'].map(u => (
                                         <option key={u} value={u}>{u}</option>
@@ -165,8 +165,8 @@ function ProductModal({
                             <input
                                 className={inputClass}
                                 placeholder="VD: Tấm pin năng lượng mặt trời 450W..."
-                                value={form.ten}
-                                onChange={e => handleChange('ten', e.target.value)}
+                                value={form.TEN}
+                                onChange={e => handleChange('TEN', e.target.value)}
                                 required
                             />
                         </div>
@@ -178,8 +178,8 @@ function ProductModal({
                                 <input
                                     className={inputClass}
                                     placeholder="VD: Tấm pin, Biến tần..."
-                                    value={form.phan_loai}
-                                    onChange={e => handleChange('phan_loai', e.target.value)}
+                                    value={form.PHAN_LOAI}
+                                    onChange={e => handleChange('PHAN_LOAI', e.target.value)}
                                     required
                                 />
                             </div>
@@ -188,8 +188,8 @@ function ProductModal({
                                 <input
                                     className={inputClass}
                                     placeholder="VD: MONO, POLY, HYBRID..."
-                                    value={form.dong_hang}
-                                    onChange={e => handleChange('dong_hang', e.target.value)}
+                                    value={form.DONG_HANG}
+                                    onChange={e => handleChange('DONG_HANG', e.target.value)}
                                     required
                                 />
                             </div>
@@ -201,8 +201,8 @@ function ProductModal({
                             <input
                                 className={inputClass}
                                 placeholder="VD: JKM450M-7RL3-TV"
-                                value={form.model}
-                                onChange={e => handleChange('model', e.target.value)}
+                                value={form.MODEL}
+                                onChange={e => handleChange('MODEL', e.target.value)}
                                 required
                             />
                         </div>
@@ -214,8 +214,8 @@ function ProductModal({
                                 <input
                                     className={inputClass}
                                     placeholder="VD: Trung Quốc, Hàn Quốc..."
-                                    value={form.xuat_xu}
-                                    onChange={e => handleChange('xuat_xu', e.target.value)}
+                                    value={form.XUAT_XU}
+                                    onChange={e => handleChange('XUAT_XU', e.target.value)}
                                 />
                             </div>
                             <div>
@@ -223,8 +223,8 @@ function ProductModal({
                                 <input
                                     className={inputClass}
                                     placeholder="VD: 12 tháng, 25 năm hiệu suất..."
-                                    value={form.bao_hanh}
-                                    onChange={e => handleChange('bao_hanh', e.target.value)}
+                                    value={form.BAO_HANH}
+                                    onChange={e => handleChange('BAO_HANH', e.target.value)}
                                 />
                             </div>
                         </div>
@@ -235,8 +235,8 @@ function ProductModal({
                             <textarea
                                 className={cn(inputClass, "h-20 resize-none py-2")}
                                 placeholder="Mô tả chi tiết về sản phẩm..."
-                                value={form.mo_ta}
-                                onChange={e => handleChange('mo_ta', e.target.value)}
+                                value={form.MO_TA}
+                                onChange={e => handleChange('MO_TA', e.target.value)}
                             />
                         </div>
                     </div>
@@ -284,7 +284,7 @@ function DeleteConfirmModal({
     const handleDelete = async () => {
         if (!product) return;
         setLoading(true);
-        await deleteProductAction(product.id);
+        await deleteProductAction(product.ID);
         setLoading(false);
         onConfirm();
         onClose();
@@ -305,8 +305,8 @@ function DeleteConfirmModal({
                     </div>
                 </div>
                 <div className="p-4 bg-muted/30 rounded-xl mb-6 border">
-                    <p className="text-sm font-semibold text-foreground">{product.ten}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Mã: {product.id_hh} • Model: {product.model}</p>
+                    <p className="text-sm font-semibold text-foreground">{product.TEN}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Mã: {product.ID_HH} • Model: {product.MODEL}</p>
                 </div>
                 <div className="flex gap-3">
                     <button onClick={onClose} className="flex-1 h-9 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors">
@@ -383,8 +383,8 @@ export default function HangHoaClient({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                         { label: 'Tổng sản phẩm', value: initialPagination?.total ?? 0, icon: Package, color: 'text-primary bg-primary/10' },
-                        { label: 'Phân loại', value: [...new Set(initialProducts.map((p: Product) => p.phan_loai))].length, icon: Tag, color: 'text-orange-500 bg-orange-500/10' },
-                        { label: 'Dòng hàng', value: [...new Set(initialProducts.map((p: Product) => p.dong_hang))].length, icon: Box, color: 'text-green-600 bg-green-500/10' },
+                        { label: 'Phân loại', value: [...new Set(initialProducts.map((p: Product) => p.PHAN_LOAI))].length, icon: Tag, color: 'text-orange-500 bg-orange-500/10' },
+                        { label: 'Dòng hàng', value: [...new Set(initialProducts.map((p: Product) => p.DONG_HANG))].length, icon: Box, color: 'text-green-600 bg-green-500/10' },
                         { label: 'Tổng trang', value: initialPagination?.totalPages ?? 1, icon: Search, color: 'text-purple-600 bg-purple-500/10' },
                     ].map((stat) => (
                         <div key={stat.label} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
@@ -404,13 +404,13 @@ export default function HangHoaClient({
                     {/* Toolbar */}
                     <div className="p-4 flex flex-col md:flex-row gap-4 justify-between items-center text-sm font-medium border-b">
                         <div className="flex-1 w-full max-w-sm">
-                            <SearchInput placeholder="Tìm theo tên, model, mã HH..." />
+                            <SearchInput placeholder="Tìm theo tên, MODEL, mã HH..." />
                         </div>
                         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                             <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground text-xs whitespace-nowrap">Danh mục:</span>
                                 <FilterSelect
-                                    paramKey="phan_loai"
+                                    paramKey="PHAN_LOAI"
                                     options={uniqueCategories.phanLoai.map(v => ({ label: v, value: v }))}
                                     placeholder="Tất cả danh mục"
                                 />
@@ -418,7 +418,7 @@ export default function HangHoaClient({
                             <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground text-xs whitespace-nowrap">Dòng hàng:</span>
                                 <FilterSelect
-                                    paramKey="dong_hang"
+                                    paramKey="DONG_HANG"
                                     options={uniqueCategories.dongHang.map(v => ({ label: v, value: v }))}
                                     placeholder="Tất cả dòng hàng"
                                 />
@@ -445,7 +445,7 @@ export default function HangHoaClient({
                             <tbody>
                                 {initialProducts.map((prod: Product, i: number) => (
                                     <tr
-                                        key={prod.id}
+                                        key={prod.ID}
                                         className={cn(
                                             "border-b border-border hover:bg-muted/40 transition-colors"
                                         )}
@@ -453,44 +453,44 @@ export default function HangHoaClient({
                                         <td className="p-4 align-middle">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-11 h-11 rounded-lg bg-muted border border-border flex items-center justify-center shadow-sm shrink-0">
-                                                    {prod.hinh_anh ? (
-                                                        <img src={prod.hinh_anh} alt={prod.ten} className="w-full h-full object-cover rounded-lg" />
+                                                    {prod.HINH_ANH ? (
+                                                        <img src={prod.HINH_ANH} alt={prod.TEN} className="w-full h-full object-cover rounded-lg" />
                                                     ) : (
                                                         <Box className="w-5 h-5 text-muted-foreground opacity-50" />
                                                     )}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="font-semibold text-foreground truncate max-w-[200px]">{prod.ten}</p>
-                                                    <p className="text-xs text-primary font-medium mt-0.5 font-mono uppercase">{prod.id_hh}</p>
+                                                    <p className="font-semibold text-foreground truncate max-w-[200px]">{prod.TEN}</p>
+                                                    <p className="text-xs text-primary font-medium mt-0.5 font-mono uppercase">{prod.ID_HH}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="p-4 align-middle">
                                             <span className={cn(
                                                 "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border",
-                                                phanLoaiColors[prod.phan_loai] || 'bg-muted text-muted-foreground border-border'
+                                                phanLoaiColors[prod.PHAN_LOAI] || 'bg-muted text-muted-foreground border-border'
                                             )}>
                                                 <Tag className="w-3 h-3" />
-                                                {prod.phan_loai}
+                                                {prod.PHAN_LOAI}
                                             </span>
                                         </td>
                                         <td className="p-4 align-middle">
-                                            <span className="text-sm font-mono text-foreground">{prod.model}</span>
+                                            <span className="text-sm font-mono text-foreground">{prod.MODEL}</span>
                                         </td>
                                         <td className="p-4 align-middle">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase bg-secondary text-secondary-foreground border border-border">
-                                                {prod.dong_hang}
+                                                {prod.DONG_HANG}
                                             </span>
                                         </td>
                                         <td className="p-4 align-middle">
                                             <div className="text-xs space-y-1">
                                                 <div className="flex items-center gap-1.5 text-muted-foreground">
                                                     <span className="shrink-0">Xuất xứ:</span>
-                                                    <span className="text-foreground font-medium truncate">{prod.xuat_xu || '—'}</span>
+                                                    <span className="text-foreground font-medium truncate">{prod.XUAT_XU || '—'}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 text-muted-foreground">
                                                     <span className="shrink-0">Bảo hành:</span>
-                                                    <span className="text-primary font-medium truncate">{prod.bao_hanh || '—'}</span>
+                                                    <span className="text-primary font-medium truncate">{prod.BAO_HANH || '—'}</span>
                                                 </div>
                                             </div>
                                         </td>

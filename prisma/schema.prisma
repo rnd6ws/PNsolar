@@ -10,33 +10,33 @@ datasource db {
 
 // ===== NHÂN VIÊN (Employee) =====
 model DSNV {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  ma_nv         String    @unique
-  username      String    @unique
-  password      String    // bcrypt hash
-  hinh_ca_nhan  String?
-  ho_ten        String
-  chuc_vu       String    
-  so_dien_thoai String?
-  email         String?   
-  dia_chi       String?
-  role          Role      @default(STAFF)
-  isActive      Boolean   @default(true)
-  
+  ID            String  @id @default(auto()) @map("_id") @db.ObjectId
+  MA_NV         String  @unique
+  USER_NAME     String  @unique
+  PASSWORD      String // bcrypt hash
+  HINH_CA_NHAN  String?
+  HO_TEN        String
+  CHUC_VU       String
+  SO_DIEN_THOAI String?
+  EMAIL         String?
+  DIA_CHI       String?
+  ROLE          ROLE    @default(STAFF)
+  IS_ACTIVE     Boolean @default(true)
+
   // Soft Delete
-  deletedAt     DateTime?
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  DELETED_AT DateTime?
 
-  auditLogs     AuditLog[]
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
 
-  @@index([isActive, role])
-  @@fulltext([ho_ten, username, ma_nv])
-  @@map("dsnv")
+  AUDIT_LOGS AUDIT_LOG[]
+
+  @@index([IS_ACTIVE, ROLE])
+  @@fulltext([HO_TEN, USER_NAME, MA_NV])
+  @@map("DSNV")
 }
 
-enum Role {
+enum ROLE {
   ADMIN
   MANAGER
   STAFF
@@ -44,45 +44,45 @@ enum Role {
 
 // ===== DANH MỤC HÀNG HÓA (Product Catalog) =====
 model DMHH {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  id_hh       String    @unique
-  phan_loai   String
-  dong_hang   String
-  ten         String
-  model       String
-  mo_ta       String?
-  don_vi_tinh String
-  hinh_anh    String?
-  xuat_xu     String?
-  bao_hanh    String?
-  
-  // Soft Delete
-  deletedAt   DateTime?
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  ID          String  @id @default(auto()) @map("_id") @db.ObjectId
+  ID_HH       String  @unique
+  PHAN_LOAI   String
+  DONG_HANG   String
+  TEN         String
+  MODEL       String
+  MO_TA       String?
+  DON_VI_TINH String
+  HINH_ANH    String?
+  XUAT_XU     String?
+  BAO_HANH    String?
 
-  @@index([deletedAt, phan_loai, dong_hang])
-  @@fulltext([ten, model, id_hh])
-  @@map("dmhh")
+  // Soft Delete
+  DELETED_AT DateTime?
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([DELETED_AT, PHAN_LOAI, DONG_HANG])
+  @@fulltext([TEN, MODEL, ID_HH])
+  @@map("DMHH")
 }
 
 // ===== AUDIT LOG =====
-model AuditLog {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  action      String
-  userId      String   @db.ObjectId
-  user        DSNV     @relation(fields: [userId], references: [id])
-  userName    String?  // Denormalize
-  targetModel String?
-  targetId    String?
-  details     String
-  oldValue    Json?
-  newValue    Json?
-  createdAt   DateTime @default(now())
+model AUDIT_LOG {
+  ID           String   @id @default(auto()) @map("_id") @db.ObjectId
+  ACTION       String
+  USER_ID      String   @db.ObjectId
+  USER         DSNV     @relation(fields: [USER_ID], references: [ID])
+  USER_NAME    String? // Denormalize
+  TARGET_MODEL String?
+  TARGET_ID    String?
+  DETAILS      String
+  OLD_VALUE    Json?
+  NEW_VALUE    Json?
+  CREATED_AT   DateTime @default(now())
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([targetModel, targetId, createdAt(sort: Desc)])
-  @@index([createdAt])
-  @@map("audit_logs")
+  @@index([USER_ID, CREATED_AT(sort: Desc)])
+  @@index([TARGET_MODEL, TARGET_ID, CREATED_AT(sort: Desc)])
+  @@index([CREATED_AT])
+  @@map("AUDIT_LOGS")
 }

@@ -8,8 +8,8 @@ const COOKIE_NAME = 'auth_token';
 
 export interface JWTPayload {
     userId: string;
-    username: string;
-    role: 'ADMIN' | 'MANAGER' | 'STAFF';
+    USER_NAME: string;
+    ROLE: 'ADMIN' | 'MANAGER' | 'STAFF';
     tokenVersion: number;
 }
 
@@ -54,12 +54,11 @@ export const getCurrentUser = cache(async (): Promise<JWTPayload | null> => {
     const { prisma } = await import('@/lib/prisma');
     // Check if user still exists and is active
     const user = await prisma.dSNV.findUnique({
-        where: { id: payload.userId },
-        select: { isActive: true },
+        where: { ID: payload.userId },
+        select: { IS_ACTIVE: true },
     });
 
-    if (!user || !user.isActive) {
-        await removeAuthCookie();
+    if (!user || !user.IS_ACTIVE) {
         return null;
     }
     return payload;

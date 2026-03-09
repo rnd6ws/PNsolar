@@ -1,13 +1,13 @@
 import { prisma } from '../src/lib/prisma';
 
 async function fix() {
-    console.log('Updating all users to have deletedAt: null Explicitly...');
+    console.log('Updating all users to have DELETED_AT: null Explicitly...');
     const result = await (prisma as any).dSNV.updateMany({
         where: {
-            deletedAt: { not: null } // This might not work if it's missing
+            DELETED_AT: { not: null } // This might not work if it's missing
         },
         data: {
-            deletedAt: null
+            DELETED_AT: null
         }
     });
     console.log('Update result:', result);
@@ -15,7 +15,7 @@ async function fix() {
     // Fallback: update everyone
     const all = await prisma.dSNV.updateMany({
         data: {
-            deletedAt: null
+            DELETED_AT: null
         }
     });
     console.log('Forced update all result:', all);

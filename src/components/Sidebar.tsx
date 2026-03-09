@@ -58,7 +58,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                 <div className="space-y-1">
                     {!isCollapsed && <p className="px-3 text-[10px] font-bold text-sidebar-foreground/50 uppercase tracking-[0.2em] mb-3">Chính</p>}
                     {mainNav.map((item) => {
-                        const isActive = pathname === item.href;
+                        const IS_ACTIVE = pathname === item.href;
                         return (
                             <Link
                                 key={item.name}
@@ -66,13 +66,13 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                                 title={isCollapsed ? item.name : undefined}
                                 className={cn(
                                     "flex items-center rounded-lg text-sm font-medium transition-colors",
-                                    isActive
+                                    IS_ACTIVE
                                         ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                                         : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                                     isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
                                 )}
                             >
-                                <item.icon className={cn("shrink-0", isCollapsed ? "w-5 h-5" : "w-4.5 h-4.5", isActive ? "text-primary" : "text-sidebar-foreground/50")} />
+                                <item.icon className={cn("shrink-0", isCollapsed ? "w-5 h-5" : "w-4.5 h-4.5", IS_ACTIVE ? "text-primary" : "text-sidebar-foreground/50")} />
                                 {!isCollapsed && <span className="truncate">{item.name}</span>}
                             </Link>
                         );

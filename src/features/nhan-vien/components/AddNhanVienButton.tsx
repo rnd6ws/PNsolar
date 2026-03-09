@@ -19,8 +19,8 @@ export default function AddNhanVienButton() {
 
         const result = await createNhanVienAction({
             ...data,
-            isActive: true,
-            role: data.role || 'STAFF'
+            IS_ACTIVE: true,
+            ROLE: data.ROLE || 'STAFF'
         });
 
         if (result.success) {
@@ -53,33 +53,33 @@ export default function AddNhanVienButton() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mã NV</label>
-                            <input name="ma_nv" required className="input-modern" placeholder="NV001" />
+                            <input name="MA_NV" required className="input-modern" placeholder="NV001" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Họ và tên</label>
-                            <input name="ho_ten" required className="input-modern" placeholder="Nguyễn Văn A" />
+                            <input name="HO_TEN" required className="input-modern" placeholder="Nguyễn Văn A" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Username</label>
-                            <input name="username" required className="input-modern" placeholder="tên đăng nhập..." />
+                            <input name="USER_NAME" required className="input-modern" placeholder="tên đăng nhập..." />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mật khẩu</label>
-                            <input name="password" type="password" className="input-modern" placeholder="123456" />
+                            <input name="PASSWORD" type="PASSWORD" className="input-modern" placeholder="123456" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Chức vụ</label>
-                            <input name="chuc_vu" required className="input-modern" placeholder="Quản lý" />
+                            <input name="CHUC_VU" required className="input-modern" placeholder="Quản lý" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vai trò</label>
-                            <select name="role" className="input-modern">
+                            <select name="ROLE" className="input-modern">
                                 <option value="STAFF">Nhân viên</option>
                                 <option value="MANAGER">Hỗ trợ quản lý</option>
                                 <option value="ADMIN">Quản trị viên</option>
@@ -90,11 +90,11 @@ export default function AddNhanVienButton() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Số điện thoại</label>
-                            <input name="so_dien_thoai" className="input-modern" placeholder="09xxx..." />
+                            <input name="SO_DIEN_THOAI" className="input-modern" placeholder="09xxx..." />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Email</label>
-                            <input name="email" type="email" className="input-modern" placeholder="email@gmail.com" />
+                            <input name="EMAIL" type="EMAIL" className="input-modern" placeholder="EMAIL@gmail.com" />
                         </div>
                     </div>
 

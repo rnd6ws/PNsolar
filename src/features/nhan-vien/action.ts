@@ -8,7 +8,7 @@ import { ActionResponse } from '@/lib/types';
 
 export async function createNhanVienAction(data: any) {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.ROLE !== 'ADMIN') {
         return { success: false, message: 'Bạn không có quyền thực hiện thao tác này' };
     }
 
@@ -19,27 +19,36 @@ export async function createNhanVienAction(data: any) {
     }
 
     try {
-        const { password, ...rest } = parsed.data;
-        const hashedPassword = await bcrypt.hash(password || '123456', 10);
+        const { PASSWORD, ...rest } = parsed.data;
+        const hashedPassword = await bcrypt.hash(PASSWORD || '123456', 10);
 
         const result = await prisma.$transaction(async (tx: any) => {
             const newEmp = await tx.dSNV.create({
                 data: {
-                    ...rest,
-                    password: hashedPassword,
-                    deletedAt: null,
+                    MA_NV: rest.MA_NV,
+                    USER_NAME: rest.USER_NAME,
+                    PASSWORD: hashedPassword,
+                    HINH_CA_NHAN: rest.HINH_CA_NHAN,
+                    HO_TEN: rest.HO_TEN,
+                    CHUC_VU: rest.CHUC_VU,
+                    SO_DIEN_THOAI: rest.SO_DIEN_THOAI,
+                    EMAIL: rest.EMAIL,
+                    DIA_CHI: rest.DIA_CHI,
+                    ROLE: rest.ROLE,
+                    IS_ACTIVE: rest.IS_ACTIVE,
+                    DELETED_AT: null,
                 },
             });
 
-            await tx.auditLog.create({
+            await tx.aUDIT_LOG.create({
                 data: {
-                    action: 'CREATE',
-                    userId: user.userId,
-                    userName: user.username,
-                    targetModel: 'DSNV',
-                    targetId: newEmp.id,
-                    details: `Thêm mới nhân viên: ${newEmp.ho_ten} (${newEmp.ma_nv})`,
-                    newValue: newEmp as any,
+                    ACTION: 'CREATE',
+                    USER_ID: user.userId,
+                    USER_NAME: user.USER_NAME,
+                    TARGET_MODEL: 'DSNV',
+                    TARGET_ID: newEmp.ID,
+                    DETAILS: `Thêm mới nhân viên: ${newEmp.HO_TEN} (${newEmp.MA_NV})`,
+                    NEW_VALUE: newEmp as any,
                 },
             });
 
@@ -58,22 +67,22 @@ export async function createNhanVienAction(data: any) {
 
 export async function deleteNhanVienAction(id: string) {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'ADMIN') return { success: false, message: 'Không có quyền' };
+    if (!user || user.ROLE !== 'ADMIN') return { success: false, message: 'Không có quyền' };
 
     try {
         await prisma.$transaction(async (tx: any) => {
-            const emp = await tx.dSNV.findUnique({ where: { id } });
-            await tx.dSNV.delete({ where: { id } }); // Soft delete via extension
+            const emp = await tx.dSNV.findUnique({ where: { ID: id } });
+            await tx.dSNV.delete({ where: { ID: id } }); // Soft delete via extension
 
-            await tx.auditLog.create({
+            await tx.aUDIT_LOG.create({
                 data: {
-                    action: 'DELETE',
-                    userId: user.userId,
-                    userName: user.username,
-                    targetModel: 'DSNV',
-                    targetId: id,
-                    details: `Xóa nhân viên: ${emp?.ho_ten}`,
-                    oldValue: emp as any,
+                    ACTION: 'DELETE',
+                    USER_ID: user.userId,
+                    USER_NAME: user.USER_NAME,
+                    TARGET_MODEL: 'DSNV',
+                    TARGET_ID: id,
+                    DETAILS: `Xóa nhân viên: ${emp?.HO_TEN}`,
+                    OLD_VALUE: emp as any,
                 },
             });
         });
@@ -85,14 +94,14 @@ export async function deleteNhanVienAction(id: string) {
     }
 }
 
-export async function getEmployees(filters: { query?: string; page?: number; limit?: number; role?: string; status?: string } = {}): Promise<ActionResponse> {
-    const { page = 1, limit = 10, query, role, status } = filters;
+export async function getEmployees(filters: { query?: string; page?: number; limit?: number; ROLE?: string; status?: string } = {}): Promise<ActionResponse> {
+    const { page = 1, limit = 10, query, ROLE, status } = filters;
 
     // Fix Prisma MongoDB null matching
     const where: any = {
         OR: [
-            { deletedAt: null },
-            { deletedAt: { isSet: false } }
+            { DELETED_AT: null },
+            { DELETED_AT: { isSet: false } }
         ]
     };
 
@@ -101,19 +110,19 @@ export async function getEmployees(filters: { query?: string; page?: number; lim
     if (query) {
         andConditions.push({
             OR: [
-                { ho_ten: { contains: query, mode: 'insensitive' } },
-                { ma_nv: { contains: query, mode: 'insensitive' } },
-                { username: { contains: query, mode: 'insensitive' } },
+                { HO_TEN: { contains: query, mode: 'insensitive' } },
+                { MA_NV: { contains: query, mode: 'insensitive' } },
+                { USER_NAME: { contains: query, mode: 'insensitive' } },
             ]
         });
     }
 
-    if (role && role !== 'all') {
-        andConditions.push({ role });
+    if (ROLE && ROLE !== 'all') {
+        andConditions.push({ ROLE: ROLE });
     }
 
     if (status && status !== 'all') {
-        andConditions.push({ isActive: status === 'active' });
+        andConditions.push({ IS_ACTIVE: status === 'active' });
     }
 
     if (andConditions.length > 0) {
@@ -126,7 +135,7 @@ export async function getEmployees(filters: { query?: string; page?: number; lim
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
-                orderBy: { createdAt: 'desc' },
+                orderBy: { CREATED_AT: 'desc' },
             }),
             prisma.dSNV.count({ where }),
         ]);

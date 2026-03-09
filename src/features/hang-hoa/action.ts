@@ -12,20 +12,25 @@ export async function createProductAction(data: any) {
             return { success: false, message: parsed.error.issues[0].message };
         }
 
-        // Check for duplicate id_hh
-        const existing = await prisma.dMHH.findUnique({ where: { id_hh: parsed.data.id_hh } });
+        // Check for duplicate ID_HH
+        const existing = await prisma.dMHH.findUnique({ where: { ID_HH: parsed.data.ID_HH } });
         if (existing) {
-            return { success: false, message: `Mã hàng hóa "${parsed.data.id_hh}" đã tồn tại!` };
+            return { success: false, message: `Mã hàng hóa "${parsed.data.ID_HH}" đã tồn tại!` };
         }
 
         await prisma.dMHH.create({
             data: {
-                ...parsed.data,
-                mo_ta: parsed.data.mo_ta || null,
-                hinh_anh: parsed.data.hinh_anh || null,
-                xuat_xu: parsed.data.xuat_xu || null,
-                bao_hanh: parsed.data.bao_hanh || null,
-                deletedAt: null,
+                ID_HH: parsed.data.ID_HH,
+                TEN: parsed.data.TEN,
+                PHAN_LOAI: parsed.data.PHAN_LOAI,
+                DONG_HANG: parsed.data.DONG_HANG,
+                MODEL: parsed.data.MODEL,
+                DON_VI_TINH: parsed.data.DON_VI_TINH,
+                MO_TA: parsed.data.MO_TA || null,
+                HINH_ANH: parsed.data.HINH_ANH || null,
+                XUAT_XU: parsed.data.XUAT_XU || null,
+                BAO_HANH: parsed.data.BAO_HANH || null,
+                DELETED_AT: null,
             }
         });
         revalidatePath('/dashboard/hang-hoa');
@@ -44,13 +49,18 @@ export async function updateProductAction(id: string, data: any) {
         }
 
         await prisma.dMHH.update({
-            where: { id },
+            where: { ID: id },
             data: {
-                ...parsed.data,
-                mo_ta: parsed.data.mo_ta || null,
-                hinh_anh: parsed.data.hinh_anh || null,
-                xuat_xu: parsed.data.xuat_xu || null,
-                bao_hanh: parsed.data.bao_hanh || null,
+                ID_HH: parsed.data.ID_HH,
+                TEN: parsed.data.TEN,
+                PHAN_LOAI: parsed.data.PHAN_LOAI,
+                DONG_HANG: parsed.data.DONG_HANG,
+                MODEL: parsed.data.MODEL,
+                DON_VI_TINH: parsed.data.DON_VI_TINH,
+                MO_TA: parsed.data.MO_TA || null,
+                HINH_ANH: parsed.data.HINH_ANH || null,
+                XUAT_XU: parsed.data.XUAT_XU || null,
+                BAO_HANH: parsed.data.BAO_HANH || null,
             }
         });
         revalidatePath('/dashboard/hang-hoa');
@@ -64,8 +74,8 @@ export async function updateProductAction(id: string, data: any) {
 export async function deleteProductAction(id: string) {
     try {
         await prisma.dMHH.update({
-            where: { id },
-            data: { deletedAt: new Date() }
+            where: { ID: id },
+            data: { DELETED_AT: new Date() }
         });
         revalidatePath('/dashboard/hang-hoa');
         return { success: true, message: 'Đã xóa sản phẩm!' };
@@ -75,13 +85,13 @@ export async function deleteProductAction(id: string) {
     }
 }
 
-export async function getProducts(filters: { query?: string; page?: number; limit?: number; phan_loai?: string; dong_hang?: string } = {}): Promise<ActionResponse> {
-    const { page = 1, limit = 10, query, phan_loai, dong_hang } = filters;
+export async function getProducts(filters: { query?: string; page?: number; limit?: number; PHAN_LOAI?: string; DONG_HANG?: string } = {}): Promise<ActionResponse> {
+    const { page = 1, limit = 10, query, PHAN_LOAI, DONG_HANG } = filters;
 
     const where: any = {
         OR: [
-            { deletedAt: null },
-            { deletedAt: { isSet: false } }
+            { DELETED_AT: null },
+            { DELETED_AT: { isSet: false } }
         ]
     };
 
@@ -90,19 +100,19 @@ export async function getProducts(filters: { query?: string; page?: number; limi
     if (query) {
         andConditions.push({
             OR: [
-                { ten: { contains: query, mode: 'insensitive' } },
-                { id_hh: { contains: query, mode: 'insensitive' } },
-                { model: { contains: query, mode: 'insensitive' } },
+                { TEN: { contains: query, mode: 'insensitive' } },
+                { ID_HH: { contains: query, mode: 'insensitive' } },
+                { MODEL: { contains: query, mode: 'insensitive' } },
             ]
         });
     }
 
-    if (phan_loai && phan_loai !== 'all') {
-        andConditions.push({ phan_loai });
+    if (PHAN_LOAI && PHAN_LOAI !== 'all') {
+        andConditions.push({ PHAN_LOAI: PHAN_LOAI });
     }
 
-    if (dong_hang && dong_hang !== 'all') {
-        andConditions.push({ dong_hang });
+    if (DONG_HANG && DONG_HANG !== 'all') {
+        andConditions.push({ DONG_HANG: DONG_HANG });
     }
 
     if (andConditions.length > 0) {
@@ -115,7 +125,7 @@ export async function getProducts(filters: { query?: string; page?: number; limi
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
-                orderBy: { createdAt: 'desc' },
+                orderBy: { CREATED_AT: 'desc' },
             }),
             prisma.dMHH.count({ where }),
         ]);
@@ -141,18 +151,18 @@ export async function getUniqueCategories() {
         const existingProducts = await prisma.dMHH.findMany({
             where: {
                 OR: [
-                    { deletedAt: null },
-                    { deletedAt: { isSet: false } }
+                    { DELETED_AT: null },
+                    { DELETED_AT: { isSet: false } }
                 ]
             },
             select: {
-                phan_loai: true,
-                dong_hang: true,
+                PHAN_LOAI: true,
+                DONG_HANG: true,
             }
         });
 
-        const uniquePhanLoai = Array.from(new Set(existingProducts.map((p: any) => p.phan_loai).filter(Boolean)));
-        const uniqueDongHang = Array.from(new Set(existingProducts.map((p: any) => p.dong_hang).filter(Boolean)));
+        const uniquePhanLoai = Array.from(new Set(existingProducts.map((p: any) => p.PHAN_LOAI).filter(Boolean)));
+        const uniqueDongHang = Array.from(new Set(existingProducts.map((p: any) => p.DONG_HANG).filter(Boolean)));
 
         return {
             phanLoai: uniquePhanLoai as string[],

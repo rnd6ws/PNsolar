@@ -9,14 +9,14 @@ import AddNhanVienButton from '@/features/nhan-vien/components/AddNhanVienButton
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function NhanVienPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; role?: string; status?: string }> }) {
+export default async function NhanVienPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; ROLE?: string; status?: string }> }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
     const query = params.query;
-    const role = params.role;
+    const ROLE = params.ROLE;
     const status = params.status;
 
-    const { data: employees = [], pagination } = await getEmployees({ query, page, limit: 10, role, status });
+    const { data: employees = [], pagination } = await getEmployees({ query, page, limit: 10, ROLE, status });
 
     const roleOptions = [
         { label: 'Admin', value: 'ADMIN' },
@@ -100,7 +100,7 @@ export default async function NhanVienPage({ searchParams }: { searchParams: Pro
                     </div>
                     <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                         <FilterSelect paramKey="department" options={roleOptions} placeholder="Phòng ban / Team" />
-                        <FilterSelect paramKey="role" options={roleOptions} placeholder="Vai trò" />
+                        <FilterSelect paramKey="ROLE" options={roleOptions} placeholder="Vai trò" />
                         <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors ml-2 shadow-sm">
                             <SlidersHorizontal className="w-4 h-4" />
                         </button>

@@ -11,21 +11,21 @@ async function main() {
 
     try {
         const admin = await prisma.dSNV.upsert({
-            where: { username: 'admin' },
+            where: { USER_NAME: 'admin' },
             update: {},
             create: {
-                ma_nv: 'NV001',
-                username: 'admin',
-                password: hashedPassword,
-                ho_ten: 'Quản trị viên',
-                chuc_vu: 'QUẢN TRỊ',
-                role: 'ADMIN',
-                isActive: true,
-                deletedAt: null,
+                MA_NV: 'NV001',
+                USER_NAME: 'admin',
+                PASSWORD: hashedPassword,
+                HO_TEN: 'Quản trị viên',
+                CHUC_VU: 'QUẢN TRỊ',
+                ROLE: 'ADMIN',
+                IS_ACTIVE: true,
+                DELETED_AT: null,
             },
         });
 
-        console.log('Seed success:', admin.username);
+        console.log('Seed success:', admin.USER_NAME);
     } catch (error) {
         console.error('Seed execution error:', error);
     }

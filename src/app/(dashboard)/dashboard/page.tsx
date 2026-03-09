@@ -140,9 +140,9 @@ export default function DashboardPage() {
                         <h3 className="font-bold text-foreground text-base mb-6">Thành Viên Tích Cực</h3>
                         <div className="space-y-6">
                             {[
-                                { name: 'Văn Hoàng', role: 'Leader', score: '98 pts' },
-                                { name: 'Thanh Nga', role: 'Support', score: '85 pts' },
-                                { name: 'Tuấn Anh', role: 'Engineer', score: '72 pts' },
+                                { name: 'Văn Hoàng', ROLE: 'Leader', score: '98 pts' },
+                                { name: 'Thanh Nga', ROLE: 'Support', score: '85 pts' },
+                                { name: 'Tuấn Anh', ROLE: 'Engineer', score: '72 pts' },
                             ].map((user, i) => (
                                 <div key={i} className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold text-foreground">{user.name}</p>
-                                            <p className="text-[10px] text-muted-foreground uppercase font-black">{user.role}</p>
+                                            <p className="text-[10px] text-muted-foreground uppercase font-black">{user.ROLE}</p>
                                         </div>
                                     </div>
                                     <span className="text-xs font-bold text-emerald-600">{user.score}</span>

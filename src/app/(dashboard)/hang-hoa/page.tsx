@@ -4,7 +4,7 @@ import HangHoaClient from '@/features/hang-hoa/components/HangHoaClient';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function HangHoaPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; phan_loai?: string; dong_hang?: string }> }) {
+export default async function HangHoaPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; PHAN_LOAI?: string; DONG_HANG?: string }> }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
 
@@ -12,8 +12,8 @@ export default async function HangHoaPage({ searchParams }: { searchParams: Prom
     const { data: products = [], pagination } = await getProducts({
         query: params.query,
         page,
-        phan_loai: params.phan_loai,
-        dong_hang: params.dong_hang
+        PHAN_LOAI: params.PHAN_LOAI,
+        DONG_HANG: params.DONG_HANG
     });
 
     // Get unique categories for the filter selects

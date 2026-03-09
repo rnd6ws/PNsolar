@@ -7,27 +7,27 @@ import { loginSchema } from './schema';
 import { redirect } from 'next/navigation';
 
 export async function loginUserAction(prevState: any, formData: FormData) {
-    const username = formData.get('username') as string;
-    const password = formData.get('password') as string;
+    const USER_NAME = formData.get('USER_NAME') as string;
+    const PASSWORD = formData.get('PASSWORD') as string;
 
-    const parsed = loginSchema.safeParse({ username, password });
+    const parsed = loginSchema.safeParse({ USER_NAME, PASSWORD });
     if (!parsed.success) {
         return { success: false, errors: { form: (parsed.error as any).errors[0].message } };
     }
 
     try {
         const user = await prisma.dSNV.findUnique({
-            where: { username: parsed.data.username },
+            where: { USER_NAME: parsed.data.USER_NAME },
         });
 
-        if (!user || !user.isActive || !(await bcrypt.compare(parsed.data.password, user.password))) {
+        if (!user || !user.IS_ACTIVE || !(await bcrypt.compare(parsed.data.PASSWORD, user.PASSWORD))) {
             return { success: false, errors: { form: 'Tên đăng nhập hoặc mật khẩu không đúng' } };
         }
 
         const token = await signToken({
-            userId: user.id,
-            username: user.username,
-            role: user.role as any,
+            userId: user.ID,
+            USER_NAME: user.USER_NAME,
+            ROLE: user.ROLE as any,
             tokenVersion: 0,
         });
 

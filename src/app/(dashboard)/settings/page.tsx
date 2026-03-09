@@ -218,16 +218,16 @@ export default function SettingsPage() {
                             <div className="p-8 space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mật khẩu hiện tại</label>
-                                    <input type="password" name="old_password" className="input-modern" placeholder="••••••••" />
+                                    <input type="PASSWORD" name="old_password" className="input-modern" placeholder="••••••••" />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mật khẩu mới</label>
-                                        <input type="password" name="new_password" className="input-modern" placeholder="••••••••" />
+                                        <input type="PASSWORD" name="new_password" className="input-modern" placeholder="••••••••" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Xác nhận mật khẩu</label>
-                                        <input type="password" name="confirm_password" className="input-modern" placeholder="••••••••" />
+                                        <input type="PASSWORD" name="confirm_password" className="input-modern" placeholder="••••••••" />
                                     </div>
                                 </div>
                             </div>
@@ -242,7 +242,7 @@ export default function SettingsPage() {
                             </div>
                             <div className="p-8 space-y-4">
                                 {[
-                                    { title: 'Thông báo Email', desc: 'Nhận báo cáo ngày qua email.' },
+                                    { title: 'Thông báo Email', desc: 'Nhận báo cáo ngày qua EMAIL.' },
                                     { title: 'Thông báo Tin nhắn', desc: 'Nhận cảnh báo tồn kho qua SMS.' },
                                     { title: 'Thông báo trình duyệt', desc: 'Hiển thị thông báo trên máy tính.' },
                                 ].map((item, i) => (

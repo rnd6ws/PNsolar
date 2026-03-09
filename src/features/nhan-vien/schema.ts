@@ -1,17 +1,17 @@
 import { z } from 'zod';
 
 export const nhanVienSchema = z.object({
-    ma_nv: z.string().min(3, 'Mã nhân viên ít nhất 3 ký tự'),
-    username: z.string().min(3, 'Username ít nhất 3 ký tự'),
-    password: z.string().min(6, 'Mật khẩu ít nhất 6 ký tự').optional().or(z.literal('')),
-    ho_ten: z.string().min(1, 'Vui lòng nhập họ tên'),
-    chuc_vu: z.string().min(1, 'Vui lòng nhập chức vụ'),
-    so_dien_thoai: z.string().optional().or(z.literal('')),
-    email: z.string().email('Email không hợp lệ').optional().or(z.literal('')),
-    dia_chi: z.string().optional().or(z.literal('')),
-    role: z.enum(['ADMIN', 'MANAGER', 'STAFF']).default('STAFF'),
-    isActive: z.boolean().default(true),
-    hinh_ca_nhan: z.string().optional().or(z.literal('')),
+    MA_NV: z.string().min(3, 'Mã nhân viên ít nhất 3 ký tự'),
+    USER_NAME: z.string().min(3, 'Username ít nhất 3 ký tự'),
+    PASSWORD: z.string().min(6, 'Mật khẩu ít nhất 6 ký tự').optional().or(z.literal('')),
+    HO_TEN: z.string().min(1, 'Vui lòng nhập họ tên'),
+    CHUC_VU: z.string().min(1, 'Vui lòng nhập chức vụ'),
+    SO_DIEN_THOAI: z.string().optional().or(z.literal('')),
+    EMAIL: z.string().email('Email không hợp lệ').optional().or(z.literal('')),
+    DIA_CHI: z.string().optional().or(z.literal('')),
+    ROLE: z.enum(['ADMIN', 'MANAGER', 'STAFF']).default('STAFF'),
+    IS_ACTIVE: z.boolean().default(true),
+    HINH_CA_NHAN: z.string().optional().or(z.literal('')),
 });
 
 export type NhanVienInput = z.infer<typeof nhanVienSchema>;
