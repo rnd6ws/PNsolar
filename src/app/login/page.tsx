@@ -1,11 +1,11 @@
 "use client"
 import { useActionState } from 'react';
-import { loginUserAction } from '@/actions/auth';
+import { loginUserAction } from '@/features/auth/action';
 import { Command, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
-    const [state, formAction] = useActionState(loginUserAction, { success: false, errors: {} });
+    const [state, formAction] = useActionState(loginUserAction, { success: false, errors: { form: '' } });
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden font-sans">

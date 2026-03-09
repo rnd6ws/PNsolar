@@ -12,7 +12,7 @@ import {
     LayoutDashboard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { logoutUser } from '@/actions/auth';
+import { logoutUser } from '@/features/auth/action';
 
 const mainNav = [
     { name: 'Tổng quan', href: '/dashboard', icon: LayoutDashboard },

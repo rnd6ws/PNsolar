@@ -1,5 +1,5 @@
-import { getProducts, getUniqueCategories } from '@/services/hang-hoa.service';
-import HangHoaClient from '@/components/HangHoaClient';
+import { getProducts, getUniqueCategories } from '@/features/hang-hoa/action';
+import HangHoaClient from '@/features/hang-hoa/components/HangHoaClient';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

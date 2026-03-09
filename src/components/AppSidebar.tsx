@@ -7,7 +7,7 @@ import {
     LogOut, EllipsisVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { logoutUser } from "@/actions/auth";
+import { logoutUser } from "@/features/auth/action";
 import {
     Sidebar,
     SidebarContent,

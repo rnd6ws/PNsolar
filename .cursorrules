@@ -1,0 +1,28 @@
+# Kiến trúc Feature-Based Next.js 16+ (Quy định bắt buộc)
+
+Dự án này sử dụng kiến trúc Feature-Based. BẤT QUAN BẠN LÀ AI (Human hay AI Assistant Cursor/Copilot/...), TUYỆT ĐỐI TUÂN THỦ các quy tắc sau khi tạo mới màn hình, bảng CSDL hay sửa đổi nghiệp vụ:
+
+## 1. Cấu trúc thư mục Feature 
+Mọi logic cho 1 tính năng phải gom về: `src/features/[feature-name]/`
+KHÔNG dùng `src/actions/`, `src/schemas/` hay `src/services/` nằm phân tán.
+- `src/features/[feature-name]/action.ts` (Nơi đặt toàn bộ logic "use server" - CRUD)
+- `src/features/[feature-name]/schema.ts` (Nơi đặt Zod schemas và Types)
+- `src/features/[feature-name]/components/[ComponentName].tsx` (UI dành riêng cho nghiệp vụ đó, ví dụ AddUserForm)
+UI dùng chung mới đặt ở `src/components/`.
+
+## 2. Quản lý trạng thái và Dữ liệu
+- DỮ LIỆU ĐƯỢC FETCH Ở SERVER COMPONENTS: File Route (`src/app/(dashboard)/[feature-name]/page.tsx`) sẽ gọi trực tiếp các Server Actions từ (file `action.ts`), sau đó truyền prop data này xuống cho các Components con.
+- TUYỆT ĐỐI KHÔNG dùng `useEffect()` để fetch data thay client.
+- LỌC (FILTER/SEARCH): BẮT BUỘC lưu Param thao tác trên URL (`useSearchParams`, `useRouter`, push parameters path url), không dùng `useState` cục bộ.
+
+## 3. Server Actions & Mutations
+- Thao tác Thêm/Sửa/Xóa phải dùng Server Actions (Hàm phải chứa `"use server"` ở trên hoặc import từ action.ts có "use server").
+- Thực hiện Mutation xong bắt buộc gọi `revalidatePath(...)` để clear Nextjs URL cache, UI tự load lại. Không được dùng API Routes (`src/app/api/...`) cho giao tiếp nội bộ.
+
+## 4. Formatting (Cách đặt tên)
+- Folder Tính năng (`features`): `kebab-case` (VD: `nhan-vien`, `cham-cong`)
+- File Logic: `action.ts` (không chia nhỏ name), `schema.ts`.
+- File Route: `page.tsx`, `layout.tsx`
+- Prisma Model/Trường Enum/Types: `SNAKE_CASE_UPPER` theo Format DB Cũ (VD: `NHAN_VIEN`, `MA_NV`)
+- File/Hàm React Component: `PascalCase`
+- Hook: `camelCase` (VD: `useSidebar`)

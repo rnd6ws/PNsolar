@@ -1,10 +1,10 @@
-import { getEmployees } from '@/services/nhan-vien.service';
+import { getEmployees } from '@/features/nhan-vien/action';
 import SearchInput from '@/components/SearchInput';
 import Pagination from '@/components/Pagination';
-import NhanVienList from '@/components/NhanVienList';
+import NhanVienList from '@/features/nhan-vien/components/NhanVienList';
 import FilterSelect from '@/components/FilterSelect';
 import { Users2, TrendingUp, UserPlus, SlidersHorizontal, Download } from 'lucide-react';
-import AddNhanVienButton from '@/components/AddNhanVienButton';
+import AddNhanVienButton from '@/features/nhan-vien/components/AddNhanVienButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
