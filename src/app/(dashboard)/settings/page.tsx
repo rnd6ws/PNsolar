@@ -27,14 +27,14 @@ const tabs = [
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState('profile');
-    const { theme, font, preset, setTheme, setFont, setPreset } = useTheme();
+    const { theme, font, fontSize, preset, setTheme, setFont, setFontSize, setPreset } = useTheme();
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-foreground tracking-tight">Cài Đặt Hệ Thống</h1>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Cài Đặt Hệ Thống</h1>
                     <p className="text-sm text-muted-foreground mt-1">Quản lý cấu hình tài khoản và tùy chỉnh trải nghiệm của bạn.</p>
                 </div>
                 <button className="btn-premium-primary">
@@ -199,6 +199,41 @@ export default function SettingsPage() {
                                                 <p className="text-[10px] text-muted-foreground uppercase font-black mt-0.5 tracking-widest">{f.desc}</p>
                                             </div>
                                             {font === f.id && <Check className="w-4 h-4 ml-auto text-primary" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Font Size */}
+                            <div className="bg-card border border-border rounded-xl shadow-xs overflow-hidden">
+                                <div className="p-6 border-b bg-muted/5">
+                                    <h3 className="font-bold text-foreground">Kích thước văn bản</h3>
+                                    <p className="text-xs text-muted-foreground mt-1">Điều chỉnh kích thước chữ hiển thị trên toàn hệ thống.</p>
+                                </div>
+                                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {[
+                                        { id: 'small', name: 'Nhỏ', px: '14px gốc', sample: 'text-sm' },
+                                        { id: 'medium', name: 'Trung bình', px: '16px gốc', sample: 'text-base' },
+                                        { id: 'large', name: 'Lớn', px: '18px gốc', sample: 'text-lg' },
+                                    ].map((s) => (
+                                        <button
+                                            key={s.id}
+                                            onClick={() => setFontSize(s.id as any)}
+                                            className={cn(
+                                                "flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                                                fontSize === s.id
+                                                    ? "border-primary bg-primary/5"
+                                                    : "border-border hover:border-primary/20"
+                                            )}
+                                        >
+                                            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                                                <span className={cn("font-black text-muted-foreground", s.sample)}>A</span>
+                                            </div>
+                                            <div>
+                                                <p className={cn("text-sm font-bold", fontSize === s.id ? "text-primary" : "text-foreground")}>{s.name}</p>
+                                                <p className="text-[10px] text-muted-foreground uppercase font-black mt-0.5 tracking-widest">({s.px})</p>
+                                            </div>
+                                            {fontSize === s.id && <Check className="w-4 h-4 ml-auto text-primary" />}
                                         </button>
                                     ))}
                                 </div>

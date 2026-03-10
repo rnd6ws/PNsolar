@@ -1,192 +1,393 @@
-"use client"
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
-    Users,
-    Smartphone,
-    Wallet,
-    ArrowUpRight,
-    ArrowDownRight,
-    Search,
-    Filter,
-    MoreHorizontal,
-    TrendingUp,
-    Briefcase
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+    Users, Package, Settings, LayoutDashboard,
+    Star, Info, ChevronRight, Search,
+    ClipboardList, FileText, BarChart2, Briefcase,
+    Truck, ShoppingCart, Wrench,
+    CreditCard, Wallet, PieChart, Bell,
+    UserCheck, Calendar, Shield, HelpCircle,
+    Layers, Archive, Map,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export default function DashboardPage() {
+// ===================== DATA =====================
+type Module = {
+    name: string;
+    description: string;
+    href: string;
+    icon: React.ElementType;
+    color: string;
+    bgColor: string;
+    available: boolean;
+};
+
+type ModuleGroup = {
+    label: string;
+    modules: Module[];
+};
+
+const moduleGroups: ModuleGroup[] = [
+    {
+        label: "Nhân sự",
+        modules: [
+            {
+                name: "Nhân viên",
+                description: "Quản lý hồ sơ, thông tin nhân viên.",
+                href: "/nhan-vien",
+                icon: Users,
+                color: "text-blue-600",
+                bgColor: "bg-blue-50 dark:bg-blue-950/50",
+                available: true,
+            },
+            {
+                name: "Chấm công",
+                description: "Quản lý chấm công, ca làm việc.",
+                href: "/cham-cong",
+                icon: UserCheck,
+                color: "text-indigo-600",
+                bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
+                available: false,
+            },
+            {
+                name: "Tổng hợp chấm công",
+                description: "Tổng hợp và báo cáo chấm công theo nhân viên.",
+                href: "/tong-hop-cham-cong",
+                icon: ClipboardList,
+                color: "text-orange-600",
+                bgColor: "bg-orange-50 dark:bg-orange-950/50",
+                available: false,
+            },
+            {
+                name: "Lịch làm việc",
+                description: "Quản lý lịch, ca làm việc theo phòng ban.",
+                href: "/lich-lam-viec",
+                icon: Calendar,
+                color: "text-teal-600",
+                bgColor: "bg-teal-50 dark:bg-teal-950/50",
+                available: false,
+            },
+        ],
+    },
+    {
+        label: "Hàng hóa & Kho",
+        modules: [
+            {
+                name: "Hàng hóa",
+                description: "Quản lý danh mục sản phẩm hàng hóa.",
+                href: "/hang-hoa",
+                icon: Package,
+                color: "text-emerald-600",
+                bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
+                available: true,
+            },
+            {
+                name: "Kho hàng",
+                description: "Theo dõi tồn kho, nhập xuất kho.",
+                href: "/kho-hang",
+                icon: Archive,
+                color: "text-cyan-600",
+                bgColor: "bg-cyan-50 dark:bg-cyan-950/50",
+                available: false,
+            },
+            {
+                name: "Đặt hàng",
+                description: "Tạo và quản lý đơn đặt hàng nhà cung cấp.",
+                href: "/dat-hang",
+                icon: ShoppingCart,
+                color: "text-violet-600",
+                bgColor: "bg-violet-50 dark:bg-violet-950/50",
+                available: false,
+            },
+            {
+                name: "Vận chuyển",
+                description: "Theo dõi vận chuyển, giao hàng.",
+                href: "/van-chuyen",
+                icon: Truck,
+                color: "text-sky-600",
+                bgColor: "bg-sky-50 dark:bg-sky-950/50",
+                available: false,
+            },
+        ],
+    },
+    {
+        label: "Dự án & Công việc",
+        modules: [
+            {
+                name: "Dự án",
+                description: "Quản lý dự án, phòng ban, thời gian, mục tiêu.",
+                href: "/du-an",
+                icon: Briefcase,
+                color: "text-amber-600",
+                bgColor: "bg-amber-50 dark:bg-amber-950/50",
+                available: false,
+            },
+            {
+                name: "Công việc của tôi",
+                description: "Công việc được giao cho tôi, theo dõi và báo cáo.",
+                href: "/cong-viec-cua-toi",
+                icon: Layers,
+                color: "text-lime-600",
+                bgColor: "bg-lime-50 dark:bg-lime-950/50",
+                available: false,
+            },
+            {
+                name: "Thi công",
+                description: "Quản lý tiến độ thi công lắp đặt solar.",
+                href: "/thi-cong",
+                icon: Wrench,
+                color: "text-rose-600",
+                bgColor: "bg-rose-50 dark:bg-rose-950/50",
+                available: false,
+            },
+            {
+                name: "Bản đồ dự án",
+                description: "Theo dõi vị trí và tiến độ dự án trực quan.",
+                href: "/ban-do",
+                icon: Map,
+                color: "text-green-600",
+                bgColor: "bg-green-50 dark:bg-green-950/50",
+                available: false,
+            },
+        ],
+    },
+    {
+        label: "Tài chính",
+        modules: [
+            {
+                name: "Bảng lương",
+                description: "Tính lương, phiếu lương, báo cáo.",
+                href: "/bang-luong",
+                icon: CreditCard,
+                color: "text-blue-600",
+                bgColor: "bg-blue-50 dark:bg-blue-950/50",
+                available: false,
+            },
+            {
+                name: "Thu chi",
+                description: "Quản lý thu chi, công nợ, dòng tiền.",
+                href: "/thu-chi",
+                icon: Wallet,
+                color: "text-emerald-600",
+                bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
+                available: false,
+            },
+            {
+                name: "Báo cáo tài chính",
+                description: "Phân tích và báo cáo doanh thu, chi phí.",
+                href: "/bao-cao-tai-chinh",
+                icon: PieChart,
+                color: "text-violet-600",
+                bgColor: "bg-violet-50 dark:bg-violet-950/50",
+                available: false,
+            },
+        ],
+    },
+    {
+        label: "Báo cáo & Phân tích",
+        modules: [
+            {
+                name: "Tổng quan",
+                description: "Bảng điều khiển và thống kê tổng quan.",
+                href: "/dashboard",
+                icon: LayoutDashboard,
+                color: "text-primary",
+                bgColor: "bg-primary/10",
+                available: true,
+            },
+            {
+                name: "Báo cáo nhân sự",
+                description: "Thống kê nhân viên, chấm công, KPI.",
+                href: "/bao-cao-nhan-su",
+                icon: BarChart2,
+                color: "text-indigo-600",
+                bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
+                available: false,
+            },
+            {
+                name: "Báo cáo kinh doanh",
+                description: "Thống kê doanh số, sản phẩm, khách hàng.",
+                href: "/bao-cao-kinh-doanh",
+                icon: FileText,
+                color: "text-orange-600",
+                bgColor: "bg-orange-50 dark:bg-orange-950/50",
+                available: false,
+            },
+        ],
+    },
+    {
+        label: "Hệ thống",
+        modules: [
+            {
+                name: "Cài đặt",
+                description: "Cấu hình hệ thống, phân quyền người dùng.",
+                href: "/settings",
+                icon: Settings,
+                color: "text-slate-600",
+                bgColor: "bg-slate-100 dark:bg-slate-800",
+                available: true,
+            },
+            {
+                name: "Phân quyền",
+                description: "Quản lý vai trò và quyền truy cập.",
+                href: "/phan-quyen",
+                icon: Shield,
+                color: "text-red-600",
+                bgColor: "bg-red-50 dark:bg-red-950/50",
+                available: false,
+            },
+            {
+                name: "Thông báo",
+                description: "Quản lý thông báo hệ thống, nhắc nhở.",
+                href: "/thong-bao",
+                icon: Bell,
+                color: "text-yellow-600",
+                bgColor: "bg-yellow-50 dark:bg-yellow-950/50",
+                available: false,
+            },
+            {
+                name: "Trợ giúp",
+                description: "Hướng dẫn sử dụng, hỗ trợ kỹ thuật.",
+                href: "/tro-giup",
+                icon: HelpCircle,
+                color: "text-teal-600",
+                bgColor: "bg-teal-50 dark:bg-teal-950/50",
+                available: false,
+            },
+        ],
+    },
+];
+
+// ===================== COMPONENT =====================
+export default function HomePage() {
+    const searchParams = useSearchParams();
+    const search = searchParams.get('q') ?? '';
+    const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+    const toggleFavorite = (name: string) => {
+        setFavorites((prev) => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name);
+            else next.add(name);
+            return next;
+        });
+    };
+
+    const filtered = moduleGroups
+        .map((group) => ({
+            ...group,
+            modules: group.modules.filter(
+                (m) =>
+                    m.name.toLowerCase().includes(search.toLowerCase()) ||
+                    m.description.toLowerCase().includes(search.toLowerCase())
+            ),
+        }))
+        .filter((g) => g.modules.length > 0);
+
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            {/* Upper Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    title="Tổng Nhân Viên"
-                    value="53"
-                    change="+12.5%"
-                    isPositive={true}
-                    icon={Users}
-                    color="text-primary"
-                    bgColor="bg-primary/10"
-                />
-                <StatCard
-                    title="Thiết Bị Solar"
-                    value="186"
-                    change="+4.2%"
-                    isPositive={true}
-                    icon={Smartphone}
-                    color="text-primary/80"
-                    bgColor="bg-primary/5"
-                />
-                <StatCard
-                    title="Doanh Thu Tháng"
-                    value="1.25 tỷ"
-                    change="+22.4%"
-                    isPositive={true}
-                    icon={Wallet}
-                    color="text-primary"
-                    bgColor="bg-primary/10"
-                />
-                <StatCard
-                    title="Dự Án Đang Chạy"
-                    value="42"
-                    change="-2"
-                    isPositive={false}
-                    icon={Briefcase}
-                    color="text-muted-foreground"
-                    bgColor="bg-muted"
-                />
-            </div>
+        <div className="space-y-8 animate-in fade-in duration-500">
 
-            {/* Main Content Grid like CRM Template */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* Left Column - Growth Chart Placeholder */}
-                <div className="xl:col-span-2 space-y-6">
-                    <div className="bg-card border border-border rounded-xl shadow-xs overflow-hidden">
-                        <div className="px-6 py-5 border-b flex items-center justify-between">
-                            <div>
-                                <h3 className="font-bold text-foreground">Biểu Đồ Tăng Trưởng</h3>
-                                <p className="text-xs text-muted-foreground mt-1">Dữ liệu phân tích 6 tháng gần nhất</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button className="p-1.5 hover:bg-muted rounded-md text-muted-foreground"><Search className="w-4 h-4" /></button>
-                                <button className="p-1.5 hover:bg-muted rounded-md text-muted-foreground"><Filter className="w-4 h-4" /></button>
-                            </div>
-                        </div>
-                        <div className="p-8 h-80 flex flex-col items-center justify-center bg-muted/5">
-                            {/* Visual Placeholder for a Chart */}
-                            <div className="w-full h-full flex items-end justify-between gap-4 px-4">
-                                {[40, 70, 45, 90, 65, 80, 50, 85].map((h, i) => (
-                                    <div key={i} className="flex-1 bg-primary/20 rounded-t-lg relative group transition-all hover:bg-primary/40" style={{ height: `${h}%` }}>
-                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                            {h}% Growth
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="w-full flex justify-between mt-4 px-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-                                <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span>
-                            </div>
-                        </div>
-                        <div className="px-6 py-4 bg-muted/10 border-t flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                                <TrendingUp className="w-4 h-4" />
-                                <span>+15% Tăng trưởng so với năm ngoái</span>
-                            </div>
-                            <button className="text-xs font-bold text-muted-foreground hover:text-foreground">Chi tiết báo cáo</button>
-                        </div>
-                    </div>
 
-                    <div className="bg-card border border-border rounded-xl shadow-xs p-6">
-                        <h3 className="font-bold text-foreground mb-4">Hoạt Động Gần Đây</h3>
-                        <div className="space-y-4">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="flex items-center justify-between py-3 border-b last:border-0 border-border/50 group cursor-pointer">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-muted/50 border flex items-center justify-center text-muted-foreground font-bold">
-                                            {i}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Cập nhật thông tin dự án Solar X</p>
-                                            <p className="text-xs text-muted-foreground">Thực hiện bởi Admin • 10:45 AM</p>
-                                        </div>
-                                    </div>
-                                    <button className="p-2 hover:bg-muted rounded-full">
-                                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                                    </button>
-                                </div>
+
+            {/* Module Groups */}
+            {filtered.length === 0 ? (
+                <div className="text-center py-20 text-muted-foreground">
+                    <Search className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p className="font-semibold">Không tìm thấy module nào</p>
+                    <p className="text-sm mt-1">Thử tìm với từ khóa khác</p>
+                </div>
+            ) : (
+                filtered.map((group) => (
+                    <section key={group.label}>
+                        {/* Group Header */}
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-5 w-1 rounded-full bg-primary" />
+                            <h2 className="font-bold text-foreground text-base">{group.label}</h2>
+                            <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                {group.modules.length}
+                            </span>
+                        </div>
+
+                        {/* Module Cards Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 items-start">
+                            {group.modules.map((mod) => (
+                                <ModuleCard
+                                    key={mod.name}
+                                    module={mod}
+                                    isFav={favorites.has(mod.name)}
+                                    onToggleFav={() => toggleFavorite(mod.name)}
+                                />
                             ))}
                         </div>
-                    </div>
-                </div>
-
-                {/* Right Column - Top Performers / Quick Info */}
-                <div className="space-y-6">
-                    <div className="bg-background border-2 border-primary/20 rounded-xl p-6 relative overflow-hidden group shadow-lg shadow-primary/5">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
-                            <TrendingUp className="w-20 h-20 text-primary" />
-                        </div>
-                        <div className="relative z-10">
-                            <h3 className="font-bold text-foreground text-lg mb-2">Trạng Thái Hệ Thống</h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed">Hệ thống đang hoạt động ổn định. Đã xử lý 4.5k yêu cầu trong ngày.</p>
-                            <div className="mt-6 flex items-center gap-4">
-                                <div className="flex-1 bg-muted rounded-full h-2">
-                                    <div className="bg-primary h-full rounded-full w-[85%]" />
-                                </div>
-                                <span className="text-xs font-bold font-mono">85%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-card border border-border rounded-xl shadow-xs p-6">
-                        <h3 className="font-bold text-foreground text-base mb-6">Thành Viên Tích Cực</h3>
-                        <div className="space-y-6">
-                            {[
-                                { name: 'Văn Hoàng', ROLE: 'Leader', score: '98 pts' },
-                                { name: 'Thanh Nga', ROLE: 'Support', score: '85 pts' },
-                                { name: 'Tuấn Anh', ROLE: 'Engineer', score: '72 pts' },
-                            ].map((user, i) => (
-                                <div key={i} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center font-black text-xs">
-                                            {user.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-foreground">{user.name}</p>
-                                            <p className="text-[10px] text-muted-foreground uppercase font-black">{user.ROLE}</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-xs font-bold text-emerald-600">{user.score}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <button className="w-full mt-8 py-3 bg-muted rounded-lg text-xs font-bold hover:bg-muted/80 transition-colors uppercase tracking-widest text-muted-foreground">
-                            Xem Bảng Xếp Hạng
-                        </button>
-                    </div>
-                </div>
-            </div>
+                    </section>
+                ))
+            )}
         </div>
     );
 }
 
-function StatCard({ title, value, change, isPositive, icon: Icon, color, bgColor }: any) {
+// ===================== MODULE CARD =====================
+function ModuleCard({
+    module: mod,
+    isFav,
+    onToggleFav,
+}: {
+    module: Module;
+    isFav: boolean;
+    onToggleFav: () => void;
+}) {
+    const CardWrapper = mod.available ? Link : "div";
+
     return (
-        <div className="bg-card border border-border rounded-xl p-6 shadow-xs hover:shadow-md transition-all duration-300 group">
-            <div className="flex justify-between items-start mb-4">
-                <div className={cn("p-2.5 rounded-lg", bgColor, color)}>
-                    <Icon className="w-5 h-5" />
-                </div>
-                <div className={cn(
-                    "flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold",
-                    isPositive ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"
-                )}>
-                    {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                    {change}
-                </div>
+        <CardWrapper
+            href={mod.available ? mod.href : "#"}
+            className={cn(
+                "group relative flex items-center gap-3 p-3 bg-card border border-border rounded-xl shadow-xs transition-all duration-200",
+                mod.available
+                    ? "hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer"
+                    : "opacity-55 cursor-default"
+            )}
+        >
+            {/* Icon */}
+            <div
+                className={cn(
+                    "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110",
+                    mod.bgColor
+                )}
+            >
+                <mod.icon className={cn("w-4 h-4", mod.color)} />
             </div>
-            <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">{title}</p>
-                <h3 className="text-2xl font-black text-foreground tracking-tight">{value}</h3>
+
+            {/* Content */}
+            <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors leading-tight">
+                    {mod.name}
+                </h3>
+                <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                    {mod.description}
+                </p>
             </div>
-        </div>
+
+            {/* Footer */}
+            {mod.available && (
+                <div className="mt-3 flex items-center gap-1 text-[11px] font-semibold text-primary/70 group-hover:text-primary transition-colors">
+                    <span>Mở module</span>
+                    <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                </div>
+            )}
+
+            {/* Tooltip info button */}
+            <button
+                type="button"
+                onClick={(e) => e.preventDefault()}
+                className="absolute bottom-3 right-3 p-1 text-muted-foreground/30 hover:text-muted-foreground transition-colors opacity-0 group-hover:opacity-100"
+                title={mod.description}
+            >
+                <Info className="w-3.5 h-3.5" />
+            </button>
+        </CardWrapper>
     );
 }

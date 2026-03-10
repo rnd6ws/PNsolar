@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 type Font = 'be-vietnam' | 'inter' | 'roboto' | 'jakarta';
+type FontSize = 'small' | 'medium' | 'large';
 type Preset = 'default' | 'green' | 'orange' | 'purple' | 'rose';
 type PageLayout = 'centered' | 'full';
 type NavbarBehavior = 'sticky' | 'scroll';
@@ -12,6 +13,7 @@ type SidebarCollapse = 'icon' | 'off-canvas';
 interface ThemeContextType {
     theme: Theme;
     font: Font;
+    fontSize: FontSize;
     preset: Preset;
     pageLayout: PageLayout;
     navbarBehavior: NavbarBehavior;
@@ -19,6 +21,7 @@ interface ThemeContextType {
     sidebarCollapse: SidebarCollapse;
     setTheme: (t: Theme) => void;
     setFont: (f: Font) => void;
+    setFontSize: (s: FontSize) => void;
     setPreset: (p: Preset) => void;
     setPageLayout: (l: PageLayout) => void;
     setNavbarBehavior: (b: NavbarBehavior) => void;
@@ -32,6 +35,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setTheme] = useState<Theme>('light');
     const [font, setFont] = useState<Font>('be-vietnam');
+    const [fontSize, setFontSize] = useState<FontSize>('medium');
     const [preset, setPreset] = useState<Preset>('default');
     const [pageLayout, setPageLayout] = useState<PageLayout>('full');
     const [navbarBehavior, setNavbarBehavior] = useState<NavbarBehavior>('sticky');
@@ -43,6 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const savedTheme = localStorage.getItem('pnsolar-theme') as Theme || 'light';
         const savedFont = localStorage.getItem('pnsolar-font') as Font || 'be-vietnam';
+        const savedFontSize = localStorage.getItem('pnsolar-font-size') as FontSize || 'medium';
         const savedPreset = localStorage.getItem('pnsolar-preset') as Preset || 'default';
         const savedLayout = localStorage.getItem('pnsolar-layout') as PageLayout || 'full';
         const savedNavbar = localStorage.getItem('pnsolar-navbar') as NavbarBehavior || 'sticky';
@@ -51,6 +56,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         setTheme(savedTheme);
         setFont(savedFont);
+        setFontSize(savedFontSize);
         setPreset(savedPreset);
         setPageLayout(savedLayout);
         setNavbarBehavior(savedNavbar);
@@ -79,6 +85,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.setAttribute('data-font', font);
         localStorage.setItem('pnsolar-font', font);
 
+        // Handle Font Size
+        const fontSizeMap = { small: '14px', medium: '16px', large: '18px' };
+        root.style.fontSize = fontSizeMap[fontSize];
+        root.setAttribute('data-font-size', fontSize);
+        localStorage.setItem('pnsolar-font-size', fontSize);
+
         // Handle Preset
         root.setAttribute('data-theme-preset', preset);
         localStorage.setItem('pnsolar-preset', preset);
@@ -99,11 +111,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.setAttribute('data-sidebar-collapse', sidebarCollapse);
         localStorage.setItem('pnsolar-sidebar-collapse', sidebarCollapse);
 
-    }, [theme, font, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse, isLoaded]);
+    }, [theme, font, fontSize, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse, isLoaded]);
 
     const resetDefaults = () => {
         setTheme('light');
         setFont('be-vietnam');
+        setFontSize('medium');
         setPreset('default');
         setPageLayout('full');
         setNavbarBehavior('sticky');
@@ -113,8 +126,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <ThemeContext.Provider value={{
-            theme, font, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse,
-            setTheme, setFont, setPreset, setPageLayout, setNavbarBehavior, setSidebarStyle, setSidebarCollapse,
+            theme, font, fontSize, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse,
+            setTheme, setFont, setFontSize, setPreset, setPageLayout, setNavbarBehavior, setSidebarStyle, setSidebarCollapse,
             resetDefaults
         }}>
             {children}

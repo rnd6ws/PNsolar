@@ -365,7 +365,7 @@ export default function HangHoaClient({
                 {/* Page Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh mục hàng hóa</h1>
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Danh mục hàng hóa</h1>
                         <p className="text-sm text-muted-foreground mt-1">
                             Quản lý sản phẩm, thiết bị và linh kiện solar
                         </p>
