@@ -75,8 +75,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 {/* ── Header ───────────────────────────────── */}
                 <header className={cn(
-                    "flex h-12 shrink-0 items-center gap-2 border-b bg-background/80 backdrop-blur-md transition-all",
-                    navbarBehavior === 'sticky' ? "sticky top-0 z-50" : ""
+                    "flex h-12 shrink-0 items-center gap-2 border-b bg-background/80 backdrop-blur-md transition-all z-40",
+                    navbarBehavior === 'sticky' ? "sticky top-0" : "relative"
                 )}>
                     <div className="flex w-full items-center justify-between px-4 lg:px-6">
 

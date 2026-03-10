@@ -36,7 +36,7 @@ export default function AddNhanVienButton({
             ...data,
             IS_ACTIVE: true,
             ROLE: data.ROLE || 'STAFF',
-            HINH_CA_NHAN: avatarUrl || null,
+            HINH_CA_NHAN: avatarUrl || '',
         });
 
         if (result.success) {

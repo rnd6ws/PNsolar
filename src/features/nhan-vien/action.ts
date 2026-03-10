@@ -14,7 +14,7 @@ export async function createNhanVienAction(data: any) {
 
     const parsed = nhanVienSchema.safeParse(data);
     if (!parsed.success) {
-        const errorMsg = (parsed.error as any).errors.map((e: any) => `${e.message}`).join(', ');
+        const errorMsg = parsed.error.issues.map((e) => e.message).join(', ');
         return { success: false, message: 'Lỗi: ' + errorMsg };
     }
 
