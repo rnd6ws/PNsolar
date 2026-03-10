@@ -3,11 +3,26 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import Modal from '@/components/Modal';
 import { createNhanVienAction } from '@/features/nhan-vien/action';
+import { toast } from 'sonner';
+import ImageUpload from '@/components/ImageUpload';
 
-export default function AddNhanVienButton() {
+export default function AddNhanVienButton({
+    chucVus = [],
+    phongBans = []
+}: {
+    chucVus?: { ID: string; CHUC_VU: string }[],
+    phongBans?: { ID: string; PHONG_BAN: string }[]
+}) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [avatarUrl, setAvatarUrl] = useState('');
+
+    const handleClose = () => {
+        setIsModalOpen(false);
+        setAvatarUrl('');
+        setError(null);
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -20,13 +35,16 @@ export default function AddNhanVienButton() {
         const result = await createNhanVienAction({
             ...data,
             IS_ACTIVE: true,
-            ROLE: data.ROLE || 'STAFF'
+            ROLE: data.ROLE || 'STAFF',
+            HINH_CA_NHAN: avatarUrl || null,
         });
 
         if (result.success) {
-            setIsModalOpen(false);
+            toast.success("Đã thêm nhân viên mới");
+            handleClose();
             (e.target as HTMLFormElement).reset();
         } else {
+            toast.error(result.message || 'Lỗi không xác định');
             setError(result.message || 'Lỗi không xác định');
         }
         setLoading(false);
@@ -42,13 +60,22 @@ export default function AddNhanVienButton() {
                 Thêm nhân viên mới
             </button>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Thêm nhân viên mới">
+            <Modal isOpen={isModalOpen} onClose={handleClose} title="Thêm nhân viên mới">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {error && (
                         <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs font-bold animate-in fade-in zoom-in-95">
                             {error}
                         </div>
                     )}
+
+                    {/* Avatar Upload */}
+                    <div className="flex justify-center pb-2">
+                        <ImageUpload
+                            value={avatarUrl}
+                            onChange={setAvatarUrl}
+                            size={96}
+                        />
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
@@ -68,21 +95,27 @@ export default function AddNhanVienButton() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mật khẩu</label>
-                            <input name="PASSWORD" type="PASSWORD" className="input-modern" placeholder="123456" />
+                            <input name="PASSWORD" type="password" className="input-modern" placeholder="123456" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Chức vụ</label>
-                            <input name="CHUC_VU" required className="input-modern" placeholder="Quản lý" />
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Phòng ban</label>
+                            <select name="PHONG_BAN" className="input-modern">
+                                <option value="">-- Chọn phòng ban --</option>
+                                {phongBans.map(pb => (
+                                    <option key={pb.ID} value={pb.PHONG_BAN}>{pb.PHONG_BAN}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vai trò</label>
-                            <select name="ROLE" className="input-modern">
-                                <option value="STAFF">Nhân viên</option>
-                                <option value="MANAGER">Hỗ trợ quản lý</option>
-                                <option value="ADMIN">Quản trị viên</option>
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Chức vụ</label>
+                            <select name="CHUC_VU" required className="input-modern">
+                                <option value="">-- Chọn chức vụ --</option>
+                                {chucVus.map(cv => (
+                                    <option key={cv.ID} value={cv.CHUC_VU}>{cv.CHUC_VU}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -93,13 +126,22 @@ export default function AddNhanVienButton() {
                             <input name="SO_DIEN_THOAI" className="input-modern" placeholder="09xxx..." />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Email</label>
-                            <input name="EMAIL" type="EMAIL" className="input-modern" placeholder="EMAIL@gmail.com" />
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vai trò HT</label>
+                            <select name="ROLE" className="input-modern">
+                                <option value="STAFF">Nhân viên</option>
+                                <option value="MANAGER">Quản lý (Manager)</option>
+                                <option value="ADMIN">Quản trị viên (Admin)</option>
+                            </select>
                         </div>
                     </div>
 
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Email</label>
+                        <input name="EMAIL" type="email" className="input-modern" placeholder="email@gmail.com" />
+                    </div>
+
                     <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="btn-premium-secondary flex-1">Hủy bỏ</button>
+                        <button type="button" onClick={handleClose} className="btn-premium-secondary flex-1">Hủy bỏ</button>
                         <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
                             {loading ? 'Đang lưu...' : 'Lưu nhân viên'}
                         </button>

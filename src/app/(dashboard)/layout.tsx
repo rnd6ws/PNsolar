@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const getBreadcrumb = () => {
         if (pathname === '/dashboard') return 'Tổng quan';
-        if (pathname === '/nhan-vien') return 'Nhân sự';
+        if (pathname === '/nhan-vien') return 'Nhân viên';
         if (pathname === '/hang-hoa') return 'Hàng hóa';
         if (pathname === '/settings') return 'Cài đặt';
         return 'Dashboard';

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Be_Vietnam_Pro, Inter, Roboto, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Toaster } from 'sonner';
 
 const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
@@ -40,14 +41,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={cn(
+    <html lang="vi" suppressHydrationWarning className={cn(
       beVietnam.variable,
       inter.variable,
       roboto.variable,
       jakarta.variable
     )}>
-      <body className="antialiased selection:bg-primary/20 selection:text-primary font-sans">
+      <body suppressHydrationWarning className="antialiased selection:bg-primary/20 selection:text-primary font-sans">
         <ThemeProvider>
+          <Toaster position="top-right" richColors closeButton />
           {children}
         </ThemeProvider>
       </body>

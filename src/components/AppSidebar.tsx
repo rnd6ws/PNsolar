@@ -34,7 +34,7 @@ import {
 
 const mainNav = [
     { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Nhân sự", href: "/nhan-vien", icon: Users },
+    { name: "Nhân viên", href: "/nhan-vien", icon: Users },
     { name: "Hàng hóa", href: "/hang-hoa", icon: Package },
 ];
 

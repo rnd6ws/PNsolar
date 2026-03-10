@@ -17,6 +17,7 @@ model DSNV {
   HINH_CA_NHAN  String?
   HO_TEN        String
   CHUC_VU       String
+  PHONG_BAN     String? // Add PHONG_BAN column
   SO_DIEN_THOAI String?
   EMAIL         String?
   DIA_CHI       String?
@@ -85,4 +86,30 @@ model AUDIT_LOG {
   @@index([TARGET_MODEL, TARGET_ID, CREATED_AT(sort: Desc)])
   @@index([CREATED_AT])
   @@map("AUDIT_LOGS")
+}
+
+// ===== TỪ ĐIỂN CHỨC VỤ =====
+model CD_CHUCVU {
+  ID         String    @id @default(auto()) @map("_id") @db.ObjectId
+  CHUC_VU    String    @unique
+  GHI_CHU    String?
+  IS_ACTIVE  Boolean   @default(true)
+  DELETED_AT DateTime?
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
+
+  @@map("CD_CHUCVU")
+}
+
+// ===== TỪ ĐIỂN PHÒNG BAN =====
+model CD_PHONGBAN {
+  ID         String    @id @default(auto()) @map("_id") @db.ObjectId
+  PHONG_BAN  String    @unique
+  GHI_CHU    String?
+  IS_ACTIVE  Boolean   @default(true)
+  DELETED_AT DateTime?
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
+
+  @@map("CD_PHONGBAN")
 }

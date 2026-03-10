@@ -19,7 +19,7 @@ export default function DashboardPage() {
             {/* Upper Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
-                    title="Tổng Nhân Sự"
+                    title="Tổng Nhân Viên"
                     value="53"
                     change="+12.5%"
                     isPositive={true}

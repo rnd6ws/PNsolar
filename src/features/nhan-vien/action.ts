@@ -31,6 +31,7 @@ export async function createNhanVienAction(data: any) {
                     HINH_CA_NHAN: rest.HINH_CA_NHAN,
                     HO_TEN: rest.HO_TEN,
                     CHUC_VU: rest.CHUC_VU,
+                    PHONG_BAN: rest.PHONG_BAN,
                     SO_DIEN_THOAI: rest.SO_DIEN_THOAI,
                     EMAIL: rest.EMAIL,
                     DIA_CHI: rest.DIA_CHI,
@@ -55,7 +56,7 @@ export async function createNhanVienAction(data: any) {
             return newEmp;
         });
 
-        revalidatePath('/dashboard/nhan-vien');
+        revalidatePath('/nhan-vien');
         return { success: true, data: result };
     } catch (error: any) {
         if (error.code === 'P2002') {
@@ -87,15 +88,85 @@ export async function deleteNhanVienAction(id: string) {
             });
         });
 
-        revalidatePath('/dashboard/nhan-vien');
+        revalidatePath('/nhan-vien');
         return { success: true, message: 'Đã xóa nhân viên' };
     } catch (error: any) {
         return { success: false, message: error.message };
     }
 }
 
-export async function getEmployees(filters: { query?: string; page?: number; limit?: number; ROLE?: string; status?: string } = {}): Promise<ActionResponse> {
-    const { page = 1, limit = 10, query, ROLE, status } = filters;
+export async function changePasswordAction(id: string, newPassword: string) {
+    const user = await getCurrentUser();
+    if (!user || user.ROLE !== 'ADMIN') return { success: false, message: 'Không có quyền' };
+
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.dSNV.update({
+            where: { ID: id },
+            data: { PASSWORD: hashedPassword }
+        });
+
+        await prisma.aUDIT_LOG.create({
+            data: {
+                ACTION: 'CHANGE_PASSWORD',
+                USER_ID: user.userId,
+                TARGET_MODEL: 'DSNV',
+                TARGET_ID: id,
+                DETAILS: 'Đổi mật khẩu nhân viên',
+            },
+        });
+
+        revalidatePath('/nhan-vien');
+        return { success: true, message: 'Đổi mật khẩu thành công' };
+    } catch (error: any) {
+        return { success: false, message: 'Lỗi đổi mật khẩu' };
+    }
+}
+
+export async function updateNhanVienAction(id: string, data: any) {
+    const user = await getCurrentUser();
+    if (!user || user.ROLE !== 'ADMIN') return { success: false, message: 'Không có quyền' };
+
+    try {
+        const emp = await prisma.dSNV.findUnique({ where: { ID: id } });
+
+        await prisma.dSNV.update({
+            where: { ID: id },
+            data: {
+                MA_NV: data.MA_NV,
+                USER_NAME: data.USER_NAME,
+                HO_TEN: data.HO_TEN,
+                CHUC_VU: data.CHUC_VU,
+                PHONG_BAN: data.PHONG_BAN,
+                SO_DIEN_THOAI: data.SO_DIEN_THOAI,
+                EMAIL: data.EMAIL,
+                ROLE: data.ROLE,
+                IS_ACTIVE: data.IS_ACTIVE === true || data.IS_ACTIVE === 'true',
+            }
+        });
+
+        await prisma.aUDIT_LOG.create({
+            data: {
+                ACTION: 'UPDATE',
+                USER_ID: user.userId,
+                TARGET_MODEL: 'DSNV',
+                TARGET_ID: id,
+                DETAILS: `Cập nhật thông tin nhân viên: ${emp?.HO_TEN}`,
+            },
+        });
+
+        revalidatePath('/nhan-vien');
+        return { success: true, message: 'Cập nhật thành công' };
+    } catch (error: any) {
+        if (error.code === 'P2002') {
+            return { success: false, message: 'Mã nhân viên hoặc Username đã tồn tại' };
+        }
+        return { success: false, message: 'Lỗi cập nhật' };
+    }
+}
+
+export async function getEmployees(filters: { query?: string; page?: number; limit?: number; ROLE?: string; status?: string; PHONG_BAN?: string; CHUC_VU?: string } = {}): Promise<ActionResponse> {
+    const { page = 1, limit = 10, query, ROLE, status, PHONG_BAN, CHUC_VU } = filters;
 
     // Fix Prisma MongoDB null matching
     const where: any = {
@@ -123,6 +194,14 @@ export async function getEmployees(filters: { query?: string; page?: number; lim
 
     if (status && status !== 'all') {
         andConditions.push({ IS_ACTIVE: status === 'active' });
+    }
+
+    if (PHONG_BAN && PHONG_BAN !== 'all') {
+        andConditions.push({ PHONG_BAN: PHONG_BAN });
+    }
+
+    if (CHUC_VU && CHUC_VU !== 'all') {
+        andConditions.push({ CHUC_VU: CHUC_VU });
     }
 
     if (andConditions.length > 0) {
@@ -153,5 +232,81 @@ export async function getEmployees(filters: { query?: string; page?: number; lim
     } catch (error) {
         console.error('[getEmployees]', error);
         return { success: false, error: 'Lỗi khi tải danh sách nhân viên' };
+    }
+}
+
+export async function getChucVus() {
+    try {
+        const data = await prisma.cD_CHUCVU.findMany({
+            where: {
+                IS_ACTIVE: true,
+                OR: [
+                    { DELETED_AT: null },
+                    { DELETED_AT: { isSet: false } }
+                ]
+            },
+            orderBy: { CREATED_AT: 'asc' }
+        });
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, error: 'Lỗi tải danh mục chức vụ' };
+    }
+}
+
+export async function getPhongBans() {
+    try {
+        const data = await prisma.cD_PHONGBAN.findMany({
+            where: {
+                IS_ACTIVE: true,
+                OR: [
+                    { DELETED_AT: null },
+                    { DELETED_AT: { isSet: false } }
+                ]
+            },
+            orderBy: { CREATED_AT: 'asc' }
+        });
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, error: 'Lỗi tải danh mục phòng ban' };
+    }
+}
+
+export async function createChucVuAction(data: { CHUC_VU: string, GHI_CHU?: string }) {
+    try {
+        await prisma.cD_CHUCVU.create({ data });
+        revalidatePath('/nhan-vien');
+        return { success: true };
+    } catch (error) {
+        return { success: false, message: 'Lỗi tạo chức vụ (có thể đã tồn tại)' };
+    }
+}
+
+export async function deleteChucVuAction(id: string) {
+    try {
+        await prisma.cD_CHUCVU.delete({ where: { ID: id } });
+        revalidatePath('/nhan-vien');
+        return { success: true };
+    } catch (error) {
+        return { success: false, message: 'Lỗi xoá chức vụ' };
+    }
+}
+
+export async function createPhongBanAction(data: { PHONG_BAN: string, GHI_CHU?: string }) {
+    try {
+        await prisma.cD_PHONGBAN.create({ data });
+        revalidatePath('/nhan-vien');
+        return { success: true };
+    } catch (error) {
+        return { success: false, message: 'Lỗi tạo phòng ban (có thể đã tồn tại)' };
+    }
+}
+
+export async function deletePhongBanAction(id: string) {
+    try {
+        await prisma.cD_PHONGBAN.delete({ where: { ID: id } });
+        revalidatePath('/nhan-vien');
+        return { success: true };
+    } catch (error) {
+        return { success: false, message: 'Lỗi xoá phòng ban' };
     }
 }

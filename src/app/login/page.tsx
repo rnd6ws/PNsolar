@@ -1,12 +1,21 @@
 "use client"
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useEffect } from 'react';
 import { loginUserAction } from '@/features/auth/action';
+import { toast } from 'sonner';
 import { Command, LogIn, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
     const [state, formAction] = useActionState(loginUserAction, { success: false, errors: { form: '' } });
     const [showPassword, setShowPassword] = useState(false);
+
+    useEffect(() => {
+        if (state.errors?.form) {
+            toast.error(state.errors.form);
+        } else if (state.success) {
+            toast.success("Đăng nhập thành công, đang chuyển hướng...");
+        }
+    }, [state]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden font-sans">

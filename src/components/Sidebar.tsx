@@ -16,7 +16,7 @@ import { logoutUser } from '@/features/auth/action';
 
 const mainNav = [
     { name: 'Tổng quan', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Nhân sự', href: '/nhan-vien', icon: Users },
+    { name: 'Nhân viên', href: '/nhan-vien', icon: Users },
     { name: 'Hàng hóa', icon: Package, href: '/hang-hoa' },
 ];
 
