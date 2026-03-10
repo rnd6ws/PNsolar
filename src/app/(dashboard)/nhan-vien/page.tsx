@@ -44,7 +44,7 @@ export default async function NhanVienPage({ searchParams }: { searchParams: Pro
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Danh sách Nhân viên</h1>
+                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Nhân viên</h1>
                         <p className="text-sm text-muted-foreground mt-1">Quản lý tài khoản và thông tin nhân viên trực thuộc PN Solar.</p>
                     </div>
                     <div className="flex items-center gap-3">

@@ -34,7 +34,7 @@ export default function SettingsPage() {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Cài Đặt Hệ Thống</h1>
+                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Cài Đặt Hệ Thống</h1>
                     <p className="text-sm text-muted-foreground mt-1">Quản lý cấu hình tài khoản và tùy chỉnh trải nghiệm của bạn.</p>
                 </div>
                 <button className="btn-premium-primary">
