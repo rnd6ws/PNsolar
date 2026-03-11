@@ -62,12 +62,6 @@ export default function AddNhanVienButton({
 
             <Modal isOpen={isModalOpen} onClose={handleClose} title="Thêm nhân viên mới">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {error && (
-                        <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs font-bold animate-in fade-in zoom-in-95">
-                            {error}
-                        </div>
-                    )}
-
                     {/* Avatar Upload */}
                     <div className="flex justify-center pb-2">
                         <ImageUpload

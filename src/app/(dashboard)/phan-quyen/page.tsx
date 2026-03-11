@@ -1,7 +1,12 @@
 // src/app/(dashboard)/phan-quyen/page.tsx
+import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { getEmployeesWithPermissions } from '@/features/phan-quyen/action';
+
+export const metadata: Metadata = {
+    title: "Phân quyền | PN Solar",
+};
 import PhanQuyenClient from '@/features/phan-quyen/components/PhanQuyenClient';
 import { Shield } from 'lucide-react';
 

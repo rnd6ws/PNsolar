@@ -44,6 +44,34 @@ export const prisma = basePrisma.$extends({
                 });
             },
         },
+        pHANLOAI_HH: {
+            async delete({ args, query }: any) {
+                return (basePrisma as any).pHANLOAI_HH.update({
+                    ...args,
+                    data: { DELETED_AT: new Date() },
+                });
+            },
+            async deleteMany({ args, query }: any) {
+                return (basePrisma as any).pHANLOAI_HH.updateMany({
+                    ...args,
+                    data: { DELETED_AT: new Date() },
+                });
+            },
+        },
+        nHOM_HH: {
+            async delete({ args, query }: any) {
+                return (basePrisma as any).nHOM_HH.update({
+                    ...args,
+                    data: { DELETED_AT: new Date() },
+                });
+            },
+            async deleteMany({ args, query }: any) {
+                return (basePrisma as any).nHOM_HH.updateMany({
+                    ...args,
+                    data: { DELETED_AT: new Date() },
+                });
+            },
+        },
     },
 });
 

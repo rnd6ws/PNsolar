@@ -1,5 +1,10 @@
+import { Metadata } from "next";
 import { getProducts, getUniqueCategories } from '@/features/hang-hoa/action';
 import HangHoaClient from '@/features/hang-hoa/components/HangHoaClient';
+
+export const metadata: Metadata = {
+    title: "Hàng hóa | PN Solar",
+};
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

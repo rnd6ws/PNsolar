@@ -1,9 +1,14 @@
+import { Metadata } from "next";
 import { getEmployees, getChucVus, getPhongBans } from '@/features/nhan-vien/action';
 import Pagination from '@/components/Pagination';
 import { Users2, TrendingUp, UserPlus } from 'lucide-react';
 import SettingCategoryButton from '@/features/nhan-vien/components/SettingCategoryButton';
 import AddNhanVienButton from '@/features/nhan-vien/components/AddNhanVienButton';
 import NhanVienPageClient from '@/features/nhan-vien/components/NhanVienPageClient';
+
+export const metadata: Metadata = {
+    title: "Nhân viên | PN Solar",
+};
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
 
 export const dynamic = 'force-dynamic';

@@ -69,6 +69,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
         if (pathname === '/dashboard') return 'Tổng quan';
         if (pathname === '/nhan-vien') return 'Nhân viên';
         if (pathname === '/hang-hoa') return 'Hàng hóa';
+        if (pathname === '/phan-loai-hh') return 'Phân loại hàng hóa';
         if (pathname === '/settings') return 'Cài đặt';
         if (pathname === '/phan-quyen') return 'Phân quyền';
         return 'Dashboard';

@@ -37,6 +37,7 @@ import type { UserPermissions } from "@/lib/permissions";
 const mainNavDef = [
     { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard, moduleKey: "dashboard" },
     { name: "Nhân viên", href: "/nhan-vien", icon: Users, moduleKey: "nhan-vien" },
+    { name: "Phân loại hàng hóa", href: "/phan-loai-hh", icon: Package, moduleKey: "phan-loai-hh" },
     { name: "Hàng hóa", href: "/hang-hoa", icon: Package, moduleKey: "hang-hoa" },
 ];
 

@@ -18,6 +18,8 @@ export const MODULES: ModuleDefinition[] = [
     { key: 'dashboard', label: 'Tổng quan', href: '/dashboard', group: 'main' },
     { key: 'nhan-vien', label: 'Nhân viên', href: '/nhan-vien', group: 'main' },
     { key: 'hang-hoa', label: 'Hàng hóa', href: '/hang-hoa', group: 'main' },
+    { key: 'phan-loai-hh', label: 'Phân loại hàng hóa', href: '/phan-loai-hh', group: 'main' },
+    { key: 'nhom-hh', label: 'Nhóm hàng hóa', href: '/nhom-hh', group: 'main' },
     // Nhóm Hệ thống
     { key: 'settings', label: 'Cài đặt', href: '/settings', group: 'system' },
     { key: 'phan-quyen', label: 'Phân quyền', href: '/phan-quyen', group: 'system' },

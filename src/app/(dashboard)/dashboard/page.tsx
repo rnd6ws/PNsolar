@@ -79,6 +79,16 @@ const moduleGroups: ModuleGroup[] = [
         label: "Hàng hóa & Kho",
         modules: [
             {
+                name: "Phân loại hàng hóa",
+                description: "Quản lý mã và tên phân loại hàng hóa.",
+                href: "/phan-loai-hh",
+                icon: Package,
+                color: "text-emerald-700",
+                bgColor: "bg-emerald-100 dark:bg-emerald-800/50",
+                available: true,
+                moduleKey: "phan-loai-hh",
+            },
+            {
                 name: "Hàng hóa",
                 description: "Quản lý danh mục sản phẩm hàng hóa.",
                 href: "/hang-hoa",

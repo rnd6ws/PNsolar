@@ -69,6 +69,34 @@ model DMHH {
   @@map("DMHH")
 }
 
+// ===== PHÂN LOẠI HÀNG HÓA =====
+model PHANLOAI_HH {
+  ID            String    @id @default(auto()) @map("_id") @db.ObjectId
+  MA_PHAN_LOAI  String    @unique
+  TEN_PHAN_LOAI String
+  DVT_NHOM      String
+  NHOM          String?
+
+  DELETED_AT    DateTime?
+  CREATED_AT    DateTime  @default(now())
+  UPDATED_AT    DateTime  @updatedAt
+
+  @@map("PHANLOAI_HH")
+}
+
+// ===== NHÓM HÀNG HÓA =====
+model NHOM_HH {
+  ID         String    @id @default(auto()) @map("_id") @db.ObjectId
+  MA_NHOM    String    @unique
+  TEN_NHOM   String
+
+  DELETED_AT DateTime?
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
+
+  @@map("NHOM_HH")
+}
+
 // ===== PHÂN QUYỀN (Permissions) =====
 model PHAN_QUYEN {
   ID         String   @id @default(auto()) @map("_id") @db.ObjectId
