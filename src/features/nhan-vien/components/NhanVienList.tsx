@@ -203,22 +203,24 @@ export default function NhanVienList({
                                 )}
 
                                 <td className="p-5 align-middle text-right">
-                                    <PermissionGuard moduleKey="nhan-vien" level="manage">
-                                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <PermissionGuard moduleKey="nhan-vien" level="edit">
                                             <button onClick={() => setChangingPasswordEmp(emp)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Đổi mật khẩu">
                                                 <Key className="w-4 h-4" />
                                             </button>
                                             <button onClick={() => openEdit(emp)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa thông tin">
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
+                                        </PermissionGuard>
+                                        <PermissionGuard moduleKey="nhan-vien" level="delete">
                                             <button
                                                 onClick={() => handleDelete(emp.ID, emp.HO_TEN)}
                                                 className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa nhân viên"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
-                                        </div>
-                                    </PermissionGuard>
+                                        </PermissionGuard>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -256,19 +258,21 @@ export default function NhanVienList({
                             </span>
                         </div>
 
-                        <PermissionGuard moduleKey="nhan-vien" level="manage">
-                            <div className="flex items-center gap-2 pt-1 border-t">
+                        <div className="flex items-center gap-2 pt-1 border-t">
+                            <PermissionGuard moduleKey="nhan-vien" level="edit">
                                 <button onClick={() => setChangingPasswordEmp(emp)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
                                     <Key className="w-4 h-4" /> <span className="hidden sm:inline">Mật khẩu</span>
                                 </button>
                                 <button onClick={() => openEdit(emp)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
                                     <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
                                 </button>
+                            </PermissionGuard>
+                            <PermissionGuard moduleKey="nhan-vien" level="delete">
                                 <button onClick={() => handleDelete(emp.ID, emp.HO_TEN)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
-                            </div>
-                        </PermissionGuard>
+                            </PermissionGuard>
+                        </div>
                     </div>
                 ))}
                 {employees.length === 0 && (

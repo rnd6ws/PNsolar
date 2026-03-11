@@ -33,11 +33,11 @@ Tạo thư mục `src/features/[tên-tính-năng]` và chia file:
 Trong giao diện Client (`/components/`), bạn cần sử dụng Guard:
 - **Bọc nút Thao Tác (Button):**
   ```tsx
-  <PermissionGuard moduleKey="[tên-tính-năng]" level="manage">
+  <PermissionGuard moduleKey="[tên-tính-năng]" level="add"> {/* Dùng "add", "edit", "delete", "manage" tuỳ mức thao tác */}
       <button>Thêm Mới</button>
   </PermissionGuard>
   ```
-- Nếu cần Check logic JS, import hook: `const { canManage } = usePermissions(); canManage('[tên-tính-năng]')`.
+- Nếu cần Check logic JS, import hook: `const { canManage, canAdd, canEdit, canDelete } = usePermissions(); canAdd('[tên-tính-năng]')`.
 
 ### Bước 4: Tạo App Route
 Tạo `src/app/(dashboard)/[tên-tính-năng]/page.tsx` (Chỉ dùng Server Component):

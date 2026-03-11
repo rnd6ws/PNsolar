@@ -11,7 +11,7 @@ import { ShieldOff } from 'lucide-react';
 // ──────────────────────────────────────────────────────────────
 interface GuardProps {
     moduleKey: string;
-    level: 'view' | 'manage';
+    level: 'view' | 'add' | 'edit' | 'delete' | 'manage';
     children: ReactNode;
     /** Nếu không có quyền: null (ẩn hoàn toàn) hoặc custom element */
     fallback?: ReactNode | null;
@@ -26,9 +26,18 @@ export function PermissionGuard({
     fallback = null,
     showNoAccess = false,
 }: GuardProps) {
-    const { canView, canManage } = usePermissions();
+    const { canView, canAdd, canEdit, canDelete, canManage } = usePermissions();
 
-    const hasAccess = level === 'view' ? canView(moduleKey) : canManage(moduleKey);
+    const hasAccess = (() => {
+        switch (level) {
+            case 'view': return canView(moduleKey);
+            case 'add': return canAdd(moduleKey);
+            case 'edit': return canEdit(moduleKey);
+            case 'delete': return canDelete(moduleKey);
+            case 'manage': return canManage(moduleKey);
+            default: return false;
+        }
+    })();
 
     if (!hasAccess) {
         if (showNoAccess) return <NoAccessPage />;

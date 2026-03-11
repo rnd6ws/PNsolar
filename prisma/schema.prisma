@@ -76,7 +76,11 @@ model PHAN_QUYEN {
   NV         DSNV     @relation(fields: [NV_ID], references: [ID])
   MODULE     String   // e.g. "nhan-vien", "hang-hoa", "settings"
   CAN_VIEW   Boolean  @default(false)
-  CAN_MANAGE Boolean  @default(false) // Thêm / Sửa / Xóa
+  CAN_ADD    Boolean  @default(false)
+  CAN_EDIT   Boolean  @default(false)
+  CAN_DELETE Boolean  @default(false)
+  CAN_MANAGE Boolean  @default(false) // Toàn quyền
+
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt

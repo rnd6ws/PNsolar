@@ -23,7 +23,7 @@ interface Employee {
     ROLE: string;
     IS_ACTIVE: boolean;
     HINH_CA_NHAN: string | null;
-    PHAN_QUYEN: { MODULE: string; CAN_VIEW: boolean; CAN_MANAGE: boolean }[];
+    PHAN_QUYEN: { MODULE: string; CAN_VIEW: boolean; CAN_ADD: boolean; CAN_EDIT: boolean; CAN_DELETE: boolean; CAN_MANAGE: boolean }[];
 }
 
 // ─────────────────────────────────────────────
@@ -32,10 +32,16 @@ interface Employee {
 function buildPermsFromEmployee(emp: Employee): UserPermissions {
     const perms: UserPermissions = {};
     for (const mod of MODULES) {
-        perms[mod.key] = { canView: false, canManage: false };
+        perms[mod.key] = { canView: false, canAdd: false, canEdit: false, canDelete: false, canManage: false };
     }
     for (const pq of emp.PHAN_QUYEN) {
-        perms[pq.MODULE] = { canView: pq.CAN_VIEW, canManage: pq.CAN_MANAGE };
+        perms[pq.MODULE] = {
+            canView: pq.CAN_VIEW,
+            canAdd: pq.CAN_ADD,
+            canEdit: pq.CAN_EDIT,
+            canDelete: pq.CAN_DELETE,
+            canManage: pq.CAN_MANAGE
+        };
     }
     return perms;
 }
@@ -91,19 +97,36 @@ function EmployeePermRow({
     const [isPending, startTransition] = useTransition();
     const [copyFrom, setCopyFrom] = useState('');
 
-    const toggle = (moduleKey: string, field: 'canView' | 'canManage') => {
+    const toggle = (moduleKey: string, field: keyof UserPermissions[string], value: boolean) => {
         setPerms((prev) => {
-            const current = prev[moduleKey] ?? { canView: false, canManage: false };
-            const next = { ...current };
+            const current = prev[moduleKey] ?? { canView: false, canAdd: false, canEdit: false, canDelete: false, canManage: false };
+            const next = { ...current, [field]: value };
 
-            if (field === 'canView') {
-                next.canView = !next.canView;
-                // Nếu bỏ xem → bỏ manage luôn
-                if (!next.canView) next.canManage = false;
+            if (field === 'canManage') {
+                if (value) {
+                    // Cấp toàn quyền -> bật hết
+                    next.canView = next.canAdd = next.canEdit = next.canDelete = true;
+                } else {
+                    next.canView = next.canAdd = next.canEdit = next.canDelete = false;
+                }
             } else {
-                next.canManage = !next.canManage;
-                // Nếu bật manage → bật xem luôn
-                if (next.canManage) next.canView = true;
+                // Tắt 1 quyền phụ -> tắt luôn toàn quyền
+                if (!value) next.canManage = false;
+
+                // Mở Thêm/Sửa/Xóa -> bắt buộc phải mở Xem
+                if (value && ['canAdd', 'canEdit', 'canDelete'].includes(field)) {
+                    next.canView = true;
+                }
+
+                // Tắt Xem -> tắt hết
+                if (field === 'canView' && !value) {
+                    next.canAdd = next.canEdit = next.canDelete = false;
+                }
+
+                // Nếu thủ công tick đủ 4 cái -> bật toàn quyền luôn
+                if (next.canView && next.canAdd && next.canEdit && next.canDelete) {
+                    next.canManage = true;
+                }
             }
 
             return { ...prev, [moduleKey]: next };
@@ -111,15 +134,17 @@ function EmployeePermRow({
         setIsDirty(true);
     };
 
-    const toggleAll = (field: 'canView' | 'canManage', value: boolean) => {
+    const toggleAll = (type: 'viewAll' | 'manageAll' | 'removeAll') => {
         setPerms((prev) => {
             const next = { ...prev };
             for (const mod of MODULES) {
-                next[mod.key] = {
-                    canView: field === 'canView' ? value : (value ? true : next[mod.key]?.canView ?? false),
-                    canManage: field === 'canManage' ? value : (value ? false : next[mod.key]?.canManage ?? false),
-                };
-                if (field === 'canManage' && value) next[mod.key].canView = true;
+                if (type === 'viewAll') {
+                    next[mod.key] = { ...next[mod.key], canView: true };
+                } else if (type === 'manageAll') {
+                    next[mod.key] = { canView: true, canAdd: true, canEdit: true, canDelete: true, canManage: true };
+                } else if (type === 'removeAll') {
+                    next[mod.key] = { canView: false, canAdd: false, canEdit: false, canDelete: false, canManage: false };
+                }
             }
             return next;
         });
@@ -214,20 +239,20 @@ function EmployeePermRow({
                         <div className="flex items-center gap-2 text-xs">
                             <span className="text-muted-foreground font-medium whitespace-nowrap">Chọn nhanh:</span>
                             <button
-                                onClick={() => toggleAll('canView', true)}
-                                className="px-2.5 py-1 bg-sky-50 text-sky-700 border border-sky-200 rounded-md hover:bg-sky-100 transition-colors dark:bg-sky-900/20 dark:border-sky-800 dark:text-sky-400"
+                                onClick={() => toggleAll('viewAll')}
+                                className="px-2.5 py-1 bg-sky-50 text-sky-700 border border-sky-200 rounded-md hover:bg-sky-100 transition-colors"
                             >
                                 Xem tất cả
                             </button>
                             <button
-                                onClick={() => toggleAll('canManage', true)}
-                                className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md hover:bg-emerald-100 transition-colors dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400"
+                                onClick={() => toggleAll('manageAll')}
+                                className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md hover:bg-emerald-100 transition-colors"
                             >
                                 Quản lý tất cả
                             </button>
                             <button
-                                onClick={() => { toggleAll('canView', false); toggleAll('canManage', false); }}
-                                className="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-md hover:bg-rose-100 transition-colors dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-400"
+                                onClick={() => toggleAll('removeAll')}
+                                className="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-md hover:bg-rose-100 transition-colors"
                             >
                                 Thu hồi tất cả
                             </button>
@@ -259,70 +284,71 @@ function EmployeePermRow({
                         </div>
                     </div>
 
-                    {/* Permission Table */}
-                    <div className="p-5 space-y-5">
-                        {[
-                            { label: 'Nghiệp vụ chính', mods: mainMods },
-                            { label: 'Hệ thống', mods: sysMods },
-                        ].map(({ label, mods }) => (
-                            <div key={label}>
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">{label}</p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {mods.map((mod) => {
-                                        const p = perms[mod.key] ?? { canView: false, canManage: false };
-                                        return (
-                                            <div
-                                                key={mod.key}
-                                                className={cn(
-                                                    "flex items-center gap-3 px-4 py-3 rounded-lg border transition-all",
-                                                    p.canManage
-                                                        ? "bg-emerald-50/60 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800/50"
-                                                        : p.canView
-                                                            ? "bg-sky-50/60 border-sky-200 dark:bg-sky-900/10 dark:border-sky-800/50"
-                                                            : "bg-muted/30 border-border"
-                                                )}
-                                            >
-                                                {/* Module Name */}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-semibold text-foreground">{mod.label}</p>
-                                                    <p className="text-[10px] text-muted-foreground font-mono">{mod.href}</p>
-                                                </div>
+                    {/* Permission Table Layout */}
+                    <div className="p-0 overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="text-[11px] uppercase font-bold text-muted-foreground bg-muted/30 border-b tracking-wider">
+                                <tr>
+                                    <th className="px-6 py-4">Module hệ thống</th>
+                                    <th className="px-4 py-4 text-center">Xem</th>
+                                    <th className="px-4 py-4 text-center">Thêm</th>
+                                    <th className="px-4 py-4 text-center">Sửa</th>
+                                    <th className="px-4 py-4 text-center">Xóa</th>
+                                    <th className="px-6 py-4 text-center">Toàn quyền</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/50">
+                                {MODULES.map((mod) => {
+                                    const p = perms[mod.key] ?? { canView: false, canAdd: false, canEdit: false, canDelete: false, canManage: false };
+                                    return (
+                                        <tr key={mod.key} className="hover:bg-muted/10 transition-colors">
+                                            <td className="px-6 py-4 font-semibold text-foreground">{mod.label}</td>
 
-                                                {/* Toggle: Xem */}
-                                                <button
-                                                    onClick={() => toggle(mod.key, 'canView')}
-                                                    title={p.canView ? 'Đang được xem — click để thu hồi' : 'Click để cấp quyền xem'}
-                                                    className={cn(
-                                                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all select-none",
-                                                        p.canView
-                                                            ? "bg-sky-500 text-white border-sky-600 shadow-sm"
-                                                            : "bg-background text-muted-foreground border-border hover:border-sky-300 hover:text-sky-600"
-                                                    )}
-                                                >
-                                                    <Eye className="w-3.5 h-3.5" />
-                                                    Xem
-                                                </button>
-
-                                                {/* Toggle: Quản lý */}
-                                                <button
-                                                    onClick={() => toggle(mod.key, 'canManage')}
-                                                    title={p.canManage ? 'Đang quản lý — click để thu hồi' : 'Click để cấp quyền quản lý'}
-                                                    className={cn(
-                                                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all select-none",
-                                                        p.canManage
-                                                            ? "bg-emerald-500 text-white border-emerald-600 shadow-sm"
-                                                            : "bg-background text-muted-foreground border-border hover:border-emerald-300 hover:text-emerald-600"
-                                                    )}
-                                                >
-                                                    <Pencil className="w-3.5 h-3.5" />
-                                                    Quản lý
-                                                </button>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ))}
+                                            <td className="px-4 py-4 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={p.canView}
+                                                    onChange={(e) => toggle(mod.key, 'canView', e.target.checked)}
+                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary shadow-sm cursor-pointer accent-primary"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={p.canAdd}
+                                                    onChange={(e) => toggle(mod.key, 'canAdd', e.target.checked)}
+                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary shadow-sm cursor-pointer accent-primary"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={p.canEdit}
+                                                    onChange={(e) => toggle(mod.key, 'canEdit', e.target.checked)}
+                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary shadow-sm cursor-pointer accent-primary"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={p.canDelete}
+                                                    onChange={(e) => toggle(mod.key, 'canDelete', e.target.checked)}
+                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary shadow-sm cursor-pointer accent-primary"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={p.canManage}
+                                                    onChange={(e) => toggle(mod.key, 'canManage', e.target.checked)}
+                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary shadow-sm cursor-pointer accent-primary"
+                                                />
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
 
                     {/* Save / Discard Footer */}
@@ -397,14 +423,9 @@ export default function PhanQuyenClient({ employees }: { employees: Employee[] }
 
             {/* Legend */}
             <div className="flex flex-wrap items-center gap-4 px-4 py-3 bg-muted/30 border border-border rounded-xl text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">Chú thích:</span>
+                <span className="font-semibold text-foreground">Bạn có thể tick nhanh:</span>
                 <span className="flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded bg-sky-500 flex items-center justify-center"><Eye className="w-3 h-3 text-white" /></span>
-                    <strong className="text-foreground">Cấp 1 – Xem:</strong> Thấy module trong menu, có thể truy cập xem dữ liệu
-                </span>
-                <span className="flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded bg-emerald-500 flex items-center justify-center"><Pencil className="w-3 h-3 text-white" /></span>
-                    <strong className="text-foreground">Cấp 2 – Quản lý:</strong> Được thêm, sửa, xóa dữ liệu trong module
+                    <strong className="text-foreground">Toàn quyền:</strong> Tự động mở quyền Xem, Thêm, Sửa, Xóa.
                 </span>
             </div>
 

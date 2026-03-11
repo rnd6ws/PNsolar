@@ -17,24 +17,27 @@ export async function getMyPermissions(): Promise<UserPermissions> {
     // Lấy từ DB
     const rows = await prisma.pHAN_QUYEN.findMany({
         where: { NV_ID: user.userId },
-        select: { MODULE: true, CAN_VIEW: true, CAN_MANAGE: true },
+        select: { MODULE: true, CAN_VIEW: true, CAN_ADD: true, CAN_EDIT: true, CAN_DELETE: true, CAN_MANAGE: true },
     });
 
     const perms: UserPermissions = {};
     // Khởi tạo tất cả module = không có quyền
     for (const mod of MODULES) {
-        perms[mod.key] = { canView: false, canManage: false };
+        perms[mod.key] = { canView: false, canAdd: false, canEdit: false, canDelete: false, canManage: false };
     }
     // Ghi đè từ DB
     for (const row of rows) {
         perms[row.MODULE] = {
             canView: row.CAN_VIEW,
+            canAdd: row.CAN_ADD,
+            canEdit: row.CAN_EDIT,
+            canDelete: row.CAN_DELETE,
             canManage: row.CAN_MANAGE,
         };
     }
 
     // Dashboard luôn được xem
-    perms['dashboard'] = { canView: true, canManage: false };
+    perms['dashboard'] = { canView: true, canAdd: false, canEdit: false, canDelete: false, canManage: false };
 
     return perms;
 }
@@ -45,16 +48,19 @@ export async function getMyPermissions(): Promise<UserPermissions> {
 export async function getEmployeePermissions(nvId: string): Promise<UserPermissions> {
     const rows = await prisma.pHAN_QUYEN.findMany({
         where: { NV_ID: nvId },
-        select: { MODULE: true, CAN_VIEW: true, CAN_MANAGE: true },
+        select: { MODULE: true, CAN_VIEW: true, CAN_ADD: true, CAN_EDIT: true, CAN_DELETE: true, CAN_MANAGE: true },
     });
 
     const perms: UserPermissions = {};
     for (const mod of MODULES) {
-        perms[mod.key] = { canView: false, canManage: false };
+        perms[mod.key] = { canView: false, canAdd: false, canEdit: false, canDelete: false, canManage: false };
     }
     for (const row of rows) {
         perms[row.MODULE] = {
             canView: row.CAN_VIEW,
+            canAdd: row.CAN_ADD,
+            canEdit: row.CAN_EDIT,
+            canDelete: row.CAN_DELETE,
             canManage: row.CAN_MANAGE,
         };
     }
@@ -82,7 +88,7 @@ export async function getEmployeesWithPermissions() {
             IS_ACTIVE: true,
             HINH_CA_NHAN: true,
             PHAN_QUYEN: {
-                select: { MODULE: true, CAN_VIEW: true, CAN_MANAGE: true },
+                select: { MODULE: true, CAN_VIEW: true, CAN_ADD: true, CAN_EDIT: true, CAN_DELETE: true, CAN_MANAGE: true },
             },
         },
         orderBy: { HO_TEN: 'asc' },
@@ -97,7 +103,7 @@ export async function getEmployeesWithPermissions() {
 // ============================================================
 export async function updatePermissionsAction(
     nvId: string,
-    permissions: Record<string, { canView: boolean; canManage: boolean }>
+    permissions: Record<string, { canView: boolean; canAdd: boolean; canEdit: boolean; canDelete: boolean; canManage: boolean; }>
 ) {
     const currentUser = await getCurrentUser();
     if (!currentUser || currentUser.ROLE !== 'ADMIN') {
@@ -113,10 +119,16 @@ export async function updatePermissionsAction(
                     NV_ID: nvId,
                     MODULE: moduleKey,
                     CAN_VIEW: perm.canView,
+                    CAN_ADD: perm.canAdd,
+                    CAN_EDIT: perm.canEdit,
+                    CAN_DELETE: perm.canDelete,
                     CAN_MANAGE: perm.canManage,
                 },
                 update: {
                     CAN_VIEW: perm.canView,
+                    CAN_ADD: perm.canAdd,
+                    CAN_EDIT: perm.canEdit,
+                    CAN_DELETE: perm.canDelete,
                     CAN_MANAGE: perm.canManage,
                 },
             })
@@ -149,8 +161,8 @@ export async function copyPermissionsAction(fromNvId: string, toNvId: string) {
         const upserts = sourcePerms.map((p) =>
             prisma.pHAN_QUYEN.upsert({
                 where: { NV_ID_MODULE: { NV_ID: toNvId, MODULE: p.MODULE } },
-                create: { NV_ID: toNvId, MODULE: p.MODULE, CAN_VIEW: p.CAN_VIEW, CAN_MANAGE: p.CAN_MANAGE },
-                update: { CAN_VIEW: p.CAN_VIEW, CAN_MANAGE: p.CAN_MANAGE },
+                create: { NV_ID: toNvId, MODULE: p.MODULE, CAN_VIEW: p.CAN_VIEW, CAN_ADD: p.CAN_ADD, CAN_EDIT: p.CAN_EDIT, CAN_DELETE: p.CAN_DELETE, CAN_MANAGE: p.CAN_MANAGE },
+                update: { CAN_VIEW: p.CAN_VIEW, CAN_ADD: p.CAN_ADD, CAN_EDIT: p.CAN_EDIT, CAN_DELETE: p.CAN_DELETE, CAN_MANAGE: p.CAN_MANAGE },
             })
         );
 

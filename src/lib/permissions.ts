@@ -31,6 +31,9 @@ export type ModuleKey = (typeof MODULES)[number]['key'];
 export interface UserPermissions {
     [moduleKey: string]: {
         canView: boolean;
+        canAdd: boolean;
+        canEdit: boolean;
+        canDelete: boolean;
         canManage: boolean;
     };
 }
@@ -41,7 +44,7 @@ export interface UserPermissions {
 export function buildAdminPermissions(): UserPermissions {
     const perms: UserPermissions = {};
     for (const mod of MODULES) {
-        perms[mod.key] = { canView: true, canManage: true };
+        perms[mod.key] = { canView: true, canAdd: true, canEdit: true, canDelete: true, canManage: true };
     }
     return perms;
 }
@@ -50,12 +53,21 @@ export function buildAdminPermissions(): UserPermissions {
 // Helper: Kiểm tra quyền xem module
 // ────────────────────────────────────────────────────────────
 export function canView(perms: UserPermissions, moduleKey: string): boolean {
-    return perms[moduleKey]?.canView === true;
+    return perms[moduleKey]?.canView === true || perms[moduleKey]?.canManage === true;
 }
 
-// ────────────────────────────────────────────────────────────
-// Helper: Kiểm tra quyền thêm/sửa/xóa
-// ────────────────────────────────────────────────────────────
+export function canAdd(perms: UserPermissions, moduleKey: string): boolean {
+    return perms[moduleKey]?.canAdd === true || perms[moduleKey]?.canManage === true;
+}
+
+export function canEdit(perms: UserPermissions, moduleKey: string): boolean {
+    return perms[moduleKey]?.canEdit === true || perms[moduleKey]?.canManage === true;
+}
+
+export function canDelete(perms: UserPermissions, moduleKey: string): boolean {
+    return perms[moduleKey]?.canDelete === true || perms[moduleKey]?.canManage === true;
+}
+
 export function canManage(perms: UserPermissions, moduleKey: string): boolean {
     return perms[moduleKey]?.canManage === true;
 }

@@ -3,7 +3,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'pnsolar-premium-crm-2026-secret-key-v1');
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const COOKIE_NAME = 'auth_token';
 
 export interface JWTPayload {

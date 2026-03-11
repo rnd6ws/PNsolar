@@ -52,6 +52,8 @@ export default async function NhanVienPage({ searchParams }: { searchParams: Pro
                         <div className="flex items-center gap-3">
                             <PermissionGuard moduleKey="nhan-vien" level="manage">
                                 <SettingCategoryButton chucVus={chucVus as any} phongBans={phongBans as any} />
+                            </PermissionGuard>
+                            <PermissionGuard moduleKey="nhan-vien" level="add">
                                 <AddNhanVienButton chucVus={chucVus as any} phongBans={phongBans as any} />
                             </PermissionGuard>
                         </div>
