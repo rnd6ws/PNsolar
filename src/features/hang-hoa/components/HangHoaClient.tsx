@@ -436,7 +436,7 @@ export default function HangHoaClient({
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm border-collapse">
                             <thead>
-                                <tr className="border-b border-border">
+                                <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
                                     <th className="h-11 px-4 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider">Sản phẩm</th>
                                     <th className="h-11 px-4 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider">Phân loại</th>
                                     <th className="h-11 px-4 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider">Model</th>

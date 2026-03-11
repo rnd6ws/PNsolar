@@ -130,21 +130,21 @@ export default function NhanVienList({
             <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
-                        <tr className="border-b border-border hover:bg-muted/10 transition-colors bg-muted/20">
-                            <th className="h-12 px-5 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Nhân viên</th>
+                        <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
+                            <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Nhân viên</th>
                             {show('phongBan') && (
-                                <th className="h-12 px-5 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Phòng ban</th>
+                                <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Phòng ban</th>
                             )}
                             {show('chucVu') && (
-                                <th className="h-12 px-5 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Chức vụ</th>
+                                <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Chức vụ</th>
                             )}
                             {show('vaiTro') && (
-                                <th className="h-12 px-5 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Vai trò</th>
+                                <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Vai trò</th>
                             )}
                             {show('trangThai') && (
-                                <th className="h-12 px-5 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Trạng thái</th>
+                                <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Trạng thái</th>
                             )}
-                            <th className="h-12 px-5 text-right align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Hành động</th>
+                            <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">

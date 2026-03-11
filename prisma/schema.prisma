@@ -77,11 +77,33 @@ model PHANLOAI_HH {
   DVT_NHOM      String
   NHOM          String?
 
+  DONG_HHS      DONG_HH[] // Relation to DONG_HH
+
   DELETED_AT    DateTime?
   CREATED_AT    DateTime  @default(now())
   UPDATED_AT    DateTime  @updatedAt
 
   @@map("PHANLOAI_HH")
+}
+
+// ===== DÒNG HÀNG HÓA =====
+model DONG_HH {
+  ID             String      @id @default(auto()) @map("_id") @db.ObjectId
+  PHAN_LOAI_ID   String      @db.ObjectId
+  PHAN_LOAI      PHANLOAI_HH @relation(fields: [PHAN_LOAI_ID], references: [ID])
+  MA_DONG_HANG   String      @unique // ID dòng hàng
+  TEN_DONG_HANG  String      // Dòng hàng
+  TIEN_TO        String?     // Tiền tố tên
+  HANG           String?     // Hãng
+  XUAT_XU        String?     // Xuất xứ
+  DVT            String?     // ĐVT
+
+  DELETED_AT     DateTime?
+  CREATED_AT     DateTime    @default(now())
+  UPDATED_AT     DateTime    @updatedAt
+
+  @@index([PHAN_LOAI_ID])
+  @@map("DONG_HH")
 }
 
 // ===== NHÓM HÀNG HÓA =====
