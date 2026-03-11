@@ -33,6 +33,9 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "PNSolar CRM",
   description: "Hệ thống quản trị doanh nghiệp chuyên nghiệp",
+  icons: {
+    icon: "/logoPN.jpg",
+  },
 };
 
 export default function RootLayout({

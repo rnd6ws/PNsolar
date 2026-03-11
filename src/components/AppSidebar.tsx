@@ -115,10 +115,8 @@ export function AppSidebar({ permissions = {}, isAdmin = false, ...props }: AppS
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="/dashboard">
-                                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0 shadow-md">
-                                    <Command className="w-4 h-4 text-primary-foreground" />
-                                </div>
+                            <Link href="/dashboard" className="flex items-center gap-2">
+                                <img src="/logoPN.jpg" alt="PN Solar Logo" className="h-8 w-auto rounded object-contain" />
                                 <span className="font-bold text-sidebar-foreground tracking-tight uppercase text-sm">
                                     PNSolar Admin
                                 </span>
