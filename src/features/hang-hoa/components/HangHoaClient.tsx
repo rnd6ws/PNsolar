@@ -7,6 +7,7 @@ import { createProductAction, updateProductAction, deleteProductAction } from '@
 import SearchInput from '@/components/SearchInput';
 import Pagination from '@/components/Pagination';
 import FilterSelect from '@/components/FilterSelect';
+import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
 
 interface Product {
     ID: string;
@@ -360,7 +361,7 @@ export default function HangHoaClient({
     };
 
     return (
-        <>
+        <PermissionGuard moduleKey="hang-hoa" level="view" showNoAccess>
             <div className="space-y-6 animate-in fade-in duration-500">
                 {/* Page Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -370,13 +371,15 @@ export default function HangHoaClient({
                             Quản lý sản phẩm, thiết bị và linh kiện solar
                         </p>
                     </div>
-                    <button
-                        onClick={() => setIsCreateOpen(true)}
-                        className="inline-flex items-center gap-2 h-9 px-4 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 shadow-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Thêm sản phẩm
-                    </button>
+                    <PermissionGuard moduleKey="hang-hoa" level="manage">
+                        <button
+                            onClick={() => setIsCreateOpen(true)}
+                            className="inline-flex items-center gap-2 h-9 px-4 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Thêm sản phẩm
+                        </button>
+                    </PermissionGuard>
                 </div>
 
                 {/* Stats Bar */}
@@ -495,22 +498,24 @@ export default function HangHoaClient({
                                             </div>
                                         </td>
                                         <td className="p-4 align-middle text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <button
-                                                    onClick={() => setEditProduct(prod)}
-                                                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                                                    title="Chỉnh sửa"
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => setDeleteProduct(prod)}
-                                                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                                    title="Xóa"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                                            <PermissionGuard moduleKey="hang-hoa" level="manage">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        onClick={() => setEditProduct(prod)}
+                                                        className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                                        title="Chỉnh sửa"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setDeleteProduct(prod)}
+                                                        className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                                        title="Xóa"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </PermissionGuard>
                                         </td>
                                     </tr>
                                 ))}
@@ -525,13 +530,15 @@ export default function HangHoaClient({
                                                     <p className="font-medium text-foreground">Chưa có sản phẩm nào</p>
                                                     <p className="text-sm mt-1">Bắt đầu bằng cách thêm sản phẩm đầu tiên</p>
                                                 </div>
-                                                <button
-                                                    onClick={() => setIsCreateOpen(true)}
-                                                    className="inline-flex items-center gap-2 h-9 px-4 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 mt-2"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                    Thêm sản phẩm
-                                                </button>
+                                                <PermissionGuard moduleKey="hang-hoa" level="manage">
+                                                    <button
+                                                        onClick={() => setIsCreateOpen(true)}
+                                                        className="inline-flex items-center gap-2 h-9 px-4 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 mt-2"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                        Thêm sản phẩm
+                                                    </button>
+                                                </PermissionGuard>
                                             </div>
                                         </td>
                                     </tr>
@@ -566,6 +573,6 @@ export default function HangHoaClient({
                 product={deleteProduct}
                 onConfirm={handleSuccess}
             />
-        </>
+        </PermissionGuard>
     );
 }

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import type { ColumnKey } from './ColumnToggleButton';
 import ImageUpload from '@/components/ImageUpload';
 import Image from 'next/image';
+import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
 
 export default function NhanVienList({
     employees,
@@ -202,23 +203,22 @@ export default function NhanVienList({
                                 )}
 
                                 <td className="p-5 align-middle text-right">
-                                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => setChangingPasswordEmp(emp)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Đổi mật khẩu">
-                                            <Key className="w-4 h-4" />
-                                        </button>
-                                        <button className="p-1.5 hover:bg-muted text-muted-foreground hover:text-amber-600 rounded-lg transition-colors" title="Phân quyền">
-                                            <Lock className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => openEdit(emp)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa thông tin">
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(emp.ID, emp.HO_TEN)}
-                                            className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa nhân viên"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                                    <PermissionGuard moduleKey="nhan-vien" level="manage">
+                                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => setChangingPasswordEmp(emp)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Đổi mật khẩu">
+                                                <Key className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => openEdit(emp)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa thông tin">
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(emp.ID, emp.HO_TEN)}
+                                                className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa nhân viên"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </PermissionGuard>
                                 </td>
                             </tr>
                         ))}
@@ -256,20 +256,19 @@ export default function NhanVienList({
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-2 pt-1 border-t">
-                            <button onClick={() => setChangingPasswordEmp(emp)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
-                                <Key className="w-4 h-4" /> <span className="hidden sm:inline">Mật khẩu</span>
-                            </button>
-                            <button className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-amber-600 rounded-lg transition-colors text-xs font-semibold">
-                                <Lock className="w-4 h-4" /> <span className="hidden sm:inline">Quyền</span>
-                            </button>
-                            <button onClick={() => openEdit(emp)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
-                                <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
-                            </button>
-                            <button onClick={() => handleDelete(emp.ID, emp.HO_TEN)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
+                        <PermissionGuard moduleKey="nhan-vien" level="manage">
+                            <div className="flex items-center gap-2 pt-1 border-t">
+                                <button onClick={() => setChangingPasswordEmp(emp)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
+                                    <Key className="w-4 h-4" /> <span className="hidden sm:inline">Mật khẩu</span>
+                                </button>
+                                <button onClick={() => openEdit(emp)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
+                                    <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
+                                </button>
+                                <button onClick={() => handleDelete(emp.ID, emp.HO_TEN)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </PermissionGuard>
                     </div>
                 ))}
                 {employees.length === 0 && (

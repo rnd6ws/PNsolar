@@ -13,6 +13,7 @@ import {
     Layers, Archive, Map,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/features/phan-quyen/PermissionContext";
 
 // ===================== DATA =====================
 type Module = {
@@ -23,6 +24,7 @@ type Module = {
     color: string;
     bgColor: string;
     available: boolean;
+    moduleKey?: string;
 };
 
 type ModuleGroup = {
@@ -42,6 +44,7 @@ const moduleGroups: ModuleGroup[] = [
                 color: "text-blue-600",
                 bgColor: "bg-blue-50 dark:bg-blue-950/50",
                 available: true,
+                moduleKey: "nhan-vien",
             },
             {
                 name: "Chấm công",
@@ -83,6 +86,7 @@ const moduleGroups: ModuleGroup[] = [
                 color: "text-emerald-600",
                 bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
                 available: true,
+                moduleKey: "hang-hoa",
             },
             {
                 name: "Kho hàng",
@@ -197,6 +201,7 @@ const moduleGroups: ModuleGroup[] = [
                 color: "text-primary",
                 bgColor: "bg-primary/10",
                 available: true,
+                moduleKey: "dashboard",
             },
             {
                 name: "Báo cáo nhân sự",
@@ -229,6 +234,7 @@ const moduleGroups: ModuleGroup[] = [
                 color: "text-slate-600",
                 bgColor: "bg-slate-100 dark:bg-slate-800",
                 available: true,
+                moduleKey: "settings",
             },
             {
                 name: "Phân quyền",
@@ -238,6 +244,7 @@ const moduleGroups: ModuleGroup[] = [
                 color: "text-red-600",
                 bgColor: "bg-red-50 dark:bg-red-950/50",
                 available: false,
+                moduleKey: "phan-quyen",
             },
             {
                 name: "Thông báo",
@@ -265,6 +272,7 @@ const moduleGroups: ModuleGroup[] = [
 export default function HomePage() {
     const searchParams = useSearchParams();
     const search = searchParams.get('q') ?? '';
+    const { canView } = usePermissions();
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
     const toggleFavorite = (name: string) => {
@@ -279,11 +287,17 @@ export default function HomePage() {
     const filtered = moduleGroups
         .map((group) => ({
             ...group,
-            modules: group.modules.filter(
-                (m) =>
+            modules: group.modules.filter((m) => {
+                // Lọc theo search
+                const matchSearch =
                     m.name.toLowerCase().includes(search.toLowerCase()) ||
-                    m.description.toLowerCase().includes(search.toLowerCase())
-            ),
+                    m.description.toLowerCase().includes(search.toLowerCase());
+
+                // Lọc theo quyền
+                const matchPermission = m.moduleKey ? canView(m.moduleKey) : true;
+
+                return matchSearch && matchPermission;
+            }),
         }))
         .filter((g) => g.modules.length > 0);
 

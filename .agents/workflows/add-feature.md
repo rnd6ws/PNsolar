@@ -49,3 +49,11 @@ Tạo trang ở `src/app/(dashboard)/[tên-tính-năng]/page.tsx`:
 - Đây là một **Server Component** (Tuyệt đối không có `"use client"`).
 - Fetch data trực tiếp qua hàm `get...` được lấy từ `action.ts`.
 - Đọc `searchParams` để xác định filter người dùng muốn. Truyền data vào Client Component (như cái List, Table) dọn sẵn ở Bước 5.
+
+## 7. Khai báo & Phân Quyền Tính năng mới (BẮT BUỘC)
+Sau khi tạo xong giao diện và logic, bạn **phải** cho tính năng này vào mạng lưới quản trị phân quyền:
+1. **Đăng ký danh tính:** Mở `src/lib/permissions.ts` và khai báo object tính năng mới vào mảng `MODULES`. VD: `{ key: '[tên-tính-năng]', label: '...', group: '...' }`
+2. **Bảo vệ Trang:** Trong file Page Client (thuộc `components/`), bọc toàn bộ mã HTML rễ bằng `<PermissionGuard moduleKey="[tên-tính-năng]" level="view" showNoAccess>` để tự chặn truy cập trái phép.
+3. **Bảo vệ Nút thao tác:** Bọc các nút tạo mới, chỉnh sửa, xóa bằng `<PermissionGuard moduleKey="[tên-tính-năng]" level="manage">`.
+4. **Gắn Menu Trái (Sidebar):** Mở `src/components/AppSidebar.tsx` và thêm menu mới kèm `moduleKey: '[tên-tính-năng]'` (nó sẽ tự động bị giấu đi nếu nhân viên không có quyền).
+5. **Gắn Dashboard:** Mở `src/app/(dashboard)/dashboard/page.tsx`, thêm thông tin tính năng vào mảng `moduleGroups` dưới dạng card và gắn biến `moduleKey`. Thẻ card sẽ tự động ẩn đi đối với staff thiếu quyền.
