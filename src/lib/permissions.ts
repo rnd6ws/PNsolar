@@ -17,6 +17,7 @@ export const MODULES: ModuleDefinition[] = [
     // Nhóm Chính
     { key: 'dashboard', label: 'Tổng quan', href: '/dashboard', group: 'main' },
     { key: 'nhan-vien', label: 'Nhân viên', href: '/nhan-vien', group: 'main' },
+    { key: 'khach-hang', label: 'Khách hàng', href: '/khach-hang', group: 'main' },
     { key: 'hang-hoa', label: 'Hàng hóa', href: '/hang-hoa', group: 'main' },
     { key: 'phan-loai-hh', label: 'Phân loại hàng hóa', href: '/phan-loai-hh', group: 'main' },
     { key: 'nhom-hh', label: 'Nhóm hàng hóa', href: '/nhom-hh', group: 'main' },
