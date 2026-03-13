@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo } from "react";
-import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { deleteKhachHang, updateKhachHang, createKhachHang, lookupCompanyByTaxCode } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -26,6 +26,7 @@ function formatDate(val: any) {
 }
 
 import { KhachHangForm } from "./KhachHangForm";
+import NguoiLienHeModal from "@/features/nguoi-lh/components/NguoiLienHeModal";
 
 // ─── Màn hình xem chi tiết ────────────────────────────────────
 function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClose }: { kh: any; nhanViens: { ID: string; HO_TEN: string }[]; nguoiGioiThieus: { ID: string; TEN_NGT: string }[]; onClose: () => void }) {
@@ -122,6 +123,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>(null);
+    const [nguoiLHItem, setNguoiLHItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
 
     // default show all if not provided
     const cols = visibleColumns ?? ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nguonSales"] as ColumnKey[];
@@ -157,8 +159,8 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
 
     const SortIcon = ({ columnKey }: { columnKey: string }) => {
         if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40 group-hover:opacity-100" />;
-        return sortConfig.direction === 'asc' 
-            ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary" /> 
+        return sortConfig.direction === 'asc'
+            ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary" />
             : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary" />;
     };
 
@@ -332,6 +334,13 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
+                                        <button
+                                            onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
+                                            className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors"
+                                            title="Người liên hệ"
+                                        >
+                                            <UserPlus className="w-4 h-4" />
+                                        </button>
                                         <PermissionGuard moduleKey="khach-hang" level="edit">
                                             <button
                                                 onClick={() => setEditItem(item)}
@@ -404,6 +413,13 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết khách hàng">
                 {viewItem && <KhachHangDetail kh={viewItem} nhanViens={nhanViens} nguoiGioiThieus={nguoiGioiThieus} onClose={() => setViewItem(null)} />}
             </Modal>
+
+            {/* Modal: Người liên hệ */}
+            <NguoiLienHeModal
+                isOpen={!!nguoiLHItem}
+                onClose={() => setNguoiLHItem(null)}
+                khachHang={nguoiLHItem}
+            />
         </>
     );
 }
