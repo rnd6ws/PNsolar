@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
+import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { deleteKhachHang, updateKhachHang, createKhachHang, lookupCompanyByTaxCode } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -121,10 +121,46 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
     const [viewItem, setViewItem] = useState<any>(null);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>(null);
 
     // default show all if not provided
-    const cols = visibleColumns ?? ["lienHe", "nhomPhanLoai", "nguonSales", "ngayGhiNhan"] as ColumnKey[];
+    const cols = visibleColumns ?? ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nguonSales"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
+
+    const sortedData = useMemo(() => {
+        if (!sortConfig) return data;
+        return [...data].sort((a, b) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+
+            if (sortConfig.key === "NGAY_GHI_NHAN") {
+                aVal = aVal ? new Date(aVal).getTime() : 0;
+                bVal = bVal ? new Date(bVal).getTime() : 0;
+            } else {
+                aVal = (aVal || "").toString().toLowerCase();
+                bVal = (bVal || "").toString().toLowerCase();
+            }
+
+            if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+            return 0;
+        });
+    }, [data, sortConfig]);
+
+    const handleSort = (key: string) => {
+        let direction: "asc" | "desc" = "asc";
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+            direction = "desc";
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const SortIcon = ({ columnKey }: { columnKey: string }) => {
+        if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40 group-hover:opacity-100" />;
+        return sortConfig.direction === 'asc' 
+            ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary" /> 
+            : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary" />;
+    };
 
     const handleCreate = async (formData: any, hinhAnh: string, lat: string, long: string) => {
         setLoading(true);
@@ -166,46 +202,65 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                     <thead>
                         {/* Header dùng bg-primary/10 giống phan-loai-hh */}
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] w-10">#</th>
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Khách hàng</th>
-                            {show("lienHe") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden md:table-cell">Liên hệ</th>
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] w-10">#</th>
+                            {show("ngayGhiNhan") && (
+                                <th onClick={() => handleSort("NGAY_GHI_NHAN")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden xl:table-cell w-28 whitespace-nowrap cursor-pointer group hover:text-foreground">
+                                    Ngày GN <SortIcon columnKey="NGAY_GHI_NHAN" />
+                                </th>
                             )}
-                            {show("nhomPhanLoai") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden lg:table-cell">Nhóm / Phân loại</th>
+                            <th onClick={() => handleSort("TEN_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground">
+                                Khách hàng <SortIcon columnKey="TEN_KH" />
+                            </th>
+                            {show("lienHe") && (
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden md:table-cell">Liên hệ</th>
+                            )}
+                            {show("nhom") && (
+                                <th onClick={() => handleSort("NHOM_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden lg:table-cell cursor-pointer group hover:text-foreground">
+                                    Nhóm KH <SortIcon columnKey="NHOM_KH" />
+                                </th>
+                            )}
+                            {show("phanLoai") && (
+                                <th onClick={() => handleSort("PHAN_LOAI")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden lg:table-cell cursor-pointer group hover:text-foreground">
+                                    Phân loại <SortIcon columnKey="PHAN_LOAI" />
+                                </th>
+                            )}
+                            {show("nhanVienPT") && (
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden lg:table-cell">NV phụ trách</th>
                             )}
                             {show("nguonSales") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden xl:table-cell">Nguồn / Sales</th>
-                            )}
-                            {show("ngayGhiNhan") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden xl:table-cell">Ngày GN</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden xl:table-cell">Nguồn / Sales</th>
                             )}
                             {show("diaChi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden xl:table-cell">Địa chỉ</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden xl:table-cell">Địa chỉ</th>
                             )}
                             {show("mst") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden xl:table-cell">MST</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden xl:table-cell">MST</th>
                             )}
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] text-right">Hành động</th>
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] text-right">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {data.map((item, idx) => (
+                        {sortedData.map((item, idx) => (
                             <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
                                 <td className="px-4 py-3 align-middle text-muted-foreground text-xs">{idx + 1}</td>
+                                {show("ngayGhiNhan") && (
+                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground font-medium whitespace-nowrap">
+                                        {formatDate(item.NGAY_GHI_NHAN)}
+                                    </td>
+                                )}
                                 <td className="px-4 py-3 align-middle">
                                     <div className="flex items-center gap-3">
                                         {item.HINH_ANH ? (
-                                            <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-border shrink-0">
+                                            <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-border shrink-0">
                                                 <Image src={item.HINH_ANH} alt={item.TEN_KH} fill className="object-cover" />
                                             </div>
                                         ) : (
-                                            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                                                 <UserCircle className="w-5 h-5 text-primary/50" />
                                             </div>
                                         )}
                                         <div>
-                                            <p className="font-semibold text-foreground leading-tight">{item.TEN_KH}</p>
+                                            <p className="font-medium text-foreground text-sm leading-tight">{item.TEN_KH}</p>
                                         </div>
                                     </div>
                                 </td>
@@ -225,20 +280,29 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         </div>
                                     </td>
                                 )}
-                                {show("nhomPhanLoai") && (
+                                {show("nhom") && (
                                     <td className="px-4 py-3 align-middle hidden lg:table-cell">
-                                        <div className="space-y-1">
-                                            {item.NHOM_KH && (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                                    {item.NHOM_KH}
-                                                </span>
-                                            )}
-                                            {item.PHAN_LOAI && (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
-                                                    {item.PHAN_LOAI}
-                                                </span>
-                                            )}
-                                        </div>
+                                        {item.NHOM_KH ? (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                                {item.NHOM_KH}
+                                            </span>
+                                        ) : <span className="text-xs text-muted-foreground">—</span>}
+                                    </td>
+                                )}
+                                {show("phanLoai") && (
+                                    <td className="px-4 py-3 align-middle hidden lg:table-cell">
+                                        {item.PHAN_LOAI ? (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                                                {item.PHAN_LOAI}
+                                            </span>
+                                        ) : <span className="text-xs text-muted-foreground">—</span>}
+                                    </td>
+                                )}
+                                {show("nhanVienPT") && (
+                                    <td className="px-4 py-3 align-middle hidden lg:table-cell text-xs text-muted-foreground">
+                                        {item.SALES_PT
+                                            ? <span className="font-medium text-foreground">{nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT}</span>
+                                            : <span>—</span>}
                                     </td>
                                 )}
                                 {show("nguonSales") && (
@@ -247,11 +311,6 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                             {item.NGUON && <p>{item.NGUON}</p>}
                                             {item.SALES_PT && <p className="font-medium text-foreground">{nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT}</p>}
                                         </div>
-                                    </td>
-                                )}
-                                {show("ngayGhiNhan") && (
-                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground">
-                                        {formatDate(item.NGAY_GHI_NHAN)}
                                     </td>
                                 )}
                                 {show("diaChi") && (

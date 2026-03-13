@@ -240,6 +240,8 @@ model KHTN {
   LAT              Float?
   LONG             Float?
 
+  NGUOI_DAI_DIEN   NGUOI_DAI_DIEN[]
+
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
 
@@ -258,4 +260,22 @@ model NGUOI_GIOI_THIEU {
   UPDATED_AT DateTime @updatedAt
 
   @@map("NGUOI_GIOI_THIEU")
+}
+
+// ===== NGƯỜI ĐẠI DIỆN =====
+model NGUOI_DAI_DIEN {
+  ID         String    @id @default(auto()) @map("_id") @db.ObjectId
+  ID_KH      String    @db.ObjectId
+  KH         KHTN      @relation(fields: [ID_KH], references: [ID], onDelete: Cascade)
+  NGUOI_DD   String
+  CHUC_VU    String?
+  SDT        String?
+  EMAIL      String?
+  NGAY_SINH  DateTime?
+
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
+
+  @@index([ID_KH])
+  @@map("NGUOI_DAI_DIEN")
 }

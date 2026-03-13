@@ -19,7 +19,7 @@ interface Props {
     nguonOptions: { label: string; value: string }[];
 }
 
-const DEFAULT_COLUMNS: ColumnKey[] = ["lienHe", "nhomPhanLoai", "nguonSales", "ngayGhiNhan"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nguonSales"];
 
 export default function KhachHangPageClient({
     data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus,
