@@ -1,0 +1,531 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search } from "lucide-react";
+import { toast } from "sonner";
+import { deleteKhachHang, updateKhachHang, createKhachHang, lookupCompanyByTaxCode } from "../action";
+import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
+import Modal from "@/components/Modal";
+import ImageUpload from "@/components/ImageUpload";
+import Image from "next/image";
+import type { ColumnKey } from "./ColumnToggleButton";
+
+interface Props {
+    data: any[];
+    phanLoais: { ID: string; PL_KH: string }[];
+    nguons: { ID: string; NGUON: string }[];
+    nhoms: { ID: string; NHOM: string }[];
+    visibleColumns?: ColumnKey[];
+}
+
+function formatDate(val: any) {
+    if (!val) return "";
+    return new Date(val).toLocaleDateString("vi-VN");
+}
+
+// ─── Form khách hàng dùng chung cho Add & Edit ──────────────
+function KhachHangForm({
+    defaultValues,
+    phanLoais,
+    nguons,
+    nhoms,
+    loading,
+    onSubmit,
+    onCancel,
+    submitLabel,
+}: {
+    defaultValues?: any;
+    phanLoais: { ID: string; PL_KH: string }[];
+    nguons: { ID: string; NGUON: string }[];
+    nhoms: { ID: string; NHOM: string }[];
+    loading: boolean;
+    onSubmit: (data: any, hinh: string) => void;
+    onCancel: () => void;
+    submitLabel: string;
+}) {
+    const [hinhAnh, setHinhAnh] = useState(defaultValues?.HINH_ANH || "");
+    const formRef = useRef<HTMLFormElement>(null);
+    const [lookupLoading, setLookupLoading] = useState(false);
+
+    const handleLookup = async () => {
+        const taxCodeElement = formRef.current?.elements.namedItem("MST") as HTMLInputElement;
+        const taxCode = taxCodeElement?.value;
+        if (!taxCode || taxCode.trim() === '') {
+            toast.warning('Vui lòng nhập mã số thuế trước khi tra cứu');
+            return;
+        }
+
+        setLookupLoading(true);
+        const res = await lookupCompanyByTaxCode(taxCode);
+        if (res.success && res.data) {
+            if (formRef.current) {
+                const tenKhEl = formRef.current.elements.namedItem("TEN_KH") as HTMLInputElement;
+                const tenVtEl = formRef.current.elements.namedItem("TEN_VT") as HTMLInputElement;
+                const diaChiEl = formRef.current.elements.namedItem("DIA_CHI") as HTMLInputElement;
+
+                if (tenKhEl) tenKhEl.value = res.data.name || tenKhEl.value;
+                if (tenVtEl) tenVtEl.value = res.data.shortName || tenVtEl.value;
+                if (diaChiEl) diaChiEl.value = res.data.address || diaChiEl.value;
+            }
+            toast.success("Đã cập nhật thông tin công ty từ mã số thuế");
+        } else {
+            toast.error(res.message || "Không tìm thấy thông tin doanh nghiệp");
+        }
+        setLookupLoading(false);
+    };
+
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        const data = Object.fromEntries(fd.entries());
+        onSubmit(data, hinhAnh);
+    };
+
+    return (
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5 pt-2">
+            {/* Avatar */}
+            <div className="flex justify-center pb-1">
+                <ImageUpload value={hinhAnh} onChange={setHinhAnh} size={88} />
+            </div>
+
+            {/* Row 1: Mã & Tên KH */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tên khách hàng <span className="text-destructive">*</span></label>
+                    <input name="TEN_KH" required className="input-modern" placeholder="Nguyễn Văn A" defaultValue={defaultValues?.TEN_KH} />
+                </div>
+            </div>
+
+            {/* Row 2: Tên viết tắt & Ngày ghi nhận */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tên viết tắt</label>
+                    <input name="TEN_VT" className="input-modern" placeholder="NVA" defaultValue={defaultValues?.TEN_VT} />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Ngày ghi nhận</label>
+                    <input name="NGAY_GHI_NHAN" type="date" className="input-modern" defaultValue={defaultValues?.NGAY_GHI_NHAN ? new Date(defaultValues.NGAY_GHI_NHAN).toISOString().split("T")[0] : ""} />
+                </div>
+            </div>
+
+            {/* Row 3: SĐT & Email */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Điện thoại</label>
+                    <input name="DIEN_THOAI" className="input-modern" placeholder="09xxx..." defaultValue={defaultValues?.DIEN_THOAI} />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Email</label>
+                    <input name="EMAIL" type="email" className="input-modern" placeholder="email@gmail.com" defaultValue={defaultValues?.EMAIL} />
+                </div>
+            </div>
+
+            {/* Row 4: MST & Ngày thành lập */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mã số thuế</label>
+                    <div className="flex gap-2">
+                        <input name="MST" className="input-modern" placeholder="0123456789" defaultValue={defaultValues?.MST} />
+                        <button type="button" onClick={handleLookup} disabled={lookupLoading} className="btn-premium-secondary flex items-center justify-center gap-1.5 px-3">
+                            {lookupLoading ? <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" /> : <Search className="w-4 h-4" />}
+                        </button>
+                    </div>
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Ngày thành lập</label>
+                    <input name="NGAY_THANH_LAP" type="date" className="input-modern" defaultValue={defaultValues?.NGAY_THANH_LAP ? new Date(defaultValues.NGAY_THANH_LAP).toISOString().split("T")[0] : ""} />
+                </div>
+            </div>
+
+            {/* Địa chỉ */}
+            <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Địa chỉ</label>
+                <input name="DIA_CHI" className="input-modern" placeholder="123 Đường ABC, Quận 1, TP.HCM" defaultValue={defaultValues?.DIA_CHI} />
+            </div>
+
+            {/* Row 5: Nhóm KH & Phân loại */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Nhóm KH</label>
+                    <select name="NHOM_KH" className="input-modern" defaultValue={defaultValues?.NHOM_KH || ""}>
+                        <option value="">-- Chọn nhóm --</option>
+                        {nhoms.map((n) => <option key={n.ID} value={n.NHOM}>{n.NHOM}</option>)}
+                    </select>
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Phân loại</label>
+                    <select name="PHAN_LOAI" className="input-modern" defaultValue={defaultValues?.PHAN_LOAI || ""}>
+                        <option value="">-- Chọn phân loại --</option>
+                        {phanLoais.map((p) => <option key={p.ID} value={p.PL_KH}>{p.PL_KH}</option>)}
+                    </select>
+                </div>
+            </div>
+
+            {/* Row 6: Nguồn & Người giới thiệu */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Nguồn</label>
+                    <select name="NGUON" className="input-modern" defaultValue={defaultValues?.NGUON || ""}>
+                        <option value="">-- Chọn nguồn --</option>
+                        {nguons.map((n) => <option key={n.ID} value={n.NGUON}>{n.NGUON}</option>)}
+                    </select>
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Người giới thiệu</label>
+                    <input name="NGUOI_GIOI_THIEU" className="input-modern" placeholder="Tên người giới thiệu" defaultValue={defaultValues?.NGUOI_GIOI_THIEU} />
+                </div>
+            </div>
+
+            {/* Row 7: Sales PT & NV CS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Sales phụ trách</label>
+                    <input name="SALES_PT" className="input-modern" placeholder="Tên nhân viên sales" defaultValue={defaultValues?.SALES_PT} />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">NV Chăm sóc</label>
+                    <input name="NV_CS" className="input-modern" placeholder="Tên nhân viên CS" defaultValue={defaultValues?.NV_CS} />
+                </div>
+            </div>
+
+            {/* Row 8: LAT & LONG */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vĩ độ (LAT)</label>
+                    <input name="LAT" type="number" step="any" className="input-modern" placeholder="10.762622" defaultValue={defaultValues?.LAT} />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Kinh độ (LONG)</label>
+                    <input name="LONG" type="number" step="any" className="input-modern" placeholder="106.660172" defaultValue={defaultValues?.LONG} />
+                </div>
+            </div>
+
+            {/* Lịch sử */}
+            <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Lịch sử ghi chú</label>
+                <textarea name="LICH_SU" rows={3} className="input-modern resize-none" placeholder="Ghi chú lịch sử giao dịch..." defaultValue={defaultValues?.LICH_SU} />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+                <button type="button" onClick={onCancel} className="btn-premium-secondary flex-1">Hủy bỏ</button>
+                <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
+                    {loading ? "Đang xử lý..." : submitLabel}
+                </button>
+            </div>
+        </form>
+    );
+}
+
+// ─── Màn hình xem chi tiết ────────────────────────────────────
+function KhachHangDetail({ kh, onClose }: { kh: any; onClose: () => void }) {
+    return (
+        <div className="space-y-5 pt-2">
+            <div className="flex items-center gap-4 pb-4 border-b border-border">
+                {kh.HINH_ANH ? (
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border shadow-sm shrink-0">
+                        <Image src={kh.HINH_ANH} alt={kh.TEN_KH} fill className="object-cover" />
+                    </div>
+                ) : (
+                    <div className="w-16 h-16 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                        <UserCircle className="w-8 h-8 text-primary/50" />
+                    </div>
+                )}
+                <div>
+                    <h3 className="text-lg font-bold text-foreground">{kh.TEN_KH}</h3>
+                    {kh.TEN_VT && <p className="text-sm text-muted-foreground">{kh.TEN_VT}</p>}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                {kh.DIEN_THOAI && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="w-4 h-4 shrink-0 text-primary/60" />
+                        <span>{kh.DIEN_THOAI}</span>
+                    </div>
+                )}
+                {kh.EMAIL && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="w-4 h-4 shrink-0 text-primary/60" />
+                        <span className="truncate">{kh.EMAIL}</span>
+                    </div>
+                )}
+                {kh.DIA_CHI && (
+                    <div className="flex items-start gap-2 text-muted-foreground col-span-2">
+                        <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-primary/60" />
+                        <span>{kh.DIA_CHI}</span>
+                    </div>
+                )}
+                {kh.MST && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Building2 className="w-4 h-4 shrink-0 text-primary/60" />
+                        <span>MST: {kh.MST}</span>
+                    </div>
+                )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-sm">
+                {[
+                    { label: "Nhóm KH", value: kh.NHOM_KH },
+                    { label: "Phân loại", value: kh.PHAN_LOAI },
+                    { label: "Nguồn", value: kh.NGUON },
+                    { label: "Người giới thiệu", value: kh.NGUOI_GIOI_THIEU },
+                    { label: "Sales phụ trách", value: kh.SALES_PT },
+                    { label: "NV chăm sóc", value: kh.NV_CS },
+                    { label: "Ngày ghi nhận", value: formatDate(kh.NGAY_GHI_NHAN) },
+                    { label: "Ngày thành lập", value: formatDate(kh.NGAY_THANH_LAP) },
+                ].map(({ label, value }) => value ? (
+                    <div key={label} className="bg-muted/30 rounded-lg p-3">
+                        <p className="text-xs text-muted-foreground font-medium mb-0.5">{label}</p>
+                        <p className="font-semibold text-foreground">{value}</p>
+                    </div>
+                ) : null)}
+            </div>
+
+            {kh.LICH_SU && (
+                <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground font-medium mb-1.5">Lịch sử ghi chú</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{kh.LICH_SU}</p>
+                </div>
+            )}
+
+            {(kh.LAT || kh.LONG) && (
+                <div className="bg-muted/30 rounded-lg p-3 text-sm">
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Tọa độ</p>
+                    <p className="font-mono text-foreground">LAT: {kh.LAT} | LONG: {kh.LONG}</p>
+                </div>
+            )}
+
+            <div className="pt-2">
+                <button onClick={onClose} className="btn-premium-secondary w-full">Đóng</button>
+            </div>
+        </div>
+    );
+}
+
+// ─── Component chính ──────────────────────────────────────────
+export default function KhachHangList({ data, phanLoais, nguons, nhoms, visibleColumns }: Props) {
+    const [editItem, setEditItem] = useState<any>(null);
+    const [viewItem, setViewItem] = useState<any>(null);
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    // default show all if not provided
+    const cols = visibleColumns ?? ["lienHe", "nhomPhanLoai", "nguonSales", "ngayGhiNhan"] as ColumnKey[];
+    const show = (col: ColumnKey) => cols.includes(col);
+
+    const handleCreate = async (formData: any, hinhAnh: string) => {
+        setLoading(true);
+        const res = await createKhachHang({ ...formData, HINH_ANH: hinhAnh });
+        if (res.success) {
+            toast.success("Đã thêm khách hàng mới");
+            setIsAddOpen(false);
+        } else {
+            toast.error((res as any).message || "Lỗi thêm khách hàng");
+        }
+        setLoading(false);
+    };
+
+    const handleUpdate = async (formData: any, hinhAnh: string) => {
+        if (!editItem) return;
+        setLoading(true);
+        const res = await updateKhachHang(editItem.ID, { ...formData, HINH_ANH: hinhAnh });
+        if (res.success) {
+            toast.success("Cập nhật thành công");
+            setEditItem(null);
+        } else {
+            toast.error((res as any).message || "Lỗi cập nhật");
+        }
+        setLoading(false);
+    };
+
+    const handleDelete = async (id: string, name: string) => {
+        if (!confirm(`Bạn có chắc muốn xóa khách hàng "${name}" không?`)) return;
+        const res = await deleteKhachHang(id);
+        if (res.success) toast.success("Đã xóa khách hàng");
+        else toast.error((res as any).message || "Lỗi xóa");
+    };
+
+    return (
+        <>
+            {/* Table */}
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                        {/* Header dùng bg-primary/10 giống phan-loai-hh */}
+                        <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] w-10">#</th>
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Khách hàng</th>
+                            {show("lienHe") && (
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden md:table-cell">Liên hệ</th>
+                            )}
+                            {show("nhomPhanLoai") && (
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden lg:table-cell">Nhóm / Phân loại</th>
+                            )}
+                            {show("nguonSales") && (
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden xl:table-cell">Nguồn / Sales</th>
+                            )}
+                            {show("ngayGhiNhan") && (
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden xl:table-cell">Ngày GN</th>
+                            )}
+                            {show("diaChi") && (
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden xl:table-cell">Địa chỉ</th>
+                            )}
+                            {show("mst") && (
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] hidden xl:table-cell">MST</th>
+                            )}
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] text-right">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                        {data.map((item, idx) => (
+                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
+                                <td className="px-4 py-3 align-middle text-muted-foreground text-xs">{idx + 1}</td>
+                                <td className="px-4 py-3 align-middle">
+                                    <div className="flex items-center gap-3">
+                                        {item.HINH_ANH ? (
+                                            <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-border shrink-0">
+                                                <Image src={item.HINH_ANH} alt={item.TEN_KH} fill className="object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                                <UserCircle className="w-5 h-5 text-primary/50" />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <p className="font-semibold text-foreground leading-tight">{item.TEN_KH}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                {show("lienHe") && (
+                                    <td className="px-4 py-3 align-middle hidden md:table-cell">
+                                        <div className="space-y-0.5">
+                                            {item.DIEN_THOAI && (
+                                                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                    <Phone className="w-3 h-3 shrink-0" /> {item.DIEN_THOAI}
+                                                </p>
+                                            )}
+                                            {item.EMAIL && (
+                                                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                    <Mail className="w-3 h-3 shrink-0" /> <span className="truncate max-w-[160px]">{item.EMAIL}</span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    </td>
+                                )}
+                                {show("nhomPhanLoai") && (
+                                    <td className="px-4 py-3 align-middle hidden lg:table-cell">
+                                        <div className="space-y-1">
+                                            {item.NHOM_KH && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                                    {item.NHOM_KH}
+                                                </span>
+                                            )}
+                                            {item.PHAN_LOAI && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                                                    {item.PHAN_LOAI}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                )}
+                                {show("nguonSales") && (
+                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground">
+                                        <div>
+                                            {item.NGUON && <p>{item.NGUON}</p>}
+                                            {item.SALES_PT && <p className="font-medium text-foreground">{item.SALES_PT}</p>}
+                                        </div>
+                                    </td>
+                                )}
+                                {show("ngayGhiNhan") && (
+                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground">
+                                        {formatDate(item.NGAY_GHI_NHAN)}
+                                    </td>
+                                )}
+                                {show("diaChi") && (
+                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground max-w-[180px] truncate">
+                                        {item.DIA_CHI || "—"}
+                                    </td>
+                                )}
+                                {show("mst") && (
+                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground font-mono">
+                                        {item.MST || "—"}
+                                    </td>
+                                )}
+                                <td className="px-4 py-3 align-middle text-right">
+                                    <div className="flex justify-end gap-1">
+                                        <button
+                                            onClick={() => setViewItem(item)}
+                                            className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors"
+                                            title="Xem chi tiết"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                        <PermissionGuard moduleKey="khach-hang" level="edit">
+                                            <button
+                                                onClick={() => setEditItem(item)}
+                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors"
+                                                title="Sửa"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                        </PermissionGuard>
+                                        <PermissionGuard moduleKey="khach-hang" level="delete">
+                                            <button
+                                                onClick={() => handleDelete(item.ID, item.TEN_KH)}
+                                                className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
+                                                title="Xóa"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </PermissionGuard>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        {data.length === 0 && (
+                            <tr>
+                                <td colSpan={10} className="px-6 py-16 text-center text-muted-foreground italic">
+                                    Chưa có khách hàng nào. Hãy thêm mới!
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Modal: Thêm */}
+            <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Thêm khách hàng mới">
+                <KhachHangForm
+                    phanLoais={phanLoais}
+                    nguons={nguons}
+                    nhoms={nhoms}
+                    loading={loading}
+                    onSubmit={handleCreate}
+                    onCancel={() => setIsAddOpen(false)}
+                    submitLabel="Lưu khách hàng"
+                />
+            </Modal>
+
+            {/* Modal: Sửa */}
+            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật khách hàng">
+                {editItem && (
+                    <KhachHangForm
+                        defaultValues={editItem}
+                        phanLoais={phanLoais}
+                        nguons={nguons}
+                        nhoms={nhoms}
+                        loading={loading}
+                        onSubmit={handleUpdate}
+                        onCancel={() => setEditItem(null)}
+                        submitLabel="Cập nhật"
+                    />
+                )}
+            </Modal>
+
+            {/* Modal: Xem chi tiết */}
+            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết khách hàng">
+                {viewItem && <KhachHangDetail kh={viewItem} onClose={() => setViewItem(null)} />}
+            </Modal>
+        </>
+    );
+}

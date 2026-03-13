@@ -47,6 +47,16 @@ const moduleGroups: ModuleGroup[] = [
                 moduleKey: "nhan-vien",
             },
             {
+                name: "Khách hàng",
+                description: "Quản lý thông tin và hồ sơ khách hàng tự nhiên.",
+                href: "/khach-hang",
+                icon: UserCheck,
+                color: "text-indigo-600",
+                bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
+                available: true,
+                moduleKey: "khach-hang",
+            },
+            {
                 name: "Chấm công",
                 description: "Quản lý chấm công, ca làm việc.",
                 href: "/cham-cong",
