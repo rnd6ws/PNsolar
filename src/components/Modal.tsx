@@ -29,7 +29,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
                     </button>
                 </div>
 
-                <div className="p-8 overflow-y-auto max-h-[85vh]">
+                <div className="p-5 md:p-6 overflow-y-auto max-h-[85vh]">
                     {children}
                 </div>
             </div>

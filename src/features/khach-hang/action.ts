@@ -287,7 +287,7 @@ export async function lookupCompanyByTaxCode(taxCode: string) {
     if (!taxCode || taxCode.trim() === '') {
         return { success: false, message: 'Vui lòng nhập mã số thuế' };
     }
-    
+
     try {
         const response = await fetch(`https://api.vietqr.io/v2/business/${taxCode}`);
         const data = await response.json();
@@ -302,9 +302,38 @@ export async function lookupCompanyByTaxCode(taxCode: string) {
                 }
             };
         } else {
-             return { success: false, message: 'Không tìm thấy thông tin doanh nghiệp' };
+            return { success: false, message: 'Không tìm thấy thông tin doanh nghiệp' };
         }
     } catch (error: any) {
-        return { success: false, message: 'Lỗi khi tra cứu MST: ' + error.message };
+        return { success: false, message: 'Lỗi khi tra cứu MST vui lòng kiểm tra lại' };
+    }
+}
+
+// ─── Lấy tọa độ từ địa chỉ ───────────────────────────────────────
+
+export async function getCoordinatesFromAddress(address: string) {
+    if (!address || address.trim() === '') {
+        return { success: false, message: 'Vui lòng nhập địa chỉ' };
+    }
+
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
+        );
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+            return {
+                success: true,
+                data: {
+                    lat: data[0].lat,
+                    lon: data[0].lon
+                }
+            };
+        } else {
+            return { success: false, message: 'Không tìm thấy tọa độ cho địa chỉ này' };
+        }
+    } catch (error: any) {
+        return { success: false, message: 'Lỗi khi lấy tọa độ vui lòng kiểm tra lại' };
     }
 }
