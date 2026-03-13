@@ -262,7 +262,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                             </div>
                                         )}
                                         <div>
-                                            <p className="font-medium text-foreground text-sm leading-tight">{item.TEN_KH}</p>
+                                            <p className="font-normal text-foreground text-sm leading-tight">{item.TEN_KH}</p>
                                         </div>
                                     </div>
                                 </td>
@@ -336,10 +336,15 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         </button>
                                         <button
                                             onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
-                                            className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors"
+                                            className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors relative"
                                             title="Người liên hệ"
                                         >
                                             <UserPlus className="w-4 h-4" />
+                                            {item._count?.NGUOI_LIENHE > 0 && (
+                                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white shadow-sm ring-1 ring-background">
+                                                    {item._count.NGUOI_LIENHE}
+                                                </span>
+                                            )}
                                         </button>
                                         <PermissionGuard moduleKey="khach-hang" level="edit">
                                             <button

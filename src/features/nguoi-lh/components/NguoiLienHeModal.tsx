@@ -123,7 +123,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
             onClose={() => { cancelForm(); onClose(); }}
             title={`Người liên hệ — ${khachHang?.TEN_KH ?? ""}`}
         >
-            <div className="space-y-4 pt-1">
+            <div className="space-y-4">
                 {/* Nút thêm mới */}
                 {!showForm && (
                     <button

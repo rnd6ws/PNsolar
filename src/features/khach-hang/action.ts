@@ -41,7 +41,16 @@ export async function getKhachHangs(filters: {
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { CREATED_AT: "desc" },
-                include: { NGUOI_DAI_DIEN: true }
+                include: { 
+                    NGUOI_DAI_DIEN: true,
+                    _count: {
+                        select: { 
+                            NGUOI_LIENHE: {
+                                where: { HIEU_LUC: "Đang hiệu lực" }
+                            } 
+                        }
+                    }
+                }
             }),
             prisma.kHTN.count({ where }),
         ]);
