@@ -1,5 +1,6 @@
 import { Metadata } from "next";
-import { getKhachHangs, getPhanLoaiKH, getNguonKH, getNhomKH, getKhachHangStats } from "@/features/khach-hang/action";
+import { getKhachHangs, getPhanLoaiKH, getNguonKH, getKhachHangStats, getNVList, getNguoiGioiThieu } from "@/features/khach-hang/action";
+import { getNhomKH } from "@/features/nhom-kh/action";
 import Pagination from "@/components/Pagination";
 import { Users2, UserCheck, UserX, UserCog } from "lucide-react";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -26,18 +27,20 @@ export default async function KhachHangPage({
     const PHAN_LOAI = params.PHAN_LOAI;
     const NGUON = params.NGUON;
 
-    const [{ data = [], pagination }, { data: phanLoais = [] }, { data: nguons = [] }, { data: nhoms = [] }, stats] =
+    const [{ data = [], pagination }, { data: phanLoais = [] }, { data: nguons = [] }, { data: nhoms = [] }, stats, { data: nhanViens = [] }, { data: nguoiGioiThieus = [] }] =
         await Promise.all([
             getKhachHangs({ query, page, limit: 10, NHOM_KH, PHAN_LOAI, NGUON }),
             getPhanLoaiKH(),
             getNguonKH(),
             getNhomKH(),
             getKhachHangStats(),
+            getNVList(),
+            getNguoiGioiThieu()
         ]);
 
-    const nhomOptions = (nhoms as any[]).map((n: any) => ({ label: n.NHOM, value: n.NHOM }));
-    const phanLoaiOptions = (phanLoais as any[]).map((p: any) => ({ label: p.PL_KH, value: p.PL_KH }));
-    const nguonOptions = (nguons as any[]).map((n: any) => ({ label: n.NGUON, value: n.NGUON }));
+    const nhomOptions = Array.from(new Set((nhoms as any[]).map((n: any) => n.NHOM))).filter(Boolean).map(val => ({ label: String(val), value: String(val) }));
+    const phanLoaiOptions = Array.from(new Set((phanLoais as any[]).map((p: any) => p.PL_KH))).filter(Boolean).map(val => ({ label: String(val), value: String(val) }));
+    const nguonOptions = Array.from(new Set((nguons as any[]).map((n: any) => n.NGUON))).filter(Boolean).map(val => ({ label: String(val), value: String(val) }));
 
     const totalKH = (pagination as any)?.total ?? data.length;
     const thisMonth = (data as any[]).filter(
@@ -68,6 +71,8 @@ export default async function KhachHangPage({
                                     phanLoais={phanLoais as any}
                                     nguons={nguons as any}
                                     nhoms={nhoms as any}
+                                    nhanViens={nhanViens as any}
+                                    nguoiGioiThieus={nguoiGioiThieus as any}
                                 />
                             </PermissionGuard>
                         </div>
@@ -125,6 +130,8 @@ export default async function KhachHangPage({
                         phanLoais={phanLoais as any}
                         nguons={nguons as any}
                         nhoms={nhoms as any}
+                        nhanViens={nhanViens as any}
+                        nguoiGioiThieus={nguoiGioiThieus as any}
                         nhomOptions={nhomOptions}
                         phanLoaiOptions={phanLoaiOptions}
                         nguonOptions={nguonOptions}

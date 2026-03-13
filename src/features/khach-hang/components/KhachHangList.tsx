@@ -15,6 +15,8 @@ interface Props {
     phanLoais: { ID: string; PL_KH: string }[];
     nguons: { ID: string; NGUON: string }[];
     nhoms: { ID: string; NHOM: string }[];
+    nhanViens: { ID: string; HO_TEN: string }[];
+    nguoiGioiThieus: { ID: string; TEN_NGT: string; SO_DT_NGT?: string | null }[];
     visibleColumns?: ColumnKey[];
 }
 
@@ -23,201 +25,12 @@ function formatDate(val: any) {
     return new Date(val).toLocaleDateString("vi-VN");
 }
 
-// ─── Form khách hàng dùng chung cho Add & Edit ──────────────
-function KhachHangForm({
-    defaultValues,
-    phanLoais,
-    nguons,
-    nhoms,
-    loading,
-    onSubmit,
-    onCancel,
-    submitLabel,
-}: {
-    defaultValues?: any;
-    phanLoais: { ID: string; PL_KH: string }[];
-    nguons: { ID: string; NGUON: string }[];
-    nhoms: { ID: string; NHOM: string }[];
-    loading: boolean;
-    onSubmit: (data: any, hinh: string) => void;
-    onCancel: () => void;
-    submitLabel: string;
-}) {
-    const [hinhAnh, setHinhAnh] = useState(defaultValues?.HINH_ANH || "");
-    const formRef = useRef<HTMLFormElement>(null);
-    const [lookupLoading, setLookupLoading] = useState(false);
-
-    const handleLookup = async () => {
-        const taxCodeElement = formRef.current?.elements.namedItem("MST") as HTMLInputElement;
-        const taxCode = taxCodeElement?.value;
-        if (!taxCode || taxCode.trim() === '') {
-            toast.warning('Vui lòng nhập mã số thuế trước khi tra cứu');
-            return;
-        }
-
-        setLookupLoading(true);
-        const res = await lookupCompanyByTaxCode(taxCode);
-        if (res.success && res.data) {
-            if (formRef.current) {
-                const tenKhEl = formRef.current.elements.namedItem("TEN_KH") as HTMLInputElement;
-                const tenVtEl = formRef.current.elements.namedItem("TEN_VT") as HTMLInputElement;
-                const diaChiEl = formRef.current.elements.namedItem("DIA_CHI") as HTMLInputElement;
-
-                if (tenKhEl) tenKhEl.value = res.data.name || tenKhEl.value;
-                if (tenVtEl) tenVtEl.value = res.data.shortName || tenVtEl.value;
-                if (diaChiEl) diaChiEl.value = res.data.address || diaChiEl.value;
-            }
-            toast.success("Đã cập nhật thông tin công ty từ mã số thuế");
-        } else {
-            toast.error(res.message || "Không tìm thấy thông tin doanh nghiệp");
-        }
-        setLookupLoading(false);
-    };
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const fd = new FormData(e.currentTarget);
-        const data = Object.fromEntries(fd.entries());
-        onSubmit(data, hinhAnh);
-    };
-
-    return (
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5 pt-2">
-            {/* Avatar */}
-            <div className="flex justify-center pb-1">
-                <ImageUpload value={hinhAnh} onChange={setHinhAnh} size={88} />
-            </div>
-
-            {/* Row 1: Mã & Tên KH */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tên khách hàng <span className="text-destructive">*</span></label>
-                    <input name="TEN_KH" required className="input-modern" placeholder="Nguyễn Văn A" defaultValue={defaultValues?.TEN_KH} />
-                </div>
-            </div>
-
-            {/* Row 2: Tên viết tắt & Ngày ghi nhận */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tên viết tắt</label>
-                    <input name="TEN_VT" className="input-modern" placeholder="NVA" defaultValue={defaultValues?.TEN_VT} />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Ngày ghi nhận</label>
-                    <input name="NGAY_GHI_NHAN" type="date" className="input-modern" defaultValue={defaultValues?.NGAY_GHI_NHAN ? new Date(defaultValues.NGAY_GHI_NHAN).toISOString().split("T")[0] : ""} />
-                </div>
-            </div>
-
-            {/* Row 3: SĐT & Email */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Điện thoại</label>
-                    <input name="DIEN_THOAI" className="input-modern" placeholder="09xxx..." defaultValue={defaultValues?.DIEN_THOAI} />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Email</label>
-                    <input name="EMAIL" type="email" className="input-modern" placeholder="email@gmail.com" defaultValue={defaultValues?.EMAIL} />
-                </div>
-            </div>
-
-            {/* Row 4: MST & Ngày thành lập */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mã số thuế</label>
-                    <div className="flex gap-2">
-                        <input name="MST" className="input-modern" placeholder="0123456789" defaultValue={defaultValues?.MST} />
-                        <button type="button" onClick={handleLookup} disabled={lookupLoading} className="btn-premium-secondary flex items-center justify-center gap-1.5 px-3">
-                            {lookupLoading ? <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" /> : <Search className="w-4 h-4" />}
-                        </button>
-                    </div>
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Ngày thành lập</label>
-                    <input name="NGAY_THANH_LAP" type="date" className="input-modern" defaultValue={defaultValues?.NGAY_THANH_LAP ? new Date(defaultValues.NGAY_THANH_LAP).toISOString().split("T")[0] : ""} />
-                </div>
-            </div>
-
-            {/* Địa chỉ */}
-            <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Địa chỉ</label>
-                <input name="DIA_CHI" className="input-modern" placeholder="123 Đường ABC, Quận 1, TP.HCM" defaultValue={defaultValues?.DIA_CHI} />
-            </div>
-
-            {/* Row 5: Nhóm KH & Phân loại */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Nhóm KH</label>
-                    <select name="NHOM_KH" className="input-modern" defaultValue={defaultValues?.NHOM_KH || ""}>
-                        <option value="">-- Chọn nhóm --</option>
-                        {nhoms.map((n) => <option key={n.ID} value={n.NHOM}>{n.NHOM}</option>)}
-                    </select>
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Phân loại</label>
-                    <select name="PHAN_LOAI" className="input-modern" defaultValue={defaultValues?.PHAN_LOAI || ""}>
-                        <option value="">-- Chọn phân loại --</option>
-                        {phanLoais.map((p) => <option key={p.ID} value={p.PL_KH}>{p.PL_KH}</option>)}
-                    </select>
-                </div>
-            </div>
-
-            {/* Row 6: Nguồn & Người giới thiệu */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Nguồn</label>
-                    <select name="NGUON" className="input-modern" defaultValue={defaultValues?.NGUON || ""}>
-                        <option value="">-- Chọn nguồn --</option>
-                        {nguons.map((n) => <option key={n.ID} value={n.NGUON}>{n.NGUON}</option>)}
-                    </select>
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Người giới thiệu</label>
-                    <input name="NGUOI_GIOI_THIEU" className="input-modern" placeholder="Tên người giới thiệu" defaultValue={defaultValues?.NGUOI_GIOI_THIEU} />
-                </div>
-            </div>
-
-            {/* Row 7: Sales PT & NV CS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Sales phụ trách</label>
-                    <input name="SALES_PT" className="input-modern" placeholder="Tên nhân viên sales" defaultValue={defaultValues?.SALES_PT} />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">NV Chăm sóc</label>
-                    <input name="NV_CS" className="input-modern" placeholder="Tên nhân viên CS" defaultValue={defaultValues?.NV_CS} />
-                </div>
-            </div>
-
-            {/* Row 8: LAT & LONG */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vĩ độ (LAT)</label>
-                    <input name="LAT" type="number" step="any" className="input-modern" placeholder="10.762622" defaultValue={defaultValues?.LAT} />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Kinh độ (LONG)</label>
-                    <input name="LONG" type="number" step="any" className="input-modern" placeholder="106.660172" defaultValue={defaultValues?.LONG} />
-                </div>
-            </div>
-
-            {/* Lịch sử */}
-            <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Lịch sử ghi chú</label>
-                <textarea name="LICH_SU" rows={3} className="input-modern resize-none" placeholder="Ghi chú lịch sử giao dịch..." defaultValue={defaultValues?.LICH_SU} />
-            </div>
-
-            <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onCancel} className="btn-premium-secondary flex-1">Hủy bỏ</button>
-                <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                    {loading ? "Đang xử lý..." : submitLabel}
-                </button>
-            </div>
-        </form>
-    );
-}
+import { KhachHangForm } from "./KhachHangForm";
 
 // ─── Màn hình xem chi tiết ────────────────────────────────────
-function KhachHangDetail({ kh, onClose }: { kh: any; onClose: () => void }) {
+function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClose }: { kh: any; nhanViens: { ID: string; HO_TEN: string }[]; nguoiGioiThieus: { ID: string; TEN_NGT: string }[]; onClose: () => void }) {
+    const getNVName = (id: string) => nhanViens.find(nv => nv.ID === id)?.HO_TEN || id;
+    const getNGTName = (id: string) => nguoiGioiThieus.find(n => n.ID === id)?.TEN_NGT || id;
     return (
         <div className="space-y-5 pt-2">
             <div className="flex items-center gap-4 pb-4 border-b border-border">
@@ -268,9 +81,9 @@ function KhachHangDetail({ kh, onClose }: { kh: any; onClose: () => void }) {
                     { label: "Nhóm KH", value: kh.NHOM_KH },
                     { label: "Phân loại", value: kh.PHAN_LOAI },
                     { label: "Nguồn", value: kh.NGUON },
-                    { label: "Người giới thiệu", value: kh.NGUOI_GIOI_THIEU },
-                    { label: "Sales phụ trách", value: kh.SALES_PT },
-                    { label: "NV chăm sóc", value: kh.NV_CS },
+                    { label: "Người giới thiệu", value: getNGTName(kh.NGUOI_GIOI_THIEU) },
+                    { label: "Sales phụ trách", value: getNVName(kh.SALES_PT) },
+                    { label: "NV chăm sóc", value: getNVName(kh.NV_CS) },
                     { label: "Ngày ghi nhận", value: formatDate(kh.NGAY_GHI_NHAN) },
                     { label: "Ngày thành lập", value: formatDate(kh.NGAY_THANH_LAP) },
                 ].map(({ label, value }) => value ? (
@@ -303,7 +116,7 @@ function KhachHangDetail({ kh, onClose }: { kh: any; onClose: () => void }) {
 }
 
 // ─── Component chính ──────────────────────────────────────────
-export default function KhachHangList({ data, phanLoais, nguons, nhoms, visibleColumns }: Props) {
+export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, visibleColumns }: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -313,9 +126,9 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, visibleC
     const cols = visibleColumns ?? ["lienHe", "nhomPhanLoai", "nguonSales", "ngayGhiNhan"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
 
-    const handleCreate = async (formData: any, hinhAnh: string) => {
+    const handleCreate = async (formData: any, hinhAnh: string, lat: string, long: string) => {
         setLoading(true);
-        const res = await createKhachHang({ ...formData, HINH_ANH: hinhAnh });
+        const res = await createKhachHang({ ...formData, HINH_ANH: hinhAnh, LAT: lat ? Number(lat) : null, LONG: long ? Number(long) : null });
         if (res.success) {
             toast.success("Đã thêm khách hàng mới");
             setIsAddOpen(false);
@@ -325,10 +138,10 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, visibleC
         setLoading(false);
     };
 
-    const handleUpdate = async (formData: any, hinhAnh: string) => {
+    const handleUpdate = async (formData: any, hinhAnh: string, lat: string, long: string) => {
         if (!editItem) return;
         setLoading(true);
-        const res = await updateKhachHang(editItem.ID, { ...formData, HINH_ANH: hinhAnh });
+        const res = await updateKhachHang(editItem.ID, { ...formData, HINH_ANH: hinhAnh, LAT: lat ? Number(lat) : null, LONG: long ? Number(long) : null });
         if (res.success) {
             toast.success("Cập nhật thành công");
             setEditItem(null);
@@ -432,7 +245,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, visibleC
                                     <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground">
                                         <div>
                                             {item.NGUON && <p>{item.NGUON}</p>}
-                                            {item.SALES_PT && <p className="font-medium text-foreground">{item.SALES_PT}</p>}
+                                            {item.SALES_PT && <p className="font-medium text-foreground">{nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT}</p>}
                                         </div>
                                     </td>
                                 )}
@@ -496,9 +309,12 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, visibleC
             {/* Modal: Thêm */}
             <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Thêm khách hàng mới">
                 <KhachHangForm
+                    key={isAddOpen ? "add-open" : "add-closed"}
                     phanLoais={phanLoais}
                     nguons={nguons}
                     nhoms={nhoms}
+                    nhanViens={nhanViens}
+                    nguoiGioiThieus={nguoiGioiThieus}
                     loading={loading}
                     onSubmit={handleCreate}
                     onCancel={() => setIsAddOpen(false)}
@@ -510,10 +326,13 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, visibleC
             <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật khách hàng">
                 {editItem && (
                     <KhachHangForm
+                        key={editItem?.ID ?? "edit"}
                         defaultValues={editItem}
                         phanLoais={phanLoais}
                         nguons={nguons}
                         nhoms={nhoms}
+                        nhanViens={nhanViens}
+                        nguoiGioiThieus={nguoiGioiThieus}
                         loading={loading}
                         onSubmit={handleUpdate}
                         onCancel={() => setEditItem(null)}
@@ -524,7 +343,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, visibleC
 
             {/* Modal: Xem chi tiết */}
             <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết khách hàng">
-                {viewItem && <KhachHangDetail kh={viewItem} onClose={() => setViewItem(null)} />}
+                {viewItem && <KhachHangDetail kh={viewItem} nhanViens={nhanViens} nguoiGioiThieus={nguoiGioiThieus} onClose={() => setViewItem(null)} />}
             </Modal>
         </>
     );

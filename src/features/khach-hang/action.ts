@@ -104,6 +104,10 @@ export async function createKhachHang(data: any) {
             return { success: false, message: "Tên khách hàng không được để trống" };
         }
 
+        const now = new Date();
+        const timestamp = `[${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}]`;
+        const initialLichSu = `${timestamp} Tạo mới khách hàng tiềm năng`;
+
         await prisma.kHTN.create({
             data: {
                 TEN_KH: data.TEN_KH,
@@ -119,7 +123,7 @@ export async function createKhachHang(data: any) {
                 NGUOI_GIOI_THIEU: data.NGUOI_GIOI_THIEU || null,
                 SALES_PT: data.SALES_PT || null,
                 NV_CS: data.NV_CS || null,
-                LICH_SU: data.LICH_SU || null,
+                LICH_SU: initialLichSu,
                 NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
                 NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
                 LAT: data.LAT ? parseFloat(data.LAT) : null,
@@ -136,6 +140,17 @@ export async function createKhachHang(data: any) {
 
 export async function updateKhachHang(id: string, data: any) {
     try {
+        const existing = await prisma.kHTN.findUnique({ where: { ID: id } });
+        if (!existing) {
+            return { success: false, message: "Không tìm thấy khách hàng" };
+        }
+
+        const now = new Date();
+        const timestamp = `[${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}]`;
+        const updatedLichSu = existing.LICH_SU 
+            ? `${existing.LICH_SU}\n${timestamp} Cập nhật thông tin khách hàng`
+            : `${timestamp} Cập nhật thông tin khách hàng`;
+
         await prisma.kHTN.update({
             where: { ID: id },
             data: {
@@ -152,7 +167,7 @@ export async function updateKhachHang(id: string, data: any) {
                 NGUOI_GIOI_THIEU: data.NGUOI_GIOI_THIEU || null,
                 SALES_PT: data.SALES_PT || null,
                 NV_CS: data.NV_CS || null,
-                LICH_SU: data.LICH_SU || null,
+                LICH_SU: updatedLichSu,
                 NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
                 NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
                 LAT: data.LAT ? parseFloat(data.LAT) : null,
@@ -195,6 +210,12 @@ export async function getPhanLoaiKH() {
 export async function createPhanLoaiKH(pl_kh: string) {
     try {
         if (!pl_kh.trim()) return { success: false, message: "Vui lòng nhập tên phân loại" };
+        
+        const exists = await prisma.pHANLOAI_KH.findFirst({
+            where: { PL_KH: { equals: pl_kh.trim(), mode: "insensitive" } }
+        });
+        if (exists) return { success: false, message: `Phân loại "${pl_kh.trim()}" đã tồn tại` };
+
         await prisma.pHANLOAI_KH.create({ data: { PL_KH: pl_kh.trim() } });
         revalidatePath("/khach-hang");
         return { success: true };
@@ -229,6 +250,12 @@ export async function getNguonKH() {
 export async function createNguonKH(nguon: string) {
     try {
         if (!nguon.trim()) return { success: false, message: "Vui lòng nhập tên nguồn" };
+
+        const exists = await prisma.nGUON_KH.findFirst({
+            where: { NGUON: { equals: nguon.trim(), mode: "insensitive" } }
+        });
+        if (exists) return { success: false, message: `Nguồn "${nguon.trim()}" đã tồn tại` };
+
         await prisma.nGUON_KH.create({ data: { NGUON: nguon.trim() } });
         revalidatePath("/khach-hang");
         return { success: true };
@@ -247,12 +274,14 @@ export async function deleteNguonKH(id: string) {
     }
 }
 
-// ─── Danh mục: NHOM_KH ─────────────────────────────────────────
+// ─── Danh sách Nhân viên chăm sóc / sales ──────────────────────────────
 
-export async function getNhomKH() {
+export async function getNVList() {
     try {
-        const data = await prisma.nHOM_KH.findMany({
-            orderBy: { CREATED_AT: "asc" },
+        const data = await prisma.dSNV.findMany({
+            where: { IS_ACTIVE: true },
+            select: { ID: true, HO_TEN: true },
+            orderBy: { HO_TEN: "asc" }
         });
         return { success: true, data };
     } catch (error) {
@@ -260,26 +289,40 @@ export async function getNhomKH() {
     }
 }
 
-export async function createNhomKH(nhom: string) {
+// ─── Người giới thiệu (NGUOI_GIOI_THIEU) ──────────────────────────────
+
+export async function getNguoiGioiThieu() {
     try {
-        if (!nhom.trim()) return { success: false, message: "Vui lòng nhập tên nhóm" };
-        await prisma.nHOM_KH.create({ data: { NHOM: nhom.trim() } });
-        revalidatePath("/khach-hang");
-        return { success: true };
-    } catch (error: any) {
-        return { success: false, message: "Nhóm đã tồn tại hoặc có lỗi" };
+        const data = await prisma.nGUOI_GIOI_THIEU.findMany({
+            orderBy: { TEN_NGT: "asc" },
+        });
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, data: [] };
     }
 }
 
-export async function deleteNhomKH(id: string) {
+export async function createNguoiGioiThieu(tenNgt: string, soDtNgt?: string) {
     try {
-        await prisma.nHOM_KH.delete({ where: { ID: id } });
-        revalidatePath("/khach-hang");
-        return { success: true };
+        if (!tenNgt.trim()) return { success: false, message: "Vui lòng nhập tên người giới thiệu" };
+        const record = await prisma.nGUOI_GIOI_THIEU.create({
+            data: { TEN_NGT: tenNgt.trim(), SO_DT_NGT: soDtNgt?.trim() || null },
+        });
+        return { success: true, data: record };
     } catch (error: any) {
-        return { success: false, message: "Lỗi xóa nhóm" };
+        return { success: false, message: error.message || "Lỗi tạo người giới thiệu" };
     }
 }
+
+export async function deleteNguoiGioiThieu(id: string) {
+    try {
+        await prisma.nGUOI_GIOI_THIEU.delete({ where: { ID: id } });
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, message: "Lỗi xóa người giới thiệu" };
+    }
+}
+
 
 // ─── Tra cứu MST ──────────────────────────────────────────────────
 

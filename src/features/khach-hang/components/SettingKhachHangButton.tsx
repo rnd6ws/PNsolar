@@ -7,8 +7,8 @@ import DeleteCDKH from "@/components/khach-hang-component/DeleteCDKH";
 import {
     createPhanLoaiKH, deletePhanLoaiKH,
     createNguonKH, deleteNguonKH,
-    createNhomKH, deleteNhomKH,
 } from "@/features/khach-hang/action";
+import { createNhomKH, deleteNhomKH } from "@/features/nhom-kh/action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 

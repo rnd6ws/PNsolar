@@ -247,3 +247,15 @@ model KHTN {
   @@fulltext([TEN_KH, DIEN_THOAI])
   @@map("KHTN")
 }
+
+// ===== NGƯỜI GIỚI THIỆU =====
+model NGUOI_GIOI_THIEU {
+  ID       String  @id @default(auto()) @map("_id") @db.ObjectId
+  TEN_NGT  String
+  SO_DT_NGT String?
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("NGUOI_GIOI_THIEU")
+}
