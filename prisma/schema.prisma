@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -30,8 +30,8 @@ model DSNV {
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
 
-  AUDIT_LOGS  AUDIT_LOG[]
-  PHAN_QUYEN  PHAN_QUYEN[]
+  AUDIT_LOGS AUDIT_LOG[]
+  PHAN_QUYEN PHAN_QUYEN[]
 
   @@index([IS_ACTIVE, ROLE])
   @@fulltext([HO_TEN, USER_NAME, MA_NV])
@@ -71,36 +71,36 @@ model DMHH {
 
 // ===== PHÂN LOẠI HÀNG HÓA =====
 model PHANLOAI_HH {
-  ID            String    @id @default(auto()) @map("_id") @db.ObjectId
-  MA_PHAN_LOAI  String    @unique
+  ID            String  @id @default(auto()) @map("_id") @db.ObjectId
+  MA_PHAN_LOAI  String  @unique
   TEN_PHAN_LOAI String
   DVT_NHOM      String
   NHOM          String?
 
-  DONG_HHS      DONG_HH[] // Relation to DONG_HH
+  DONG_HHS DONG_HH[] // Relation to DONG_HH
 
-  DELETED_AT    DateTime?
-  CREATED_AT    DateTime  @default(now())
-  UPDATED_AT    DateTime  @updatedAt
+  DELETED_AT DateTime?
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
 
   @@map("PHANLOAI_HH")
 }
 
 // ===== DÒNG HÀNG HÓA =====
 model DONG_HH {
-  ID             String      @id @default(auto()) @map("_id") @db.ObjectId
-  PHAN_LOAI_ID   String      @db.ObjectId
-  PHAN_LOAI      PHANLOAI_HH @relation(fields: [PHAN_LOAI_ID], references: [ID])
-  MA_DONG_HANG   String      @unique // ID dòng hàng
-  TEN_DONG_HANG  String      // Dòng hàng
-  TIEN_TO        String?     // Tiền tố tên
-  HANG           String?     // Hãng
-  XUAT_XU        String?     // Xuất xứ
-  DVT            String?     // ĐVT
+  ID            String      @id @default(auto()) @map("_id") @db.ObjectId
+  PHAN_LOAI_ID  String      @db.ObjectId
+  PHAN_LOAI     PHANLOAI_HH @relation(fields: [PHAN_LOAI_ID], references: [ID])
+  MA_DONG_HANG  String      @unique // ID dòng hàng
+  TEN_DONG_HANG String // Dòng hàng
+  TIEN_TO       String? // Tiền tố tên
+  HANG          String? // Hãng
+  XUAT_XU       String? // Xuất xứ
+  DVT           String? // ĐVT
 
-  DELETED_AT     DateTime?
-  CREATED_AT     DateTime    @default(now())
-  UPDATED_AT     DateTime    @updatedAt
+  DELETED_AT DateTime?
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
 
   @@index([PHAN_LOAI_ID])
   @@map("DONG_HH")
@@ -108,9 +108,9 @@ model DONG_HH {
 
 // ===== NHÓM HÀNG HÓA =====
 model NHOM_HH {
-  ID         String    @id @default(auto()) @map("_id") @db.ObjectId
-  MA_NHOM    String    @unique
-  TEN_NHOM   String
+  ID       String @id @default(auto()) @map("_id") @db.ObjectId
+  MA_NHOM  String @unique
+  TEN_NHOM String
 
   DELETED_AT DateTime?
   CREATED_AT DateTime  @default(now())
@@ -121,16 +121,15 @@ model NHOM_HH {
 
 // ===== PHÂN QUYỀN (Permissions) =====
 model PHAN_QUYEN {
-  ID         String   @id @default(auto()) @map("_id") @db.ObjectId
-  NV_ID      String   @db.ObjectId
-  NV         DSNV     @relation(fields: [NV_ID], references: [ID])
-  MODULE     String   // e.g. "nhan-vien", "hang-hoa", "settings"
-  CAN_VIEW   Boolean  @default(false)
-  CAN_ADD    Boolean  @default(false)
-  CAN_EDIT   Boolean  @default(false)
-  CAN_DELETE Boolean  @default(false)
-  CAN_MANAGE Boolean  @default(false) // Toàn quyền
-
+  ID         String  @id @default(auto()) @map("_id") @db.ObjectId
+  NV_ID      String  @db.ObjectId
+  NV         DSNV    @relation(fields: [NV_ID], references: [ID])
+  MODULE     String // e.g. "nhan-vien", "hang-hoa", "settings"
+  CAN_VIEW   Boolean @default(false)
+  CAN_ADD    Boolean @default(false)
+  CAN_EDIT   Boolean @default(false)
+  CAN_DELETE Boolean @default(false)
+  CAN_MANAGE Boolean @default(false) // Toàn quyền
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -184,4 +183,79 @@ model CD_PHONGBAN {
   UPDATED_AT DateTime  @updatedAt
 
   @@map("CD_PHONGBAN")
+}
+
+// ===== PHÂN LOẠI KHÁCH HÀNG =====
+model PHANLOAI_KH {
+  ID    String @id @default(auto()) @map("_id") @db.ObjectId
+  PL_KH String @unique
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("PHANLOAI_KH")
+}
+
+// ===== NGUỒN KHÁCH HÀNG =====
+model NGUON_KH {
+  ID    String @id @default(auto()) @map("_id") @db.ObjectId
+  NGUON String @unique
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("NGUON_KH")
+}
+
+// ===== NHÓM KHÁCH HÀNG =====
+model NHOM_KH {
+  ID   String @id @default(auto()) @map("_id") @db.ObjectId
+  NHOM String @unique
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("NHOM_KH")
+}
+
+// ===== KHÁCH HÀNG TỰ NHIÊN =====
+model KHTN {
+  ID               String    @id @default(auto()) @map("_id") @db.ObjectId
+  NHOM_KH          String?
+  NGAY_GHI_NHAN    DateTime?
+  TEN_KH           String
+  TEN_VT           String?
+  HINH_ANH         String?
+  DIEN_THOAI       String?
+  EMAIL            String?
+  MST              String?
+  NGAY_THANH_LAP   DateTime?
+  DIA_CHI          String?
+  NGUON            String?
+  NGUOI_GIOI_THIEU String?
+  SALES_PT         String?
+  PHAN_LOAI        String?
+  NV_CS            String?
+  LICH_SU          String?
+  LAT              Float?
+  LONG             Float?
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([NHOM_KH, PHAN_LOAI])
+  @@fulltext([TEN_KH, DIEN_THOAI])
+  @@map("KHTN")
+}
+
+// ===== NGƯỜI GIỚI THIỆU =====
+model NGUOI_GIOI_THIEU {
+  ID       String  @id @default(auto()) @map("_id") @db.ObjectId
+  TEN_NGT  String
+  SO_DT_NGT String?
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("NGUOI_GIOI_THIEU")
 }
