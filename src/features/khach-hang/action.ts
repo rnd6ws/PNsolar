@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "@/lib/auth";
 
 // ─── KHTN (Khách hàng) ────────────────────────────────────────
 
@@ -15,9 +16,14 @@ export async function getKhachHangs(filters: {
 } = {}) {
     const { page = 1, limit = 10, query, NHOM_KH, PHAN_LOAI, NGUON } = filters;
 
+    const user = await getCurrentUser();
+    
     const where: any = {};
-
     const andConditions: any[] = [];
+
+    if (user?.ROLE === 'STAFF') {
+        andConditions.push({ NV_CS: user.userId });
+    }
 
     if (query) {
         andConditions.push({
@@ -41,6 +47,16 @@ export async function getKhachHangs(filters: {
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { CREATED_AT: "desc" },
+                include: { 
+                    NGUOI_DAI_DIEN: true,
+                    _count: {
+                        select: { 
+                            NGUOI_LIENHE: {
+                                where: { HIEU_LUC: "Đang hiệu lực" }
+                            } 
+                        }
+                    }
+                }
             }),
             prisma.kHTN.count({ where }),
         ]);
@@ -63,10 +79,17 @@ export async function getKhachHangs(filters: {
 
 export async function getKhachHangStats() {
     try {
-        const total = await prisma.kHTN.count();
+        const user = await getCurrentUser();
+        const where: any = {};
+        if (user?.ROLE === 'STAFF') {
+            where.NV_CS = user.userId;
+        }
+
+        const total = await prisma.kHTN.count({ where });
         const grouped = await prisma.kHTN.groupBy({
             by: ["PHAN_LOAI"],
             _count: { _all: true },
+            where,
         });
 
         // Parse grouped groups loosely
@@ -128,6 +151,17 @@ export async function createKhachHang(data: any) {
                 NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
                 LAT: data.LAT ? parseFloat(data.LAT) : null,
                 LONG: data.LONG ? parseFloat(data.LONG) : null,
+                ...(data.NGUOI_DD ? {
+                    NGUOI_DAI_DIEN: {
+                        create: {
+                            NGUOI_DD: data.NGUOI_DD,
+                            CHUC_VU: data.CHUC_VU_DD || null,
+                            SDT: data.SDT_DD || null,
+                            EMAIL: data.EMAIL_DD || null,
+                            NGAY_SINH: data.NGAY_SINH_DD ? new Date(data.NGAY_SINH_DD) : null,
+                        }
+                    }
+                } : {})
             },
         });
 
@@ -170,10 +204,26 @@ export async function updateKhachHang(id: string, data: any) {
                 LICH_SU: updatedLichSu,
                 NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
                 NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
-                LAT: data.LAT ? parseFloat(data.LAT) : null,
                 LONG: data.LONG ? parseFloat(data.LONG) : null,
             },
         });
+
+        // Update NGUOI_DAI_DIEN separately to ensure clean state
+        if (!data.NGUOI_DD) {
+            await prisma.nGUOI_DAI_DIEN.deleteMany({ where: { ID_KH: id } });
+        } else {
+            await prisma.nGUOI_DAI_DIEN.deleteMany({ where: { ID_KH: id } });
+            await prisma.nGUOI_DAI_DIEN.create({
+                data: {
+                    ID_KH: id,
+                    NGUOI_DD: data.NGUOI_DD,
+                    CHUC_VU: data.CHUC_VU_DD || null,
+                    SDT: data.SDT_DD || null,
+                    EMAIL: data.EMAIL_DD || null,
+                    NGAY_SINH: data.NGAY_SINH_DD ? new Date(data.NGAY_SINH_DD) : null,
+                }
+            });
+        }
 
         revalidatePath("/khach-hang");
         return { success: true };
