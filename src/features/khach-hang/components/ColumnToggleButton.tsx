@@ -4,7 +4,9 @@ import { SlidersHorizontal, Check } from "lucide-react";
 
 export type ColumnKey =
     | "lienHe"
-    | "nhomPhanLoai"
+    | "nhom"
+    | "phanLoai"
+    | "nhanVienPT"
     | "nguonSales"
     | "ngayGhiNhan"
     | "diaChi"
@@ -16,10 +18,12 @@ interface Props {
 }
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
-    { key: "lienHe", label: "Liên hệ (SĐT/Email)" },
-    { key: "nhomPhanLoai", label: "Nhóm / Phân loại" },
-    { key: "nguonSales", label: "Nguồn / Sales" },
     { key: "ngayGhiNhan", label: "Ngày ghi nhận" },
+    { key: "lienHe", label: "Liên hệ (SĐT/Email)" },
+    { key: "nhom", label: "Nhóm khách hàng" },
+    { key: "phanLoai", label: "Phân loại" },
+    { key: "nhanVienPT", label: "NV phụ trách" },
+    { key: "nguonSales", label: "Nguồn / Sales" },
     { key: "diaChi", label: "Địa chỉ" },
     { key: "mst", label: "Mã số thuế" },
 ];

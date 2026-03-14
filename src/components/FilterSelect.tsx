@@ -1,6 +1,7 @@
 'use client';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { ChangeEvent } from 'react';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 
 interface FilterOption {
     label: string;
@@ -21,8 +22,7 @@ export default function FilterSelect({ paramKey, options, placeholder = 'Tất c
 
     const currentValue = searchParams.get(paramKey) || 'all';
 
-    const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
-        const value = e.target.value;
+    const handleSelect = (value: string) => {
         const params = new URLSearchParams(searchParams.toString());
 
         if (value === 'all' || !value) {
@@ -37,18 +37,39 @@ export default function FilterSelect({ paramKey, options, placeholder = 'Tất c
         router.replace(`${pathname}?${params.toString()}`);
     };
 
+    const currentLabel = currentValue === 'all' 
+        ? placeholder 
+        : options.find((opt) => opt.value === currentValue)?.label || placeholder;
+
     return (
-        <select
-            className={`h-9 px-3 text-sm font-medium border border-input rounded-md bg-background hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0 transition-colors cursor-pointer ${className}`}
-            value={currentValue}
-            onChange={handleChange}
-        >
-            <option value="all">{placeholder}</option>
-            {options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                </option>
-            ))}
-        </select>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button
+                    className={`h-9 px-3 text-sm font-medium border border-input rounded-md bg-background hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0 transition-colors flex items-center justify-between gap-2 w-full lg:w-[160px] ${className}`}
+                >
+                    <span className="truncate">{currentLabel}</span>
+                    <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width) max-h-[300px] overflow-y-auto">
+                <DropdownMenuCheckboxItem
+                    checked={currentValue === 'all'}
+                    onCheckedChange={() => handleSelect('all')}
+                    className={currentValue === 'all' ? "bg-primary/10 text-primary focus:bg-primary/15 focus:text-primary" : ""}
+                >
+                    {placeholder}
+                </DropdownMenuCheckboxItem>
+                {options.map((opt) => (
+                    <DropdownMenuCheckboxItem
+                        key={opt.value}
+                        checked={currentValue === opt.value}
+                        onCheckedChange={() => handleSelect(opt.value)}
+                        className={currentValue === opt.value ? "bg-primary/10 text-primary focus:bg-primary/15 focus:text-primary" : ""}
+                    >
+                        {opt.label}
+                    </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
