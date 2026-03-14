@@ -5,6 +5,66 @@ import { revalidatePath } from 'next/cache';
 import { productSchema } from './schema';
 import { ActionResponse } from '@/lib/types';
 
+// ===== Lấy danh sách Phân loại (từ PHANLOAI_HH) =====
+export async function getPhanLoaiOptions() {
+    try {
+        const data = await prisma.pHANLOAI_HH.findMany({
+            where: {
+                OR: [
+                    { DELETED_AT: null },
+                    { DELETED_AT: { isSet: false } }
+                ]
+            },
+            select: {
+                ID: true,
+                MA_PHAN_LOAI: true,
+                TEN_PHAN_LOAI: true,
+            },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+        return data;
+    } catch (error) {
+        console.error('[getPhanLoaiOptions]', error);
+        return [];
+    }
+}
+
+// ===== Lấy danh sách Dòng hàng (từ DONG_HH), có thể lọc theo PHAN_LOAI_ID =====
+export async function getDongHangOptions(phanLoaiId?: string) {
+    try {
+        const where: any = {
+            OR: [
+                { DELETED_AT: null },
+                { DELETED_AT: { isSet: false } }
+            ]
+        };
+
+        if (phanLoaiId) {
+            where.PHAN_LOAI_ID = phanLoaiId;
+        }
+
+        const data = await prisma.dONG_HH.findMany({
+            where,
+            select: {
+                ID: true,
+                MA_DONG_HANG: true,
+                TEN_DONG_HANG: true,
+                TIEN_TO: true,
+                HANG: true,
+                XUAT_XU: true,
+                DVT: true,
+                PHAN_LOAI_ID: true,
+            },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+        return data;
+    } catch (error) {
+        console.error('[getDongHangOptions]', error);
+        return [];
+    }
+}
+
+// ===== Tạo sản phẩm =====
 export async function createProductAction(data: any) {
     try {
         const parsed = productSchema.safeParse(data);
@@ -21,26 +81,28 @@ export async function createProductAction(data: any) {
         await prisma.dMHH.create({
             data: {
                 ID_HH: parsed.data.ID_HH,
-                TEN: parsed.data.TEN,
                 PHAN_LOAI: parsed.data.PHAN_LOAI,
                 DONG_HANG: parsed.data.DONG_HANG,
+                TEN: parsed.data.TEN,
                 MODEL: parsed.data.MODEL,
-                DON_VI_TINH: parsed.data.DON_VI_TINH,
                 MO_TA: parsed.data.MO_TA || null,
+                DON_VI_TINH: parsed.data.DON_VI_TINH,
                 HINH_ANH: parsed.data.HINH_ANH || null,
                 XUAT_XU: parsed.data.XUAT_XU || null,
                 BAO_HANH: parsed.data.BAO_HANH || null,
+                HIEU_LUC: parsed.data.HIEU_LUC ?? true,
                 DELETED_AT: null,
             }
         });
-        revalidatePath('/dashboard/hang-hoa');
-        return { success: true, message: 'Thêm sản phẩm thành công!' };
+        revalidatePath('/hang-hoa');
+        return { success: true, message: 'Thêm hàng hóa thành công!' };
     } catch (error: any) {
         console.error('[createProductAction]', error);
-        return { success: false, message: 'Lỗi server khi tạo sản phẩm' };
+        return { success: false, message: 'Lỗi server khi tạo hàng hóa' };
     }
 }
 
+// ===== Cập nhật sản phẩm =====
 export async function updateProductAction(id: string, data: any) {
     try {
         const parsed = productSchema.safeParse(data);
@@ -52,39 +114,42 @@ export async function updateProductAction(id: string, data: any) {
             where: { ID: id },
             data: {
                 ID_HH: parsed.data.ID_HH,
-                TEN: parsed.data.TEN,
                 PHAN_LOAI: parsed.data.PHAN_LOAI,
                 DONG_HANG: parsed.data.DONG_HANG,
+                TEN: parsed.data.TEN,
                 MODEL: parsed.data.MODEL,
-                DON_VI_TINH: parsed.data.DON_VI_TINH,
                 MO_TA: parsed.data.MO_TA || null,
+                DON_VI_TINH: parsed.data.DON_VI_TINH,
                 HINH_ANH: parsed.data.HINH_ANH || null,
                 XUAT_XU: parsed.data.XUAT_XU || null,
                 BAO_HANH: parsed.data.BAO_HANH || null,
+                HIEU_LUC: parsed.data.HIEU_LUC ?? true,
             }
         });
-        revalidatePath('/dashboard/hang-hoa');
-        return { success: true, message: 'Cập nhật sản phẩm thành công!' };
+        revalidatePath('/hang-hoa');
+        return { success: true, message: 'Cập nhật hàng hóa thành công!' };
     } catch (error) {
         console.error('[updateProductAction]', error);
-        return { success: false, message: 'Lỗi server khi cập nhật sản phẩm' };
+        return { success: false, message: 'Lỗi server khi cập nhật hàng hóa' };
     }
 }
 
+// ===== Xóa sản phẩm (soft delete) =====
 export async function deleteProductAction(id: string) {
     try {
         await prisma.dMHH.update({
             where: { ID: id },
             data: { DELETED_AT: new Date() }
         });
-        revalidatePath('/dashboard/hang-hoa');
-        return { success: true, message: 'Đã xóa sản phẩm!' };
+        revalidatePath('/hang-hoa');
+        return { success: true, message: 'Đã xóa hàng hóa!' };
     } catch (error) {
         console.error('[deleteProductAction]', error);
-        return { success: false, message: 'Lỗi server khi xóa sản phẩm' };
+        return { success: false, message: 'Lỗi server khi xóa hàng hóa' };
     }
 }
 
+// ===== Lấy danh sách sản phẩm (có filter, phân trang) =====
 export async function getProducts(filters: { query?: string; page?: number; limit?: number; PHAN_LOAI?: string; DONG_HANG?: string } = {}): Promise<ActionResponse> {
     const { page = 1, limit = 10, query, PHAN_LOAI, DONG_HANG } = filters;
 
@@ -146,6 +211,7 @@ export async function getProducts(filters: { query?: string; page?: number; limi
     }
 }
 
+// ===== Lấy danh sách phân loại và dòng hàng duy nhất cho filter =====
 export async function getUniqueCategories() {
     try {
         const existingProducts = await prisma.dMHH.findMany({
