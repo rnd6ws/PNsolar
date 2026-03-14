@@ -1,7 +1,6 @@
 # 📖 Hướng dẫn Git cho dự án PNSolar
 
 ## 1. Lấy code mới từ nhánh khác về nhánh mình
-## thêm test
 
 ```bash
 # Bước 1: Đảm bảo đang ở nhánh của mình
