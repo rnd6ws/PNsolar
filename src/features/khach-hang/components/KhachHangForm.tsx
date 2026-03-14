@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, MapPin, ChevronDown, ChevronUp, Plus, X, UserPlus } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
+import FormSelect from "@/components/FormSelect";
 import { lookupCompanyByTaxCode, getCoordinatesFromAddress, createNguoiGioiThieu } from "@/features/khach-hang/action";
 import { toast } from "sonner";
 
@@ -324,17 +325,21 @@ export function KhachHangForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold text-muted-foreground tracking-widest">Nhóm KH</label>
-                    <select name="NHOM_KH" className="input-modern" defaultValue={defaultValues?.NHOM_KH || ""}>
-                        <option value="">-- Chọn nhóm --</option>
-                        {nhoms.map((n) => <option key={n.ID} value={n.NHOM}>{n.NHOM}</option>)}
-                    </select>
+                    <FormSelect
+                        name="NHOM_KH"
+                        defaultValue={defaultValues?.NHOM_KH || ""}
+                        options={nhoms.map((n) => ({ label: n.NHOM, value: n.NHOM }))}
+                        placeholder="-- Chọn nhóm --"
+                    />
                 </div>
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold text-muted-foreground tracking-widest">Phân loại</label>
-                    <select name="PHAN_LOAI" className="input-modern" defaultValue={defaultValues?.PHAN_LOAI || ""}>
-                        <option value="">-- Chọn phân loại --</option>
-                        {phanLoais.map((p) => <option key={p.ID} value={p.PL_KH}>{p.PL_KH}</option>)}
-                    </select>
+                    <FormSelect
+                        name="PHAN_LOAI"
+                        defaultValue={defaultValues?.PHAN_LOAI || ""}
+                        options={phanLoais.map((p) => ({ label: p.PL_KH, value: p.PL_KH }))}
+                        placeholder="-- Chọn phân loại --"
+                    />
                 </div>
             </div>
 
@@ -342,18 +347,16 @@ export function KhachHangForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold text-muted-foreground tracking-widest">Nguồn</label>
-                    <select
+                    <FormSelect
                         name="NGUON"
-                        className="input-modern"
                         value={selectedNguon}
-                        onChange={(e) => {
-                            setSelectedNguon(e.target.value);
-                            if (e.target.value !== CTV_NGUON) { setSelectedNgtId(""); setNgtSearch(""); }
+                        onChange={(val) => {
+                            setSelectedNguon(val);
+                            if (val !== CTV_NGUON) { setSelectedNgtId(""); setNgtSearch(""); }
                         }}
-                    >
-                        <option value="">-- Chọn nguồn --</option>
-                        {nguons.map((n) => <option key={n.ID} value={n.NGUON}>{n.NGUON}</option>)}
-                    </select>
+                        options={nguons.map((n) => ({ label: n.NGUON, value: n.NGUON }))}
+                        placeholder="-- Chọn nguồn --"
+                    />
                 </div>
 
                 {selectedNguon === CTV_NGUON ? (
@@ -440,17 +443,21 @@ export function KhachHangForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold text-muted-foreground tracking-widest">Sales phụ trách</label>
-                    <select name="SALES_PT" className="input-modern" defaultValue={defaultValues?.SALES_PT || ""}>
-                        <option value="">-- Chọn nhân viên --</option>
-                        {nhanViens.map((nv) => <option key={nv.ID} value={nv.ID}>{nv.HO_TEN}</option>)}
-                    </select>
+                    <FormSelect
+                        name="SALES_PT"
+                        defaultValue={defaultValues?.SALES_PT || ""}
+                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
+                        placeholder="-- Chọn nhân viên --"
+                    />
                 </div>
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold text-muted-foreground tracking-widest">NV Chăm sóc</label>
-                    <select name="NV_CS" className="input-modern" defaultValue={defaultValues?.NV_CS || ""}>
-                        <option value="">-- Chọn nhân viên --</option>
-                        {nhanViens.map((nv) => <option key={nv.ID} value={nv.ID}>{nv.HO_TEN}</option>)}
-                    </select>
+                    <FormSelect
+                        name="NV_CS"
+                        defaultValue={defaultValues?.NV_CS || ""}
+                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
+                        placeholder="-- Chọn nhân viên --"
+                    />
                 </div>
             </div>
 

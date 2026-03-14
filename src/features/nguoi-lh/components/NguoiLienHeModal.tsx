@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { UserPlus, Edit2, Trash2, Phone, Mail, Briefcase, CheckCircle2, XCircle, Plus, X, Save, Loader2 } from "lucide-react";
+import FormSelect from "@/components/FormSelect";
 import { toast } from "sonner";
 import Modal from "@/components/Modal";
 import { getNguoiLienHe, createNguoiLienHe, updateNguoiLienHe, deleteNguoiLienHe } from "../action";
@@ -121,18 +122,23 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
         <Modal
             isOpen={isOpen}
             onClose={() => { cancelForm(); onClose(); }}
-            title={`Người liên hệ — ${khachHang?.TEN_KH ?? ""}`}
+            title={`Thêm người liên hệ`}
         >
             <div className="space-y-2">
-                {/* Nút thêm mới */}
+                {/* Nút thêm mới và Tên công ty */}
                 {!showForm && (
-                    <button
-                        onClick={openAdd}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Thêm người liên hệ
-                    </button>
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-2">
+                        <span className="text-base font-semibold text-foreground px-1 wrap-break-word">
+                            {khachHang?.TEN_KH}
+                        </span>
+                        <button
+                            onClick={openAdd}
+                            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shrink-0 w-full sm:w-auto"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Thêm người liên hệ
+                        </button>
+                    </div>
                 )}
 
                 {/* Modal Form thêm / sửa */}
@@ -198,15 +204,16 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                             {/* Hiệu lực */}
                             <div>
                                 <label className="block text-xs font-medium text-muted-foreground mb-1">Hiệu lực</label>
-                                <select
+                                <FormSelect
                                     name="HIEU_LUC"
                                     value={form.HIEU_LUC}
-                                    onChange={handleChange}
-                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                >
-                                    <option value="Đang hiệu lực">Đang hiệu lực</option>
-                                    <option value="Hết hiệu lực">Hết hiệu lực</option>
-                                </select>
+                                    onChange={(val) => setForm(prev => ({ ...prev, HIEU_LUC: val }))}
+                                    options={[
+                                        { label: "Đang hiệu lực", value: "Đang hiệu lực" },
+                                        { label: "Hết hiệu lực", value: "Hết hiệu lực" }
+                                    ]}
+                                    className="h-[38px]! border-border"
+                                />
                             </div>
                         </div>
 
@@ -303,7 +310,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                <div className="flex gap-1 shrink-0">
                                     <button
                                         onClick={() => openEdit(item)}
                                         className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-blue-600 transition-colors"
