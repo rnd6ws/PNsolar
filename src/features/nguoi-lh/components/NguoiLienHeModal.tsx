@@ -123,7 +123,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
             onClose={() => { cancelForm(); onClose(); }}
             title={`Người liên hệ — ${khachHang?.TEN_KH ?? ""}`}
         >
-            <div className="space-y-4">
+            <div className="space-y-2">
                 {/* Nút thêm mới */}
                 {!showForm && (
                     <button
@@ -135,13 +135,13 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                     </button>
                 )}
 
-                {/* Form thêm / sửa */}
-                {showForm && (
-                    <form onSubmit={handleSubmit} className="border border-border rounded-xl p-4 space-y-3 bg-muted/20">
-                        <p className="text-sm font-semibold text-foreground mb-1">
-                            {editItem ? "Cập nhật người liên hệ" : "Thêm người liên hệ mới"}
-                        </p>
-
+                {/* Modal Form thêm / sửa */}
+                <Modal
+                    isOpen={showForm}
+                    onClose={cancelForm}
+                    title={editItem ? "Cập nhật người liên hệ" : "Thêm người liên hệ mới"}
+                >
+                    <form onSubmit={handleSubmit} className="px-1 py-1 space-y-4">
                         {/* Tên */}
                         <div>
                             <label className="block text-xs font-medium text-muted-foreground mb-1">
@@ -223,15 +223,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                             />
                         </div>
 
-                        <div className="flex gap-2 pt-1">
-                            <button
-                                type="submit"
-                                disabled={isPending}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
-                            >
-                                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                {editItem ? "Cập nhật" : "Lưu"}
-                            </button>
+                        <div className="flex justify-end gap-2 pt-4 border-t border-border mt-2">
                             <button
                                 type="button"
                                 onClick={cancelForm}
@@ -240,9 +232,17 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                                 <X className="w-4 h-4" />
                                 Hủy
                             </button>
+                            <button
+                                type="submit"
+                                disabled={isPending}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+                            >
+                                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                {editItem ? "Cập nhật" : "Lưu"}
+                            </button>
                         </div>
                     </form>
-                )}
+                </Modal>
 
                 {/* Danh sách */}
                 {loadingList ? (

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, useMemo } from "react";
-import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, UserPlus } from "lucide-react";
+import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, UserPlus, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { deleteKhachHang, updateKhachHang, createKhachHang, lookupCompanyByTaxCode } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import Modal from "@/components/Modal";
 import ImageUpload from "@/components/ImageUpload";
 import Image from "next/image";
@@ -126,7 +127,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
     const [nguoiLHItem, setNguoiLHItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
 
     // default show all if not provided
-    const cols = visibleColumns ?? ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nguonSales"] as ColumnKey[];
+    const cols = visibleColumns ?? ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "nguonSales"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
 
     const sortedData = useMemo(() => {
@@ -200,13 +201,13 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
         <>
             {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-sm">
+                <table className="w-full text-left border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
                     <thead>
                         {/* Header dùng bg-primary/10 giống phan-loai-hh */}
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
                             <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] w-10">#</th>
                             {show("ngayGhiNhan") && (
-                                <th onClick={() => handleSort("NGAY_GHI_NHAN")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden xl:table-cell w-28 whitespace-nowrap cursor-pointer group hover:text-foreground">
+                                <th onClick={() => handleSort("NGAY_GHI_NHAN")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden xl:table-cell w-28 whitespace-nowrap cursor-pointer group hover:text-foreground">
                                     Ngày GN <SortIcon columnKey="NGAY_GHI_NHAN" />
                                 </th>
                             )}
@@ -214,29 +215,29 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                 Khách hàng <SortIcon columnKey="TEN_KH" />
                             </th>
                             {show("lienHe") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden md:table-cell">Liên hệ</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden md:table-cell">Liên hệ</th>
                             )}
                             {show("nhom") && (
-                                <th onClick={() => handleSort("NHOM_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden lg:table-cell cursor-pointer group hover:text-foreground">
+                                <th onClick={() => handleSort("NHOM_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground">
                                     Nhóm KH <SortIcon columnKey="NHOM_KH" />
                                 </th>
                             )}
                             {show("phanLoai") && (
-                                <th onClick={() => handleSort("PHAN_LOAI")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden lg:table-cell cursor-pointer group hover:text-foreground">
+                                <th onClick={() => handleSort("PHAN_LOAI")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground">
                                     Phân loại <SortIcon columnKey="PHAN_LOAI" />
                                 </th>
                             )}
                             {show("nhanVienPT") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden lg:table-cell">NV phụ trách</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden lg:table-cell">NV chăm sóc</th>
                             )}
                             {show("nguonSales") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden xl:table-cell">Nguồn / Sales</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden xl:table-cell">Nguồn / Sales</th>
                             )}
                             {show("diaChi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden xl:table-cell">Địa chỉ</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden xl:table-cell">Địa chỉ</th>
                             )}
                             {show("mst") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden xl:table-cell">MST</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden xl:table-cell">MST</th>
                             )}
                             <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] text-right">Hành động</th>
                         </tr>
@@ -246,7 +247,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                             <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
                                 <td className="px-4 py-3 align-middle text-muted-foreground text-xs">{idx + 1}</td>
                                 {show("ngayGhiNhan") && (
-                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground font-medium whitespace-nowrap">
+                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground font-medium whitespace-nowrap">
                                         {formatDate(item.NGAY_GHI_NHAN)}
                                     </td>
                                 )}
@@ -262,12 +263,12 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                             </div>
                                         )}
                                         <div>
-                                            <p className="font-normal text-foreground text-sm leading-tight">{item.TEN_KH}</p>
+                                            <p className="font-normal text-foreground text-xs leading-tight">{item.TEN_KH}</p>
                                         </div>
                                     </div>
                                 </td>
                                 {show("lienHe") && (
-                                    <td className="px-4 py-3 align-middle hidden md:table-cell">
+                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden md:table-cell">
                                         <div className="space-y-0.5">
                                             {item.DIEN_THOAI && (
                                                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -283,7 +284,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                     </td>
                                 )}
                                 {show("nhom") && (
-                                    <td className="px-4 py-3 align-middle hidden lg:table-cell">
+                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell">
                                         {item.NHOM_KH ? (
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                                                 {item.NHOM_KH}
@@ -292,7 +293,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                     </td>
                                 )}
                                 {show("phanLoai") && (
-                                    <td className="px-4 py-3 align-middle hidden lg:table-cell">
+                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell">
                                         {item.PHAN_LOAI ? (
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
                                                 {item.PHAN_LOAI}
@@ -301,32 +302,32 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                     </td>
                                 )}
                                 {show("nhanVienPT") && (
-                                    <td className="px-4 py-3 align-middle hidden lg:table-cell text-xs text-muted-foreground">
-                                        {item.SALES_PT
-                                            ? <span className="font-medium text-foreground">{nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT}</span>
+                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell text-xs text-muted-foreground">
+                                        {item.NV_CS
+                                            ? <span className="font-medium text-foreground">{nhanViens.find((n: any) => n.ID === item.NV_CS)?.HO_TEN || item.NV_CS}</span>
                                             : <span>—</span>}
                                     </td>
                                 )}
                                 {show("nguonSales") && (
-                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground">
-                                        <div>
+                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground">
+                                        <div className="space-y-0.5">
                                             {item.NGUON && <p>{item.NGUON}</p>}
-                                            {item.SALES_PT && <p className="font-medium text-foreground">{nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT}</p>}
+                                            {item.SALES_PT && <p className="font-medium text-foreground text-[11px] opacity-80">{nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT}</p>}
                                         </div>
                                     </td>
                                 )}
                                 {show("diaChi") && (
-                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground max-w-[180px] truncate">
+                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground max-w-[180px] truncate">
                                         {item.DIA_CHI || "—"}
                                     </td>
                                 )}
                                 {show("mst") && (
-                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground font-mono">
+                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground font-mono">
                                         {item.MST || "—"}
                                     </td>
                                 )}
                                 <td className="px-4 py-3 align-middle text-right">
-                                    <div className="flex justify-end gap-1">
+                                    <div className="flex justify-end gap-1 items-center">
                                         <button
                                             onClick={() => setViewItem(item)}
                                             className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors"
@@ -334,36 +335,74 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
-                                        <button
-                                            onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
-                                            className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors relative"
-                                            title="Người liên hệ"
-                                        >
-                                            <UserPlus className="w-4 h-4" />
-                                            {item._count?.NGUOI_LIENHE > 0 && (
-                                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white shadow-sm ring-1 ring-background">
-                                                    {item._count.NGUOI_LIENHE}
-                                                </span>
-                                            )}
-                                        </button>
-                                        <PermissionGuard moduleKey="khach-hang" level="edit">
+                                        <PermissionGuard moduleKey="khach-hang" level="manage">
                                             <button
-                                                onClick={() => setEditItem(item)}
-                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors"
-                                                title="Sửa"
+                                                onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
+                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors relative group"
+                                                title="Người liên hệ"
                                             >
-                                                <Edit2 className="w-4 h-4" />
+                                                <UserPlus className="w-4 h-4" />
+                                                {item._count?.NGUOI_LIENHE > 0 && (
+                                                    <span className="absolute top-1 right-0.5 text-[10px] font-bold text-emerald-600">
+                                                        {item._count.NGUOI_LIENHE}
+                                                    </span>
+                                                )}
                                             </button>
                                         </PermissionGuard>
-                                        <PermissionGuard moduleKey="khach-hang" level="delete">
-                                            <button
-                                                onClick={() => handleDelete(item.ID, item.TEN_KH)}
-                                                className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
-                                                title="Xóa"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </PermissionGuard>
+
+                                        {/* Desktop Actions */}
+                                        <div className="hidden md:flex gap-1">
+                                            <PermissionGuard moduleKey="khach-hang" level="edit">
+                                                <button
+                                                    onClick={() => setEditItem(item)}
+                                                    className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors"
+                                                    title="Sửa"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                            </PermissionGuard>
+                                            <PermissionGuard moduleKey="khach-hang" level="delete">
+                                                <button
+                                                    onClick={() => handleDelete(item.ID, item.TEN_KH)}
+                                                    className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
+                                                    title="Xóa"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </PermissionGuard>
+                                        </div>
+
+                                        {/* Mobile Actions Dropdown */}
+                                        <div className="md:hidden">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors">
+                                                        <MoreHorizontal className="w-4 h-4" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-32 rounded-xl">
+                                                    <PermissionGuard moduleKey="khach-hang" level="edit">
+                                                        <DropdownMenuItem 
+                                                            onClick={(e) => { e.stopPropagation(); setEditItem(item); }} 
+                                                            className="cursor-pointer gap-2 text-foreground hover:text-blue-600 focus:text-blue-600 rounded-lg"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                            Sửa
+                                                        </DropdownMenuItem>
+                                                    </PermissionGuard>
+                                                    <PermissionGuard moduleKey="khach-hang" level="delete">
+                                                        <DropdownMenuItem 
+                                                            onClick={(e) => { e.stopPropagation(); handleDelete(item.ID, item.TEN_KH); }} 
+                                                            variant="destructive"
+                                                            className="cursor-pointer gap-2 rounded-lg"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                            Xóa
+                                                        </DropdownMenuItem>
+                                                    </PermissionGuard>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>

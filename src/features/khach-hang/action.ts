@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "@/lib/auth";
 
 // ─── KHTN (Khách hàng) ────────────────────────────────────────
 
@@ -15,9 +16,14 @@ export async function getKhachHangs(filters: {
 } = {}) {
     const { page = 1, limit = 10, query, NHOM_KH, PHAN_LOAI, NGUON } = filters;
 
+    const user = await getCurrentUser();
+    
     const where: any = {};
-
     const andConditions: any[] = [];
+
+    if (user?.ROLE === 'STAFF') {
+        andConditions.push({ NV_CS: user.userId });
+    }
 
     if (query) {
         andConditions.push({
@@ -73,10 +79,17 @@ export async function getKhachHangs(filters: {
 
 export async function getKhachHangStats() {
     try {
-        const total = await prisma.kHTN.count();
+        const user = await getCurrentUser();
+        const where: any = {};
+        if (user?.ROLE === 'STAFF') {
+            where.NV_CS = user.userId;
+        }
+
+        const total = await prisma.kHTN.count({ where });
         const grouped = await prisma.kHTN.groupBy({
             by: ["PHAN_LOAI"],
             _count: { _all: true },
+            where,
         });
 
         // Parse grouped groups loosely
