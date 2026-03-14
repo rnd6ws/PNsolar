@@ -57,6 +57,7 @@ model DMHH {
   HINH_ANH    String?
   XUAT_XU     String?
   BAO_HANH    String?
+  HIEU_LUC    Boolean  @default(true)
 
   // Soft Delete
   DELETED_AT DateTime?
