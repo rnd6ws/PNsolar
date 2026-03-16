@@ -430,3 +430,43 @@ export async function getCoordinatesFromAddress(address: string) {
         return { success: false, message: 'Lỗi khi lấy tọa độ vui lòng kiểm tra lại' };
     }
 }
+
+// ─── Danh mục: LÝ DO TỪ CHỐI ────────────────────────────────────────
+
+export async function getLyDoTuChoi() {
+    try {
+        const data = await prisma.lY_DO_TU_CHOI.findMany({
+            orderBy: { CREATED_AT: "asc" },
+        });
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, data: [] };
+    }
+}
+
+export async function createLyDoTuChoi(lyDo: string) {
+    try {
+        if (!lyDo.trim()) return { success: false, message: "Vui lòng nhập lý do" };
+        
+        const exists = await prisma.lY_DO_TU_CHOI.findFirst({
+            where: { LY_DO: { equals: lyDo.trim(), mode: "insensitive" } }
+        });
+        if (exists) return { success: false, message: `Lý do "${lyDo.trim()}" đã tồn tại` };
+
+        await prisma.lY_DO_TU_CHOI.create({ data: { LY_DO: lyDo.trim() } });
+        revalidatePath("/khach-hang");
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, message: "Lý do đã tồn tại hoặc có lỗi" };
+    }
+}
+
+export async function deleteLyDoTuChoi(id: string) {
+    try {
+        await prisma.lY_DO_TU_CHOI.delete({ where: { ID: id } });
+        revalidatePath("/khach-hang");
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, message: "Lỗi xóa lý do" };
+    }
+}

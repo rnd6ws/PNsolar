@@ -57,7 +57,7 @@ model DMHH {
   HINH_ANH    String?
   XUAT_XU     String?
   BAO_HANH    String?
-  HIEU_LUC    Boolean  @default(true)
+  HIEU_LUC    Boolean @default(true)
 
   // Soft Delete
   DELETED_AT DateTime?
@@ -241,8 +241,8 @@ model KHTN {
   LAT              Float?
   LONG             Float?
 
-  NGUOI_DAI_DIEN   NGUOI_DAI_DIEN[]
-  NGUOI_LIENHE     NGUOI_LIENHE[]
+  NGUOI_DAI_DIEN NGUOI_DAI_DIEN[]
+  NGUOI_LIENHE   NGUOI_LIENHE[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -254,8 +254,8 @@ model KHTN {
 
 // ===== NGƯỜI GIỚI THIỆU =====
 model NGUOI_GIOI_THIEU {
-  ID       String  @id @default(auto()) @map("_id") @db.ObjectId
-  TEN_NGT  String
+  ID        String  @id @default(auto()) @map("_id") @db.ObjectId
+  TEN_NGT   String
   SO_DT_NGT String?
 
   CREATED_AT DateTime @default(now())
@@ -266,17 +266,17 @@ model NGUOI_GIOI_THIEU {
 
 // ===== NGƯỜI ĐẠI DIỆN =====
 model NGUOI_DAI_DIEN {
-  ID         String    @id @default(auto()) @map("_id") @db.ObjectId
-  ID_KH      String    @db.ObjectId
-  KH         KHTN      @relation(fields: [ID_KH], references: [ID], onDelete: Cascade)
-  NGUOI_DD   String
-  CHUC_VU    String?
-  SDT        String?
-  EMAIL      String?
-  NGAY_SINH  DateTime?
+  ID        String    @id @default(auto()) @map("_id") @db.ObjectId
+  ID_KH     String    @db.ObjectId
+  KH        KHTN      @relation(fields: [ID_KH], references: [ID], onDelete: Cascade)
+  NGUOI_DD  String
+  CHUC_VU   String?
+  SDT       String?
+  EMAIL     String?
+  NGAY_SINH DateTime?
 
-  CREATED_AT DateTime  @default(now())
-  UPDATED_AT DateTime  @updatedAt
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
 
   @@index([ID_KH])
   @@map("NGUOI_DAI_DIEN")
@@ -284,19 +284,30 @@ model NGUOI_DAI_DIEN {
 
 // ===== NGƯỜI LIÊN HỆ =====
 model NGUOI_LIENHE {
-  ID               String  @id @default(auto()) @map("_id") @db.ObjectId
-  ID_KH            String  @db.ObjectId
-  KH               KHTN    @relation(fields: [ID_KH], references: [ID], onDelete: Cascade)
-  TENNGUOI_LIENHE  String
-  CHUC_VU          String?
-  SDT              String?
-  EMAIL            String?
-  GHI_CHU          String?
-  HIEU_LUC         String  @default("Đang hiệu lực")
+  ID              String  @id @default(auto()) @map("_id") @db.ObjectId
+  ID_KH           String  @db.ObjectId
+  KH              KHTN    @relation(fields: [ID_KH], references: [ID], onDelete: Cascade)
+  TENNGUOI_LIENHE String
+  CHUC_VU         String?
+  SDT             String?
+  EMAIL           String?
+  GHI_CHU         String?
+  HIEU_LUC        String  @default("Đang hiệu lực")
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
 
   @@index([ID_KH])
   @@map("NGUOI_LIENHE")
+}
+
+// ===== LÝ DO TỪ CHỐI =====
+model LY_DO_TU_CHOI {
+  ID    String @id @default(auto()) @map("_id") @db.ObjectId
+  LY_DO String @unique
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("LY_DO_TU_CHOI")
 }

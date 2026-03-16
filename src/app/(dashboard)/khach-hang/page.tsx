@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { getKhachHangs, getPhanLoaiKH, getNguonKH, getKhachHangStats, getNVList, getNguoiGioiThieu } from "@/features/khach-hang/action";
+import { getKhachHangs, getPhanLoaiKH, getNguonKH, getKhachHangStats, getNVList, getNguoiGioiThieu, getLyDoTuChoi } from "@/features/khach-hang/action";
 import { getNhomKH } from "@/features/nhom-kh/action";
 import Pagination from "@/components/Pagination";
 import { Users2, UserCheck, UserX, UserCog } from "lucide-react";
@@ -28,7 +28,7 @@ export default async function KhachHangPage({
     const PHAN_LOAI = params.PHAN_LOAI;
     const NGUON = params.NGUON;
 
-    const [{ data = [], pagination }, { data: phanLoais = [] }, { data: nguons = [] }, { data: nhoms = [] }, stats, { data: nhanViens = [] }, { data: nguoiGioiThieus = [] }] =
+    const [{ data = [], pagination }, { data: phanLoais = [] }, { data: nguons = [] }, { data: nhoms = [] }, stats, { data: nhanViens = [] }, { data: nguoiGioiThieus = [] }, { data: lyDoTuChois = [] }] =
         await Promise.all([
             getKhachHangs({ query, page, limit: 10, NHOM_KH, PHAN_LOAI, NGUON }),
             getPhanLoaiKH(),
@@ -36,7 +36,8 @@ export default async function KhachHangPage({
             getNhomKH(),
             getKhachHangStats(),
             getNVList(),
-            getNguoiGioiThieu()
+            getNguoiGioiThieu(),
+            getLyDoTuChoi()
         ]);
 
     const nhomOptions = Array.from(new Set((nhoms as any[]).map((n: any) => n.NHOM))).filter(Boolean).map(val => ({ label: String(val), value: String(val) }));
@@ -65,6 +66,7 @@ export default async function KhachHangPage({
                                     phanLoais={phanLoais as any}
                                     nguons={nguons as any}
                                     nhoms={nhoms as any}
+                                    lyDoTuChois={lyDoTuChois as any}
                                 />
                             </PermissionGuard>
                             <PermissionGuard moduleKey="khach-hang" level="add">
