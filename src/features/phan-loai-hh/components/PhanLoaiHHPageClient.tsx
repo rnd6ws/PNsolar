@@ -10,11 +10,12 @@ import ColumnToggleButton, { type ColumnKey } from './ColumnToggleButton';
 interface Props {
     data: any[];
     nhomHHs: { ID: string; MA_NHOM: string; TEN_NHOM: string; }[];
+    goiGiaMap: Record<string, { count: number; latestDate: string | null; items: any[] }>;
 }
 
 const DEFAULT_COLUMNS: ColumnKey[] = ['nhom', 'maPhanLoai', 'phanLoai', 'dvtNhom'];
 
-export default function PhanLoaiHHPageClient({ data, nhomHHs }: Props) {
+export default function PhanLoaiHHPageClient({ data, nhomHHs, goiGiaMap }: Props) {
     const searchParams = useSearchParams();
     const query = searchParams.get('query')?.toLowerCase() || "";
     const filterNhom = searchParams.get('NHOM') || 'all';
@@ -53,6 +54,7 @@ export default function PhanLoaiHHPageClient({ data, nhomHHs }: Props) {
                     data={filteredData}
                     nhomHHs={nhomHHs}
                     visibleColumns={visibleColumns}
+                    goiGiaMap={goiGiaMap}
                 />
             </div>
         </>

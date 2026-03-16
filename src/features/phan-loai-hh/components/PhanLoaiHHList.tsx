@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react';
-import { Edit2, Trash2, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Plus, ChevronDown, ChevronRight, DollarSign, X, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { updatePhanLoaiHH, deletePhanLoaiHH, createDongHH, updateDongHH, deleteDongHH } from '@/features/phan-loai-hh/action';
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
@@ -10,16 +10,19 @@ import type { ColumnKey } from './ColumnToggleButton';
 export default function PhanLoaiHHList({
     data,
     nhomHHs,
-    visibleColumns
+    visibleColumns,
+    goiGiaMap = {},
 }: {
     data: any[],
     nhomHHs: { ID: string; MA_NHOM: string; TEN_NHOM: string; }[],
-    visibleColumns?: ColumnKey[]
+    visibleColumns?: ColumnKey[],
+    goiGiaMap?: Record<string, { count: number; latestDate: string | null; items: any[] }>,
 }) {
     const [editMode, setEditMode] = useState<any>(null);
     const [dongHHModal, setDongHHModal] = useState<{ mode: 'ADD' | 'EDIT', phanLoaiId: string, itemData?: any } | null>(null);
     const [expandedSubRows, setExpandedSubRows] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
+    const [goiGiaDetail, setGoiGiaDetail] = useState<{ maDongHang: string; tenDongHang: string; items: any[]; latestDate: string | null } | null>(null);
 
     const toggleExpand = (id: string) => {
         setExpandedSubRows(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]);
@@ -203,6 +206,7 @@ export default function PhanLoaiHHList({
                                                             <th className="px-3 p-3 font-bold">Hãng</th>
                                                             <th className="px-3 p-3 font-bold">Xuất xứ</th>
                                                             <th className="px-3 p-3 font-bold">ĐVT</th>
+                                                            <th className="px-3 p-3 font-bold text-center">Gói giá</th>
                                                             <th className="text-right pr-4 p-3 font-bold">Hành động</th>
                                                         </tr>
                                                     </thead>
@@ -215,6 +219,29 @@ export default function PhanLoaiHHList({
                                                                 <td className="px-3 py-2 text-muted-foreground">{child.HANG || '—'}</td>
                                                                 <td className="px-3 py-2 text-muted-foreground">{child.XUAT_XU || '—'}</td>
                                                                 <td className="px-3 py-2 text-muted-foreground">{child.DVT || '—'}</td>
+                                                                <td className="px-3 py-2 text-center">
+                                                                    {(() => {
+                                                                        const info = goiGiaMap[child.MA_DONG_HANG];
+                                                                        if (!info || info.count === 0) {
+                                                                            return <span className="text-xs text-muted-foreground">—</span>;
+                                                                        }
+                                                                        return (
+                                                                            <button
+                                                                                onClick={() => setGoiGiaDetail({
+                                                                                    maDongHang: child.MA_DONG_HANG,
+                                                                                    tenDongHang: child.TEN_DONG_HANG || child.MA_DONG_HANG,
+                                                                                    items: info.items,
+                                                                                    latestDate: info.latestDate,
+                                                                                })}
+                                                                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-md text-[11px] font-bold hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
+                                                                                title={`Xem ${info.count} gói giá`}
+                                                                            >
+                                                                                <DollarSign className="w-3 h-3" />
+                                                                                {info.count}
+                                                                            </button>
+                                                                        );
+                                                                    })()}
+                                                                </td>
                                                                 <td className="text-right pr-4 py-2">
                                                                     <div className="flex justify-end gap-1">
                                                                         <PermissionGuard moduleKey="phan-loai-hh" level="edit">
@@ -233,7 +260,7 @@ export default function PhanLoaiHHList({
                                                         ))}
                                                         {(!item.DONG_HHS || item.DONG_HHS.length === 0) && (
                                                             <tr>
-                                                                <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground italic text-xs">
+                                                                <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground italic text-xs">
                                                                     Chưa có dòng hàng nào thuộc phân loại này. Bấm vào nút + ở dòng trên để thêm.
                                                                 </td>
                                                             </tr>
@@ -320,6 +347,26 @@ export default function PhanLoaiHHList({
                                             <span>Hãng: {child.HANG || '—'}</span>
                                             <span>Xuất xứ: {child.XUAT_XU || '—'}</span>
                                             <span>ĐVT: {child.DVT || '—'}</span>
+                                            {(() => {
+                                                const info = goiGiaMap[child.MA_DONG_HANG];
+                                                if (info && info.count > 0) {
+                                                    return (
+                                                        <button
+                                                            onClick={() => setGoiGiaDetail({
+                                                                maDongHang: child.MA_DONG_HANG,
+                                                                tenDongHang: child.TEN_DONG_HANG || child.MA_DONG_HANG,
+                                                                items: info.items,
+                                                                latestDate: info.latestDate,
+                                                            })}
+                                                            className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-bold"
+                                                        >
+                                                            <DollarSign className="w-3 h-3" />
+                                                            Gói giá: {info.count}
+                                                        </button>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
                                         </div>
                                     </div>
                                 ))}
@@ -414,6 +461,64 @@ export default function PhanLoaiHHList({
                     </form>
                 )}
             </Modal>
+
+            {/* Modal Chi tiết Gói giá */}
+            {goiGiaDetail && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between p-5 border-b">
+                            <div>
+                                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                                    <DollarSign className="w-4 h-4 text-amber-600" />
+                                    Gói giá — {goiGiaDetail.tenDongHang} ({goiGiaDetail.maDongHang})
+                                </h3>
+                                {goiGiaDetail.latestDate && (
+                                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        Ngày hiệu lực mới nhất: {new Date(goiGiaDetail.latestDate).toLocaleDateString('vi-VN')}
+                                    </p>
+                                )}
+                            </div>
+                            <button onClick={() => setGoiGiaDetail(null)} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-5">
+                            <table className="w-full text-left text-[13px]">
+                                <thead>
+                                    <tr className="text-muted-foreground uppercase tracking-widest text-[10px] border-b">
+                                        <th className="pb-2 font-bold">Mã gói giá</th>
+                                        <th className="pb-2 font-bold">Gói giá</th>
+                                        <th className="pb-2 font-bold text-center">SL Min</th>
+                                        <th className="pb-2 font-bold text-center">SL Max</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/40">
+                                    {goiGiaDetail.items.map((item: any) => (
+                                        <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
+                                            <td className="py-2.5 font-mono text-sm font-medium text-foreground">{item.ID_GOI_GIA}</td>
+                                            <td className="py-2.5 font-bold text-emerald-600">{item.GOI_GIA}</td>
+                                            <td className="py-2.5 text-center text-muted-foreground">{item.SL_MIN ?? '—'}</td>
+                                            <td className="py-2.5 text-center text-muted-foreground">{item.SL_MAX ?? '—'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="px-5 py-3 border-t bg-muted/5 flex justify-between items-center">
+                            <span className="text-xs text-muted-foreground">
+                                Tổng: <strong className="text-foreground">{goiGiaDetail.items.length}</strong> gói giá
+                            </span>
+                            <button
+                                onClick={() => setGoiGiaDetail(null)}
+                                className="h-8 px-4 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

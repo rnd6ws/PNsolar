@@ -109,6 +109,16 @@ const moduleGroups: ModuleGroup[] = [
                 moduleKey: "hang-hoa",
             },
             {
+                name: "Gói giá",
+                description: "Quản lý gói giá theo dòng hàng và số lượng.",
+                href: "/goi-gia",
+                icon: CreditCard,
+                color: "text-amber-600",
+                bgColor: "bg-amber-50 dark:bg-amber-950/50",
+                available: true,
+                moduleKey: "goi-gia",
+            },
+            {
                 name: "Kho hàng",
                 description: "Theo dõi tồn kho, nhập xuất kho.",
                 href: "/kho-hang",

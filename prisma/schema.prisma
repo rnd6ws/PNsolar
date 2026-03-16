@@ -300,3 +300,21 @@ model NGUOI_LIENHE {
   @@index([ID_KH])
   @@map("NGUOI_LIENHE")
 }
+
+// ===== GÓI GIÁ (Price Package) =====
+model GOI_GIA {
+  ID            String    @id @default(auto()) @map("_id") @db.ObjectId
+  ID_GOI_GIA    String    @unique
+  NGAY_HIEU_LUC DateTime?
+  MA_DONG_HANG  String
+  GOI_GIA       String
+  SL_MIN        Int?
+  SL_MAX        Int?
+
+  DELETED_AT DateTime?
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
+
+  @@index([MA_DONG_HANG, DELETED_AT])
+  @@map("GOI_GIA")
+}

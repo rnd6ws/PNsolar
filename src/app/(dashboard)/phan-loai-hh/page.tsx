@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { getPhanLoaiHHTable } from "@/features/phan-loai-hh/action";
 import { getNhomHHTable } from "@/features/nhom-hh/action";
+import { getGoiGiaMapByDongHang } from "@/features/goi-gia/action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { Package, PackagePlus, Tags } from 'lucide-react';
 import SettingNhomHHButton from "@/features/phan-loai-hh/components/SettingNhomHHButton";
@@ -21,6 +22,8 @@ export default async function PhanLoaiHHPage() {
 
     const nhomRes = await getNhomHHTable();
     const nhomHHs: any[] = nhomRes.success && nhomRes.data ? nhomRes.data : [];
+
+    const goiGiaMap = await getGoiGiaMapByDongHang();
 
     return (
         <PermissionGuard moduleKey="phan-loai-hh" level="view" showNoAccess>
@@ -95,6 +98,7 @@ export default async function PhanLoaiHHPage() {
                     <PhanLoaiHHPageClient
                         data={data}
                         nhomHHs={nhomHHs as any}
+                        goiGiaMap={goiGiaMap}
                     />
                 </div>
             </div>
