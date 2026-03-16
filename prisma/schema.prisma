@@ -238,11 +238,13 @@ model KHTN {
   PHAN_LOAI        String?
   NV_CS            String?
   LICH_SU          String?
+  LY_DO_TU_CHOI    String?
   LAT              Float?
   LONG             Float?
 
   NGUOI_DAI_DIEN NGUOI_DAI_DIEN[]
   NGUOI_LIENHE   NGUOI_LIENHE[]
+  CO_HOI         CO_HOI[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -310,4 +312,41 @@ model LY_DO_TU_CHOI {
   UPDATED_AT DateTime @updatedAt
 
   @@map("LY_DO_TU_CHOI")
+}
+
+// ===== DANH MỤC CƠ HỘI (Service Catalog) =====
+model DM_CO_HOI {
+  ID         String  @id @default(auto()) @map("_id") @db.ObjectId
+  NHOM_DV    String  // Nhóm dịch vụ
+  DICH_VU    String  // Tên dịch vụ
+  GIA_TRI_TB Float   // Giá trị trung bình
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([NHOM_DV])
+  @@map("DM_CO_HOI")
+}
+
+// ===== CƠ HỘI (Opportunity) =====
+model CO_HOI {
+  ID              String    @id @default(auto()) @map("_id") @db.ObjectId
+  ID_CH           String    @unique // OP-TEN_VT-YYMMDD-001
+  NGAY_TAO        DateTime  @default(now())
+  ID_KH           String    @db.ObjectId
+  KH              KHTN      @relation(fields: [ID_KH], references: [ID])
+  NHU_CAU         Json?     // Mảng các DM_CO_HOI ID được chọn
+  GHI_CHU_NC      String?
+  GIA_TRI_DU_KIEN Float?
+  NGAY_DK_CHOT    DateTime?
+  TINH_TRANG      String    @default("Đang mở")
+  NGAY_DONG       DateTime?
+  LY_DO           String?
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([ID_KH])
+  @@index([TINH_TRANG])
+  @@map("CO_HOI")
 }

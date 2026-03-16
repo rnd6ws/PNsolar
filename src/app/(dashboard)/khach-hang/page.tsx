@@ -135,6 +135,7 @@ export default async function KhachHangPage({
                         nhoms={nhoms as any}
                         nhanViens={nhanViens as any}
                         nguoiGioiThieus={nguoiGioiThieus as any}
+                        lyDoTuChois={lyDoTuChois as any}
                         nhomOptions={nhomOptions}
                         phanLoaiOptions={phanLoaiOptions}
                         nguonOptions={nguonOptions}
