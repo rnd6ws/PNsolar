@@ -10,7 +10,7 @@ import {
     Truck, ShoppingCart, Wrench,
     CreditCard, Wallet, PieChart, Bell,
     UserCheck, Calendar, Shield, HelpCircle,
-    Layers, Archive, Map, DollarSign,
+    Layers, Archive, Map, DollarSign, Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/features/phan-quyen/PermissionContext";
@@ -55,6 +55,16 @@ const moduleGroups: ModuleGroup[] = [
                 bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
                 available: true,
                 moduleKey: "khach-hang",
+            },
+            {
+                name: "Cơ hội",
+                description: "Quản lý cơ hội bán hàng và theo dõi pipeline.",
+                href: "/co-hoi",
+                icon: Target,
+                color: "text-orange-600",
+                bgColor: "bg-orange-50 dark:bg-orange-950/50",
+                available: true,
+                moduleKey: "co-hoi",
             },
             {
                 name: "Chấm công",

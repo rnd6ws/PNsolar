@@ -69,23 +69,23 @@ export default function SettingCoHoiButton({ dmCoHoi }: Props) {
                 <span className="hidden sm:inline">Danh mục</span>
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục Cơ hội">
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục Cơ hội" size="lg">
                 <div className="space-y-5">
                     {/* Form thêm mới */}
                     <div className="bg-muted/30 rounded-xl border border-border p-4 space-y-3">
-                        <p className="text-xs font-bold text-muted-foreground tracking-widest">THÊM DỊCH VỤ MỚI</p>
+                        <p className="text-sm font-semibold text-muted-foreground">Thêm dịch vụ mới</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <input
                                 value={nhomDv}
                                 onChange={e => setNhomDv(e.target.value)}
                                 placeholder="Nhóm dịch vụ (VD: Điện mặt trời)"
-                                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                className="input-modern"
                             />
                             <input
                                 value={dichVu}
                                 onChange={e => setDichVu(e.target.value)}
                                 placeholder="Tên dịch vụ"
-                                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                className="input-modern"
                             />
                         </div>
                         <div className="flex gap-3">
@@ -94,7 +94,7 @@ export default function SettingCoHoiButton({ dmCoHoi }: Props) {
                                 value={giaTri}
                                 onChange={e => setGiaTri(e.target.value)}
                                 placeholder="Giá trị trung bình (VNĐ)"
-                                className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                className="input-modern flex-1"
                             />
                             <button
                                 onClick={handleAdd}
@@ -109,7 +109,7 @@ export default function SettingCoHoiButton({ dmCoHoi }: Props) {
 
                     {/* Danh sách */}
                     <div className="space-y-2">
-                        <p className="text-xs font-bold text-muted-foreground tracking-widest">DANH SÁCH ({dmCoHoi.length})</p>
+                        <p className="text-sm font-semibold text-muted-foreground">Danh sách ({dmCoHoi.length})</p>
                         {Object.keys(grouped).length === 0 && (
                             <p className="text-sm text-muted-foreground italic py-4 text-center">Chưa có danh mục nào.</p>
                         )}

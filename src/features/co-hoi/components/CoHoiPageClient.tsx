@@ -4,6 +4,7 @@ import { useState } from "react";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
 import CoHoiList from "./CoHoiList";
+import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
 import { Settings2, Download } from "lucide-react";
 
 interface Props {
@@ -12,7 +13,10 @@ interface Props {
     tinhTrangOptions: { label: string; value: string }[];
 }
 
+const DEFAULT_COLUMNS: ColumnKey[] = ["ngayTao", "nhuCau", "giaTriDK", "dkChot", "tinhTrang"];
+
 export default function CoHoiPageClient({ data, dmCoHoi, tinhTrangOptions }: Props) {
+    const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
 
     return (
@@ -29,6 +33,7 @@ export default function CoHoiPageClient({ data, dmCoHoi, tinhTrangOptions }: Pro
                         <button
                             onClick={() => setShowFilters(!showFilters)}
                             className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${showFilters ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted text-muted-foreground"}`}
+                            title="Tùy chọn & Thao tác"
                         >
                             <Settings2 className="w-5 h-5" />
                         </button>
@@ -37,6 +42,7 @@ export default function CoHoiPageClient({ data, dmCoHoi, tinhTrangOptions }: Pro
                     {/* Desktop toolbar */}
                     <div className="hidden lg:flex items-center gap-3 w-auto">
                         <FilterSelect paramKey="TINH_TRANG" options={tinhTrangOptions} placeholder="Tình trạng" />
+                        <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                         <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0" title="Xuất Excel">
                             <Download className="w-4 h-4" />
                         </button>
@@ -47,8 +53,9 @@ export default function CoHoiPageClient({ data, dmCoHoi, tinhTrangOptions }: Pro
                 {showFilters && (
                     <div className="flex lg:hidden flex-col gap-3 w-full bg-muted/30 p-4 rounded-xl border border-border animate-in slide-in-from-top-2 fade-in duration-200">
                         <FilterSelect paramKey="TINH_TRANG" options={tinhTrangOptions} placeholder="Tình trạng" />
-                        <div className="flex justify-end pt-2 border-t border-border">
-                            <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm" title="Xuất Excel">
+                        <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-border w-full">
+                            <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                            <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex" title="Xuất Excel">
                                 <Download className="w-4 h-4" />
                             </button>
                         </div>
@@ -58,7 +65,7 @@ export default function CoHoiPageClient({ data, dmCoHoi, tinhTrangOptions }: Pro
 
             {/* List */}
             <div className="p-0">
-                <CoHoiList data={data} dmCoHoi={dmCoHoi} />
+                <CoHoiList data={data} dmCoHoi={dmCoHoi} visibleColumns={visibleColumns} />
             </div>
         </>
     );

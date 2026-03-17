@@ -34,7 +34,7 @@ export default function AddCoHoiButton({ dmCoHoi }: Props) {
                 Thêm cơ hội
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Tạo cơ hội mới">
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Tạo cơ hội mới" size="lg">
                 <CoHoiForm
                     key={isOpen ? "add-open" : "add-closed"}
                     dmCoHoi={dmCoHoi}

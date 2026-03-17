@@ -63,37 +63,45 @@ export default async function CoHoiPage({
                         </div>
                     </div>
 
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-[#3B82F6] text-white rounded-xl shadow-sm p-4 relative overflow-hidden flex flex-col justify-between h-[90px]">
-                            <p className="text-xs font-medium opacity-90">Tổng cơ hội</p>
-                            <p className="text-2xl font-bold leading-none">{stats.total}</p>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                <Target className="w-5 h-5 text-white" />
+                    {/* Stat Cards (chuẩn skill) */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-primary bg-primary/10">
+                                <Target className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Tổng cơ hội</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.total}</p>
                             </div>
                         </div>
 
-                        <div className="bg-[#6366F1] text-white rounded-xl shadow-sm p-4 relative overflow-hidden flex flex-col justify-between h-[90px]">
-                            <p className="text-xs font-medium opacity-90">Đang mở · {stats.dangMo}</p>
-                            <p className="text-lg font-bold leading-none">{formatCurrency(stats.dangMoGT)}</p>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                <TrendingUp className="w-5 h-5 text-white" />
+                        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-orange-500 bg-orange-500/10">
+                                <TrendingUp className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Đang mở · {stats.dangMo}</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{formatCurrency(stats.dangMoGT)}</p>
                             </div>
                         </div>
 
-                        <div className="bg-[#10B981] text-white rounded-xl shadow-sm p-4 relative overflow-hidden flex flex-col justify-between h-[90px]">
-                            <p className="text-xs font-medium opacity-90">Thành công · {stats.thanhCong}</p>
-                            <p className="text-lg font-bold leading-none">{formatCurrency(stats.thanhCongGT)}</p>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                <CheckCircle2 className="w-5 h-5 text-white" />
+                        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-green-600 bg-green-500/10">
+                                <CheckCircle2 className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Thành công · {stats.thanhCong}</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{formatCurrency(stats.thanhCongGT)}</p>
                             </div>
                         </div>
 
-                        <div className="bg-[#EF4444] text-white rounded-xl shadow-sm p-4 relative overflow-hidden flex flex-col justify-between h-[90px]">
-                            <p className="text-xs font-medium opacity-90">Thất bại</p>
-                            <p className="text-2xl font-bold leading-none">{stats.thatBai}</p>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                <XCircle className="w-5 h-5 text-white" />
+                        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-purple-600 bg-purple-500/10">
+                                <XCircle className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Thất bại</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.thatBai}</p>
                             </div>
                         </div>
                     </div>
