@@ -7,11 +7,14 @@ import { deleteCoHoi, updateCoHoi, createCoHoi } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import Modal from "@/components/Modal";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { CoHoiForm } from "./CoHoiForm";
+import type { ColumnKey } from "./ColumnToggleButton";
 
 interface Props {
     data: any[];
     dmCoHoi: { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[];
+    visibleColumns?: ColumnKey[];
 }
 
 function formatDate(val: any) {
@@ -76,7 +79,7 @@ function CoHoiDetail({ item, dmCoHoi, onClose }: { item: any; dmCoHoi: any[]; on
 
             {grouped.size > 0 && (
                 <div className="space-y-2">
-                    <p className="text-xs font-bold text-muted-foreground tracking-widest">NHU CẦU DỊCH VỤ</p>
+                    <p className="text-sm font-semibold text-muted-foreground">Nhu cầu dịch vụ</p>
                     <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
                         {Array.from(grouped.entries()).map(([nhom, items]) => (
                             <div key={nhom}>
@@ -108,7 +111,9 @@ function CoHoiDetail({ item, dmCoHoi, onClose }: { item: any; dmCoHoi: any[]; on
 }
 
 // ─── Component chính ──────────────────────────────────────────
-export default function CoHoiList({ data, dmCoHoi }: Props) {
+export default function CoHoiList({ data, dmCoHoi, visibleColumns }: Props) {
+    const cols = visibleColumns ?? ["ngayTao", "nhuCau", "giaTriDK", "dkChot", "tinhTrang"] as ColumnKey[];
+    const show = (col: ColumnKey) => cols.includes(col);
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<{ ID: string; ID_CH: string } | null>(null);
@@ -170,28 +175,39 @@ export default function CoHoiList({ data, dmCoHoi }: Props) {
 
     return (
         <>
-            <div className="overflow-x-auto">
-                <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
+            {/* ── Desktop Table ── */}
+            <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-center border-collapse text-sm">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] w-10">#</th>
-                            <th onClick={() => handleSort("NGAY_TAO")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground hidden xl:table-cell">
-                                Ngày tạo <SortIcon columnKey="NGAY_TAO" />
-                            </th>
-                            <th onClick={() => handleSort("ID_CH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground text-left">
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px] w-10">#</th>
+                            {show("ngayTao") && (
+                                <th onClick={() => handleSort("NGAY_TAO")} className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px] cursor-pointer group hover:text-foreground">
+                                    Ngày tạo <SortIcon columnKey="NGAY_TAO" />
+                                </th>
+                            )}
+                            <th onClick={() => handleSort("ID_CH")} className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px] cursor-pointer group hover:text-foreground text-left">
                                 Mã / Khách hàng <SortIcon columnKey="ID_CH" />
                             </th>
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden lg:table-cell">Nhu cầu</th>
-                            <th onClick={() => handleSort("GIA_TRI_DU_KIEN")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground hidden md:table-cell">
-                                Giá trị DK <SortIcon columnKey="GIA_TRI_DU_KIEN" />
-                            </th>
-                            <th onClick={() => handleSort("NGAY_DK_CHOT")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground hidden xl:table-cell">
-                                DK chốt <SortIcon columnKey="NGAY_DK_CHOT" />
-                            </th>
-                            <th onClick={() => handleSort("TINH_TRANG")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground hidden md:table-cell">
-                                Tình trạng <SortIcon columnKey="TINH_TRANG" />
-                            </th>
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] text-right">Hành động</th>
+                            {show("nhuCau") && (
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px]">Nhu cầu</th>
+                            )}
+                            {show("giaTriDK") && (
+                                <th onClick={() => handleSort("GIA_TRI_DU_KIEN")} className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px] cursor-pointer group hover:text-foreground">
+                                    Giá trị DK <SortIcon columnKey="GIA_TRI_DU_KIEN" />
+                                </th>
+                            )}
+                            {show("dkChot") && (
+                                <th onClick={() => handleSort("NGAY_DK_CHOT")} className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px] cursor-pointer group hover:text-foreground">
+                                    DK chốt <SortIcon columnKey="NGAY_DK_CHOT" />
+                                </th>
+                            )}
+                            {show("tinhTrang") && (
+                                <th onClick={() => handleSort("TINH_TRANG")} className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px] cursor-pointer group hover:text-foreground">
+                                    Tình trạng <SortIcon columnKey="TINH_TRANG" />
+                                </th>
+                            )}
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px] text-right">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -201,74 +217,61 @@ export default function CoHoiList({ data, dmCoHoi }: Props) {
                             return (
                                 <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
                                     <td className="px-4 py-3 align-middle text-muted-foreground text-xs">{idx + 1}</td>
-                                    <td className="px-4 py-3 align-middle text-xs text-muted-foreground hidden xl:table-cell whitespace-nowrap">
-                                        {formatDate(item.NGAY_TAO)}
-                                    </td>
+                                    {show("ngayTao") && (
+                                        <td className="px-4 py-3 align-middle text-xs text-muted-foreground whitespace-nowrap">
+                                            {formatDate(item.NGAY_TAO)}
+                                        </td>
+                                    )}
                                     <td className="px-4 py-3 align-middle text-left">
                                         <p className="font-mono text-xs text-primary font-semibold">{item.ID_CH}</p>
                                         <p className="text-xs text-muted-foreground mt-0.5">{item.KH?.TEN_KH}</p>
                                     </td>
-                                    <td className="px-4 py-3 align-middle hidden lg:table-cell">
-                                        {selectedDv.length > 0 ? (
-                                            <div className="flex flex-wrap gap-1 justify-center">
-                                                {selectedDv.slice(0, 3).map(d => (
-                                                    <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-                                                        {d.DICH_VU}
-                                                    </span>
-                                                ))}
-                                                {selectedDv.length > 3 && (
-                                                    <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
-                                                )}
-                                            </div>
-                                        ) : <span className="text-xs text-muted-foreground">—</span>}
-                                    </td>
-                                    <td className="px-4 py-3 align-middle hidden md:table-cell text-xs font-semibold text-foreground">
-                                        {formatCurrency(item.GIA_TRI_DU_KIEN)}
-                                    </td>
-                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground whitespace-nowrap">
-                                        {formatDate(item.NGAY_DK_CHOT)}
-                                    </td>
-                                    <td className="px-4 py-3 align-middle hidden md:table-cell">
-                                        {getTinhTrangBadge(item.TINH_TRANG)}
-                                    </td>
+                                    {show("nhuCau") && (
+                                        <td className="px-4 py-3 align-middle">
+                                            {selectedDv.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1 justify-center">
+                                                    {selectedDv.slice(0, 3).map(d => (
+                                                        <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+                                                            {d.DICH_VU}
+                                                        </span>
+                                                    ))}
+                                                    {selectedDv.length > 3 && (
+                                                        <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
+                                                    )}
+                                                </div>
+                                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                                        </td>
+                                    )}
+                                    {show("giaTriDK") && (
+                                        <td className="px-4 py-3 align-middle text-xs font-semibold text-foreground">
+                                            {formatCurrency(item.GIA_TRI_DU_KIEN)}
+                                        </td>
+                                    )}
+                                    {show("dkChot") && (
+                                        <td className="px-4 py-3 align-middle text-xs text-muted-foreground whitespace-nowrap">
+                                            {formatDate(item.NGAY_DK_CHOT)}
+                                        </td>
+                                    )}
+                                    {show("tinhTrang") && (
+                                        <td className="px-4 py-3 align-middle">
+                                            {getTinhTrangBadge(item.TINH_TRANG)}
+                                        </td>
+                                    )}
                                     <td className="px-4 py-3 align-middle text-right">
                                         <div className="flex justify-end gap-1 items-center">
                                             <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem chi tiết">
                                                 <Eye className="w-4 h-4" />
                                             </button>
-                                            <div className="hidden md:flex gap-1">
-                                                <PermissionGuard moduleKey="co-hoi" level="edit">
-                                                    <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                </PermissionGuard>
-                                                <PermissionGuard moduleKey="co-hoi" level="delete">
-                                                    <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </PermissionGuard>
-                                            </div>
-                                            <div className="md:hidden">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors">
-                                                            <MoreHorizontal className="w-4 h-4" />
-                                                        </button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-32 rounded-xl">
-                                                        <PermissionGuard moduleKey="co-hoi" level="edit">
-                                                            <DropdownMenuItem onClick={() => setEditItem(item)} className="cursor-pointer gap-2 rounded-lg">
-                                                                <Edit2 className="w-3.5 h-3.5" /> Sửa
-                                                            </DropdownMenuItem>
-                                                        </PermissionGuard>
-                                                        <PermissionGuard moduleKey="co-hoi" level="delete">
-                                                            <DropdownMenuItem onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} variant="destructive" className="cursor-pointer gap-2 rounded-lg">
-                                                                <Trash2 className="w-3.5 h-3.5" /> Xóa
-                                                            </DropdownMenuItem>
-                                                        </PermissionGuard>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
+                                            <PermissionGuard moduleKey="co-hoi" level="edit">
+                                                <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                            </PermissionGuard>
+                                            <PermissionGuard moduleKey="co-hoi" level="delete">
+                                                <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </PermissionGuard>
                                         </div>
                                     </td>
                                 </tr>
@@ -285,13 +288,67 @@ export default function CoHoiList({ data, dmCoHoi }: Props) {
                 </table>
             </div>
 
+            {/* ── Mobile Cards ── */}
+            <div className="lg:hidden divide-y divide-border">
+                {sortedData.map((item, idx) => {
+                    const nhuCauIds: string[] = item.NHU_CAU || [];
+                    const selectedDv = dmCoHoi.filter(d => nhuCauIds.includes(d.ID));
+                    return (
+                        <div key={item.ID} className="p-4 space-y-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                                <div>
+                                    <p className="font-mono text-xs text-primary font-semibold">{item.ID_CH}</p>
+                                    <p className="text-sm font-semibold text-foreground mt-0.5">{item.KH?.TEN_KH}</p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                    {getTinhTrangBadge(item.TINH_TRANG)}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                <span>{formatDate(item.NGAY_TAO)}</span>
+                                <span className="font-semibold text-foreground">{formatCurrency(item.GIA_TRI_DU_KIEN)}</span>
+                            </div>
+
+                            {selectedDv.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                    {selectedDv.slice(0, 3).map(d => (
+                                        <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+                                            {d.DICH_VU}
+                                        </span>
+                                    ))}
+                                    {selectedDv.length > 3 && (
+                                        <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-1 pt-1">
+                                <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem"><Eye className="w-4 h-4" /></button>
+                                <PermissionGuard moduleKey="co-hoi" level="edit">
+                                    <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa"><Edit2 className="w-4 h-4" /></button>
+                                </PermissionGuard>
+                                <PermissionGuard moduleKey="co-hoi" level="delete">
+                                    <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa"><Trash2 className="w-4 h-4" /></button>
+                                </PermissionGuard>
+                            </div>
+                        </div>
+                    );
+                })}
+                {data.length === 0 && (
+                    <div className="px-6 py-16 text-center text-muted-foreground italic">
+                        Chưa có cơ hội nào. Hãy thêm mới!
+                    </div>
+                )}
+            </div>
+
             {/* Modal: Xem chi tiết */}
-            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết cơ hội">
+            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết cơ hội" size="lg">
                 {viewItem && <CoHoiDetail item={viewItem} dmCoHoi={dmCoHoi} onClose={() => setViewItem(null)} />}
             </Modal>
 
             {/* Modal: Sửa */}
-            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật cơ hội">
+            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật cơ hội" size="lg">
                 {editItem && (
                     <CoHoiForm
                         key={editItem.ID}
@@ -306,21 +363,20 @@ export default function CoHoiList({ data, dmCoHoi }: Props) {
             </Modal>
 
             {/* Modal: Xác nhận xóa */}
-            <Modal isOpen={!!deleteItem} onClose={() => setDeleteItem(null)} title="Xóa cơ hội">
-                {deleteItem && (
-                    <div className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                            Bạn có chắc chắn muốn xóa cơ hội <span className="font-semibold text-foreground">{deleteItem.ID_CH}</span> không?<br />Hành động này không thể hoàn tác.
-                        </p>
-                        <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-                            <button type="button" onClick={() => setDeleteItem(null)} disabled={loading} className="btn-premium-secondary flex-1">Hủy bỏ</button>
-                            <button type="button" onClick={handleDelete} disabled={loading} className="btn-premium-primary !bg-destructive !text-destructive-foreground hover:!bg-destructive/90 flex-1">
-                                {loading ? "Đang xử lý..." : "Xóa"}
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <DeleteConfirmDialog
+                isOpen={!!deleteItem}
+                onClose={() => setDeleteItem(null)}
+                onConfirm={async () => {
+                    if (!deleteItem) return { success: false };
+                    const res = await deleteCoHoi(deleteItem.ID);
+                    if (res.success) toast.success("Đã xóa cơ hội");
+                    else toast.error((res as any).message || "Lỗi xóa");
+                    return res;
+                }}
+                title="Xác nhận xóa cơ hội"
+                itemName={deleteItem?.ID_CH}
+                confirmText="Xóa cơ hội"
+            />
         </>
     );
 }

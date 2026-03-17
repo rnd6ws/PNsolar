@@ -48,7 +48,7 @@ export default function AddKhachHangButton({ phanLoais, nguons, nhoms, nhanViens
                 Thêm khách hàng
             </button>
 
-            <Modal isOpen={isOpen} onClose={handleClose} title="Thêm khách hàng mới">
+            <Modal isOpen={isOpen} onClose={handleClose} title="Thêm khách hàng mới" size="lg">
                 {error && (
                     <div className="p-3 bg-destructive/10 text-destructive rounded-xl text-sm font-semibold mb-4">{error}</div>
                 )}

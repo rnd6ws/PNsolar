@@ -193,22 +193,22 @@ export function KhachHangForm({
 
             {/* Row 1: MÃ KH, TEN KH */}
             <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground tracking-widest">Tên khách hàng <span className="text-destructive">*</span></label>
+                <label className="text-sm font-semibold text-muted-foreground">Tên khách hàng <span className="text-destructive">*</span></label>
                 <input name="TEN_KH" required className="input-modern" placeholder="Nhập tên khách hàng hoặc nhập mst để tra cứu" defaultValue={defaultValues?.TEN_KH ?? ""} />
             </div>
 
             {/* Row 2: Tên viết tắt, Ngày thành lập & Ngày ghi nhận */}
             <div className="grid grid-cols-1 md:grid-cols-14 gap-4">
                 <div className="space-y-1.5 md:col-span-6 lg:col-span-6">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Tên viết tắt</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Tên viết tắt</label>
                     <input name="TEN_VT" className="input-modern" placeholder="Nhập tên viết tắt" defaultValue={defaultValues?.TEN_VT ?? ""} />
                 </div>
                 <div className="space-y-1.5 md:col-span-4 lg:col-span-4">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Ngày thành lập</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Ngày thành lập</label>
                     <input name="NGAY_THANH_LAP" type="date" className="input-modern" defaultValue={defaultValues?.NGAY_THANH_LAP ? new Date(defaultValues.NGAY_THANH_LAP).toISOString().split("T")[0] : ""} />
                 </div>
                 <div className="space-y-1.5 md:col-span-4 lg:col-span-4">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Ngày ghi nhận</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Ngày ghi nhận</label>
                     <input name="NGAY_GHI_NHAN" type="date" className="input-modern" defaultValue={defaultValues?.NGAY_GHI_NHAN ? new Date(defaultValues.NGAY_GHI_NHAN).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]} />
                 </div>
             </div>
@@ -216,15 +216,15 @@ export function KhachHangForm({
             {/* Row 3: Điện thoại & Email & MST */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 <div className="space-y-1.5 md:col-span-4 lg:col-span-3">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Điện thoại</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Điện thoại</label>
                     <input name="DIEN_THOAI" className="input-modern" placeholder="09xxx..." defaultValue={defaultValues?.DIEN_THOAI ?? ""} />
                 </div>
                 <div className="space-y-1.5 md:col-span-8 lg:col-span-5">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Email</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Email</label>
                     <input name="EMAIL" type="email" className="input-modern" placeholder="email@gmail.com" defaultValue={defaultValues?.EMAIL ?? ""} />
                 </div>
                 <div className="space-y-1.5 md:col-span-12 lg:col-span-4">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Mã số thuế</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Mã số thuế</label>
                     <div className="flex gap-2">
                         <input name="MST" className="input-modern" placeholder="0123456789" defaultValue={defaultValues?.MST ?? ""} />
                         <button type="button" onClick={handleLookup} disabled={lookupLoading} className="btn-premium-primary flex items-center justify-center gap-1.5 px-3">
@@ -238,7 +238,7 @@ export function KhachHangForm({
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                        <label className="text-xs font-bold text-muted-foreground tracking-widest">Địa chỉ</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Địa chỉ</label>
                         {(lat || long) && (
                             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary truncate max-w-[150px] md:max-w-[200px]" title={`${lat}, ${long}`}>
                                 {lat && long ? `${lat}, ${long}` : (lat ? `Lat: ${lat}` : `Long: ${long}`)}
@@ -281,11 +281,11 @@ export function KhachHangForm({
             {showCoordinates && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-muted-foreground tracking-widest">Vĩ độ (LAT)</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Vĩ độ (LAT)</label>
                         <input name="LAT" value={lat} onChange={(e) => setLat(e.target.value)} className="input-modern" placeholder="Tọa độ Latitude" />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-muted-foreground tracking-widest">Kinh độ (LONG)</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Kinh độ (LONG)</label>
                         <input name="LONG" value={long} onChange={(e) => setLong(e.target.value)} className="input-modern" placeholder="Tọa độ Longitude" />
                     </div>
                 </div>
@@ -294,28 +294,28 @@ export function KhachHangForm({
             {/* Người đại diện */}
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center mb-1">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Người đại diện</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Người đại diện</label>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-muted/20 p-4 rounded-xl border border-border/50">
                     {defaultNguoiDaiDien?.ID && <input type="hidden" name="ID_DD" value={defaultNguoiDaiDien.ID} />}
                     <div className="space-y-1.5 md:col-span-12 lg:col-span-6">
-                        <label className="text-[11px] font-bold text-muted-foreground tracking-widest">Người đại diện <span className="text-destructive">*</span></label>
+                        <label className="text-sm font-semibold text-muted-foreground">Người đại diện <span className="text-destructive">*</span></label>
                         <input name="NGUOI_DD" required className="input-modern" placeholder="Nhập tên người đại diện" defaultValue={defaultNguoiDaiDien?.NGUOI_DD ?? ""} />
                     </div>
                     <div className="space-y-1.5 md:col-span-12 lg:col-span-6">
-                        <label className="text-[11px] font-bold text-muted-foreground tracking-widest">Chức vụ</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Chức vụ</label>
                         <input name="CHUC_VU_DD" className="input-modern" placeholder="Nhập chức vụ" defaultValue={defaultNguoiDaiDien?.CHUC_VU ?? ""} />
                     </div>
                     <div className="space-y-1.5 md:col-span-12 lg:col-span-4">
-                        <label className="text-[11px] font-bold text-muted-foreground tracking-widest">Điện thoại <span className="text-destructive">*</span></label>
+                        <label className="text-sm font-semibold text-muted-foreground">Điện thoại <span className="text-destructive">*</span></label>
                         <input name="SDT_DD" required className="input-modern" placeholder="09xxx..." defaultValue={defaultNguoiDaiDien?.SDT ?? ""} />
                     </div>
                     <div className="space-y-1.5 md:col-span-6 lg:col-span-4">
-                        <label className="text-[11px] font-bold text-muted-foreground tracking-widest">Email</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Email</label>
                         <input name="EMAIL_DD" type="email" className="input-modern" placeholder="email@gmail.com" defaultValue={defaultNguoiDaiDien?.EMAIL ?? ""} />
                     </div>
                     <div className="space-y-1.5 md:col-span-6 lg:col-span-4">
-                        <label className="text-[11px] font-bold text-muted-foreground tracking-widest">Ngày sinh</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Ngày sinh</label>
                         <input name="NGAY_SINH_DD" type="date" className="input-modern" defaultValue={defaultNguoiDaiDien?.NGAY_SINH ? new Date(defaultNguoiDaiDien.NGAY_SINH).toISOString().split("T")[0] : ""} />
                     </div>
                 </div>
@@ -324,7 +324,7 @@ export function KhachHangForm({
             {/* Row 5: Nhóm KH & Phân loại */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Nhóm KH</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Nhóm KH</label>
                     <FormSelect
                         name="NHOM_KH"
                         defaultValue={defaultValues?.NHOM_KH || ""}
@@ -333,7 +333,7 @@ export function KhachHangForm({
                     />
                 </div>
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Phân loại</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Phân loại</label>
                     <FormSelect
                         name="PHAN_LOAI"
                         defaultValue={defaultValues?.PHAN_LOAI || ""}
@@ -346,7 +346,7 @@ export function KhachHangForm({
             {/* Row 6: Nguồn & Người giới thiệu */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Nguồn</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Nguồn</label>
                     <FormSelect
                         name="NGUON"
                         value={selectedNguon}
@@ -361,7 +361,7 @@ export function KhachHangForm({
 
                 {selectedNguon === CTV_NGUON ? (
                     <div key="ngt-ctv" className="space-y-1.5">
-                        <label className="text-xs font-bold text-muted-foreground tracking-widest">
+                        <label className="text-sm font-semibold text-muted-foreground">
                             Người giới thiệu <span className="text-destructive">*</span>
                         </label>
                         <input type="hidden" name="NGUOI_GIOI_THIEU" value={selectedNgtId} />
@@ -409,7 +409,7 @@ export function KhachHangForm({
                                             </button>
                                         ) : (
                                             <div className="space-y-2 pt-1">
-                                                <p className="text-xs font-bold text-muted-foreground tracking-widest px-1">Thêm nhanh</p>
+                                                <p className="text-sm font-semibold text-muted-foreground px-1">Thêm nhanh</p>
                                                 <input type="text" placeholder="Tên người giới thiệu *" value={quickAddName} onChange={(e) => setQuickAddName(e.target.value)} className="input-modern text-sm" />
                                                 <input type="text" placeholder="Số điện thoại" value={quickAddPhone} onChange={(e) => setQuickAddPhone(e.target.value)} className="input-modern text-sm" />
                                                 <div className="flex gap-2">
@@ -427,7 +427,7 @@ export function KhachHangForm({
                     </div>
                 ) : (
                     <div key="ngt-text" className="space-y-1.5">
-                        <label className="text-xs font-bold text-muted-foreground tracking-widest">Người giới thiệu</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Người giới thiệu</label>
                         <input
                             disabled={true}
                             name="NGUOI_GIOI_THIEU"
@@ -443,7 +443,7 @@ export function KhachHangForm({
             {/* Row 7: Sales phụ trách & NV chăm sóc */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">Sales phụ trách</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
                     <FormSelect
                         name="SALES_PT"
                         defaultValue={defaultValues?.SALES_PT || ""}
@@ -452,7 +452,7 @@ export function KhachHangForm({
                     />
                 </div>
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">NV Chăm sóc</label>
+                    <label className="text-sm font-semibold text-muted-foreground">NV Chăm sóc</label>
                     <FormSelect
                         name="NV_CS"
                         defaultValue={defaultValues?.NV_CS || ""}

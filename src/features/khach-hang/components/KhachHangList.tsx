@@ -524,7 +524,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             </div>
 
             {/* Modal: Thêm */}
-            <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Thêm khách hàng mới">
+            <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Thêm khách hàng mới" size="lg">
                 <KhachHangForm
                     key={isAddOpen ? "add-open" : "add-closed"}
                     phanLoais={phanLoais}
@@ -540,7 +540,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             </Modal>
 
             {/* Modal: Sửa */}
-            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật khách hàng">
+            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật khách hàng" size="lg">
                 {editItem && (
                     <KhachHangForm
                         key={editItem?.ID ?? "edit"}
@@ -559,7 +559,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             </Modal>
 
             {/* Modal: Xem chi tiết */}
-            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết khách hàng">
+            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết khách hàng" size="lg">
                 {viewItem && <KhachHangDetail kh={viewItem} nhanViens={nhanViens} nguoiGioiThieus={nguoiGioiThieus} onClose={() => setViewItem(null)} />}
             </Modal>
 
@@ -570,7 +570,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                         <p className="text-sm text-muted-foreground">Chọn lý do từ chối cho khách hàng <span className="font-semibold text-foreground">{thamDinhItem.TEN_KH}</span></p>
 
                         <div className="space-y-1.5 flex flex-col">
-                            <label className="text-xs font-bold text-muted-foreground tracking-widest">Lý do từ chối</label>
+                            <label className="text-sm font-semibold text-muted-foreground">Lý do từ chối</label>
                             <FormSelect
                                 name="lyDoTuChoi"
                                 value={lyDoTuChoiSelect}

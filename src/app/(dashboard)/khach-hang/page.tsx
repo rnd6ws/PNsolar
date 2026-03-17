@@ -81,46 +81,55 @@ export default async function KhachHangPage({
                         </div>
                     </div>
 
-                    {/* Mini Stats */}
-                    {/* Mini Stats (Custom colored 5 column) */}
+                    {/* Stat Cards (chuẩn skill) */}
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                        <Link href="/khach-hang" className="bg-[#3B82F6] text-white rounded-xl shadow-sm p-4 relative overflow-hidden flex flex-col justify-between h-[90px] cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all">
-                            <p className="text-xs font-medium opacity-90">Tổng số khách hàng</p>
-                            <p className="text-2xl font-bold leading-none">{stats.total}</p>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                <Users2 className="w-5 h-5 text-white" />
+                        <Link href="/khach-hang" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-primary bg-primary/10">
+                                <Users2 className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Tổng số khách hàng</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.total}</p>
                             </div>
                         </Link>
 
-                        <Link href="/khach-hang?PHAN_LOAI=Khách tiềm năng" className="bg-[#10B981] text-white rounded-xl shadow-sm p-4 relative overflow-hidden flex flex-col justify-between h-[90px] cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all">
-                            <p className="text-xs font-medium opacity-90">Khách tiềm năng</p>
-                            <p className="text-2xl font-bold leading-none">{stats.tiemNang}</p>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                <UserCheck className="w-5 h-5 text-white" />
+                        <Link href="/khach-hang?PHAN_LOAI=Khách tiềm năng" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-green-600 bg-green-500/10">
+                                <UserCheck className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Khách tiềm năng</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.tiemNang}</p>
                             </div>
                         </Link>
 
-                        <Link href="/khach-hang?PHAN_LOAI=Khách đang triển khai" className="bg-[#F97316] text-white rounded-xl shadow-sm p-4 relative overflow-hidden flex flex-col justify-between h-[90px] cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all">
-                            <p className="text-xs font-medium opacity-90">Khách đang triển khai</p>
-                            <p className="text-2xl font-bold leading-none">{stats.dangTrienKhai}</p>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                <UserCog className="w-5 h-5 text-white" />
+                        <Link href="/khach-hang?PHAN_LOAI=Khách đang triển khai" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-orange-500 bg-orange-500/10">
+                                <UserCog className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Khách đang triển khai</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.dangTrienKhai}</p>
                             </div>
                         </Link>
 
-                        <Link href="/khach-hang?PHAN_LOAI=Khách đang sử dụng/ Duy trì" className="bg-[#D97706] text-white rounded-xl shadow-sm p-4 relative overflow-hidden flex flex-col justify-between h-[90px] cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all">
-                            <p className="text-xs font-medium opacity-90">Khách đang sử dụng/ Duy trì</p>
-                            <p className="text-2xl font-bold leading-none">{stats.duyTri}</p>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                <UserCheck className="w-5 h-5 text-white" />
+                        <Link href="/khach-hang?PHAN_LOAI=Khách đang sử dụng/ Duy trì" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-purple-600 bg-purple-500/10">
+                                <UserCheck className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Đang sử dụng/ Duy trì</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.duyTri}</p>
                             </div>
                         </Link>
 
-                        <Link href="/khach-hang?PHAN_LOAI=Khách không hoạt động" className="bg-[#EF4444] text-white rounded-xl shadow-sm p-4 relative overflow-hidden flex flex-col justify-between h-[90px] cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all">
-                            <p className="text-xs font-medium opacity-90">Khách không hoạt động</p>
-                            <p className="text-2xl font-bold leading-none">{stats.khongHoatDong}</p>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                <UserX className="w-5 h-5 text-white" />
+                        <Link href="/khach-hang?PHAN_LOAI=Khách không hoạt động" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-red-500 bg-red-500/10">
+                                <UserX className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Không hoạt động</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.khongHoatDong}</p>
                             </div>
                         </Link>
                     </div>

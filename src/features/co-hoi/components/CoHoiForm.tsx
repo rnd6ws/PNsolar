@@ -123,8 +123,8 @@ export function CoHoiForm({ defaultValues, dmCoHoi, loading, onSubmit, onCancel,
             {/* Chọn khách hàng */}
             {!defaultValues && (
                 <div className="space-y-1.5" ref={khRef}>
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">
-                        KHÁCH HÀNG <span className="text-destructive">*</span>
+                    <label className="text-sm font-semibold text-muted-foreground">
+                        Khách hàng <span className="text-destructive">*</span>
                     </label>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -133,7 +133,7 @@ export function CoHoiForm({ defaultValues, dmCoHoi, loading, onSubmit, onCancel,
                             value={khSearch}
                             onChange={e => handleKhSearch(e.target.value)}
                             placeholder="Tìm theo tên hoặc SĐT..."
-                            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            className="input-modern pl-9"
                         />
                         {khSearch && (
                             <button type="button" onClick={() => { setKhSearch(""); setSelectedKh(null); setKhResults([]); setKhOpen(false); }}
@@ -168,14 +168,14 @@ export function CoHoiForm({ defaultValues, dmCoHoi, loading, onSubmit, onCancel,
 
             {/* Nhu cầu - chọn DM_CO_HOI theo nhóm */}
             <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground tracking-widest">NHU CẦU DỊCH VỤ</label>
+                <label className="text-sm font-semibold text-muted-foreground">Nhu cầu dịch vụ</label>
                 <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
                     {grouped.size === 0 && (
                         <p className="px-4 py-3 text-sm text-muted-foreground italic">Chưa có danh mục. Vui lòng cài đặt danh mục trước.</p>
                     )}
                     {Array.from(grouped.entries()).map(([nhom, items]) => (
                         <div key={nhom}>
-                            <div className="px-4 py-2 bg-muted/40 text-xs font-bold text-muted-foreground tracking-widest uppercase">{nhom}</div>
+                            <div className="px-4 py-2 bg-muted/40 text-xs font-bold text-muted-foreground uppercase tracking-widest">{nhom}</div>
                             <div className="divide-y divide-border/50">
                                 {items.map(item => {
                                     const checked = selectedIds.includes(item.ID);
@@ -205,7 +205,7 @@ export function CoHoiForm({ defaultValues, dmCoHoi, loading, onSubmit, onCancel,
 
             {/* Giá trị dự kiến (computed, readonly) */}
             <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground tracking-widest">GIÁ TRỊ DỰ KIẾN</label>
+                <label className="text-sm font-semibold text-muted-foreground">Giá trị dự kiến</label>
                 <div className="px-4 py-2.5 rounded-xl border border-border bg-muted/30 text-sm font-semibold text-primary">
                     {giaTri > 0 ? formatCurrency(giaTri) : <span className="text-muted-foreground font-normal italic">Chưa chọn dịch vụ</span>}
                 </div>
@@ -213,31 +213,31 @@ export function CoHoiForm({ defaultValues, dmCoHoi, loading, onSubmit, onCancel,
 
             {/* Ghi chú nhu cầu */}
             <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground tracking-widest">GHI CHÚ NHU CẦU</label>
+                <label className="text-sm font-semibold text-muted-foreground">Ghi chú nhu cầu</label>
                 <textarea
                     value={ghiChuNc}
                     onChange={e => setGhiChuNc(e.target.value)}
                     rows={3}
                     placeholder="Ghi chú thêm về nhu cầu khách hàng..."
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                    className="input-modern resize-none"
                 />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Ngày dự kiến chốt */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">NGÀY DỰ KIẾN CHỐT</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Ngày dự kiến chốt</label>
                     <input
                         type="date"
                         value={ngayDkChot}
                         onChange={e => setNgayDkChot(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        className="input-modern"
                     />
                 </div>
 
                 {/* Tình trạng */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground tracking-widest">TÌNH TRẠNG</label>
+                    <label className="text-sm font-semibold text-muted-foreground">Tình trạng</label>
                     <FormSelect
                         name="TINH_TRANG"
                         value={tinhTrang}
@@ -252,22 +252,22 @@ export function CoHoiForm({ defaultValues, dmCoHoi, loading, onSubmit, onCancel,
             {showDongFields && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-muted-foreground tracking-widest">NGÀY ĐÓNG</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Ngày đóng</label>
                         <input
                             type="date"
                             value={ngayDong}
                             onChange={e => setNgayDong(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            className="input-modern"
                         />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-muted-foreground tracking-widest">LÝ DO</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Lý do</label>
                         <input
                             type="text"
                             value={lyDo}
                             onChange={e => setLyDo(e.target.value)}
                             placeholder="Lý do..."
-                            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            className="input-modern"
                         />
                     </div>
                 </div>
