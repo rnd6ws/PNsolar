@@ -116,7 +116,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
         <Modal
             isOpen={isOpen}
             onClose={() => { cancelForm(); onClose(); }}
-            title={`Thêm người liên hệ`}
+            title={`Người liên hệ`}
         >
             <div className="space-y-2">
                 {/* Nút thêm mới và Tên công ty */}

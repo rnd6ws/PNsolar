@@ -1,0 +1,326 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
+import { toast } from "sonner";
+import { deleteCoHoi, updateCoHoi, createCoHoi } from "../action";
+import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import Modal from "@/components/Modal";
+import { CoHoiForm } from "./CoHoiForm";
+
+interface Props {
+    data: any[];
+    dmCoHoi: { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[];
+}
+
+function formatDate(val: any) {
+    if (!val) return "—";
+    return new Date(val).toLocaleDateString("vi-VN");
+}
+
+function formatCurrency(val: any) {
+    if (!val && val !== 0) return "—";
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(val);
+}
+
+function getTinhTrangBadge(tt: string) {
+    if (!tt) return <span className="text-xs text-muted-foreground">—</span>;
+    const low = tt.toLowerCase();
+    let cls = "bg-muted text-muted-foreground border-transparent";
+    if (low.includes("mở")) cls = "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800";
+    else if (low.includes("thành công") || low.includes("thanh cong")) cls = "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+    else if (low.includes("thất bại") || low.includes("that bai")) cls = "bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800";
+    return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${cls}`}>{tt}</span>;
+}
+
+// ─── Chi tiết Cơ hội ──────────────────────────────────────────
+function CoHoiDetail({ item, dmCoHoi, onClose }: { item: any; dmCoHoi: any[]; onClose: () => void }) {
+    const nhuCauIds: string[] = item.NHU_CAU || [];
+    const selectedDv = dmCoHoi.filter(d => nhuCauIds.includes(d.ID));
+
+    const grouped = useMemo(() => {
+        const map = new Map<string, typeof dmCoHoi>();
+        for (const d of selectedDv) {
+            if (!map.has(d.NHOM_DV)) map.set(d.NHOM_DV, []);
+            map.get(d.NHOM_DV)!.push(d);
+        }
+        return map;
+    }, [selectedDv]);
+
+    return (
+        <div className="space-y-5 pt-2">
+            <div className="flex items-center justify-between pb-4 border-b border-border">
+                <div>
+                    <p className="text-xs text-muted-foreground font-medium">Mã cơ hội</p>
+                    <h3 className="text-lg font-bold text-foreground font-mono">{item.ID_CH}</h3>
+                </div>
+                {getTinhTrangBadge(item.TINH_TRANG)}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-sm">
+                {[
+                    { label: "Khách hàng", value: item.KH?.TEN_KH },
+                    { label: "Ngày tạo", value: formatDate(item.NGAY_TAO) },
+                    { label: "Giá trị dự kiến", value: formatCurrency(item.GIA_TRI_DU_KIEN) },
+                    { label: "Ngày dự kiến chốt", value: formatDate(item.NGAY_DK_CHOT) },
+                    { label: "Ngày đóng", value: formatDate(item.NGAY_DONG) },
+                    { label: "Lý do", value: item.LY_DO },
+                ].map(({ label, value }) => value && value !== "—" ? (
+                    <div key={label} className="bg-muted/30 rounded-lg p-3">
+                        <p className="text-xs text-muted-foreground font-medium mb-0.5">{label}</p>
+                        <p className="font-semibold text-foreground">{value}</p>
+                    </div>
+                ) : null)}
+            </div>
+
+            {grouped.size > 0 && (
+                <div className="space-y-2">
+                    <p className="text-xs font-bold text-muted-foreground tracking-widest">NHU CẦU DỊCH VỤ</p>
+                    <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
+                        {Array.from(grouped.entries()).map(([nhom, items]) => (
+                            <div key={nhom}>
+                                <div className="px-4 py-2 bg-muted/40 text-xs font-bold text-muted-foreground uppercase">{nhom}</div>
+                                {items.map((d: any) => (
+                                    <div key={d.ID} className="flex justify-between px-4 py-2.5 text-sm">
+                                        <span className="text-foreground">{d.DICH_VU}</span>
+                                        <span className="text-muted-foreground font-mono text-xs">{formatCurrency(d.GIA_TRI_TB)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {item.GHI_CHU_NC && (
+                <div className="bg-muted/30 rounded-lg p-3 text-sm">
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Ghi chú nhu cầu</p>
+                    <p className="text-foreground whitespace-pre-wrap">{item.GHI_CHU_NC}</p>
+                </div>
+            )}
+
+            <div className="pt-2">
+                <button onClick={onClose} className="btn-premium-secondary w-full">Đóng</button>
+            </div>
+        </div>
+    );
+}
+
+// ─── Component chính ──────────────────────────────────────────
+export default function CoHoiList({ data, dmCoHoi }: Props) {
+    const [editItem, setEditItem] = useState<any>(null);
+    const [viewItem, setViewItem] = useState<any>(null);
+    const [deleteItem, setDeleteItem] = useState<{ ID: string; ID_CH: string } | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+
+    const sortedData = useMemo(() => {
+        if (!sortConfig) return data;
+        return [...data].sort((a, b) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+            if (["NGAY_TAO", "NGAY_DK_CHOT"].includes(sortConfig.key)) {
+                aVal = aVal ? new Date(aVal).getTime() : 0;
+                bVal = bVal ? new Date(bVal).getTime() : 0;
+            } else if (sortConfig.key === "GIA_TRI_DU_KIEN") {
+                aVal = aVal || 0; bVal = bVal || 0;
+            } else {
+                aVal = (aVal || "").toString().toLowerCase();
+                bVal = (bVal || "").toString().toLowerCase();
+            }
+            if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+            return 0;
+        });
+    }, [data, sortConfig]);
+
+    const handleSort = (key: string) => {
+        setSortConfig(prev =>
+            prev?.key === key
+                ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+                : { key, direction: "asc" }
+        );
+    };
+
+    const SortIcon = ({ columnKey }: { columnKey: string }) => {
+        if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40 group-hover:opacity-100" />;
+        return sortConfig.direction === "asc"
+            ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary" />
+            : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary" />;
+    };
+
+    const handleUpdate = async (formData: any) => {
+        if (!editItem) return;
+        setLoading(true);
+        const res = await updateCoHoi(editItem.ID, formData);
+        if (res.success) { toast.success("Cập nhật thành công"); setEditItem(null); }
+        else toast.error((res as any).message || "Lỗi cập nhật");
+        setLoading(false);
+    };
+
+    const handleDelete = async () => {
+        if (!deleteItem) return;
+        setLoading(true);
+        const res = await deleteCoHoi(deleteItem.ID);
+        if (res.success) { toast.success("Đã xóa cơ hội"); setDeleteItem(null); }
+        else toast.error((res as any).message || "Lỗi xóa");
+        setLoading(false);
+    };
+
+    return (
+        <>
+            <div className="overflow-x-auto">
+                <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
+                    <thead>
+                        <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] w-10">#</th>
+                            <th onClick={() => handleSort("NGAY_TAO")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground hidden xl:table-cell">
+                                Ngày tạo <SortIcon columnKey="NGAY_TAO" />
+                            </th>
+                            <th onClick={() => handleSort("ID_CH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground text-left">
+                                Mã / Khách hàng <SortIcon columnKey="ID_CH" />
+                            </th>
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] hidden lg:table-cell">Nhu cầu</th>
+                            <th onClick={() => handleSort("GIA_TRI_DU_KIEN")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground hidden md:table-cell">
+                                Giá trị DK <SortIcon columnKey="GIA_TRI_DU_KIEN" />
+                            </th>
+                            <th onClick={() => handleSort("NGAY_DK_CHOT")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground hidden xl:table-cell">
+                                DK chốt <SortIcon columnKey="NGAY_DK_CHOT" />
+                            </th>
+                            <th onClick={() => handleSort("TINH_TRANG")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground hidden md:table-cell">
+                                Tình trạng <SortIcon columnKey="TINH_TRANG" />
+                            </th>
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] text-right">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                        {sortedData.map((item, idx) => {
+                            const nhuCauIds: string[] = item.NHU_CAU || [];
+                            const selectedDv = dmCoHoi.filter(d => nhuCauIds.includes(d.ID));
+                            return (
+                                <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
+                                    <td className="px-4 py-3 align-middle text-muted-foreground text-xs">{idx + 1}</td>
+                                    <td className="px-4 py-3 align-middle text-xs text-muted-foreground hidden xl:table-cell whitespace-nowrap">
+                                        {formatDate(item.NGAY_TAO)}
+                                    </td>
+                                    <td className="px-4 py-3 align-middle text-left">
+                                        <p className="font-mono text-xs text-primary font-semibold">{item.ID_CH}</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{item.KH?.TEN_KH}</p>
+                                    </td>
+                                    <td className="px-4 py-3 align-middle hidden lg:table-cell">
+                                        {selectedDv.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 justify-center">
+                                                {selectedDv.slice(0, 3).map(d => (
+                                                    <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+                                                        {d.DICH_VU}
+                                                    </span>
+                                                ))}
+                                                {selectedDv.length > 3 && (
+                                                    <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
+                                                )}
+                                            </div>
+                                        ) : <span className="text-xs text-muted-foreground">—</span>}
+                                    </td>
+                                    <td className="px-4 py-3 align-middle hidden md:table-cell text-xs font-semibold text-foreground">
+                                        {formatCurrency(item.GIA_TRI_DU_KIEN)}
+                                    </td>
+                                    <td className="px-4 py-3 align-middle hidden xl:table-cell text-xs text-muted-foreground whitespace-nowrap">
+                                        {formatDate(item.NGAY_DK_CHOT)}
+                                    </td>
+                                    <td className="px-4 py-3 align-middle hidden md:table-cell">
+                                        {getTinhTrangBadge(item.TINH_TRANG)}
+                                    </td>
+                                    <td className="px-4 py-3 align-middle text-right">
+                                        <div className="flex justify-end gap-1 items-center">
+                                            <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem chi tiết">
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                            <div className="hidden md:flex gap-1">
+                                                <PermissionGuard moduleKey="co-hoi" level="edit">
+                                                    <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                </PermissionGuard>
+                                                <PermissionGuard moduleKey="co-hoi" level="delete">
+                                                    <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </PermissionGuard>
+                                            </div>
+                                            <div className="md:hidden">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors">
+                                                            <MoreHorizontal className="w-4 h-4" />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-32 rounded-xl">
+                                                        <PermissionGuard moduleKey="co-hoi" level="edit">
+                                                            <DropdownMenuItem onClick={() => setEditItem(item)} className="cursor-pointer gap-2 rounded-lg">
+                                                                <Edit2 className="w-3.5 h-3.5" /> Sửa
+                                                            </DropdownMenuItem>
+                                                        </PermissionGuard>
+                                                        <PermissionGuard moduleKey="co-hoi" level="delete">
+                                                            <DropdownMenuItem onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} variant="destructive" className="cursor-pointer gap-2 rounded-lg">
+                                                                <Trash2 className="w-3.5 h-3.5" /> Xóa
+                                                            </DropdownMenuItem>
+                                                        </PermissionGuard>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                        {data.length === 0 && (
+                            <tr>
+                                <td colSpan={8} className="px-6 py-16 text-center text-muted-foreground italic">
+                                    Chưa có cơ hội nào. Hãy thêm mới!
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Modal: Xem chi tiết */}
+            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết cơ hội">
+                {viewItem && <CoHoiDetail item={viewItem} dmCoHoi={dmCoHoi} onClose={() => setViewItem(null)} />}
+            </Modal>
+
+            {/* Modal: Sửa */}
+            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật cơ hội">
+                {editItem && (
+                    <CoHoiForm
+                        key={editItem.ID}
+                        defaultValues={editItem}
+                        dmCoHoi={dmCoHoi}
+                        loading={loading}
+                        onSubmit={handleUpdate}
+                        onCancel={() => setEditItem(null)}
+                        submitLabel="Cập nhật"
+                    />
+                )}
+            </Modal>
+
+            {/* Modal: Xác nhận xóa */}
+            <Modal isOpen={!!deleteItem} onClose={() => setDeleteItem(null)} title="Xóa cơ hội">
+                {deleteItem && (
+                    <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                            Bạn có chắc chắn muốn xóa cơ hội <span className="font-semibold text-foreground">{deleteItem.ID_CH}</span> không?<br />Hành động này không thể hoàn tác.
+                        </p>
+                        <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
+                            <button type="button" onClick={() => setDeleteItem(null)} disabled={loading} className="btn-premium-secondary flex-1">Hủy bỏ</button>
+                            <button type="button" onClick={handleDelete} disabled={loading} className="btn-premium-primary !bg-destructive !text-destructive-foreground hover:!bg-destructive/90 flex-1">
+                                {loading ? "Đang xử lý..." : "Xóa"}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+        </>
+    );
+}

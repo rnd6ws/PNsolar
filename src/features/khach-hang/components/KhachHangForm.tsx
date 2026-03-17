@@ -429,6 +429,7 @@ export function KhachHangForm({
                     <div key="ngt-text" className="space-y-1.5">
                         <label className="text-xs font-bold text-muted-foreground tracking-widest">Người giới thiệu</label>
                         <input
+                            disabled={true}
                             name="NGUOI_GIOI_THIEU"
                             className="input-modern"
                             placeholder="Tên người giới thiệu"
