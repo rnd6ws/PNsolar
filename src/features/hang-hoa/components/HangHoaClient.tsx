@@ -1,22 +1,27 @@
 'use client';
 import { useState, useEffect, useMemo, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Box, Tag, Package, Search, AlertTriangle, CheckCircle2, XCircle, ChevronDown, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, Box, Tag, Package, Search, AlertTriangle, CheckCircle2, XCircle, ChevronDown, Download, Settings2, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, History, X, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createProductAction, updateProductAction, deleteProductAction } from '@/features/hang-hoa/action';
+import { toast } from 'sonner';
+import { getGiaNhapHistoryByHH } from '@/features/gia-nhap/action';
 import SearchInput from '@/components/SearchInput';
 import Pagination from '@/components/Pagination';
 import FilterSelect from '@/components/FilterSelect';
 import ColumnToggleButton, { type ColumnKey } from './ColumnToggleButton';
+import ProductImageUpload from './ProductImageUpload';
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
+import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
 
 // ===== TYPES =====
 interface Product {
     ID: string;
-    ID_HH: string;
+    MA_HH: string;
+    NHOM_HH?: string | null;
     PHAN_LOAI: string;
     DONG_HANG: string;
-    TEN: string;
+    TEN_HH: string;
     MODEL: string;
     MO_TA?: string | null;
     DON_VI_TINH: string;
@@ -43,11 +48,18 @@ interface DongHangOption {
     PHAN_LOAI_ID: string;
 }
 
+interface NhomHHOption {
+    ID: string;
+    MA_NHOM: string;
+    TEN_NHOM: string;
+}
+
 interface FormData {
-    ID_HH: string;
+    MA_HH: string;
+    NHOM_HH: string;
     PHAN_LOAI: string;
     DONG_HANG: string;
-    TEN: string;
+    TEN_HH: string;
     MODEL: string;
     MO_TA: string;
     DON_VI_TINH: string;
@@ -58,21 +70,38 @@ interface FormData {
 }
 
 const emptyForm: FormData = {
-    ID_HH: '', PHAN_LOAI: '', DONG_HANG: '',
-    TEN: '', MODEL: '', MO_TA: '', DON_VI_TINH: '',
+    MA_HH: '', NHOM_HH: '', PHAN_LOAI: '', DONG_HANG: '',
+    TEN_HH: '', MODEL: '', MO_TA: '', DON_VI_TINH: '',
     HINH_ANH: '', XUAT_XU: '', BAO_HANH: '', HIEU_LUC: true,
 };
 
-const DEFAULT_COLUMNS: ColumnKey[] = ['phanLoai', 'dongHang', 'model', 'dvt', 'xuatXu', 'baoHanh', 'hieuLuc'];
+const DEFAULT_COLUMNS: ColumnKey[] = ['nhomHH', 'phanLoai', 'dongHang', 'model', 'dvt', 'xuatXu', 'baoHanh', 'hieuLuc', 'giaNhap'];
+
+interface GiaNhapInfo {
+    DON_GIA: number;
+    NGAY_HIEU_LUC: string;
+    MA_NCC: string;
+    TEN_NCC: string;
+}
+
+interface GiaNhapHistoryItem {
+    ID: string;
+    NGAY_HIEU_LUC: string;
+    MA_NCC: string;
+    TEN_NCC: string;
+    DON_GIA: number;
+    DVT: string;
+}
 
 // ===== PRODUCT MODAL =====
 function ProductModal({
-    isOpen, onClose, product, onSuccess, phanLoaiOptions, dongHangOptions
+    isOpen, onClose, product, onSuccess, nhomHHOptions, phanLoaiOptions, dongHangOptions
 }: {
     isOpen: boolean;
     onClose: () => void;
     product?: Product | null;
     onSuccess: () => void;
+    nhomHHOptions: NhomHHOption[];
     phanLoaiOptions: PhanLoaiOption[];
     dongHangOptions: DongHangOption[];
 }) {
@@ -95,10 +124,11 @@ function ProductModal({
                 setSelectedPhanLoaiId(matchedPL?.ID || '');
 
                 setForm({
-                    ID_HH: product.ID_HH,
+                    MA_HH: product.MA_HH,
+                    NHOM_HH: product.NHOM_HH || '',
                     PHAN_LOAI: product.PHAN_LOAI,
                     DONG_HANG: product.DONG_HANG,
-                    TEN: product.TEN,
+                    TEN_HH: product.TEN_HH,
                     MODEL: product.MODEL,
                     MO_TA: product.MO_TA || '',
                     DON_VI_TINH: product.DON_VI_TINH,
@@ -131,7 +161,7 @@ function ProductModal({
         }
         // Reset dòng hàng khi đổi phân loại
         handleChange('DONG_HANG', '');
-        handleChange('TEN', '');
+        handleChange('TEN_HH', '');
         handleChange('DON_VI_TINH', '');
         handleChange('XUAT_XU', '');
     };
@@ -153,13 +183,13 @@ function ProductModal({
             // Auto-fill Tên hàng = Tiền tố + MODEL
             const tienTo = selected.TIEN_TO || '';
             const model = form.MODEL || '';
-            handleChange('TEN', tienTo + model);
+            handleChange('TEN_HH', tienTo + model);
         } else {
             handleChange('DONG_HANG', '');
         }
     };
 
-    // Khi thay đổi MODEL -> auto update TEN
+    // Khi thay đổi MODEL -> auto update TEN_HH
     const handleModelChange = (modelValue: string) => {
         handleChange('MODEL', modelValue);
 
@@ -167,7 +197,7 @@ function ProductModal({
         const selectedDH = dongHangOptions.find(dh => dh.TEN_DONG_HANG === form.DONG_HANG);
         if (selectedDH) {
             const tienTo = selectedDH.TIEN_TO || '';
-            handleChange('TEN', tienTo + modelValue);
+            handleChange('TEN_HH', tienTo + modelValue);
         }
     };
 
@@ -180,15 +210,18 @@ function ProductModal({
                 ? await updateProductAction(product.ID, form)
                 : await createProductAction(form);
             if (result.success) {
+                toast.success(product ? 'Cập nhật hàng hóa thành công!' : 'Thêm hàng hóa thành công!');
                 setLoading(false);
                 onClose();
                 onSuccess();
             } else {
+                toast.error(result.message || 'Có lỗi xảy ra');
                 setError(result.message || 'Có lỗi xảy ra');
                 setLoading(false);
             }
         } catch (err) {
             console.error('[ProductModal] error:', err);
+            toast.error('Có lỗi xảy ra, vui lòng thử lại');
             setError('Có lỗi xảy ra, vui lòng thử lại');
             setLoading(false);
         }
@@ -197,7 +230,7 @@ function ProductModal({
     if (!isOpen) return null;
 
     const inputClass = "w-full h-9 px-3 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0 transition-all placeholder:text-muted-foreground";
-    const labelClass = "block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5";
+    const labelClass = "block text-sm font-semibold text-muted-foreground mb-1.5";
     const selectClass = "w-full h-9 px-3 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0 transition-all appearance-none cursor-pointer";
 
     // Tìm ID dòng hàng đang chọn
@@ -213,7 +246,7 @@ function ProductModal({
                             {product ? 'Chỉnh sửa hàng hóa' : 'Thêm hàng hóa mới'}
                         </h2>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            {product ? `Cập nhật thông tin cho "${product.TEN}"` : 'Điền thông tin để thêm hàng hóa vào danh mục'}
+                            {product ? `Cập nhật thông tin cho "${product.TEN_HH}"` : 'Điền thông tin để thêm hàng hóa vào danh mục'}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
@@ -231,20 +264,38 @@ function ProductModal({
                             </div>
                         )}
 
-                        {/* Row 1: ID_HH */}
+                        {/* Row 1: MA_HH */}
                         <div>
-                            <label className={labelClass}>Mã hàng hóa (ID_HH) *</label>
+                            <label className={labelClass}>Mã hàng hóa *</label>
                             <input
                                 className={inputClass}
                                 placeholder="VD: HH-001"
-                                value={form.ID_HH}
-                                onChange={e => handleChange('ID_HH', e.target.value)}
+                                value={form.MA_HH}
+                                onChange={e => handleChange('MA_HH', e.target.value)}
                                 required
                                 disabled={!!product}
                             />
                         </div>
 
-                        {/* Row 2: Phân loại + Dòng hàng */}
+                        {/* Row 2: Nhóm HH */}
+                        <div>
+                            <label className={labelClass}>Nhóm hàng hóa</label>
+                            <div className="relative">
+                                <select
+                                    className={selectClass}
+                                    value={form.NHOM_HH}
+                                    onChange={e => handleChange('NHOM_HH', e.target.value)}
+                                >
+                                    <option value="">-- Chọn nhóm hàng hóa --</option>
+                                    {nhomHHOptions.map(nhom => (
+                                        <option key={nhom.ID} value={nhom.TEN_NHOM}>{nhom.TEN_NHOM}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Row 3: Phân loại + Dòng hàng */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className={labelClass}>Phân loại *</label>
@@ -303,8 +354,8 @@ function ProductModal({
                                 <input
                                     className={inputClass}
                                     placeholder="Tự động tạo từ Tiền tố + Model"
-                                    value={form.TEN}
-                                    onChange={e => handleChange('TEN', e.target.value)}
+                                    value={form.TEN_HH}
+                                    onChange={e => handleChange('TEN_HH', e.target.value)}
                                     required
                                 />
                                 <p className="text-[11px] text-muted-foreground mt-1">
@@ -384,6 +435,15 @@ function ProductModal({
                                 onChange={e => handleChange('MO_TA', e.target.value)}
                             />
                         </div>
+
+                        {/* Hình ảnh sản phẩm */}
+                        <div>
+                            <label className={labelClass}>Hình ảnh sản phẩm</label>
+                            <ProductImageUpload
+                                value={form.HINH_ANH}
+                                onChange={(url) => handleChange('HINH_ANH', url)}
+                            />
+                        </div>
                     </div>
 
                     {/* Modal Footer */}
@@ -416,85 +476,72 @@ function ProductModal({
     );
 }
 
-// ===== DELETE CONFIRM MODAL =====
-function DeleteConfirmModal({
-    isOpen, onClose, product, onConfirm
-}: {
-    isOpen: boolean;
-    onClose: () => void;
-    product: Product | null;
-    onConfirm: () => void;
-}) {
-    const [loading, setLoading] = useState(false);
-
-    const handleDelete = async () => {
-        if (!product) return;
-        setLoading(true);
-        await deleteProductAction(product.ID);
-        setLoading(false);
-        onConfirm();
-        onClose();
-    };
-
-    if (!isOpen || !product) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
-                <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                        <Trash2 className="w-5 h-5 text-destructive" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-foreground">Xác nhận xóa hàng hóa</h3>
-                        <p className="text-sm text-muted-foreground mt-0.5">Hành động này không thể hoàn tác.</p>
-                    </div>
-                </div>
-                <div className="p-4 bg-muted/30 rounded-xl mb-6 border">
-                    <p className="text-sm font-semibold text-foreground">{product.TEN}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Mã: {product.ID_HH} • Model: {product.MODEL}</p>
-                </div>
-                <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 h-9 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors">
-                        Hủy bỏ
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        disabled={loading}
-                        className="flex-1 h-9 text-sm font-medium bg-destructive text-white hover:bg-destructive/90 rounded-md transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
-                    >
-                        {loading ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                            <>
-                                <Trash2 className="w-4 h-4" />
-                                Xóa hàng hóa
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
+// ===== DELETE dùng DeleteConfirmDialog component chung =====
 
 // ===== MAIN CLIENT COMPONENT =====
 export default function HangHoaClient({
     initialProducts, initialPagination, currentPage, uniqueCategories,
-    phanLoaiOptions, dongHangOptions
+    nhomHHOptions, phanLoaiOptions, dongHangOptions, giaNhapMap = {}
 }: {
     initialProducts: Product[];
     initialPagination: any;
     currentPage: number;
-    uniqueCategories: { phanLoai: string[]; dongHang: string[] };
+    uniqueCategories: { nhomHH: string[]; phanLoai: string[]; dongHang: string[] };
+    nhomHHOptions: NhomHHOption[];
     phanLoaiOptions: PhanLoaiOption[];
     dongHangOptions: DongHangOption[];
+    giaNhapMap?: Record<string, GiaNhapInfo>;
 }) {
     const router = useRouter();
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editProduct, setEditProduct] = useState<Product | null>(null);
     const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
+    const [showFilters, setShowFilters] = useState(false);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+    const [giaNhapHistory, setGiaNhapHistory] = useState<GiaNhapHistoryItem[]>([]);
+    const [giaNhapHistoryProduct, setGiaNhapHistoryProduct] = useState<Product | null>(null);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [viewProduct, setViewProduct] = useState<Product | null>(null);
+
+    const handleShowHistory = async (prod: Product) => {
+        setGiaNhapHistoryProduct(prod);
+        setLoadingHistory(true);
+        try {
+            const history = await getGiaNhapHistoryByHH(prod.MA_HH);
+            setGiaNhapHistory(history);
+        } catch (err) {
+            console.error('Error loading history:', err);
+            setGiaNhapHistory([]);
+        }
+        setLoadingHistory(false);
+    };
+
+    const sortedProducts = useMemo(() => {
+        if (!sortConfig) return initialProducts;
+        return [...initialProducts].sort((a, b) => {
+            let aVal = (a[sortConfig.key as keyof Product] || '').toString().toLowerCase();
+            let bVal = (b[sortConfig.key as keyof Product] || '').toString().toLowerCase();
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [initialProducts, sortConfig]);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const SortIcon = ({ columnKey }: { columnKey: string }) => {
+        if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40 group-hover:opacity-100" />;
+        return sortConfig.direction === 'asc'
+            ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary" />
+            : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary" />;
+    };
 
     const show = (col: ColumnKey) => visibleColumns.includes(col);
 
@@ -539,8 +586,8 @@ export default function HangHoaClient({
                                 <stat.icon className="w-5 h-5" />
                             </div>
                             <div>
-                                <p className="text-xl font-bold text-foreground leading-none">{stat.value}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stat.value}</p>
                             </div>
                         </div>
                     ))}
@@ -548,27 +595,80 @@ export default function HangHoaClient({
 
                 {/* Table Card */}
                 <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-                    {/* Toolbar - giống nhân viên */}
-                    <div className="p-5 flex flex-col lg:flex-row gap-4 justify-between items-center text-sm font-medium border-b bg-transparent">
-                        <div className="flex-1 w-full max-w-[400px]">
-                            <SearchInput placeholder="Tìm theo tên, MODEL, mã HH..." />
+                    {/* Toolbar */}
+                    <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
+                        <div className="flex items-center justify-between gap-3 w-full">
+                            <div className="flex-1 w-full lg:max-w-[400px]">
+                                <SearchInput placeholder="Tìm theo tên, MODEL, mã HH..." />
+                            </div>
+
+                            {/* Nút Lọc cho Mobile */}
+                            <div className="flex lg:hidden shrink-0">
+                                <button
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${showFilters ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                                    title="Tùy chọn & Thao tác"
+                                >
+                                    <Settings2 className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Desktop Toolbar */}
+                            <div className="hidden lg:flex items-center gap-3 w-auto">
+                                <FilterSelect
+                                    paramKey="NHOM_HH"
+                                    options={uniqueCategories.nhomHH.map(v => ({ label: v, value: v }))}
+                                    placeholder="Nhóm HH"
+                                />
+                                <FilterSelect
+                                    paramKey="PHAN_LOAI"
+                                    options={uniqueCategories.phanLoai.map(v => ({ label: v, value: v }))}
+                                    placeholder="Phân loại"
+                                />
+                                <FilterSelect
+                                    paramKey="DONG_HANG"
+                                    options={uniqueCategories.dongHang.map(v => ({ label: v, value: v }))}
+                                    placeholder="Dòng hàng"
+                                />
+                                <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                                <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0" title="Xuất Excel">
+                                    <Download className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                            <FilterSelect
-                                paramKey="PHAN_LOAI"
-                                options={uniqueCategories.phanLoai.map(v => ({ label: v, value: v }))}
-                                placeholder="Phân loại"
-                            />
-                            <FilterSelect
-                                paramKey="DONG_HANG"
-                                options={uniqueCategories.dongHang.map(v => ({ label: v, value: v }))}
-                                placeholder="Dòng hàng"
-                            />
-                            <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
-                            <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm">
-                                <Download className="w-4 h-4" />
-                            </button>
-                        </div>
+
+                        {/* Mobile Expanded Filters */}
+                        {showFilters && (
+                            <div className="flex lg:hidden flex-col gap-3 w-full bg-muted/30 p-4 rounded-xl border border-border animate-in slide-in-from-top-2 fade-in duration-200">
+                                <div className="flex flex-col gap-3 w-full">
+                                    <FilterSelect
+                                        paramKey="NHOM_HH"
+                                        options={uniqueCategories.nhomHH.map(v => ({ label: v, value: v }))}
+                                        placeholder="Nhóm HH"
+                                    />
+                                    <FilterSelect
+                                        paramKey="PHAN_LOAI"
+                                        options={uniqueCategories.phanLoai.map(v => ({ label: v, value: v }))}
+                                        placeholder="Phân loại"
+                                    />
+                                    <FilterSelect
+                                        paramKey="DONG_HANG"
+                                        options={uniqueCategories.dongHang.map(v => ({ label: v, value: v }))}
+                                        placeholder="Dòng hàng"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-border w-full">
+                                    <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                                    <button
+                                        className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex"
+                                        title="Xuất Excel"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Desktop Table */}
@@ -576,21 +676,24 @@ export default function HangHoaClient({
                         <table className="w-full text-left border-collapse text-[13px]">
                             <thead>
                                 <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                                    <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Tên hàng</th>
+                                    <th onClick={() => handleSort('TEN_HH')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Tên hàng <SortIcon columnKey="TEN_HH" /></th>
+                                    {show('nhomHH') && (
+                                        <th onClick={() => handleSort('NHOM_HH')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Nhóm HH <SortIcon columnKey="NHOM_HH" /></th>
+                                    )}
                                     {show('phanLoai') && (
-                                        <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Phân loại</th>
+                                        <th onClick={() => handleSort('PHAN_LOAI')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Phân loại <SortIcon columnKey="PHAN_LOAI" /></th>
                                     )}
                                     {show('dongHang') && (
-                                        <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Dòng hàng</th>
+                                        <th onClick={() => handleSort('DONG_HANG')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Dòng hàng <SortIcon columnKey="DONG_HANG" /></th>
                                     )}
                                     {show('model') && (
-                                        <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Model</th>
+                                        <th onClick={() => handleSort('MODEL')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Model <SortIcon columnKey="MODEL" /></th>
                                     )}
                                     {show('dvt') && (
                                         <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Đơn vị tính</th>
                                     )}
                                     {show('xuatXu') && (
-                                        <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Xuất xứ</th>
+                                        <th onClick={() => handleSort('XUAT_XU')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Xuất xứ <SortIcon columnKey="XUAT_XU" /></th>
                                     )}
                                     {show('baoHanh') && (
                                         <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Bảo hành</th>
@@ -598,31 +701,47 @@ export default function HangHoaClient({
                                     {show('hieuLuc') && (
                                         <th className="h-11 px-4 text-center align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Hiệu lực</th>
                                     )}
+                                    {show('giaNhap') && (
+                                        <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Giá nhập</th>
+                                    )}
                                     <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {initialProducts.map((prod: Product) => (
+                                {sortedProducts.map((prod: Product) => (
                                     <tr
                                         key={prod.ID}
                                         className="border-b border-border hover:bg-muted/30 transition-all group"
                                     >
-                                        {/* Tên hàng + ID_HH + hình ảnh (luôn hiện) */}
+                                        {/* Tên hàng + MA_HH + hình ảnh (luôn hiện) */}
                                         <td className="p-4 align-middle">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center shadow-sm shrink-0">
                                                     {prod.HINH_ANH ? (
-                                                        <img src={prod.HINH_ANH} alt={prod.TEN} className="w-full h-full object-cover rounded-lg" />
+                                                        <img src={prod.HINH_ANH} alt={prod.TEN_HH} className="w-full h-full object-cover rounded-lg" />
                                                     ) : (
                                                         <Box className="w-4 h-4 text-muted-foreground opacity-50" />
                                                     )}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="font-medium text-foreground text-[14px] leading-tight mb-0.5 truncate max-w-[200px]">{prod.TEN}</p>
-                                                    <p className="text-[12px] text-primary font-medium font-mono uppercase">{prod.ID_HH}</p>
+                                                    <p className="font-medium text-foreground text-[14px] leading-tight mb-0.5 truncate max-w-[200px]">{prod.TEN_HH}</p>
+                                                    <p className="text-[12px] text-primary font-medium font-mono uppercase">{prod.MA_HH}</p>
                                                 </div>
                                             </div>
                                         </td>
+
+                                        {/* Nhóm HH */}
+                                        {show('nhomHH') && (
+                                            <td className="p-4 align-middle">
+                                                {prod.NHOM_HH ? (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-500/10 text-violet-600 border border-violet-500/20">
+                                                        {prod.NHOM_HH}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[13px] text-muted-foreground">—</span>
+                                                )}
+                                            </td>
+                                        )}
 
                                         {/* Phân loại */}
                                         {show('phanLoai') && (
@@ -688,9 +807,33 @@ export default function HangHoaClient({
                                             </td>
                                         )}
 
+                                        {/* Giá nhập */}
+                                        {show('giaNhap') && (
+                                            <td className="p-4 align-middle text-right">
+                                                {giaNhapMap[prod.MA_HH] ? (
+                                                    <button
+                                                        onClick={() => handleShowHistory(prod)}
+                                                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-sm font-semibold text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                                                        title="Xem lịch sử giá nhập"
+                                                    >
+                                                        {new Intl.NumberFormat('vi-VN').format(giaNhapMap[prod.MA_HH].DON_GIA)} ₫
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-[13px] text-muted-foreground">—</span>
+                                                )}
+                                            </td>
+                                        )}
+
                                         {/* Hành động */}
                                         <td className="p-4 align-middle text-right">
-                                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex justify-end gap-1 transition-opacity">
+                                                <button
+                                                    onClick={() => setViewProduct(prod)}
+                                                    className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors"
+                                                    title="Xem chi tiết"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
                                                 <PermissionGuard moduleKey="hang-hoa" level="edit">
                                                     <button
                                                         onClick={() => setEditProduct(prod)}
@@ -743,20 +886,20 @@ export default function HangHoaClient({
 
                     {/* Mobile View (Cards) */}
                     <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-                        {initialProducts.map((prod: Product) => (
+                        {sortedProducts.map((prod: Product) => (
                             <div key={prod.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-3">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-3">
                                         <div className="w-11 h-11 rounded-lg bg-muted border border-border flex items-center justify-center shadow-sm shrink-0">
                                             {prod.HINH_ANH ? (
-                                                <img src={prod.HINH_ANH} alt={prod.TEN} className="w-full h-full object-cover rounded-lg" />
+                                                <img src={prod.HINH_ANH} alt={prod.TEN_HH} className="w-full h-full object-cover rounded-lg" />
                                             ) : (
                                                 <Box className="w-5 h-5 text-muted-foreground opacity-50" />
                                             )}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="font-medium text-foreground text-base leading-tight">{prod.TEN}</p>
-                                            <p className="text-xs text-primary font-medium font-mono uppercase mt-0.5">{prod.ID_HH}</p>
+                                            <p className="font-medium text-foreground text-base leading-tight">{prod.TEN_HH}</p>
+                                            <p className="text-xs text-primary font-medium font-mono uppercase mt-0.5">{prod.MA_HH}</p>
                                         </div>
                                     </div>
                                     {prod.HIEU_LUC !== false ? (
@@ -772,6 +915,11 @@ export default function HangHoaClient({
                                     )}
                                 </div>
                                 <div className="flex flex-wrap gap-2">
+                                    {prod.NHOM_HH && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-500/10 text-violet-600 border border-violet-500/20">
+                                            {prod.NHOM_HH}
+                                        </span>
+                                    )}
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-blue-500/10 text-blue-600 border-blue-500/20">
                                         <Tag className="w-3 h-3" />{prod.PHAN_LOAI}
                                     </span>
@@ -784,8 +932,25 @@ export default function HangHoaClient({
                                     <div>ĐVT: <span className="text-foreground">{prod.DON_VI_TINH}</span></div>
                                     {prod.XUAT_XU && <div>Xuất xứ: <span className="text-foreground">{prod.XUAT_XU}</span></div>}
                                     {prod.BAO_HANH && <div>Bảo hành: <span className="text-primary font-medium">{prod.BAO_HANH}</span></div>}
+                                    {giaNhapMap[prod.MA_HH] && (
+                                        <div className="flex items-center gap-1">
+                                            Giá nhập:
+                                            <button
+                                                onClick={() => handleShowHistory(prod)}
+                                                className="text-primary font-semibold hover:underline"
+                                            >
+                                                {new Intl.NumberFormat('vi-VN').format(giaNhapMap[prod.MA_HH].DON_GIA)} ₫
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-2 pt-1 border-t">
+                                    <button
+                                        onClick={() => setViewProduct(prod)}
+                                        className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold"
+                                    >
+                                        <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
+                                    </button>
                                     <PermissionGuard moduleKey="hang-hoa" level="edit">
                                         <button onClick={() => setEditProduct(prod)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
                                             <Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
@@ -823,15 +988,217 @@ export default function HangHoaClient({
                 onClose={() => { setIsCreateOpen(false); setEditProduct(null); }}
                 product={editProduct}
                 onSuccess={handleSuccess}
+                nhomHHOptions={nhomHHOptions}
                 phanLoaiOptions={phanLoaiOptions}
                 dongHangOptions={dongHangOptions}
             />
-            <DeleteConfirmModal
+            <DeleteConfirmDialog
                 isOpen={!!deleteProduct}
                 onClose={() => setDeleteProduct(null)}
-                product={deleteProduct}
-                onConfirm={handleSuccess}
+                onConfirm={async () => {
+                    if (!deleteProduct) return { success: false };
+                    const result = await deleteProductAction(deleteProduct.ID);
+                    if (result.success) {
+                        toast.success('Đã xóa hàng hóa!');
+                    } else {
+                        toast.error(result.message || 'Lỗi khi xóa hàng hóa');
+                    }
+                    handleSuccess();
+                    return result;
+                }}
+                title="Xác nhận xóa hàng hóa"
+                itemName={deleteProduct?.TEN_HH}
+                itemDetail={deleteProduct ? `Mã: ${deleteProduct.MA_HH} • Model: ${deleteProduct.MODEL}` : undefined}
+                confirmText="Xóa hàng hóa"
             />
+
+            {/* Modal Lịch sử Giá nhập */}
+            {giaNhapHistoryProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between p-5 border-b">
+                            <div>
+                                <h3 className="text-base font-bold text-foreground">Lịch sử giá nhập</h3>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    {giaNhapHistoryProduct.TEN_HH} ({giaNhapHistoryProduct.MA_HH})
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => { setGiaNhapHistoryProduct(null); setGiaNhapHistory([]); }}
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto max-h-[60vh] p-5">
+                            {loadingHistory ? (
+                                <div className="flex items-center justify-center py-10">
+                                    <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                </div>
+                            ) : giaNhapHistory.length === 0 ? (
+                                <p className="text-center text-sm text-muted-foreground py-10">Chưa có lịch sử giá nhập.</p>
+                            ) : (
+                                <div className="relative">
+                                    <div className="absolute left-4 top-3 bottom-3 w-0.5 bg-border" />
+                                    <div className="space-y-4">
+                                        {giaNhapHistory.map((item, idx) => {
+                                            const isLatest = idx === 0;
+                                            const date = new Date(item.NGAY_HIEU_LUC);
+                                            const now = new Date();
+                                            const isCurrent = date <= now && (idx === 0 || new Date(giaNhapHistory[idx - 1].NGAY_HIEU_LUC) > now || idx === 0);
+                                            return (
+                                                <div key={item.ID} className="flex items-start gap-4 relative">
+                                                    <div className={cn(
+                                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 border-2",
+                                                        isLatest ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border"
+                                                    )}>
+                                                        <DollarSign className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div className={cn(
+                                                        "flex-1 rounded-lg p-3 border",
+                                                        isLatest ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"
+                                                    )}>
+                                                        <div className="flex items-center justify-between">
+                                                            <span className={cn(
+                                                                "text-base font-bold",
+                                                                isLatest ? "text-primary" : "text-foreground"
+                                                            )}>
+                                                                {new Intl.NumberFormat('vi-VN').format(item.DON_GIA)} ₫
+                                                            </span>
+                                                            {isLatest && (
+                                                                <span className="text-[10px] font-bold uppercase bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Mới nhất</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                                                            <div>Ngày HL: <span className="text-foreground font-medium">{date.toLocaleDateString('vi-VN')}</span></div>
+                                                            <div>NCC: <span className="text-foreground">{item.MA_NCC} - {item.TEN_NCC}</span></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Xem chi tiết sản phẩm */}
+            {viewProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-5 border-b">
+                            <div>
+                                <h3 className="text-base font-bold text-foreground">Chi tiết hàng hóa</h3>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    {viewProduct.MA_HH}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setViewProduct(null)}
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="overflow-y-auto max-h-[75vh] p-5 space-y-5">
+                            {/* Hình ảnh */}
+                            {viewProduct.HINH_ANH ? (
+                                <div className="w-full h-56 bg-muted/30 rounded-xl border border-border overflow-hidden flex items-center justify-center">
+                                    <img
+                                        src={viewProduct.HINH_ANH}
+                                        alt={viewProduct.TEN_HH}
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-full h-40 bg-muted/20 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground/40">
+                                    <Box className="w-10 h-10" />
+                                    <span className="text-xs">Chưa có hình ảnh</span>
+                                </div>
+                            )}
+
+                            {/* Tên + Model */}
+                            <div>
+                                <h4 className="text-lg font-bold text-foreground leading-tight">{viewProduct.TEN_HH}</h4>
+                                <p className="text-sm text-muted-foreground mt-1">Model: <span className="font-mono text-foreground">{viewProduct.MODEL}</span></p>
+                            </div>
+
+                            {/* Grid thông tin */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { label: 'Mã hàng hóa', value: viewProduct.MA_HH },
+                                    { label: 'Nhóm HH', value: viewProduct.NHOM_HH || '—' },
+                                    { label: 'Phân loại', value: viewProduct.PHAN_LOAI },
+                                    { label: 'Dòng hàng', value: viewProduct.DONG_HANG },
+                                    { label: 'Đơn vị tính', value: viewProduct.DON_VI_TINH },
+                                    { label: 'Xuất xứ', value: viewProduct.XUAT_XU || '—' },
+                                    { label: 'Bảo hành', value: viewProduct.BAO_HANH || '—' },
+                                    {
+                                        label: 'Hiệu lực',
+                                        value: viewProduct.HIEU_LUC !== false ? '✅ Còn hiệu lực' : '❌ Hết hiệu lực'
+                                    },
+                                ].map(item => (
+                                    <div key={item.label} className="p-3 bg-muted/20 rounded-lg border border-border">
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{item.label}</p>
+                                        <p className="text-sm font-medium text-foreground mt-1">{item.value}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Giá nhập hiện tại */}
+                            {giaNhapMap[viewProduct.MA_HH] && (
+                                <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Giá nhập hiện tại</p>
+                                    <p className="text-xl font-bold text-primary">
+                                        {new Intl.NumberFormat('vi-VN').format(giaNhapMap[viewProduct.MA_HH].DON_GIA)} ₫
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        NCC: {giaNhapMap[viewProduct.MA_HH].MA_NCC} — {giaNhapMap[viewProduct.MA_HH].TEN_NCC}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Ngày HL: {new Date(giaNhapMap[viewProduct.MA_HH].NGAY_HIEU_LUC).toLocaleDateString('vi-VN')}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Mô tả */}
+                            {viewProduct.MO_TA && (
+                                <div>
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Mô tả</p>
+                                    <p className="text-sm text-foreground whitespace-pre-line">{viewProduct.MO_TA}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end gap-3 px-5 py-3 border-t bg-muted/5">
+                            <button
+                                type="button"
+                                onClick={() => setViewProduct(null)}
+                                className="h-9 px-4 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors"
+                            >
+                                Đóng
+                            </button>
+                            <PermissionGuard moduleKey="hang-hoa" level="edit">
+                                <button
+                                    type="button"
+                                    onClick={() => { setEditProduct(viewProduct); setViewProduct(null); }}
+                                    className="h-9 px-4 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 shadow-sm flex items-center gap-2"
+                                >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                    Chỉnh sửa
+                                </button>
+                            </PermissionGuard>
+                        </div>
+                    </div>
+                </div>
+            )}
         </PermissionGuard>
     );
 }

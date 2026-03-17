@@ -21,7 +21,6 @@ async function main() {
                 CHUC_VU: 'QUẢN TRỊ',
                 ROLE: 'ADMIN',
                 IS_ACTIVE: true,
-                DELETED_AT: null,
             },
         });
 

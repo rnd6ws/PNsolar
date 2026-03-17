@@ -1,5 +1,6 @@
 import { Metadata } from "next";
-import { getProducts, getUniqueCategories, getPhanLoaiOptions, getDongHangOptions } from '@/features/hang-hoa/action';
+import { getProducts, getUniqueCategories, getPhanLoaiOptions, getDongHangOptions, getNhomHHOptions } from '@/features/hang-hoa/action';
+import { getGiaNhapMapByHangHoa } from '@/features/gia-nhap/action';
 import HangHoaClient from '@/features/hang-hoa/components/HangHoaClient';
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function HangHoaPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; PHAN_LOAI?: string; DONG_HANG?: string }> }) {
+export default async function HangHoaPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; NHOM_HH?: string; PHAN_LOAI?: string; DONG_HANG?: string }> }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
 
@@ -17,6 +18,7 @@ export default async function HangHoaPage({ searchParams }: { searchParams: Prom
     const { data: products = [], pagination } = await getProducts({
         query: params.query,
         page,
+        NHOM_HH: params.NHOM_HH,
         PHAN_LOAI: params.PHAN_LOAI,
         DONG_HANG: params.DONG_HANG
     });
@@ -25,8 +27,10 @@ export default async function HangHoaPage({ searchParams }: { searchParams: Prom
     const uniqueCategories = await getUniqueCategories();
 
     // Get options for creating/editing products
+    const nhomHHOptions = await getNhomHHOptions();
     const phanLoaiOptions = await getPhanLoaiOptions();
     const dongHangOptions = await getDongHangOptions();
+    const giaNhapMap = await getGiaNhapMapByHangHoa();
 
     return (
         <HangHoaClient
@@ -34,8 +38,10 @@ export default async function HangHoaPage({ searchParams }: { searchParams: Prom
             initialPagination={pagination}
             currentPage={page}
             uniqueCategories={uniqueCategories}
+            nhomHHOptions={nhomHHOptions}
             phanLoaiOptions={phanLoaiOptions}
             dongHangOptions={dongHangOptions}
+            giaNhapMap={giaNhapMap}
         />
     );
 }

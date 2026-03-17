@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
 export const productSchema = z.object({
-    ID_HH: z.string().min(1, 'Mã hàng hóa là bắt buộc'),
+    MA_HH: z.string().min(1, 'Mã hàng hóa là bắt buộc'),
+    NHOM_HH: z.string().optional(),
     PHAN_LOAI: z.string().min(1, 'Phân loại là bắt buộc'),
     DONG_HANG: z.string().min(1, 'Dòng hàng là bắt buộc'),
-    TEN: z.string().min(1, 'Tên hàng là bắt buộc'),
+    TEN_HH: z.string().min(1, 'Tên hàng là bắt buộc'),
     MODEL: z.string().min(1, 'Model là bắt buộc'),
     MO_TA: z.string().optional(),
     DON_VI_TINH: z.string().min(1, 'Đơn vị tính là bắt buộc'),

@@ -6,12 +6,14 @@ import { toast } from "sonner";
 import { createPhanLoaiHH, updatePhanLoaiHH, deletePhanLoaiHH } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import Modal from "@/components/Modal";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 export default function PhanLoaiHHClient({ data = [] }: { data: any[] }) {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editMode, setEditMode] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [deleteItem, setDeleteItem] = useState<any>(null);
 
     const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -55,16 +57,7 @@ export default function PhanLoaiHHClient({ data = [] }: { data: any[] }) {
         setLoading(false);
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (confirm(`Bạn có chắc muốn xóa phân loại "${name}" không?`)) {
-            const res = await deletePhanLoaiHH(id);
-            if (res.success) {
-                toast.success("Đã xóa phân loại");
-            } else {
-                toast.error(res.message);
-            }
-        }
-    };
+
 
     return (
         <div className="space-y-6">
@@ -114,7 +107,7 @@ export default function PhanLoaiHHClient({ data = [] }: { data: any[] }) {
                                             </PermissionGuard>
                                             <PermissionGuard moduleKey="phan-loai-hh" level="delete">
                                                 <button
-                                                    onClick={() => handleDelete(item.ID, item.TEN_PHAN_LOAI)}
+                                                    onClick={() => setDeleteItem(item)}
                                                     className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
                                                     title="Xóa"
                                                 >
@@ -198,6 +191,26 @@ export default function PhanLoaiHHClient({ data = [] }: { data: any[] }) {
                     </form>
                 )}
             </Modal>
+
+            {/* Modal Xác nhận xóa */}
+            <DeleteConfirmDialog
+                isOpen={!!deleteItem}
+                onClose={() => setDeleteItem(null)}
+                onConfirm={async () => {
+                    if (!deleteItem) return { success: false };
+                    const res = await deletePhanLoaiHH(deleteItem.ID);
+                    if (res.success) {
+                        toast.success("Đã xóa phân loại");
+                    } else {
+                        toast.error(res.message);
+                    }
+                    return res;
+                }}
+                title="Xác nhận xóa phân loại"
+                itemName={deleteItem?.TEN_PHAN_LOAI}
+                itemDetail={`Mã: ${deleteItem?.MA_PHAN_LOAI}`}
+                confirmText="Xóa phân loại"
+            />
         </div>
     );
 }

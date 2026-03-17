@@ -3,24 +3,26 @@
 import { useState } from "react";
 import { Settings, Trash2, Plus } from "lucide-react";
 import Modal from "@/components/Modal";
-import DeleteCDKH from "@/components/khach-hang-component/DeleteCDKH";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import {
     createPhanLoaiKH, deletePhanLoaiKH,
     createNguonKH, deleteNguonKH,
+    createLyDoTuChoi, deleteLyDoTuChoi
 } from "@/features/khach-hang/action";
 import { createNhomKH, deleteNhomKH } from "@/features/nhom-kh/action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-type Tab = "phan-loai" | "nguon" | "nhom";
+type Tab = "phan-loai" | "nguon" | "nhom" | "ly-do-tu-choi";
 
 interface Props {
     phanLoais: { ID: string; PL_KH: string }[];
     nguons: { ID: string; NGUON: string }[];
     nhoms: { ID: string; NHOM: string }[];
+    lyDoTuChois?: { ID: string; LY_DO: string }[];
 }
 
-export default function SettingKhachHangButton({ phanLoais, nguons, nhoms }: Props) {
+export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoTuChois = [] }: Props) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>("phan-loai");
@@ -32,6 +34,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms }: Pro
         { key: "phan-loai", label: "Phân loại KH" },
         { key: "nguon", label: "Nguồn KH" },
         { key: "nhom", label: "Nhóm KH" },
+        { key: "ly-do-tu-choi", label: "Lý do từ chối" },
     ];
 
     const handleAdd = async (e: React.FormEvent) => {
@@ -42,6 +45,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms }: Pro
         let res;
         if (activeTab === "phan-loai") res = await createPhanLoaiKH(newName);
         else if (activeTab === "nguon") res = await createNguonKH(newName);
+        else if (activeTab === "ly-do-tu-choi") res = await createLyDoTuChoi(newName);
         else res = await createNhomKH(newName);
 
         if (res.success) {
@@ -54,30 +58,15 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms }: Pro
         setLoading(false);
     };
 
-    const confirmDelete = async () => {
-        if (!deleteTarget) return;
-        setLoading(true);
 
-        let res;
-        if (activeTab === "phan-loai") res = await deletePhanLoaiKH(deleteTarget);
-        else if (activeTab === "nguon") res = await deleteNguonKH(deleteTarget);
-        else res = await deleteNhomKH(deleteTarget);
-
-        if (res.success) {
-            toast.success("Đã xóa danh mục");
-            setDeleteTarget(null);
-            router.refresh();
-        } else {
-            toast.error((res as any).message || "Lỗi xóa");
-        }
-        setLoading(false);
-    };
 
     const currentItems =
         activeTab === "phan-loai"
             ? phanLoais.map((i) => ({ id: i.ID, name: i.PL_KH }))
             : activeTab === "nguon"
                 ? nguons.map((i) => ({ id: i.ID, name: i.NGUON }))
+                : activeTab === "ly-do-tu-choi"
+                ? lyDoTuChois.map((i) => ({ id: i.ID, name: i.LY_DO }))
                 : nhoms.map((i) => ({ id: i.ID, name: i.NHOM }));
 
     const placeholder =
@@ -85,6 +74,8 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms }: Pro
             ? "Tên phân loại mới..."
             : activeTab === "nguon"
                 ? "Tên nguồn mới..."
+                : activeTab === "ly-do-tu-choi"
+                ? "Tên lý do từ chối mới..."
                 : "Tên nhóm mới...";
 
     return (
@@ -157,11 +148,27 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms }: Pro
             </Modal>
 
             {/* Confirmation Modal */}
-            <DeleteCDKH
+            <DeleteConfirmDialog
                 isOpen={!!deleteTarget}
                 onClose={() => setDeleteTarget(null)}
-                onConfirm={confirmDelete}
-                loading={loading}
+                onConfirm={async () => {
+                    if (!deleteTarget) return { success: false };
+                    let res;
+                    if (activeTab === "phan-loai") res = await deletePhanLoaiKH(deleteTarget);
+                    else if (activeTab === "nguon") res = await deleteNguonKH(deleteTarget);
+                    else if (activeTab === "ly-do-tu-choi") res = await deleteLyDoTuChoi(deleteTarget);
+                    else res = await deleteNhomKH(deleteTarget);
+                    if (res.success) {
+                        toast.success("Đã xóa danh mục");
+                        router.refresh();
+                    } else {
+                        toast.error((res as any).message || "Lỗi xóa");
+                    }
+                    return res;
+                }}
+                title="Xác nhận xóa"
+                description="Bạn có chắc chắn muốn xóa mục này không? Hành động này không thể hoàn tác."
+                confirmText="Xóa"
             />
         </>
     );

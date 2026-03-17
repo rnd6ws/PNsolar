@@ -1,8 +1,10 @@
 import { Metadata } from "next";
 import { getPhanLoaiHHTable } from "@/features/phan-loai-hh/action";
 import { getNhomHHTable } from "@/features/nhom-hh/action";
+import { getGoiGiaMapByDongHang } from "@/features/goi-gia/action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
-import { Package, PackagePlus, Tags } from 'lucide-react';
+import { Package, PackagePlus, Tags, DollarSign } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import SettingNhomHHButton from "@/features/phan-loai-hh/components/SettingNhomHHButton";
 import AddPhanLoaiHHButton from "@/features/phan-loai-hh/components/AddPhanLoaiHHButton";
 import PhanLoaiHHPageClient from "@/features/phan-loai-hh/components/PhanLoaiHHPageClient";
@@ -21,6 +23,8 @@ export default async function PhanLoaiHHPage() {
 
     const nhomRes = await getNhomHHTable();
     const nhomHHs: any[] = nhomRes.success && nhomRes.data ? nhomRes.data : [];
+
+    const goiGiaMap = await getGoiGiaMapByDongHang();
 
     return (
         <PermissionGuard moduleKey="phan-loai-hh" level="view" showNoAccess>
@@ -42,52 +46,37 @@ export default async function PhanLoaiHHPage() {
                         </div>
                     </div>
 
-                    {/* 3 Mini Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-card border border-border rounded-xl shadow-sm p-6">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary dark:bg-primary/20 dark:text-primary">
-                                        <Package className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-muted-foreground mb-1">Tổng phân loại</p>
-                                        <p className="text-2xl font-bold text-foreground leading-none">{data?.length || 0}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    {/* Stats Cards */}
+                    {(() => {
+                        const thisMonth = data?.filter((e: any) => new Date(e.CREATED_AT).getMonth() === new Date().getMonth() && new Date(e.CREATED_AT).getFullYear() === new Date().getFullYear()).length || 0;
+                        const withGoiGia = data?.filter((e: any) => {
+                            const key = e.MA_DONG_HANG || e.MA_PHAN_LOAI;
+                            return key && goiGiaMap[key] && goiGiaMap[key].count > 0;
+                        }).length || 0;
 
-                        <div className="bg-card border border-border rounded-xl shadow-sm p-6">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
-                                        <Tags className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-muted-foreground mb-1">Tổng nhóm hàng hóa</p>
-                                        <p className="text-2xl font-bold text-foreground leading-none">{nhomHHs?.length || 0}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        const stats = [
+                            { label: 'Tổng phân loại', value: data?.length || 0, icon: Package, color: 'text-primary bg-primary/10' },
+                            { label: 'Nhóm hàng hóa', value: nhomHHs?.length || 0, icon: Tags, color: 'text-emerald-600 bg-emerald-500/10' },
+                            { label: 'Có gói giá', value: withGoiGia, icon: DollarSign, color: 'text-orange-500 bg-orange-500/10' },
+                            { label: 'Mới tháng này', value: thisMonth, icon: PackagePlus, color: 'text-purple-600 bg-purple-500/10' },
+                        ];
 
-                        <div className="bg-card border border-border rounded-xl shadow-sm p-6">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 dark:bg-rose-900/40 dark:text-rose-400">
-                                        <PackagePlus className="w-6 h-6" />
+                        return (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {stats.map((stat) => (
+                                    <div key={stat.label} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+                                        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", stat.color)}>
+                                            <stat.icon className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">{stat.label}</p>
+                                            <p className="text-xl font-bold text-foreground leading-none mt-1">{stat.value}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-muted-foreground mb-1">Thêm mới tháng này</p>
-                                        <p className="text-2xl font-bold text-foreground leading-none">
-                                            {data?.filter((e: any) => new Date(e.CREATED_AT).getMonth() === new Date().getMonth() && new Date(e.CREATED_AT).getFullYear() === new Date().getFullYear()).length || 0}
-                                        </p>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
-                        </div>
-                    </div>
+                        );
+                    })()}
                 </div>
 
                 {/* Content Card */}
@@ -95,6 +84,7 @@ export default async function PhanLoaiHHPage() {
                     <PhanLoaiHHPageClient
                         data={data}
                         nhomHHs={nhomHHs as any}
+                        goiGiaMap={goiGiaMap}
                     />
                 </div>
             </div>

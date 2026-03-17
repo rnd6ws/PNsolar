@@ -51,7 +51,7 @@ export default function FilterSelect({ paramKey, options, placeholder = 'Tất c
                     <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
                 </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width) max-h-[300px] overflow-y-auto">
+            <DropdownMenuContent align="start" className="min-w-[200px] max-h-[300px] overflow-y-auto">
                 <DropdownMenuCheckboxItem
                     checked={currentValue === 'all'}
                     onCheckedChange={() => handleSelect('all')}

@@ -6,12 +6,14 @@ import { toast } from "sonner";
 import { createNhomHH, updateNhomHH, deleteNhomHH } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import Modal from "@/components/Modal";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 export default function NhomHHClient({ data = [] }: { data: any[] }) {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editMode, setEditMode] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [deleteItem, setDeleteItem] = useState<any>(null);
 
     const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -54,16 +56,7 @@ export default function NhomHHClient({ data = [] }: { data: any[] }) {
         setLoading(false);
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (confirm(`Bạn có chắc muốn xóa nhóm "${name}" không?`)) {
-            const res = await deleteNhomHH(id);
-            if (res.success) {
-                toast.success("Đã xóa nhóm");
-            } else {
-                toast.error(res.message);
-            }
-        }
-    };
+
 
     return (
         <div className="space-y-6">
@@ -111,7 +104,7 @@ export default function NhomHHClient({ data = [] }: { data: any[] }) {
                                             </PermissionGuard>
                                             <PermissionGuard moduleKey="nhom-hh" level="delete">
                                                 <button
-                                                    onClick={() => handleDelete(item.ID, item.TEN_NHOM)}
+                                                    onClick={() => setDeleteItem(item)}
                                                     className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
                                                     title="Xóa"
                                                 >
@@ -187,6 +180,26 @@ export default function NhomHHClient({ data = [] }: { data: any[] }) {
                     </form>
                 )}
             </Modal>
+
+            {/* Modal Xác nhận xóa */}
+            <DeleteConfirmDialog
+                isOpen={!!deleteItem}
+                onClose={() => setDeleteItem(null)}
+                onConfirm={async () => {
+                    if (!deleteItem) return { success: false };
+                    const res = await deleteNhomHH(deleteItem.ID);
+                    if (res.success) {
+                        toast.success("Đã xóa nhóm");
+                    } else {
+                        toast.error(res.message);
+                    }
+                    return res;
+                }}
+                title="Xác nhận xóa nhóm"
+                itemName={deleteItem?.TEN_NHOM}
+                itemDetail={`Mã: ${deleteItem?.MA_NHOM}`}
+                confirmText="Xóa nhóm"
+            />
         </div>
     );
 }

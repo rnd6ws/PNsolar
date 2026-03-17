@@ -5,16 +5,28 @@ import { revalidatePath } from 'next/cache';
 import { productSchema } from './schema';
 import { ActionResponse } from '@/lib/types';
 
+// ===== Lấy danh sách Nhóm hàng hóa (từ NHOM_HH) =====
+export async function getNhomHHOptions() {
+    try {
+        const data = await prisma.nHOM_HH.findMany({
+            select: {
+                ID: true,
+                MA_NHOM: true,
+                TEN_NHOM: true,
+            },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+        return data;
+    } catch (error) {
+        console.error('[getNhomHHOptions]', error);
+        return [];
+    }
+}
+
 // ===== Lấy danh sách Phân loại (từ PHANLOAI_HH) =====
 export async function getPhanLoaiOptions() {
     try {
         const data = await prisma.pHANLOAI_HH.findMany({
-            where: {
-                OR: [
-                    { DELETED_AT: null },
-                    { DELETED_AT: { isSet: false } }
-                ]
-            },
             select: {
                 ID: true,
                 MA_PHAN_LOAI: true,
@@ -32,12 +44,7 @@ export async function getPhanLoaiOptions() {
 // ===== Lấy danh sách Dòng hàng (từ DONG_HH), có thể lọc theo PHAN_LOAI_ID =====
 export async function getDongHangOptions(phanLoaiId?: string) {
     try {
-        const where: any = {
-            OR: [
-                { DELETED_AT: null },
-                { DELETED_AT: { isSet: false } }
-            ]
-        };
+        const where: any = {};
 
         if (phanLoaiId) {
             where.PHAN_LOAI_ID = phanLoaiId;
@@ -72,18 +79,19 @@ export async function createProductAction(data: any) {
             return { success: false, message: parsed.error.issues[0].message };
         }
 
-        // Check for duplicate ID_HH
-        const existing = await prisma.dMHH.findUnique({ where: { ID_HH: parsed.data.ID_HH } });
+        // Check for duplicate MA_HH
+        const existing = await prisma.dMHH.findUnique({ where: { MA_HH: parsed.data.MA_HH } });
         if (existing) {
-            return { success: false, message: `Mã hàng hóa "${parsed.data.ID_HH}" đã tồn tại!` };
+            return { success: false, message: `Mã hàng hóa "${parsed.data.MA_HH}" đã tồn tại!` };
         }
 
         await prisma.dMHH.create({
             data: {
-                ID_HH: parsed.data.ID_HH,
+                MA_HH: parsed.data.MA_HH,
+                NHOM_HH: parsed.data.NHOM_HH || null,
                 PHAN_LOAI: parsed.data.PHAN_LOAI,
                 DONG_HANG: parsed.data.DONG_HANG,
-                TEN: parsed.data.TEN,
+                TEN_HH: parsed.data.TEN_HH,
                 MODEL: parsed.data.MODEL,
                 MO_TA: parsed.data.MO_TA || null,
                 DON_VI_TINH: parsed.data.DON_VI_TINH,
@@ -91,7 +99,6 @@ export async function createProductAction(data: any) {
                 XUAT_XU: parsed.data.XUAT_XU || null,
                 BAO_HANH: parsed.data.BAO_HANH || null,
                 HIEU_LUC: parsed.data.HIEU_LUC ?? true,
-                DELETED_AT: null,
             }
         });
         revalidatePath('/hang-hoa');
@@ -113,10 +120,11 @@ export async function updateProductAction(id: string, data: any) {
         await prisma.dMHH.update({
             where: { ID: id },
             data: {
-                ID_HH: parsed.data.ID_HH,
+                MA_HH: parsed.data.MA_HH,
+                NHOM_HH: parsed.data.NHOM_HH || null,
                 PHAN_LOAI: parsed.data.PHAN_LOAI,
                 DONG_HANG: parsed.data.DONG_HANG,
-                TEN: parsed.data.TEN,
+                TEN_HH: parsed.data.TEN_HH,
                 MODEL: parsed.data.MODEL,
                 MO_TA: parsed.data.MO_TA || null,
                 DON_VI_TINH: parsed.data.DON_VI_TINH,
@@ -134,12 +142,11 @@ export async function updateProductAction(id: string, data: any) {
     }
 }
 
-// ===== Xóa sản phẩm (soft delete) =====
+// ===== Xóa sản phẩm =====
 export async function deleteProductAction(id: string) {
     try {
-        await prisma.dMHH.update({
-            where: { ID: id },
-            data: { DELETED_AT: new Date() }
+        await prisma.dMHH.delete({
+            where: { ID: id }
         });
         revalidatePath('/hang-hoa');
         return { success: true, message: 'Đã xóa hàng hóa!' };
@@ -150,26 +157,25 @@ export async function deleteProductAction(id: string) {
 }
 
 // ===== Lấy danh sách sản phẩm (có filter, phân trang) =====
-export async function getProducts(filters: { query?: string; page?: number; limit?: number; PHAN_LOAI?: string; DONG_HANG?: string } = {}): Promise<ActionResponse> {
-    const { page = 1, limit = 10, query, PHAN_LOAI, DONG_HANG } = filters;
+export async function getProducts(filters: { query?: string; page?: number; limit?: number; NHOM_HH?: string; PHAN_LOAI?: string; DONG_HANG?: string } = {}): Promise<ActionResponse> {
+    const { page = 1, limit = 10, query, NHOM_HH, PHAN_LOAI, DONG_HANG } = filters;
 
-    const where: any = {
-        OR: [
-            { DELETED_AT: null },
-            { DELETED_AT: { isSet: false } }
-        ]
-    };
+    const where: any = {};
 
     const andConditions: any[] = [];
 
     if (query) {
         andConditions.push({
             OR: [
-                { TEN: { contains: query, mode: 'insensitive' } },
-                { ID_HH: { contains: query, mode: 'insensitive' } },
+                { TEN_HH: { contains: query, mode: 'insensitive' } },
+                { MA_HH: { contains: query, mode: 'insensitive' } },
                 { MODEL: { contains: query, mode: 'insensitive' } },
             ]
         });
+    }
+
+    if (NHOM_HH && NHOM_HH !== 'all') {
+        andConditions.push({ NHOM_HH: NHOM_HH });
     }
 
     if (PHAN_LOAI && PHAN_LOAI !== 'all') {
@@ -215,27 +221,24 @@ export async function getProducts(filters: { query?: string; page?: number; limi
 export async function getUniqueCategories() {
     try {
         const existingProducts = await prisma.dMHH.findMany({
-            where: {
-                OR: [
-                    { DELETED_AT: null },
-                    { DELETED_AT: { isSet: false } }
-                ]
-            },
             select: {
+                NHOM_HH: true,
                 PHAN_LOAI: true,
                 DONG_HANG: true,
             }
         });
 
+        const uniqueNhomHH = Array.from(new Set(existingProducts.map((p: any) => p.NHOM_HH).filter(Boolean)));
         const uniquePhanLoai = Array.from(new Set(existingProducts.map((p: any) => p.PHAN_LOAI).filter(Boolean)));
         const uniqueDongHang = Array.from(new Set(existingProducts.map((p: any) => p.DONG_HANG).filter(Boolean)));
 
         return {
+            nhomHH: uniqueNhomHH as string[],
             phanLoai: uniquePhanLoai as string[],
             dongHang: uniqueDongHang as string[],
         };
     } catch (error) {
         console.error('[getUniqueCategories]', error);
-        return { phanLoai: [], dongHang: [] };
+        return { nhomHH: [], phanLoai: [], dongHang: [] };
     }
 }

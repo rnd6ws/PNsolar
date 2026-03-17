@@ -6,12 +6,6 @@ import { revalidatePath } from "next/cache";
 export async function getNhomHHTable() {
     try {
         const data = await prisma.nHOM_HH.findMany({
-            where: {
-                OR: [
-                    { DELETED_AT: null },
-                    { DELETED_AT: { isSet: false } }
-                ]
-            },
             orderBy: { CREATED_AT: "desc" }
         });
         return { success: true, data };
@@ -86,9 +80,8 @@ export async function updateNhomHH(id: string, updateData: any) {
 
 export async function deleteNhomHH(id: string) {
     try {
-        await prisma.nHOM_HH.update({
-            where: { ID: id },
-            data: { DELETED_AT: new Date() }
+        await prisma.nHOM_HH.delete({
+            where: { ID: id }
         });
 
         revalidatePath("/phan-loai-hh");
