@@ -10,6 +10,7 @@ import Modal from "@/components/Modal";
 import ImageUpload from "@/components/ImageUpload";
 import Image from "next/image";
 import type { ColumnKey } from "./ColumnToggleButton";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 interface Props {
     data: any[];
@@ -125,6 +126,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>(null);
     const [nguoiLHItem, setNguoiLHItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
+    const [deleteKH, setDeleteKH] = useState<any>(null);
 
     // default show all if not provided
     const cols = visibleColumns ?? ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "nguonSales"] as ColumnKey[];
@@ -190,12 +192,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
         setLoading(false);
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Bạn có chắc muốn xóa khách hàng "${name}" không?`)) return;
-        const res = await deleteKhachHang(id);
-        if (res.success) toast.success("Đã xóa khách hàng");
-        else toast.error((res as any).message || "Lỗi xóa");
-    };
+
 
     return (
         <>
@@ -363,7 +360,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                             </PermissionGuard>
                                             <PermissionGuard moduleKey="khach-hang" level="delete">
                                                 <button
-                                                    onClick={() => handleDelete(item.ID, item.TEN_KH)}
+                                                    onClick={() => setDeleteKH(item)}
                                                     className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
                                                     title="Xóa"
                                                 >
@@ -392,7 +389,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                     </PermissionGuard>
                                                     <PermissionGuard moduleKey="khach-hang" level="delete">
                                                         <DropdownMenuItem 
-                                                            onClick={(e) => { e.stopPropagation(); handleDelete(item.ID, item.TEN_KH); }} 
+                                                            onClick={(e) => { e.stopPropagation(); setDeleteKH(item); }} 
                                                             variant="destructive"
                                                             className="cursor-pointer gap-2 rounded-lg"
                                                         >
@@ -463,6 +460,26 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                 isOpen={!!nguoiLHItem}
                 onClose={() => setNguoiLHItem(null)}
                 khachHang={nguoiLHItem}
+            />
+
+            {/* Modal: Xác nhận xóa */}
+            <DeleteConfirmDialog
+                isOpen={!!deleteKH}
+                onClose={() => setDeleteKH(null)}
+                onConfirm={async () => {
+                    if (!deleteKH) return { success: false };
+                    const res = await deleteKhachHang(deleteKH.ID);
+                    if (res.success) {
+                        toast.success("Đã xóa khách hàng");
+                    } else {
+                        toast.error((res as any).message || "Lỗi xóa");
+                    }
+                    return res;
+                }}
+                title="Xác nhận xóa khách hàng"
+                itemName={deleteKH?.TEN_KH}
+                itemDetail={deleteKH?.MST ? `MST: ${deleteKH.MST}` : undefined}
+                confirmText="Xóa"
             />
         </>
     );

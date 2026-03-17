@@ -9,12 +9,6 @@ import { ActionResponse } from '@/lib/types';
 export async function getDongHangOptionsForGoiGia() {
     try {
         const data = await prisma.dONG_HH.findMany({
-            where: {
-                OR: [
-                    { DELETED_AT: null },
-                    { DELETED_AT: { isSet: false } }
-                ]
-            },
             select: {
                 ID: true,
                 MA_DONG_HANG: true,
@@ -38,12 +32,7 @@ export async function getGoiGiaList(filters: {
 } = {}): Promise<ActionResponse> {
     const { page = 1, limit = 10, query, MA_DONG_HANG } = filters;
 
-    const where: any = {
-        OR: [
-            { DELETED_AT: null },
-            { DELETED_AT: { isSet: false } }
-        ]
-    };
+    const where: any = {};
 
     const andConditions: any[] = [];
 
@@ -95,12 +84,6 @@ export async function getGoiGiaList(filters: {
 export async function getUniqueDongHangInGoiGia() {
     try {
         const records = await prisma.gOI_GIA.findMany({
-            where: {
-                OR: [
-                    { DELETED_AT: null },
-                    { DELETED_AT: { isSet: false } }
-                ]
-            },
             select: { MA_DONG_HANG: true },
         });
         const unique = Array.from(new Set(records.map((r: any) => r.MA_DONG_HANG).filter(Boolean)));
@@ -182,7 +165,7 @@ export async function createGoiGiaAction(data: {
                 GOI_GIA: data.GOI_GIA,
                 SL_MIN: data.SL_MIN ?? null,
                 SL_MAX: data.SL_MAX ?? null,
-                DELETED_AT: null,
+
             }
         });
         revalidatePath('/goi-gia');
@@ -242,7 +225,6 @@ export async function createBulkGoiGiaAction(payload: {
             GOI_GIA: string;
             SL_MIN: number | null;
             SL_MAX: number | null;
-            DELETED_AT: null;
         }> = [];
 
         for (const [maDongHang, groupRows] of Object.entries(grouped)) {
@@ -255,7 +237,7 @@ export async function createBulkGoiGiaAction(payload: {
                     GOI_GIA: groupRows[i].GOI_GIA,
                     SL_MIN: groupRows[i].SL_MIN ?? null,
                     SL_MAX: groupRows[i].SL_MAX ?? null,
-                    DELETED_AT: null,
+
                 });
             }
         }
@@ -297,12 +279,11 @@ export async function updateGoiGiaAction(id: string, data: any) {
     }
 }
 
-// ===== Xóa Gói giá (soft delete) =====
+// ===== Xóa Gói giá =====
 export async function deleteGoiGiaAction(id: string) {
     try {
-        await prisma.gOI_GIA.update({
-            where: { ID: id },
-            data: { DELETED_AT: new Date() }
+        await prisma.gOI_GIA.delete({
+            where: { ID: id }
         });
         revalidatePath('/goi-gia');
         return { success: true, message: 'Đã xóa gói giá!' };
@@ -319,12 +300,6 @@ export async function getGoiGiaMapByDongHang(): Promise<
 > {
     try {
         const allRecords = await prisma.gOI_GIA.findMany({
-            where: {
-                OR: [
-                    { DELETED_AT: null },
-                    { DELETED_AT: { isSet: false } },
-                ],
-            },
             orderBy: { NGAY_HIEU_LUC: 'desc' },
         });
 

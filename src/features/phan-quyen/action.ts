@@ -77,7 +77,7 @@ export async function getEmployeesWithPermissions() {
     }
 
     const employees = await prisma.dSNV.findMany({
-        where: { DELETED_AT: null, ROLE: { not: 'ADMIN' } },
+        where: { ROLE: { not: 'ADMIN' } },
         select: {
             ID: true,
             MA_NV: true,

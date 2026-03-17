@@ -37,7 +37,6 @@ export async function createNhanVienAction(data: any) {
                     DIA_CHI: rest.DIA_CHI,
                     ROLE: rest.ROLE,
                     IS_ACTIVE: rest.IS_ACTIVE,
-                    DELETED_AT: null,
                 },
             });
 
@@ -73,19 +72,15 @@ export async function deleteNhanVienAction(id: string) {
     try {
         await prisma.$transaction(async (tx: any) => {
             const emp = await tx.dSNV.findUnique({ where: { ID: id } });
-            await tx.dSNV.delete({ where: { ID: id } }); // Soft delete via extension
 
-            await tx.aUDIT_LOG.create({
-                data: {
-                    ACTION: 'DELETE',
-                    USER_ID: user.userId,
-                    USER_NAME: user.USER_NAME,
-                    TARGET_MODEL: 'DSNV',
-                    TARGET_ID: id,
-                    DETAILS: `Xóa nhân viên: ${emp?.HO_TEN}`,
-                    OLD_VALUE: emp as any,
-                },
-            });
+            // Xóa phân quyền liên quan
+            await tx.pHAN_QUYEN.deleteMany({ where: { NV_ID: id } });
+
+            // Xóa audit log liên quan (vì có relation)
+            await tx.aUDIT_LOG.deleteMany({ where: { USER_ID: id } });
+
+            // Xóa nhân viên
+            await tx.dSNV.delete({ where: { ID: id } });
         });
 
         revalidatePath('/nhan-vien');
@@ -168,13 +163,7 @@ export async function updateNhanVienAction(id: string, data: any) {
 export async function getEmployees(filters: { query?: string; page?: number; limit?: number; ROLE?: string; status?: string; PHONG_BAN?: string; CHUC_VU?: string } = {}): Promise<ActionResponse> {
     const { page = 1, limit = 10, query, ROLE, status, PHONG_BAN, CHUC_VU } = filters;
 
-    // Fix Prisma MongoDB null matching
-    const where: any = {
-        OR: [
-            { DELETED_AT: null },
-            { DELETED_AT: { isSet: false } }
-        ]
-    };
+    const where: any = {};
 
     const andConditions: any[] = [];
 
@@ -240,10 +229,6 @@ export async function getChucVus() {
         const data = await prisma.cD_CHUCVU.findMany({
             where: {
                 IS_ACTIVE: true,
-                OR: [
-                    { DELETED_AT: null },
-                    { DELETED_AT: { isSet: false } }
-                ]
             },
             orderBy: { CREATED_AT: 'asc' }
         });
@@ -258,10 +243,6 @@ export async function getPhongBans() {
         const data = await prisma.cD_PHONGBAN.findMany({
             where: {
                 IS_ACTIVE: true,
-                OR: [
-                    { DELETED_AT: null },
-                    { DELETED_AT: { isSet: false } }
-                ]
             },
             orderBy: { CREATED_AT: 'asc' }
         });

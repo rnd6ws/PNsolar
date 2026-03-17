@@ -1,6 +1,6 @@
 "use client"
-import { useState } from 'react';
-import { Trash2, Key, Lock, Edit2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Trash2, Key, Lock, Edit2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { deleteNhanVienAction, updateNhanVienAction, changePasswordAction } from '@/features/nhan-vien/action';
 import Modal from '@/components/Modal';
@@ -9,6 +9,7 @@ import type { ColumnKey } from './ColumnToggleButton';
 import ImageUpload from '@/components/ImageUpload';
 import Image from 'next/image';
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
+import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
 
 export default function NhanVienList({
     employees,
@@ -26,6 +27,34 @@ export default function NhanVienList({
     const [changingPasswordEmp, setChangingPasswordEmp] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+    const [deleteEmp, setDeleteEmp] = useState<any>(null);
+
+    const sortedEmployees = useMemo(() => {
+        if (!sortConfig) return employees;
+        return [...employees].sort((a, b) => {
+            let aVal = (a[sortConfig.key] || '').toString().toLowerCase();
+            let bVal = (b[sortConfig.key] || '').toString().toLowerCase();
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [employees, sortConfig]);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const SortIcon = ({ columnKey }: { columnKey: string }) => {
+        if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40 group-hover:opacity-100" />;
+        return sortConfig.direction === 'asc'
+            ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary" />
+            : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary" />;
+    };
 
     // Default: show all columns
     const visible = visibleColumns ?? ['phongBan', 'chucVu', 'vaiTro', 'trangThai'];
@@ -37,16 +66,7 @@ export default function NhanVienList({
         setError(null);
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (confirm(`Bạn có chắc chắn muốn xóa nhân viên ${name}?`)) {
-            const res = await deleteNhanVienAction(id);
-            if (res.success) {
-                toast.success(`Đã xoá nhân viên ${name}`);
-            } else {
-                toast.error(res.message);
-            }
-        }
-    };
+
 
     const handleEditSubmission = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -131,24 +151,24 @@ export default function NhanVienList({
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                            <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Nhân viên</th>
+                            <th onClick={() => handleSort('HO_TEN')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] cursor-pointer group hover:text-foreground">Nhân viên <SortIcon columnKey="HO_TEN" /></th>
                             {show('phongBan') && (
-                                <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Phòng ban</th>
+                                <th onClick={() => handleSort('PHONG_BAN')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] cursor-pointer group hover:text-foreground">Phòng ban <SortIcon columnKey="PHONG_BAN" /></th>
                             )}
                             {show('chucVu') && (
-                                <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Chức vụ</th>
+                                <th onClick={() => handleSort('CHUC_VU')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] cursor-pointer group hover:text-foreground">Chức vụ <SortIcon columnKey="CHUC_VU" /></th>
                             )}
                             {show('vaiTro') && (
-                                <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Vai trò</th>
+                                <th onClick={() => handleSort('ROLE')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] cursor-pointer group hover:text-foreground">Vai trò <SortIcon columnKey="ROLE" /></th>
                             )}
                             {show('trangThai') && (
-                                <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Trạng thái</th>
+                                <th onClick={() => handleSort('IS_ACTIVE')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] cursor-pointer group hover:text-foreground">Trạng thái <SortIcon columnKey="IS_ACTIVE" /></th>
                             )}
                             <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {employees.map((emp) => (
+                        {sortedEmployees.map((emp) => (
                             <tr key={emp.ID} className="border-b border-border hover:bg-muted/30 transition-all data-[state=selected]:bg-muted group">
                                 <td className="p-5 align-middle">
                                     <div className="flex items-center gap-3">
@@ -203,7 +223,7 @@ export default function NhanVienList({
                                 )}
 
                                 <td className="p-5 align-middle text-right">
-                                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex justify-end gap-1 transition-opacity">
                                         <PermissionGuard moduleKey="nhan-vien" level="edit">
                                             <button onClick={() => setChangingPasswordEmp(emp)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Đổi mật khẩu">
                                                 <Key className="w-4 h-4" />
@@ -214,7 +234,7 @@ export default function NhanVienList({
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="nhan-vien" level="delete">
                                             <button
-                                                onClick={() => handleDelete(emp.ID, emp.HO_TEN)}
+                                                onClick={() => setDeleteEmp(emp)}
                                                 className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa nhân viên"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -268,7 +288,7 @@ export default function NhanVienList({
                                 </button>
                             </PermissionGuard>
                             <PermissionGuard moduleKey="nhan-vien" level="delete">
-                                <button onClick={() => handleDelete(emp.ID, emp.HO_TEN)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
+                                <button onClick={() => setDeleteEmp(emp)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </PermissionGuard>
@@ -396,6 +416,26 @@ export default function NhanVienList({
                     </form>
                 )}
             </Modal>
+
+            {/* Modal Xác nhận xóa */}
+            <DeleteConfirmDialog
+                isOpen={!!deleteEmp}
+                onClose={() => setDeleteEmp(null)}
+                onConfirm={async () => {
+                    if (!deleteEmp) return { success: false };
+                    const res = await deleteNhanVienAction(deleteEmp.ID);
+                    if (res.success) {
+                        toast.success(`Đã xoá nhân viên ${deleteEmp.HO_TEN}`);
+                    } else {
+                        toast.error(res.message);
+                    }
+                    return res;
+                }}
+                title="Xác nhận xóa nhân viên"
+                itemName={deleteEmp?.HO_TEN}
+                itemDetail={deleteEmp ? `Mã NV: ${deleteEmp.MA_NV}` : undefined}
+                confirmText="Xóa nhân viên"
+            />
         </div>
     );
 }

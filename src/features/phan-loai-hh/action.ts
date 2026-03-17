@@ -6,20 +6,8 @@ import { revalidatePath } from "next/cache";
 export async function getPhanLoaiHHTable() {
     try {
         const data = await prisma.pHANLOAI_HH.findMany({
-            where: {
-                OR: [
-                    { DELETED_AT: null },
-                    { DELETED_AT: { isSet: false } }
-                ]
-            },
             include: {
                 DONG_HHS: {
-                    where: {
-                        OR: [
-                            { DELETED_AT: null },
-                            { DELETED_AT: { isSet: false } }
-                        ]
-                    },
                     orderBy: { CREATED_AT: "asc" }
                 }
             },
@@ -105,9 +93,13 @@ export async function updatePhanLoaiHH(id: string, updateData: any) {
 
 export async function deletePhanLoaiHH(id: string) {
     try {
-        await prisma.pHANLOAI_HH.update({
-            where: { ID: id },
-            data: { DELETED_AT: new Date() }
+        // Xóa các dòng hàng con trước
+        await prisma.dONG_HH.deleteMany({
+            where: { PHAN_LOAI_ID: id }
+        });
+
+        await prisma.pHANLOAI_HH.delete({
+            where: { ID: id }
         });
 
         revalidatePath("/phan-loai-hh");
@@ -202,13 +194,63 @@ export async function updateDongHH(id: string, updateData: any) {
 
 export async function deleteDongHH(id: string) {
     try {
-        await prisma.dONG_HH.update({
-            where: { ID: id },
-            data: { DELETED_AT: new Date() }
+        await prisma.dONG_HH.delete({
+            where: { ID: id }
         });
 
         revalidatePath("/phan-loai-hh");
         return { success: true };
+    } catch (error: any) {
+        return { success: false, message: error.message || "Lỗi không xác định" };
+    }
+}
+
+// ===== Thêm hàng loạt dòng hàng =====
+export async function createBulkDongHH(phanLoaiId: string, rows: { MA_DONG_HANG: string; TEN_DONG_HANG: string; TIEN_TO: string; HANG: string; XUAT_XU: string; DVT: string }[]) {
+    try {
+        if (!phanLoaiId) return { success: false, message: "Thiếu phân loại" };
+        if (!rows || rows.length === 0) return { success: false, message: "Chưa có dòng hàng nào" };
+
+        const errors: string[] = [];
+        let created = 0;
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const ma = row.MA_DONG_HANG?.trim();
+            const ten = row.TEN_DONG_HANG?.trim();
+
+            if (!ma || !ten) {
+                errors.push(`Dòng ${i + 1}: Thiếu mã hoặc tên dòng hàng`);
+                continue;
+            }
+
+            const exists = await prisma.dONG_HH.findUnique({ where: { MA_DONG_HANG: ma } });
+            if (exists) {
+                errors.push(`Dòng ${i + 1}: Mã "${ma}" đã tồn tại`);
+                continue;
+            }
+
+            await prisma.dONG_HH.create({
+                data: {
+                    PHAN_LOAI_ID: phanLoaiId,
+                    MA_DONG_HANG: ma,
+                    TEN_DONG_HANG: ten,
+                    TIEN_TO: row.TIEN_TO?.trim() || null,
+                    HANG: row.HANG?.trim() || null,
+                    XUAT_XU: row.XUAT_XU?.trim() || null,
+                    DVT: row.DVT?.trim() || null,
+                }
+            });
+            created++;
+        }
+
+        revalidatePath("/phan-loai-hh");
+
+        if (errors.length > 0) {
+            return { success: true, message: `Đã thêm ${created}/${rows.length} dòng hàng.\n${errors.join('\n')}` };
+        }
+
+        return { success: true, message: `Đã thêm ${created} dòng hàng thành công!` };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi không xác định" };
     }

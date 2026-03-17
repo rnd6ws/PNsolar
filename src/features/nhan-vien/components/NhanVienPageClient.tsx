@@ -4,7 +4,7 @@ import NhanVienList from './NhanVienList';
 import ColumnToggleButton, { type ColumnKey } from './ColumnToggleButton';
 import FilterSelect from '@/components/FilterSelect';
 import SearchInput from '@/components/SearchInput';
-import { Download } from 'lucide-react';
+import { Download, Settings2 } from 'lucide-react';
 
 const DEFAULT_COLUMNS: ColumnKey[] = ['phongBan', 'chucVu', 'vaiTro', 'trangThai'];
 
@@ -19,23 +19,60 @@ interface Props {
 
 export default function NhanVienPageClient({ employees, chucVus, phongBans, phongBanOptions, chucVuOptions, roleOptions }: Props) {
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
+    const [showFilters, setShowFilters] = useState(false);
 
     return (
         <>
             {/* Toolbar */}
-            <div className="p-5 flex flex-col lg:flex-row gap-4 justify-between items-center text-sm font-medium border-b bg-transparent">
-                <div className="flex-1 w-full max-w-[400px]">
-                    <SearchInput placeholder="Tìm theo tên nhân viên..." />
+            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
+                <div className="flex items-center justify-between gap-3 w-full">
+                    <div className="flex-1 w-full lg:max-w-[400px]">
+                        <SearchInput placeholder="Tìm theo tên nhân viên..." />
+                    </div>
+                    
+                    {/* Nút Lọc cho Mobile */}
+                    <div className="flex lg:hidden shrink-0">
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${showFilters ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                            title="Tùy chọn & Thao tác"
+                        >
+                            <Settings2 className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Desktop Toolbar */}
+                    <div className="hidden lg:flex items-center gap-3 w-auto">
+                        <FilterSelect paramKey="PHONG_BAN" options={phongBanOptions} placeholder="Phòng ban / Team" />
+                        <FilterSelect paramKey="CHUC_VU" options={chucVuOptions} placeholder="Chức vụ" />
+                        <FilterSelect paramKey="ROLE" options={roleOptions} placeholder="Vai trò" />
+                        <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                        <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0" title="Xuất Excel">
+                            <Download className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                    <FilterSelect paramKey="PHONG_BAN" options={phongBanOptions} placeholder="Phòng ban / Team" />
-                    <FilterSelect paramKey="CHUC_VU" options={chucVuOptions} placeholder="Chức vụ" />
-                    <FilterSelect paramKey="ROLE" options={roleOptions} placeholder="Vai trò" />
-                    <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
-                    <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm">
-                        <Download className="w-4 h-4" />
-                    </button>
-                </div>
+
+                {/* Mobile Expanded Filters */}
+                {showFilters && (
+                    <div className="flex lg:hidden flex-col gap-3 w-full bg-muted/30 p-4 rounded-xl border border-border animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="flex flex-col gap-3 w-full">
+                            <FilterSelect paramKey="PHONG_BAN" options={phongBanOptions} placeholder="Phòng ban / Team" />
+                            <FilterSelect paramKey="CHUC_VU" options={chucVuOptions} placeholder="Chức vụ" />
+                            <FilterSelect paramKey="ROLE" options={roleOptions} placeholder="Vai trò" />
+                        </div>
+                        
+                        <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-border w-full">
+                            <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                            <button
+                                className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex"
+                                title="Xuất Excel"
+                            >
+                                <Download className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* List */}

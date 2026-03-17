@@ -73,29 +73,29 @@ export default function AddNhanVienButton({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mã NV</label>
+                            <label className="text-sm font-bold text-muted-foreground">Mã NV</label>
                             <input name="MA_NV" required className="input-modern" placeholder="NV001" />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Họ và tên</label>
+                            <label className="text-sm font-bold text-muted-foreground">Họ và tên</label>
                             <input name="HO_TEN" required className="input-modern" placeholder="Nguyễn Văn A" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Username</label>
+                            <label className="text-sm font-bold text-muted-foreground">Username</label>
                             <input name="USER_NAME" required className="input-modern" placeholder="tên đăng nhập..." />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mật khẩu</label>
+                            <label className="text-sm font-bold text-muted-foreground">Mật khẩu</label>
                             <input name="PASSWORD" type="password" className="input-modern" placeholder="123456" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Phòng ban</label>
+                            <label className="text-sm font-bold text-muted-foreground">Phòng ban</label>
                             <select name="PHONG_BAN" className="input-modern">
                                 <option value="">-- Chọn phòng ban --</option>
                                 {phongBans.map(pb => (
@@ -104,7 +104,7 @@ export default function AddNhanVienButton({
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Chức vụ</label>
+                            <label className="text-sm font-bold text-muted-foreground">Chức vụ</label>
                             <select name="CHUC_VU" required className="input-modern">
                                 <option value="">-- Chọn chức vụ --</option>
                                 {chucVus.map(cv => (
@@ -116,11 +116,11 @@ export default function AddNhanVienButton({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Số điện thoại</label>
+                            <label className="text-sm font-bold text-muted-foreground">Số điện thoại</label>
                             <input name="SO_DIEN_THOAI" className="input-modern" placeholder="09xxx..." />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vai trò HT</label>
+                            <label className="text-sm font-bold text-muted-foreground">Vai trò HT</label>
                             <select name="ROLE" className="input-modern">
                                 <option value="STAFF">Nhân viên</option>
                                 <option value="MANAGER">Quản lý (Manager)</option>
@@ -130,7 +130,7 @@ export default function AddNhanVienButton({
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Email</label>
+                        <label className="text-sm font-bold text-muted-foreground">Email</label>
                         <input name="EMAIL" type="email" className="input-modern" placeholder="email@gmail.com" />
                     </div>
 

@@ -10,7 +10,7 @@ import {
     Truck, ShoppingCart, Wrench,
     CreditCard, Wallet, PieChart, Bell,
     UserCheck, Calendar, Shield, HelpCircle,
-    Layers, Archive, Map,
+    Layers, Archive, Map, DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/features/phan-quyen/PermissionContext";
@@ -135,6 +135,26 @@ const moduleGroups: ModuleGroup[] = [
                 color: "text-violet-600",
                 bgColor: "bg-violet-50 dark:bg-violet-950/50",
                 available: false,
+            },
+            {
+                name: "Nhà cung cấp",
+                description: "Quản lý thông tin nhà cung cấp.",
+                href: "/nha-cung-cap",
+                icon: Truck,
+                color: "text-cyan-600",
+                bgColor: "bg-cyan-50 dark:bg-cyan-950/50",
+                available: true,
+                moduleKey: "nha-cung-cap",
+            },
+            {
+                name: "Giá nhập",
+                description: "Quản lý giá nhập hàng hóa từ nhà cung cấp.",
+                href: "/gia-nhap",
+                icon: DollarSign,
+                color: "text-emerald-600",
+                bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
+                available: true,
+                moduleKey: "gia-nhap",
             },
             {
                 name: "Vận chuyển",

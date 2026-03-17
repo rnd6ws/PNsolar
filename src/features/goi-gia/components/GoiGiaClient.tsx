@@ -1,13 +1,15 @@
 'use client';
-import { useState, startTransition } from 'react';
+import { useState, useMemo, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, DollarSign, Search, AlertTriangle, Package, Calendar, Hash, ListPlus, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, DollarSign, Search, AlertTriangle, Package, Calendar, Hash, ListPlus, X, Settings2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createGoiGiaAction, updateGoiGiaAction, deleteGoiGiaAction, createBulkGoiGiaAction } from '@/features/goi-gia/action';
+import { toast } from 'sonner';
 import SearchInput from '@/components/SearchInput';
 import Pagination from '@/components/Pagination';
 import FilterSelect from '@/components/FilterSelect';
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
+import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
 
 // ===== TYPES =====
 interface GoiGia {
@@ -110,15 +112,18 @@ function GoiGiaModal({
                 ? await updateGoiGiaAction(record.ID, { ...payload, ID_GOI_GIA: record.ID_GOI_GIA })
                 : await createGoiGiaAction(payload);
             if (result.success) {
+                toast.success(result.message || (record ? 'Cập nhật gói giá thành công!' : 'Thêm gói giá thành công!'));
                 setLoading(false);
                 onClose();
                 onSuccess();
             } else {
+                toast.error(result.message || 'Có lỗi xảy ra');
                 setError(result.message || 'Có lỗi xảy ra');
                 setLoading(false);
             }
         } catch (err) {
             console.error('[GoiGiaModal] error:', err);
+            toast.error('Có lỗi xảy ra, vui lòng thử lại');
             setError('Có lỗi xảy ra, vui lòng thử lại');
             setLoading(false);
         }
@@ -127,7 +132,7 @@ function GoiGiaModal({
     if (!isOpen) return null;
 
     const inputClass = "w-full h-9 px-3 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0 transition-all placeholder:text-muted-foreground";
-    const labelClass = "block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5";
+    const labelClass = "block text-sm font-semibold text-muted-foreground mb-1.5";
     const selectClass = "w-full h-9 px-3 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0 transition-all appearance-none cursor-pointer";
 
     return (
@@ -268,67 +273,7 @@ function GoiGiaModal({
     );
 }
 
-// ===== DELETE CONFIRM MODAL =====
-function DeleteConfirmModal({
-    isOpen, onClose, record, onConfirm
-}: {
-    isOpen: boolean;
-    onClose: () => void;
-    record: GoiGia | null;
-    onConfirm: () => void;
-}) {
-    const [loading, setLoading] = useState(false);
-
-    const handleDelete = async () => {
-        if (!record) return;
-        setLoading(true);
-        await deleteGoiGiaAction(record.ID);
-        setLoading(false);
-        onConfirm();
-        onClose();
-    };
-
-    if (!isOpen || !record) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
-                <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                        <Trash2 className="w-5 h-5 text-destructive" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-foreground">Xác nhận xóa gói giá</h3>
-                        <p className="text-sm text-muted-foreground mt-0.5">Hành động này không thể hoàn tác.</p>
-                    </div>
-                </div>
-                <div className="p-4 bg-muted/30 rounded-xl mb-6 border">
-                    <p className="text-sm font-semibold text-foreground">Mã: {record.ID_GOI_GIA}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Dòng hàng: {record.MA_DONG_HANG} • Giá: {record.GOI_GIA}</p>
-                </div>
-                <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 h-9 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors">
-                        Hủy bỏ
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        disabled={loading}
-                        className="flex-1 h-9 text-sm font-medium bg-destructive text-white hover:bg-destructive/90 rounded-md transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
-                    >
-                        {loading ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                            <>
-                                <Trash2 className="w-4 h-4" />
-                                Xóa gói giá
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
+// ===== DELETE dùng DeleteConfirmDialog component chung =====
 
 // ===== BULK ADD MODAL =====
 interface BulkRow {
@@ -400,15 +345,18 @@ function BulkAddModal({
 
             const result = await createBulkGoiGiaAction(payload);
             if (result.success) {
+                toast.success(result.message || 'Thêm hàng loạt gói giá thành công!');
                 setLoading(false);
                 onClose();
                 onSuccess();
             } else {
+                toast.error(result.message || 'Có lỗi xảy ra');
                 setError(result.message || 'Có lỗi xảy ra');
                 setLoading(false);
             }
         } catch (err) {
             console.error('[BulkAddModal] error:', err);
+            toast.error('Có lỗi xảy ra, vui lòng thử lại');
             setError('Có lỗi xảy ra, vui lòng thử lại');
             setLoading(false);
         }
@@ -417,7 +365,7 @@ function BulkAddModal({
     if (!isOpen) return null;
 
     const inputClass = "w-full h-9 px-3 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0 transition-all placeholder:text-muted-foreground";
-    const labelClass = "block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5";
+    const labelClass = "block text-sm font-semibold text-muted-foreground mb-1.5";
     const selectClass = "w-full h-9 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring transition-all appearance-none cursor-pointer";
 
     return (
@@ -616,6 +564,41 @@ export default function GoiGiaClient({
     const [isBulkOpen, setIsBulkOpen] = useState(false);
     const [editRecord, setEditRecord] = useState<GoiGia | null>(null);
     const [deleteRecord, setDeleteRecord] = useState<GoiGia | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+    const sortedData = useMemo(() => {
+        if (!sortConfig) return initialData;
+        return [...initialData].sort((a, b) => {
+            let aVal: any;
+            let bVal: any;
+            if (sortConfig.key === 'NGAY_HIEU_LUC') {
+                aVal = a.NGAY_HIEU_LUC ? new Date(a.NGAY_HIEU_LUC).getTime() : 0;
+                bVal = b.NGAY_HIEU_LUC ? new Date(b.NGAY_HIEU_LUC).getTime() : 0;
+            } else {
+                aVal = (a[sortConfig.key as keyof GoiGia] || '').toString().toLowerCase();
+                bVal = (b[sortConfig.key as keyof GoiGia] || '').toString().toLowerCase();
+            }
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [initialData, sortConfig]);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const SortIcon = ({ columnKey }: { columnKey: string }) => {
+        if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-40 group-hover:opacity-100" />;
+        return sortConfig.direction === 'asc'
+            ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-primary" />
+            : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary" />;
+    };
 
     const handleSuccess = () => {
         startTransition(() => {
@@ -667,8 +650,8 @@ export default function GoiGiaClient({
                                 <stat.icon className="w-5 h-5" />
                             </div>
                             <div>
-                                <p className="text-xl font-bold text-foreground leading-none">{stat.value}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stat.value}</p>
                             </div>
                         </div>
                     ))}
@@ -677,17 +660,45 @@ export default function GoiGiaClient({
                 {/* Table Card */}
                 <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
                     {/* Toolbar */}
-                    <div className="p-5 flex flex-col lg:flex-row gap-4 justify-between items-center text-sm font-medium border-b bg-transparent">
-                        <div className="flex-1 w-full max-w-[400px]">
-                            <SearchInput placeholder="Tìm theo mã gói giá, mã dòng hàng..." />
+                    <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
+                        <div className="flex items-center justify-between gap-3 w-full">
+                            <div className="flex-1 w-full lg:max-w-[400px]">
+                                <SearchInput placeholder="Tìm theo mã gói giá, mã dòng hàng..." />
+                            </div>
+
+                            {/* Nút Lọc cho Mobile */}
+                            <div className="flex lg:hidden shrink-0">
+                                <button
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${showFilters ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                                    title="Tùy chọn & Thao tác"
+                                >
+                                    <Settings2 className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Desktop Toolbar */}
+                            <div className="hidden lg:flex items-center gap-3 w-auto">
+                                <FilterSelect
+                                    paramKey="MA_DONG_HANG"
+                                    options={uniqueDongHang.map(v => ({ label: v, value: v }))}
+                                    placeholder="Dòng hàng"
+                                />
+                            </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                            <FilterSelect
-                                paramKey="MA_DONG_HANG"
-                                options={uniqueDongHang.map(v => ({ label: v, value: v }))}
-                                placeholder="Dòng hàng"
-                            />
-                        </div>
+
+                        {/* Mobile Expanded Filters */}
+                        {showFilters && (
+                            <div className="flex lg:hidden flex-col gap-3 w-full bg-muted/30 p-4 rounded-xl border border-border animate-in slide-in-from-top-2 fade-in duration-200">
+                                <div className="flex flex-col gap-3 w-full">
+                                    <FilterSelect
+                                        paramKey="MA_DONG_HANG"
+                                        options={uniqueDongHang.map(v => ({ label: v, value: v }))}
+                                        placeholder="Dòng hàng"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Desktop Table */}
@@ -695,17 +706,17 @@ export default function GoiGiaClient({
                         <table className="w-full text-left border-collapse text-[13px]">
                             <thead>
                                 <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                                    <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Mã gói giá</th>
-                                    <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Ngày hiệu lực</th>
-                                    <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Mã dòng hàng</th>
-                                    <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Gói giá</th>
+                                    <th onClick={() => handleSort('ID_GOI_GIA')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Mã gói giá <SortIcon columnKey="ID_GOI_GIA" /></th>
+                                    <th onClick={() => handleSort('NGAY_HIEU_LUC')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Ngày hiệu lực <SortIcon columnKey="NGAY_HIEU_LUC" /></th>
+                                    <th onClick={() => handleSort('MA_DONG_HANG')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Mã dòng hàng <SortIcon columnKey="MA_DONG_HANG" /></th>
+                                    <th onClick={() => handleSort('GOI_GIA')} className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Gói giá <SortIcon columnKey="GOI_GIA" /></th>
                                     <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">SL Min</th>
                                     <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">SL Max</th>
                                     <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {initialData.map((row: GoiGia) => (
+                                {sortedData.map((row: GoiGia) => (
                                     <tr
                                         key={row.ID}
                                         className="border-b border-border hover:bg-muted/30 transition-all group"
@@ -752,7 +763,7 @@ export default function GoiGiaClient({
 
                                         {/* Hành động */}
                                         <td className="p-4 align-middle text-right">
-                                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex justify-end gap-1 transition-opacity">
                                                 <PermissionGuard moduleKey="goi-gia" level="edit">
                                                     <button
                                                         onClick={() => setEditRecord(row)}
@@ -805,7 +816,7 @@ export default function GoiGiaClient({
 
                     {/* Mobile View (Cards) */}
                     <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-                        {initialData.map((row: GoiGia) => (
+                        {sortedData.map((row: GoiGia) => (
                             <div key={row.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-3">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-3">
@@ -871,11 +882,24 @@ export default function GoiGiaClient({
                     onSuccess={handleSuccess}
                     dongHangOptions={dongHangOptions}
                 />
-                <DeleteConfirmModal
+                <DeleteConfirmDialog
                     isOpen={!!deleteRecord}
                     onClose={() => setDeleteRecord(null)}
-                    record={deleteRecord}
-                    onConfirm={handleSuccess}
+                    onConfirm={async () => {
+                        if (!deleteRecord) return { success: false };
+                        const result = await deleteGoiGiaAction(deleteRecord.ID);
+                        if (result.success) {
+                            toast.success('Đã xóa gói giá!');
+                        } else {
+                            toast.error(result.message || 'Lỗi khi xóa gói giá');
+                        }
+                        handleSuccess();
+                        return result;
+                    }}
+                    title="Xác nhận xóa gói giá"
+                    itemName={deleteRecord ? `Mã: ${deleteRecord.ID_GOI_GIA}` : undefined}
+                    itemDetail={deleteRecord ? `Dòng hàng: ${deleteRecord.MA_DONG_HANG} • Giá: ${deleteRecord.GOI_GIA}` : undefined}
+                    confirmText="Xóa gói giá"
                 />
                 <BulkAddModal
                     isOpen={isBulkOpen}

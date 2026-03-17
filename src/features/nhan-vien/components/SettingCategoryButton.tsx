@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Settings, Trash2, Plus } from 'lucide-react';
 import Modal from '@/components/Modal';
+import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
 import { createChucVuAction, deleteChucVuAction, createPhongBanAction, deletePhongBanAction } from '@/features/nhan-vien/action';
 import { toast } from 'sonner';
 
@@ -20,6 +21,7 @@ export default function SettingCategoryButton({
     // Add states
     const [newName, setNewName] = useState('');
     const [loading, setLoading] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,24 +45,7 @@ export default function SettingCategoryButton({
         setLoading(false);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Bạn có chắc xoá mục này không?')) return;
-        setLoading(true);
-        let res;
-        if (activeTab === 'phong-ban') {
-            res = await deletePhongBanAction(id);
-        } else {
-            res = await deleteChucVuAction(id);
-        }
 
-        if (!res?.success && res?.message) {
-            toast.error(res.message);
-        } else {
-            toast.success("Đã xoá danh mục");
-            router.refresh();
-        }
-        setLoading(false);
-    };
 
     return (
         <>
@@ -111,7 +96,7 @@ export default function SettingCategoryButton({
                                 {phongBans.map((item) => (
                                     <div key={item.ID} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg shadow-sm">
                                         <span className="font-semibold text-sm">{item.PHONG_BAN}</span>
-                                        <button onClick={() => handleDelete(item.ID)} disabled={loading} className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors">
+                                        <button onClick={() => setDeleteTarget({ id: item.ID, name: item.PHONG_BAN })} disabled={loading} className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -125,7 +110,7 @@ export default function SettingCategoryButton({
                                 {chucVus.map((item) => (
                                     <div key={item.ID} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg shadow-sm">
                                         <span className="font-semibold text-sm">{item.CHUC_VU}</span>
-                                        <button onClick={() => handleDelete(item.ID)} disabled={loading} className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors">
+                                        <button onClick={() => setDeleteTarget({ id: item.ID, name: item.CHUC_VU })} disabled={loading} className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -135,6 +120,31 @@ export default function SettingCategoryButton({
                     </div>
                 </div>
             </Modal>
+
+            {/* Modal xác nhận xóa */}
+            <DeleteConfirmDialog
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={async () => {
+                    if (!deleteTarget) return { success: false };
+                    let res;
+                    if (activeTab === 'phong-ban') {
+                        res = await deletePhongBanAction(deleteTarget.id);
+                    } else {
+                        res = await deleteChucVuAction(deleteTarget.id);
+                    }
+                    if (!res?.success && res?.message) {
+                        toast.error(res.message);
+                    } else {
+                        toast.success("Đã xoá danh mục");
+                        router.refresh();
+                    }
+                    return res;
+                }}
+                title={`Xác nhận xóa ${activeTab === 'phong-ban' ? 'phòng ban' : 'chức vụ'}`}
+                itemName={deleteTarget?.name}
+                confirmText="Xóa"
+            />
         </>
     );
 }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Settings, Trash2, Plus } from 'lucide-react';
 import Modal from '@/components/Modal';
+import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
 import { createNhomHH, deleteNhomHH } from '@/features/nhom-hh/action';
 import { toast } from 'sonner';
 
@@ -18,6 +19,7 @@ export default function SettingNhomHHButton({
     const [maNhom, setMaNhom] = useState('');
     const [tenNhom, setTenNhom] = useState('');
     const [loading, setLoading] = useState(false);
+    const [deleteItem, setDeleteItem] = useState<{ id: string; name: string } | null>(null);
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,19 +43,7 @@ export default function SettingNhomHHButton({
         setLoading(false);
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Bạn có chắc xoá nhóm "${name}" không?`)) return;
-        setLoading(true);
-        const res = await deleteNhomHH(id);
 
-        if (!res?.success && res?.message) {
-            toast.error(res.message);
-        } else {
-            toast.success("Đã xoá nhóm hàng hóa");
-            router.refresh();
-        }
-        setLoading(false);
-    };
 
     return (
         <>
@@ -100,7 +90,7 @@ export default function SettingNhomHHButton({
                                     <span className="font-semibold text-[13px] mr-2 text-primary">{item.MA_NHOM}</span>
                                     <span className="font-medium text-sm">{item.TEN_NHOM}</span>
                                 </div>
-                                <button onClick={() => handleDelete(item.ID, item.TEN_NHOM)} disabled={loading} className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors">
+                                <button onClick={() => setDeleteItem({ id: item.ID, name: item.TEN_NHOM })} disabled={loading} className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
@@ -108,6 +98,26 @@ export default function SettingNhomHHButton({
                     </div>
                 </div>
             </Modal>
+
+            {/* Modal xác nhận xóa */}
+            <DeleteConfirmDialog
+                isOpen={!!deleteItem}
+                onClose={() => setDeleteItem(null)}
+                onConfirm={async () => {
+                    if (!deleteItem) return { success: false };
+                    const res = await deleteNhomHH(deleteItem.id);
+                    if (!res?.success && res?.message) {
+                        toast.error(res.message);
+                    } else {
+                        toast.success("Đã xoá nhóm hàng hóa");
+                        router.refresh();
+                    }
+                    return res;
+                }}
+                title="Xác nhận xóa nhóm"
+                itemName={deleteItem?.name}
+                confirmText="Xóa nhóm"
+            />
         </>
     );
 }

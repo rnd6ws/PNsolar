@@ -8,71 +8,8 @@ const clientOptions = {
     log: process.env.NODE_ENV === 'development' ? ['query', 'warn', 'error'] : ['error'],
 } as any;
 
-const basePrisma = globalForPrisma.prisma || new PrismaClient(clientOptions);
+export const prisma = globalForPrisma.prisma || new PrismaClient(clientOptions);
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = basePrisma;
-
-// ===== Soft Delete Extension =====
-export const prisma = basePrisma.$extends({
-    name: 'softDelete',
-    query: {
-        dSNV: {
-            async delete({ args, query }: any) {
-                return (basePrisma as any).dSNV.update({
-                    ...args,
-                    data: { DELETED_AT: new Date() },
-                });
-            },
-            async deleteMany({ args, query }: any) {
-                return (basePrisma as any).dSNV.updateMany({
-                    ...args,
-                    data: { DELETED_AT: new Date() },
-                });
-            },
-        },
-        dMHH: {
-            async delete({ args, query }: any) {
-                return (basePrisma as any).dMHH.update({
-                    ...args,
-                    data: { DELETED_AT: new Date() },
-                });
-            },
-            async deleteMany({ args, query }: any) {
-                return (basePrisma as any).dMHH.updateMany({
-                    ...args,
-                    data: { DELETED_AT: new Date() },
-                });
-            },
-        },
-        pHANLOAI_HH: {
-            async delete({ args, query }: any) {
-                return (basePrisma as any).pHANLOAI_HH.update({
-                    ...args,
-                    data: { DELETED_AT: new Date() },
-                });
-            },
-            async deleteMany({ args, query }: any) {
-                return (basePrisma as any).pHANLOAI_HH.updateMany({
-                    ...args,
-                    data: { DELETED_AT: new Date() },
-                });
-            },
-        },
-        nHOM_HH: {
-            async delete({ args, query }: any) {
-                return (basePrisma as any).nHOM_HH.update({
-                    ...args,
-                    data: { DELETED_AT: new Date() },
-                });
-            },
-            async deleteMany({ args, query }: any) {
-                return (basePrisma as any).nHOM_HH.updateMany({
-                    ...args,
-                    data: { DELETED_AT: new Date() },
-                });
-            },
-        },
-    },
-});
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export type ExtendedPrismaClient = typeof prisma;

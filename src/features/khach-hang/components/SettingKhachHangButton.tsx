@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Settings, Trash2, Plus } from "lucide-react";
 import Modal from "@/components/Modal";
-import DeleteCDKH from "@/components/khach-hang-component/DeleteCDKH";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import {
     createPhanLoaiKH, deletePhanLoaiKH,
     createNguonKH, deleteNguonKH,
@@ -54,24 +54,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms }: Pro
         setLoading(false);
     };
 
-    const confirmDelete = async () => {
-        if (!deleteTarget) return;
-        setLoading(true);
 
-        let res;
-        if (activeTab === "phan-loai") res = await deletePhanLoaiKH(deleteTarget);
-        else if (activeTab === "nguon") res = await deleteNguonKH(deleteTarget);
-        else res = await deleteNhomKH(deleteTarget);
-
-        if (res.success) {
-            toast.success("Đã xóa danh mục");
-            setDeleteTarget(null);
-            router.refresh();
-        } else {
-            toast.error((res as any).message || "Lỗi xóa");
-        }
-        setLoading(false);
-    };
 
     const currentItems =
         activeTab === "phan-loai"
@@ -157,11 +140,26 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms }: Pro
             </Modal>
 
             {/* Confirmation Modal */}
-            <DeleteCDKH
+            <DeleteConfirmDialog
                 isOpen={!!deleteTarget}
                 onClose={() => setDeleteTarget(null)}
-                onConfirm={confirmDelete}
-                loading={loading}
+                onConfirm={async () => {
+                    if (!deleteTarget) return { success: false };
+                    let res;
+                    if (activeTab === "phan-loai") res = await deletePhanLoaiKH(deleteTarget);
+                    else if (activeTab === "nguon") res = await deleteNguonKH(deleteTarget);
+                    else res = await deleteNhomKH(deleteTarget);
+                    if (res.success) {
+                        toast.success("Đã xóa danh mục");
+                        router.refresh();
+                    } else {
+                        toast.error((res as any).message || "Lỗi xóa");
+                    }
+                    return res;
+                }}
+                title="Xác nhận xóa"
+                description="Bạn có chắc chắn muốn xóa mục này không? Hành động này không thể hoàn tác."
+                confirmText="Xóa"
             />
         </>
     );

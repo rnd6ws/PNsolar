@@ -24,8 +24,6 @@ model DSNV {
   ROLE          ROLE    @default(STAFF)
   IS_ACTIVE     Boolean @default(true)
 
-  // Soft Delete
-  DELETED_AT DateTime?
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -47,10 +45,11 @@ enum ROLE {
 // ===== DANH MỤC HÀNG HÓA (Product Catalog) =====
 model DMHH {
   ID          String  @id @default(auto()) @map("_id") @db.ObjectId
-  ID_HH       String  @unique
+  MA_HH       String  @unique
+  NHOM_HH     String?
   PHAN_LOAI   String
   DONG_HANG   String
-  TEN         String
+  TEN_HH      String
   MODEL       String
   MO_TA       String?
   DON_VI_TINH String
@@ -59,14 +58,12 @@ model DMHH {
   BAO_HANH    String?
   HIEU_LUC    Boolean  @default(true)
 
-  // Soft Delete
-  DELETED_AT DateTime?
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
 
-  @@index([DELETED_AT, PHAN_LOAI, DONG_HANG])
-  @@fulltext([TEN, MODEL, ID_HH])
+  @@index([NHOM_HH, PHAN_LOAI, DONG_HANG])
+  @@fulltext([TEN_HH, MODEL, MA_HH])
   @@map("DMHH")
 }
 
@@ -80,7 +77,7 @@ model PHANLOAI_HH {
 
   DONG_HHS DONG_HH[] // Relation to DONG_HH
 
-  DELETED_AT DateTime?
+
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
 
@@ -99,7 +96,7 @@ model DONG_HH {
   XUAT_XU       String? // Xuất xứ
   DVT           String? // ĐVT
 
-  DELETED_AT DateTime?
+
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
 
@@ -113,7 +110,7 @@ model NHOM_HH {
   MA_NHOM  String @unique
   TEN_NHOM String
 
-  DELETED_AT DateTime?
+
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
 
@@ -166,7 +163,7 @@ model CD_CHUCVU {
   CHUC_VU    String    @unique
   GHI_CHU    String?
   IS_ACTIVE  Boolean   @default(true)
-  DELETED_AT DateTime?
+
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
 
@@ -179,7 +176,7 @@ model CD_PHONGBAN {
   PHONG_BAN  String    @unique
   GHI_CHU    String?
   IS_ACTIVE  Boolean   @default(true)
-  DELETED_AT DateTime?
+
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
 
@@ -311,10 +308,55 @@ model GOI_GIA {
   SL_MIN        Int?
   SL_MAX        Int?
 
-  DELETED_AT DateTime?
+
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
 
-  @@index([MA_DONG_HANG, DELETED_AT])
+  @@index([MA_DONG_HANG])
   @@map("GOI_GIA")
+}
+
+// ===== NHÀ CUNG CẤP (Supplier) =====
+model NCC {
+  ID                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  MA_NCC              String    @unique
+  TEN_VIET_TAT        String?
+  TEN_NCC             String
+  NGAY_GHI_NHAN       DateTime?
+  HINH_ANH            String?
+  DIEN_THOAI          String?
+  EMAIL_CONG_TY       String?
+  MST                 String?
+  NGAY_THANH_LAP      DateTime?
+  DIA_CHI             String?
+  NGUOI_DAI_DIEN      String?
+  SDT_NGUOI_DAI_DIEN  String?
+
+
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
+
+
+  @@fulltext([TEN_NCC, MA_NCC, DIEN_THOAI])
+  @@map("NCC")
+}
+
+// ===== GIÁ NHẬP (Purchase Price) =====
+model GIA_NHAP {
+  ID             String    @id @default(auto()) @map("_id") @db.ObjectId
+  NGAY_HIEU_LUC  DateTime
+  MA_NCC         String
+  TEN_NCC        String
+  MA_HH          String
+  TEN_HH         String
+  DVT            String
+  DON_GIA        Float
+
+
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
+
+  @@index([MA_NCC, MA_HH])
+  @@fulltext([MA_NCC, TEN_NCC, MA_HH, TEN_HH])
+  @@map("GIA_NHAP")
 }

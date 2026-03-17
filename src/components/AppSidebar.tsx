@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     Command, LayoutDashboard, Users, Package, Settings, HelpCircle,
-    LogOut, EllipsisVertical, Shield, UserRound, DollarSign,
+    LogOut, EllipsisVertical, Shield, UserRound, DollarSign, Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutUser } from "@/features/auth/action";
@@ -41,6 +41,8 @@ const mainNavDef = [
     { name: "Phân loại hàng hóa", href: "/phan-loai-hh", icon: Package, moduleKey: "phan-loai-hh" },
     { name: "Hàng hóa", href: "/hang-hoa", icon: Package, moduleKey: "hang-hoa" },
     { name: "Gói giá", href: "/goi-gia", icon: DollarSign, moduleKey: "goi-gia" },
+    { name: "Nhà cung cấp", href: "/nha-cung-cap", icon: Truck, moduleKey: "nha-cung-cap" },
+    { name: "Giá nhập", href: "/gia-nhap", icon: DollarSign, moduleKey: "gia-nhap" },
 ];
 
 const systemNavDef = [

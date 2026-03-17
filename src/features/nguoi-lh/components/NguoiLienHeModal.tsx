@@ -5,6 +5,7 @@ import { UserPlus, Edit2, Trash2, Phone, Mail, Briefcase, CheckCircle2, XCircle,
 import FormSelect from "@/components/FormSelect";
 import { toast } from "sonner";
 import Modal from "@/components/Modal";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { getNguoiLienHe, createNguoiLienHe, updateNguoiLienHe, deleteNguoiLienHe } from "../action";
 
 interface NguoiLienHe {
@@ -40,6 +41,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
     const [editItem, setEditItem] = useState<NguoiLienHe | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const [deleteNLH, setDeleteNLH] = useState<{ id: string; name: string } | null>(null);
 
     // Load danh sách khi mở modal
     useEffect(() => {
@@ -107,18 +109,10 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
         });
     }
 
-    async function handleDelete(id: string, name: string) {
-        if (!confirm(`Xóa người liên hệ "${name}"?`)) return;
-        const res = await deleteNguoiLienHe(id);
-        if (res.success) {
-            toast.success("Đã xóa người liên hệ");
-            loadList();
-        } else {
-            toast.error((res as any).message || "Lỗi xóa");
-        }
-    }
+
 
     return (
+        <>
         <Modal
             isOpen={isOpen}
             onClose={() => { cancelForm(); onClose(); }}
@@ -319,7 +313,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                                         <Edit2 className="w-3.5 h-3.5" />
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(item.ID, item.TENNGUOI_LIENHE)}
+                                        onClick={() => setDeleteNLH({ id: item.ID, name: item.TENNGUOI_LIENHE })}
                                         className="p-1.5 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
                                         title="Xóa"
                                     >
@@ -332,5 +326,26 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                 )}
             </div>
         </Modal>
+
+        {/* Modal xác nhận xóa */}
+        <DeleteConfirmDialog
+            isOpen={!!deleteNLH}
+            onClose={() => setDeleteNLH(null)}
+            onConfirm={async () => {
+                if (!deleteNLH) return { success: false };
+                const res = await deleteNguoiLienHe(deleteNLH.id);
+                if (res.success) {
+                    toast.success("Đã xóa người liên hệ");
+                    loadList();
+                } else {
+                    toast.error((res as any).message || "Lỗi xóa");
+                }
+                return res;
+            }}
+            title="Xác nhận xóa người liên hệ"
+            itemName={deleteNLH?.name}
+            confirmText="Xóa"
+        />
+    </>
     );
 }
