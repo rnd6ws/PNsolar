@@ -85,15 +85,17 @@ export async function getKeHoachCSKH(filters: {
 
 export async function getKeHoachCSStats() {
     try {
-        const total = await prisma.kEHOACH_CSKH.count();
-        const choBaoCao = await prisma.kEHOACH_CSKH.count({ where: { TRANG_THAI: "Chờ báo cáo" } });
-        const daBaoCao = await prisma.kEHOACH_CSKH.count({ where: { TRANG_THAI: "Đã báo cáo" } });
-        const quaHan = await prisma.kEHOACH_CSKH.count({
-            where: {
-                TRANG_THAI: "Chờ báo cáo",
-                TG_DEN: { lt: new Date() }
-            },
-        });
+        const [total, choBaoCao, daBaoCao, quaHan] = await Promise.all([
+            prisma.kEHOACH_CSKH.count(),
+            prisma.kEHOACH_CSKH.count({ where: { TRANG_THAI: "Chờ báo cáo" } }),
+            prisma.kEHOACH_CSKH.count({ where: { TRANG_THAI: "Đã báo cáo" } }),
+            prisma.kEHOACH_CSKH.count({
+                where: {
+                    TRANG_THAI: "Chờ báo cáo",
+                    TG_DEN: { lt: new Date() }
+                },
+            }),
+        ]);
 
         return { total, choBaoCao, daBaoCao, quaHan };
     } catch (error) {

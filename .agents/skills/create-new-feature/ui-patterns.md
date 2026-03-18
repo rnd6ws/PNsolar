@@ -266,42 +266,126 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
 
 ---
 
-## 9. Stat Cards (Thẻ thống kê)
+## 9. Stat Cards (Thẻ thống kê) — Client Component + useTransition
 
 ### Nguyên tắc
-- Mỗi trang quản lý **phải có đúng 4 stat cards** dạng grid nằm giữa header và bảng.
+- Mỗi trang quản lý **phải có stat cards** dạng grid nằm giữa header và bảng.
+- **BẮT BUỘC** tách stat cards thành **Client Component** riêng (VD: `StatCards.tsx`).
+- **KHÔNG ĐƯỢC** dùng `<Link>` cho stat cards — gây delay do full server re-render.
+- Dùng `useTransition` + `router.replace` để navigate nhanh, non-blocking.
+- Hiển thị `Loader2 animate-spin` trên card active khi đang loading.
 - Layout: `grid grid-cols-2 md:grid-cols-4 gap-4`
 - Mỗi card gồm: **icon** (trái) + **label text-sm** (trên) + **số đậm text-xl** (dưới).
 - **KHÔNG** dùng gradient card, **KHÔNG** dùng card lớn padding-6.
 - 4 màu chuẩn: `text-primary bg-primary/10`, `text-orange-500 bg-orange-500/10`, `text-green-600 bg-green-500/10`, `text-purple-600 bg-purple-500/10`.
 
-### Code chuẩn
+### Code chuẩn — StatCards Client Component
 
 ```tsx
-import { cn } from '@/lib/utils';
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useTransition } from "react";
+import { Loader2 } from "lucide-react";
 // Import 4 icon phù hợp với module
 
-const stats = [
-    { label: 'Tổng [tên]', value: total, icon: Icon1, color: 'text-primary bg-primary/10' },
-    { label: 'Thống kê 2', value: val2, icon: Icon2, color: 'text-orange-500 bg-orange-500/10' },
-    { label: 'Thống kê 3', value: val3, icon: Icon3, color: 'text-green-600 bg-green-500/10' },
-    { label: 'Thống kê 4', value: val4, icon: Icon4, color: 'text-purple-600 bg-purple-500/10' },
-];
+interface Props {
+    stats: {
+        total: number;
+        // ... các thống kê khác
+    };
+}
 
-<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-    {stats.map((stat) => (
-        <div key={stat.label} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-            <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", stat.color)}>
-                <stat.icon className="w-5 h-5" />
-            </div>
-            <div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-xl font-bold text-foreground leading-none mt-1">{stat.value}</p>
-            </div>
+export default function StatCards({ stats }: Props) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const [isPending, startTransition] = useTransition();
+
+    const currentFilter = searchParams.get("TRANG_THAI") || "all";
+
+    const statCards = [
+        { label: "Tổng [tên]", key: "total", icon: Icon1, color: "text-primary bg-primary/10", filterVal: "all" },
+        { label: "Thống kê 2", key: "val2", icon: Icon2, color: "text-orange-500 bg-orange-500/10", filterVal: "Filter2" },
+        { label: "Thống kê 3", key: "val3", icon: Icon3, color: "text-green-600 bg-green-500/10", filterVal: "Filter3" },
+        { label: "Thống kê 4", key: "val4", icon: Icon4, color: "text-purple-600 bg-purple-500/10", filterVal: "Filter4" },
+    ];
+
+    const handleCardClick = (filterVal: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+
+        if (filterVal === "all") {
+            params.delete("TRANG_THAI"); // hoặc PHAN_LOAI tùy module
+        } else {
+            params.set("TRANG_THAI", filterVal);
+        }
+        params.delete("page"); // Reset page khi đổi filter
+
+        const queryStr = params.toString();
+        const href = `/[ten-tinh-nang]${queryStr ? `?${queryStr}` : ""}`;
+
+        startTransition(() => {
+            router.replace(href);
+        });
+    };
+
+    return (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {statCards.map((stat) => {
+                const isActive = stat.filterVal === "all"
+                    ? (!currentFilter || currentFilter === "all")
+                    : currentFilter === stat.filterVal;
+
+                return (
+                    <button
+                        key={stat.label}
+                        onClick={() => handleCardClick(stat.filterVal)}
+                        disabled={isPending}
+                        className={`bg-card border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer text-left ${
+                            isActive ? "border-primary ring-1 ring-primary/20" : "border-border"
+                        } ${isPending ? "opacity-70" : ""}`}
+                    >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stat.color}`}>
+                            {isPending && isActive ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <stat.icon className="w-5 h-5" />
+                            )}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm text-muted-foreground truncate">{stat.label}</p>
+                            <p className="text-xl font-bold text-foreground leading-none mt-1 truncate">{stats[stat.key]}</p>
+                        </div>
+                    </button>
+                );
+            })}
         </div>
-    ))}
-</div>
+    );
+}
 ```
+
+### Sử dụng trong page.tsx (Server Component)
+
+```tsx
+// page.tsx — Server Component
+import StatCards from "@/features/[ten-tinh-nang]/components/StatCards";
+
+// KHÔNG import Link cho stat cards!
+
+export default async function Page({ searchParams }) {
+    const stats = await getStats();
+    return (
+        <PermissionGuard moduleKey="..." level="view" showNoAccess>
+            <StatCards stats={stats} />
+            <PageClient data={data} />
+        </PermissionGuard>
+    );
+}
+```
+
+### Tại sao KHÔNG dùng `<Link>`?
+- `<Link>` gây **full server re-render** toàn bộ page → tất cả API calls chạy lại → delay 1-3 giây
+- `useTransition` cho phép **UI phản hồi ngay lập tức** (spinner) trong khi server fetch data mới
+- Kết hợp với `loading.tsx`, user thấy skeleton thay vì màn hình đơ
 
 ### Gợi ý thống kê theo module
 - **Tổng bản ghi** (luôn có) — dùng `pagination.total` hoặc `data.length`
@@ -351,3 +435,79 @@ const handleDonGiaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 />
 // Submit: sử dụng donGiaValue (number) để gửi về server
 ```
+
+---
+
+## 12. Loading Skeleton (loading.tsx) — BẮT BUỘC
+
+### Nguyên tắc
+- **MỌI trang quản lý** phải có file `loading.tsx` trong thư mục route.
+- Next.js sẽ tự động hiển thị loading skeleton khi URL thay đổi (click card filter, chuyển trang, v.v.).
+- Skeleton phải phản ánh đúng layout của trang thực: header, stat cards, toolbar, table rows.
+- Dùng `animate-pulse` trên các khối `bg-muted`.
+
+### Code chuẩn
+
+```tsx
+// src/app/(dashboard)/[ten-tinh-nang]/loading.tsx
+export default function Loading() {
+    return (
+        <div className="space-y-6 animate-in fade-in duration-300 pb-10">
+            {/* Header skeleton */}
+            <div className="flex flex-col gap-6">
+                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                    <div>
+                        <div className="h-8 w-72 bg-muted rounded-lg animate-pulse" />
+                        <div className="h-4 w-56 bg-muted rounded mt-2 animate-pulse" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 bg-muted rounded-lg animate-pulse" />
+                        <div className="h-9 w-32 bg-muted rounded-lg animate-pulse" />
+                    </div>
+                </div>
+
+                {/* Stat Cards skeleton */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-muted animate-pulse shrink-0" />
+                            <div className="min-w-0 flex-1">
+                                <div className="h-3.5 w-20 bg-muted rounded animate-pulse" />
+                                <div className="h-6 w-10 bg-muted rounded animate-pulse mt-2" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Content Card skeleton */}
+            <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col">
+                <div className="p-5 flex items-center gap-3 border-b">
+                    <div className="h-9 flex-1 max-w-[400px] bg-muted rounded-lg animate-pulse" />
+                    <div className="hidden lg:flex items-center gap-3">
+                        <div className="h-9 w-[160px] bg-muted rounded-md animate-pulse" />
+                        <div className="h-9 w-[160px] bg-muted rounded-md animate-pulse" />
+                    </div>
+                </div>
+
+                <div className="divide-y divide-border">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="p-4 flex items-center gap-4">
+                            <div className="h-4 w-4 bg-muted rounded animate-pulse" />
+                            <div className="h-4 flex-2 bg-muted rounded animate-pulse" />
+                            <div className="h-4 flex-1 bg-muted rounded animate-pulse hidden md:block" />
+                            <div className="h-6 w-20 bg-muted rounded-full animate-pulse hidden md:block" />
+                            <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+```
+
+### Tham chiếu
+- **Khách hàng**: `src/app/(dashboard)/khach-hang/loading.tsx`
+- **Kế hoạch CSKH**: `src/app/(dashboard)/ke-hoach-cs/loading.tsx`
+
