@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { getProducts, getUniqueCategories, getPhanLoaiOptions, getDongHangOptions, getNhomHHOptions } from '@/features/hang-hoa/action';
 import { getGiaNhapMapByHangHoa } from '@/features/gia-nhap/action';
+import { getGiaBanMapByHangHoa } from '@/features/gia-ban/action';
 import HangHoaClient from '@/features/hang-hoa/components/HangHoaClient';
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default async function HangHoaPage({ searchParams }: { searchParams: Prom
     const phanLoaiOptions = await getPhanLoaiOptions();
     const dongHangOptions = await getDongHangOptions();
     const giaNhapMap = await getGiaNhapMapByHangHoa();
+    const giaBanMap = await getGiaBanMapByHangHoa();
 
     return (
         <HangHoaClient
@@ -42,6 +44,7 @@ export default async function HangHoaPage({ searchParams }: { searchParams: Prom
             phanLoaiOptions={phanLoaiOptions}
             dongHangOptions={dongHangOptions}
             giaNhapMap={giaNhapMap}
+            giaBanMap={giaBanMap}
         />
     );
 }

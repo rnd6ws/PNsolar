@@ -167,6 +167,16 @@ const moduleGroups: ModuleGroup[] = [
                 moduleKey: "gia-nhap",
             },
             {
+                name: "Giá bán",
+                description: "Quản lý giá bán hàng hóa theo nhóm KH và gói giá.",
+                href: "/gia-ban",
+                icon: DollarSign,
+                color: "text-rose-600",
+                bgColor: "bg-rose-50 dark:bg-rose-950/50",
+                available: true,
+                moduleKey: "gia-ban",
+            },
+            {
                 name: "Vận chuyển",
                 description: "Theo dõi vận chuyển, giao hàng.",
                 href: "/van-chuyen",

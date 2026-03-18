@@ -304,7 +304,7 @@ model NGUOI_LIENHE {
 model GOI_GIA {
   ID            String    @id @default(auto()) @map("_id") @db.ObjectId
   ID_GOI_GIA    String    @unique
-  NGAY_HIEU_LUC DateTime?
+  HIEU_LUC      Boolean   @default(true)
   MA_DONG_HANG  String
   GOI_GIA       String
   SL_MIN        Int?
@@ -405,4 +405,24 @@ model CO_HOI {
   @@index([ID_KH])
   @@index([TINH_TRANG])
   @@map("CO_HOI")
+}
+
+// ===== GIÁ BÁN (Selling Price) =====
+model GIA_BAN {
+  ID             String    @id @default(auto()) @map("_id") @db.ObjectId
+  NGAY_HIEU_LUC  DateTime
+  NHOM_KH        String
+  NHOM_HH        String
+  GOI_GIA        String
+  MA_HH          String
+  TEN_HH         String
+  DON_GIA        Float
+  GHI_CHU        String?
+
+  CREATED_AT DateTime  @default(now())
+  UPDATED_AT DateTime  @updatedAt
+
+  @@index([NHOM_KH, NHOM_HH, MA_HH])
+  @@fulltext([MA_HH, TEN_HH, NHOM_KH, NHOM_HH, GOI_GIA])
+  @@map("GIA_BAN")
 }

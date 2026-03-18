@@ -94,81 +94,46 @@ export async function getUniqueDongHangInGoiGia() {
     }
 }
 
-// ===== Helper: Format ngày thành ddmmyy =====
-function formatDateDdmmyy(dateStr: string): string {
-    const d = new Date(dateStr);
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yy = String(d.getFullYear()).slice(-2);
-    return `${dd}${mm}${yy}`;
-}
-
-// ===== Helper: Tìm số thứ tự tiếp theo cho 1 prefix =====
-async function getNextSequence(prefix: string): Promise<number> {
-    // Tìm tất cả ID_GOI_GIA bắt đầu bằng prefix (VD: "DH01_160326_")
-    const existingRecords = await prisma.gOI_GIA.findMany({
-        where: {
-            ID_GOI_GIA: { startsWith: prefix },
-        },
-        select: { ID_GOI_GIA: true },
-    });
-
-    let maxSeq = 0;
-    for (const rec of existingRecords) {
-        // Lấy phần suffix sau prefix → "001", "012", ...
-        const suffix = rec.ID_GOI_GIA.replace(prefix, '');
-        const num = parseInt(suffix, 10);
-        if (!isNaN(num) && num > maxSeq) {
-            maxSeq = num;
-        }
-    }
-    return maxSeq + 1;
-}
-
-// ===== Helper: Sinh nhiều mã gói giá cho 1 nhóm (maDongHang, ngayHieuLuc) =====
-async function generateGoiGiaIds(
-    maDongHang: string,
-    ngayHieuLuc: string,
-    count: number
-): Promise<string[]> {
-    const ddmmyy = formatDateDdmmyy(ngayHieuLuc);
-    const prefix = `${maDongHang}_${ddmmyy}_`;
-    const startSeq = await getNextSequence(prefix);
-
-    const ids: string[] = [];
-    for (let i = 0; i < count; i++) {
-        ids.push(`${prefix}${String(startSeq + i).padStart(3, '0')}`);
-    }
-    return ids;
+// ===== Helper: Tạo mã gói giá = MA_DONG_HANG + GOI_GIA =====
+function generateGoiGiaId(maDongHang: string, goiGia: string): string {
+    // Chuẩn hóa GOI_GIA: bỏ dấu tiếng Việt, thay khoảng trắng/ký tự đặc biệt bằng _
+    const normalized = goiGia
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // bỏ dấu
+        .replace(/đ/g, 'd').replace(/Đ/g, 'D') // xử lý đ
+        .replace(/[^a-zA-Z0-9]/g, '_') // thay ký tự đặc biệt bằng _
+        .replace(/_+/g, '_') // gộp nhiều _ liên tiếp
+        .replace(/^_|_$/g, '') // bỏ _ đầu/cuối
+        .toUpperCase();
+    
+    return `${maDongHang}_${normalized}`;
 }
 
 // ===== Tạo Gói giá (đơn lẻ - auto ID) =====
 export async function createGoiGiaAction(data: {
-    NGAY_HIEU_LUC: string;
     MA_DONG_HANG: string;
     GOI_GIA: string;
     SL_MIN?: number | null;
     SL_MAX?: number | null;
+    HIEU_LUC?: boolean;
 }) {
     try {
-        if (!data.NGAY_HIEU_LUC) return { success: false, message: 'Ngày hiệu lực là bắt buộc.' };
         if (!data.MA_DONG_HANG) return { success: false, message: 'Mã dòng hàng là bắt buộc.' };
         if (!data.GOI_GIA) return { success: false, message: 'Gói giá là bắt buộc.' };
 
-        const [generatedId] = await generateGoiGiaIds(data.MA_DONG_HANG, data.NGAY_HIEU_LUC, 1);
+        const generatedId = generateGoiGiaId(data.MA_DONG_HANG, data.GOI_GIA);
 
         await prisma.gOI_GIA.create({
             data: {
                 ID_GOI_GIA: generatedId,
-                NGAY_HIEU_LUC: new Date(data.NGAY_HIEU_LUC),
+                HIEU_LUC: data.HIEU_LUC !== false,
                 MA_DONG_HANG: data.MA_DONG_HANG,
                 GOI_GIA: data.GOI_GIA,
                 SL_MIN: data.SL_MIN ?? null,
                 SL_MAX: data.SL_MAX ?? null,
-
             }
         });
         revalidatePath('/goi-gia');
+        revalidatePath('/phan-loai-hh');
         return { success: true, message: `Thêm gói giá thành công! Mã: ${generatedId}` };
     } catch (error: any) {
         console.error('[createGoiGiaAction]', error);
@@ -178,7 +143,6 @@ export async function createGoiGiaAction(data: {
 
 // ===== Tạo NHIỀU Gói giá cùng lúc (Bulk - auto ID) =====
 export async function createBulkGoiGiaAction(payload: {
-    NGAY_HIEU_LUC: string;
     rows: Array<{
         MA_DONG_HANG: string;
         GOI_GIA: string;
@@ -187,11 +151,8 @@ export async function createBulkGoiGiaAction(payload: {
     }>;
 }) {
     try {
-        const { NGAY_HIEU_LUC, rows } = payload;
+        const { rows } = payload;
 
-        if (!NGAY_HIEU_LUC) {
-            return { success: false, message: 'Ngày hiệu lực là bắt buộc.' };
-        }
         if (!rows || rows.length === 0) {
             return { success: false, message: 'Vui lòng thêm ít nhất 1 dòng gói giá.' };
         }
@@ -207,44 +168,20 @@ export async function createBulkGoiGiaAction(payload: {
             return { success: false, message: errors.join('\n') };
         }
 
-        // Nhóm các dòng theo MA_DONG_HANG để sinh ID tuần tự đúng
-        const ddmmyy = formatDateDdmmyy(NGAY_HIEU_LUC);
-        const grouped: Record<string, typeof rows> = {};
-        for (const row of rows) {
-            if (!grouped[row.MA_DONG_HANG]) {
-                grouped[row.MA_DONG_HANG] = [];
-            }
-            grouped[row.MA_DONG_HANG].push(row);
-        }
-
-        // Sinh ID cho từng nhóm
-        const dataToCreate: Array<{
-            ID_GOI_GIA: string;
-            NGAY_HIEU_LUC: Date;
-            MA_DONG_HANG: string;
-            GOI_GIA: string;
-            SL_MIN: number | null;
-            SL_MAX: number | null;
-        }> = [];
-
-        for (const [maDongHang, groupRows] of Object.entries(grouped)) {
-            const ids = await generateGoiGiaIds(maDongHang, NGAY_HIEU_LUC, groupRows.length);
-            for (let i = 0; i < groupRows.length; i++) {
-                dataToCreate.push({
-                    ID_GOI_GIA: ids[i],
-                    NGAY_HIEU_LUC: new Date(NGAY_HIEU_LUC),
-                    MA_DONG_HANG: maDongHang,
-                    GOI_GIA: groupRows[i].GOI_GIA,
-                    SL_MIN: groupRows[i].SL_MIN ?? null,
-                    SL_MAX: groupRows[i].SL_MAX ?? null,
-
-                });
-            }
-        }
+        // Sinh ID cho từng dòng
+        const dataToCreate = rows.map(row => ({
+            ID_GOI_GIA: generateGoiGiaId(row.MA_DONG_HANG, row.GOI_GIA),
+            HIEU_LUC: true,
+            MA_DONG_HANG: row.MA_DONG_HANG,
+            GOI_GIA: row.GOI_GIA,
+            SL_MIN: row.SL_MIN ?? null,
+            SL_MAX: row.SL_MAX ?? null,
+        }));
 
         await prisma.gOI_GIA.createMany({ data: dataToCreate });
 
         revalidatePath('/goi-gia');
+        revalidatePath('/phan-loai-hh');
         return { success: true, message: `Đã thêm ${rows.length} gói giá thành công!` };
     } catch (error: any) {
         console.error('[createBulkGoiGiaAction]', error);
@@ -264,7 +201,7 @@ export async function updateGoiGiaAction(id: string, data: any) {
             where: { ID: id },
             data: {
                 ID_GOI_GIA: parsed.data.ID_GOI_GIA,
-                NGAY_HIEU_LUC: parsed.data.NGAY_HIEU_LUC ? new Date(parsed.data.NGAY_HIEU_LUC) : null,
+                HIEU_LUC: parsed.data.HIEU_LUC !== false,
                 MA_DONG_HANG: parsed.data.MA_DONG_HANG,
                 GOI_GIA: parsed.data.GOI_GIA,
                 SL_MIN: parsed.data.SL_MIN ?? null,
@@ -286,6 +223,7 @@ export async function deleteGoiGiaAction(id: string) {
             where: { ID: id }
         });
         revalidatePath('/goi-gia');
+        revalidatePath('/phan-loai-hh');
         return { success: true, message: 'Đã xóa gói giá!' };
     } catch (error) {
         console.error('[deleteGoiGiaAction]', error);
@@ -293,14 +231,30 @@ export async function deleteGoiGiaAction(id: string) {
     }
 }
 
-// ===== Lấy gói giá nhóm theo MA_DONG_HANG (ngày hiệu lực mới nhất) =====
-// Trả về: { [MA_DONG_HANG]: { count, latestDate, items } }
+// ===== Toggle hiệu lực Gói giá =====
+export async function toggleGoiGiaHieuLuc(id: string, hieuLuc: boolean) {
+    try {
+        await prisma.gOI_GIA.update({
+            where: { ID: id },
+            data: { HIEU_LUC: hieuLuc },
+        });
+        revalidatePath('/goi-gia');
+        revalidatePath('/phan-loai-hh');
+        return { success: true, message: hieuLuc ? 'Đã kích hoạt gói giá!' : 'Đã hủy hiệu lực gói giá!' };
+    } catch (error) {
+        console.error('[toggleGoiGiaHieuLuc]', error);
+        return { success: false, message: 'Lỗi server khi cập nhật hiệu lực' };
+    }
+}
+
+// ===== Lấy gói giá nhóm theo MA_DONG_HANG (lấy tất cả, count tính theo hiệu lực) =====
+// Trả về: { [MA_DONG_HANG]: { count (chỉ hiệu lực), items (tất cả) } }
 export async function getGoiGiaMapByDongHang(): Promise<
     Record<string, { count: number; latestDate: string | null; items: any[] }>
 > {
     try {
         const allRecords = await prisma.gOI_GIA.findMany({
-            orderBy: { NGAY_HIEU_LUC: 'desc' },
+            orderBy: { CREATED_AT: 'desc' },
         });
 
         // Nhóm theo MA_DONG_HANG
@@ -311,34 +265,17 @@ export async function getGoiGiaMapByDongHang(): Promise<
                 map[rec.MA_DONG_HANG] = { count: 0, latestDate: null, items: [] };
             }
             const group = map[rec.MA_DONG_HANG];
-
-            // Tìm ngày mới nhất
-            if (rec.NGAY_HIEU_LUC) {
-                const dateStr = rec.NGAY_HIEU_LUC.toISOString();
-                if (!group.latestDate || dateStr > group.latestDate) {
-                    group.latestDate = dateStr;
-                }
-            }
-        }
-
-        // Chỉ lấy các record thuộc ngày hiệu lực mới nhất
-        for (const rec of allRecords) {
-            const group = map[rec.MA_DONG_HANG];
-            if (!group) continue;
-
-            const recDate = rec.NGAY_HIEU_LUC ? rec.NGAY_HIEU_LUC.toISOString() : null;
-
-            // Nếu group chưa có latestDate → lấy hết, hoặc chỉ lấy record có cùng ngày mới nhất
-            if (!group.latestDate || recDate === group.latestDate) {
-                group.items.push({
-                    ID: rec.ID,
-                    ID_GOI_GIA: rec.ID_GOI_GIA,
-                    GOI_GIA: rec.GOI_GIA,
-                    SL_MIN: rec.SL_MIN,
-                    SL_MAX: rec.SL_MAX,
-                    NGAY_HIEU_LUC: rec.NGAY_HIEU_LUC,
-                });
-                group.count = group.items.length;
+            group.items.push({
+                ID: rec.ID,
+                ID_GOI_GIA: rec.ID_GOI_GIA,
+                GOI_GIA: rec.GOI_GIA,
+                SL_MIN: rec.SL_MIN,
+                SL_MAX: rec.SL_MAX,
+                HIEU_LUC: rec.HIEU_LUC,
+            });
+            // count chỉ tính gói có hiệu lực (dùng cho badge)
+            if (rec.HIEU_LUC) {
+                group.count++;
             }
         }
 

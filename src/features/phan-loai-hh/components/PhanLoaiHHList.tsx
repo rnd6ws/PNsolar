@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Edit2, Trash2, Plus, ChevronDown, ChevronRight, DollarSign, X, Calendar, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { updatePhanLoaiHH, deletePhanLoaiHH, createDongHH, updateDongHH, deleteDongHH, createBulkDongHH } from '@/features/phan-loai-hh/action';
+import { createGoiGiaAction, toggleGoiGiaHieuLuc } from '@/features/goi-gia/action';
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
 import Modal from '@/components/Modal';
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
@@ -27,6 +28,51 @@ export default function PhanLoaiHHList({
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
     const [deletePL, setDeletePL] = useState<any>(null);
     const [deleteDH, setDeleteDH] = useState<any>(null);
+
+    // Quick add gói giá
+    const [showAddGoiGia, setShowAddGoiGia] = useState(false);
+    const [addGoiGiaLoading, setAddGoiGiaLoading] = useState(false);
+    const [newGoiGia, setNewGoiGia] = useState({ GOI_GIA: '', SL_MIN: '', SL_MAX: '' });
+
+    const handleAddGoiGia = async () => {
+        if (!goiGiaDetail) return;
+        if (!newGoiGia.GOI_GIA) {
+            toast.error('Vui lòng nhập tên Gói giá.');
+            return;
+        }
+        setAddGoiGiaLoading(true);
+        const res = await createGoiGiaAction({
+            MA_DONG_HANG: goiGiaDetail.maDongHang,
+            GOI_GIA: newGoiGia.GOI_GIA,
+            SL_MIN: newGoiGia.SL_MIN ? Number(newGoiGia.SL_MIN) : null,
+            SL_MAX: newGoiGia.SL_MAX ? Number(newGoiGia.SL_MAX) : null,
+        });
+        if (res.success) {
+            toast.success(res.message);
+            // Thêm vào danh sách hiện tại
+            const normalizeGoiGia = (goiGia: string) => goiGia
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+                .replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_')
+                .replace(/^_|_$/g, '').toUpperCase();
+            setGoiGiaDetail(prev => prev ? {
+                ...prev,
+                items: [...prev.items, {
+                    ID: Date.now().toString(),
+                    ID_GOI_GIA: `${goiGiaDetail.maDongHang}_${normalizeGoiGia(newGoiGia.GOI_GIA)}`,
+                    GOI_GIA: newGoiGia.GOI_GIA,
+                    SL_MIN: newGoiGia.SL_MIN ? Number(newGoiGia.SL_MIN) : null,
+                    SL_MAX: newGoiGia.SL_MAX ? Number(newGoiGia.SL_MAX) : null,
+                    HIEU_LUC: true,
+                }],
+            } : null);
+            setNewGoiGia({ GOI_GIA: '', SL_MIN: '', SL_MAX: '' });
+            setShowAddGoiGia(false);
+        } else {
+            toast.error(res.message);
+        }
+        setAddGoiGiaLoading(false);
+    };
 
     // Bulk add dòng hàng
     const getEmptyBulkRow = (dvt?: string) => ({ MA_DONG_HANG: '', TEN_DONG_HANG: '', TIEN_TO: '', HANG: '', XUAT_XU: '', DVT: dvt || '' });
@@ -272,7 +318,22 @@ export default function PhanLoaiHHList({
                                                                     {(() => {
                                                                         const info = goiGiaMap[child.MA_DONG_HANG];
                                                                         if (!info || info.count === 0) {
-                                                                            return <span className="text-xs text-muted-foreground">—</span>;
+                                                                            return (
+                                                                                <PermissionGuard moduleKey="goi-gia" level="add">
+                                                                                    <button
+                                                                                        onClick={() => { setGoiGiaDetail({
+                                                                                            maDongHang: child.MA_DONG_HANG,
+                                                                                            tenDongHang: child.TEN_DONG_HANG || child.MA_DONG_HANG,
+                                                                                            items: [],
+                                                                                            latestDate: null,
+                                                                                        }); setShowAddGoiGia(true); }}
+                                                                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 border border-dashed border-border hover:border-amber-300 rounded-md text-[11px] font-medium transition-colors cursor-pointer"
+                                                                                        title="Thêm gói giá"
+                                                                                    >
+                                                                                        <Plus className="w-3 h-3" /> Thêm
+                                                                                    </button>
+                                                                                </PermissionGuard>
+                                                                            );
                                                                         }
                                                                         return (
                                                                             <button
@@ -414,7 +475,21 @@ export default function PhanLoaiHHList({
                                                         </button>
                                                     );
                                                 }
-                                                return null;
+                                                return (
+                                                    <PermissionGuard moduleKey="goi-gia" level="add">
+                                                        <button
+                                                            onClick={() => { setGoiGiaDetail({
+                                                                maDongHang: child.MA_DONG_HANG,
+                                                                tenDongHang: child.TEN_DONG_HANG || child.MA_DONG_HANG,
+                                                                items: [],
+                                                                latestDate: null,
+                                                            }); setShowAddGoiGia(true); }}
+                                                            className="inline-flex items-center gap-1 text-muted-foreground hover:text-amber-600 font-medium"
+                                                        >
+                                                            <Plus className="w-3 h-3" /> Thêm gói giá
+                                                        </button>
+                                                    </PermissionGuard>
+                                                );
                                             })()}
                                         </div>
                                     </div>
@@ -620,14 +695,8 @@ export default function PhanLoaiHHList({
                                     <DollarSign className="w-4 h-4 text-amber-600" />
                                     Gói giá — {goiGiaDetail.tenDongHang} ({goiGiaDetail.maDongHang})
                                 </h3>
-                                {goiGiaDetail.latestDate && (
-                                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" />
-                                        Ngày hiệu lực mới nhất: {new Date(goiGiaDetail.latestDate).toLocaleDateString('vi-VN')}
-                                    </p>
-                                )}
                             </div>
-                            <button onClick={() => setGoiGiaDetail(null)} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                            <button onClick={() => { setGoiGiaDetail(null); setShowAddGoiGia(false); }} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -639,26 +708,116 @@ export default function PhanLoaiHHList({
                                         <th className="pb-2 font-bold">Gói giá</th>
                                         <th className="pb-2 font-bold text-center">SL Min</th>
                                         <th className="pb-2 font-bold text-center">SL Max</th>
+                                        <th className="pb-2 font-bold text-center">Hiệu lực</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/40">
                                     {goiGiaDetail.items.map((item: any) => (
-                                        <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
+                                        <tr key={item.ID} className={`hover:bg-muted/30 transition-colors ${item.HIEU_LUC === false ? 'opacity-40' : ''}`}>
                                             <td className="py-2.5 font-mono text-sm font-medium text-foreground">{item.ID_GOI_GIA}</td>
-                                            <td className="py-2.5 font-bold text-emerald-600">{item.GOI_GIA}</td>
+                                            <td className={`py-2.5 font-bold ${item.HIEU_LUC === false ? 'text-muted-foreground line-through' : 'text-emerald-600'}`}>{item.GOI_GIA}</td>
                                             <td className="py-2.5 text-center text-muted-foreground">{item.SL_MIN ?? '—'}</td>
                                             <td className="py-2.5 text-center text-muted-foreground">{item.SL_MAX ?? '—'}</td>
+                                            <td className="py-2.5 text-center">
+                                                <PermissionGuard moduleKey="goi-gia" level="edit">
+                                                    <button
+                                                        onClick={async () => {
+                                                            const newVal = !(item.HIEU_LUC !== false);
+                                                            const res = await toggleGoiGiaHieuLuc(item.ID, newVal);
+                                                            if (res.success) {
+                                                                toast.success(res.message);
+                                                                setGoiGiaDetail(prev => prev ? {
+                                                                    ...prev,
+                                                                    items: prev.items.map((g: any) => g.ID === item.ID ? { ...g, HIEU_LUC: newVal } : g),
+                                                                } : null);
+                                                            } else {
+                                                                toast.error(res.message);
+                                                            }
+                                                        }}
+                                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${item.HIEU_LUC !== false ? 'bg-emerald-50 text-emerald-600 hover:bg-red-50 hover:text-red-500 dark:bg-emerald-900/20 dark:hover:bg-red-900/20' : 'bg-red-50 text-red-500 hover:bg-emerald-50 hover:text-emerald-600 dark:bg-red-900/20 dark:hover:bg-emerald-900/20'}`}
+                                                        title={item.HIEU_LUC !== false ? 'Click để hủy hiệu lực' : 'Click để kích hoạt'}
+                                                    >
+                                                        {item.HIEU_LUC !== false ? '✅ Có' : '❌ Không'}
+                                                    </button>
+                                                </PermissionGuard>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
+
+                            {/* Form thêm gói giá nhanh */}
+                            <PermissionGuard moduleKey="goi-gia" level="add">
+                                {!showAddGoiGia ? (
+                                    <button
+                                        onClick={() => setShowAddGoiGia(true)}
+                                        className="mt-4 w-full h-9 border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-lg text-sm font-medium text-amber-600 dark:text-amber-400 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                        <Plus className="w-4 h-4" /> Thêm gói giá cho {goiGiaDetail.maDongHang}
+                                    </button>
+                                ) : (
+                                    <div className="mt-4 p-4 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3">
+                                        <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Thêm gói giá mới — {goiGiaDetail.maDongHang}</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Gói giá *</label>
+                                                <input
+                                                    type="text"
+                                                    className="input-modern text-sm"
+                                                    placeholder="VD: Giá Niêm Yết"
+                                                    value={newGoiGia.GOI_GIA}
+                                                    onChange={e => setNewGoiGia(prev => ({ ...prev, GOI_GIA: e.target.value }))}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-muted-foreground uppercase">SL Min</label>
+                                                <input
+                                                    type="number"
+                                                    className="input-modern text-sm"
+                                                    placeholder="—"
+                                                    value={newGoiGia.SL_MIN}
+                                                    onChange={e => setNewGoiGia(prev => ({ ...prev, SL_MIN: e.target.value }))}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-muted-foreground uppercase">SL Max</label>
+                                                <input
+                                                    type="number"
+                                                    className="input-modern text-sm"
+                                                    placeholder="—"
+                                                    value={newGoiGia.SL_MAX}
+                                                    onChange={e => setNewGoiGia(prev => ({ ...prev, SL_MAX: e.target.value }))}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 justify-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setShowAddGoiGia(false); setNewGoiGia({ GOI_GIA: '', SL_MIN: '', SL_MAX: '' }); }}
+                                                className="h-8 px-3 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors"
+                                            >
+                                                Hủy
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleAddGoiGia}
+                                                disabled={addGoiGiaLoading}
+                                                className="h-8 px-4 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-md transition-colors disabled:opacity-50"
+                                            >
+                                                {addGoiGiaLoading ? 'Đang thêm...' : 'Thêm gói giá'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </PermissionGuard>
                         </div>
                         <div className="px-5 py-3 border-t bg-muted/5 flex justify-between items-center">
                             <span className="text-xs text-muted-foreground">
                                 Tổng: <strong className="text-foreground">{goiGiaDetail.items.length}</strong> gói giá
                             </span>
                             <button
-                                onClick={() => setGoiGiaDetail(null)}
+                                onClick={() => { setGoiGiaDetail(null); setShowAddGoiGia(false); }}
                                 className="h-8 px-4 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors"
                             >
                                 Đóng
