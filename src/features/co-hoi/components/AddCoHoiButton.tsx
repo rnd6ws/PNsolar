@@ -8,10 +8,10 @@ import { toast } from "sonner";
 import { CoHoiForm } from "./CoHoiForm";
 
 interface Props {
-    dmCoHoi: { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[];
+    dmDichVu: { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[];
 }
 
-export default function AddCoHoiButton({ dmCoHoi }: Props) {
+export default function AddCoHoiButton({ dmDichVu }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -37,7 +37,7 @@ export default function AddCoHoiButton({ dmCoHoi }: Props) {
             <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Tạo cơ hội mới" size="lg">
                 <CoHoiForm
                     key={isOpen ? "add-open" : "add-closed"}
-                    dmCoHoi={dmCoHoi}
+                    dmDichVu={dmDichVu}
                     loading={loading}
                     onSubmit={handleSubmit}
                     onCancel={() => setIsOpen(false)}
