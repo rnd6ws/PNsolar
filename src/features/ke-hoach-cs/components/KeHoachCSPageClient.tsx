@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Download, Settings2, CalendarCheck2, Clock, CheckCircle2, Calendar } from "lucide-react";
+import { Plus, Download, Settings2, CalendarCheck2, Clock, CheckCircle2, Calendar, Grid, CalendarDays, FileText, Building2, X, ChevronDown } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
@@ -16,6 +23,7 @@ interface Props {
     nhanViens: { ID: string; HO_TEN: string }[];
     loaiCSList: { ID: string; LOAI_CS: string }[];
     ketQuaList: { ID: string; KQ_CS: string; XL_CS?: string | null }[];
+    lyDoList: { ID: string; LY_DO: string }[];
     currentUserId?: string;
     stats: {
         total: number;
@@ -30,10 +38,11 @@ interface Props {
 const DEFAULT_COLUMNS: ColumnKey[] = ["khachHang", "loaiCS", "thoiGian", "hinhThuc", "nguoiCS", "trangThai"];
 
 export default function KeHoachCSPageClient({
-    data, nhanViens, loaiCSList, ketQuaList,
+    data, nhanViens, loaiCSList, ketQuaList, lyDoList,
     currentUserId, stats, trangThaiOptions, loaiCSOptions,
 }: Props) {
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
+    const [groupBy, setGroupBy] = useState<string>("TG_TU");
     const [showFilters, setShowFilters] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
     const [formKey, setFormKey] = useState(0);
@@ -114,6 +123,39 @@ export default function KeHoachCSPageClient({
                     <div className="hidden lg:flex items-center gap-3 w-auto">
                         <FilterSelect paramKey="TRANG_THAI" options={trangThaiOptions} placeholder="Trạng thái" />
                         <FilterSelect paramKey="LOAI_CS" options={loaiCSOptions} placeholder="Loại CS" />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    className={cn(
+                                        "px-3 py-2 border border-border rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2",
+                                        groupBy !== "none" ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted text-foreground"
+                                    )}
+                                >
+                                    <Grid className="w-4 h-4" />
+                                    <span>Nhóm</span>
+                                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 rounded-xl font-medium">
+                                <DropdownMenuItem onClick={() => setGroupBy("TG_TU")} className={cn("py-2.5", groupBy === "TG_TU" && "bg-primary/10 text-primary")}>
+                                    <CalendarDays className="w-4 h-4 mr-2" /> Theo ngày
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setGroupBy("LOAI_CS")} className={cn("py-2.5", groupBy === "LOAI_CS" && "bg-primary/10 text-primary")}>
+                                    <FileText className="w-4 h-4 mr-2" /> Theo loại CS
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setGroupBy("khachHang")} className={cn("py-2.5", groupBy === "khachHang" && "bg-primary/10 text-primary")}>
+                                    <Building2 className="w-4 h-4 mr-2" /> Theo khách hàng
+                                </DropdownMenuItem>
+                                {groupBy !== "none" && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => setGroupBy("none")} className="py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10">
+                                            <X className="w-4 h-4 mr-2" /> Không nhóm
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                         <button
                             className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0"
@@ -133,6 +175,38 @@ export default function KeHoachCSPageClient({
                         </div>
                         <div className="flex items-center justify-between gap-3 mt-1 pt-3 border-t border-border w-full">
                             <div className="flex items-center gap-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            className={cn(
+                                                "px-3 py-2 border border-border rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2",
+                                                groupBy !== "none" ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted text-foreground"
+                                            )}
+                                        >
+                                            <Grid className="w-4 h-4" />
+                                            <span>Nhóm</span>
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-48 rounded-xl font-medium">
+                                        <DropdownMenuItem onClick={() => setGroupBy("TG_TU")} className={cn("py-2.5", groupBy === "TG_TU" && "bg-primary/10 text-primary")}>
+                                            <CalendarDays className="w-4 h-4 mr-2" /> Theo ngày
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGroupBy("LOAI_CS")} className={cn("py-2.5", groupBy === "LOAI_CS" && "bg-primary/10 text-primary")}>
+                                            <FileText className="w-4 h-4 mr-2" /> Theo loại CS
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGroupBy("khachHang")} className={cn("py-2.5", groupBy === "khachHang" && "bg-primary/10 text-primary")}>
+                                            <Building2 className="w-4 h-4 mr-2" /> Theo khách hàng
+                                        </DropdownMenuItem>
+                                        {groupBy !== "none" && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => setGroupBy("none")} className="py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                    <X className="w-4 h-4 mr-2" /> Không nhóm
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                                 <button
                                     className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex"
@@ -154,8 +228,10 @@ export default function KeHoachCSPageClient({
                     nhanViens={nhanViens}
                     loaiCSList={loaiCSList}
                     ketQuaList={ketQuaList}
+                    lyDoList={lyDoList}
                     currentUserId={currentUserId}
                     visibleColumns={visibleColumns}
+                    groupBy={groupBy}
                 />
             </div>
 

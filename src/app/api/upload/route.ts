@@ -85,13 +85,34 @@ export async function POST(request: NextRequest) {
             ? [{ quality: 'auto', fetch_format: 'auto' }]
             : undefined;
 
+        // Raw files: tạo public_id có extension để URL giữ đuôi file khi download
+        // Nếu không có extension trong URL → browser không biết loại file → download sai định dạng
+        let resolvedPublicId = publicId ?? undefined;
+        if (resourceType === 'raw' && !resolvedPublicId) {
+            const nameParts = file.name.split('.');
+            const ext = nameParts.length > 1 ? nameParts.pop()!.toLowerCase() : '';
+            const baseName = nameParts.join('_')
+                .replace(/[^a-zA-Z0-9_\u00C0-\u024F-]/g, '_')
+                .substring(0, 60);
+            resolvedPublicId = ext ? `${baseName}.${ext}` : baseName;
+        }
+
         const result = await uploadToCloudinary(buffer, {
             folder,
-            public_id: publicId ?? undefined,
+            public_id: resolvedPublicId,
             resourceType,
             transformation,
             originalName: file.name,
         });
+
+        // Derive file type label from extension
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+        const FILE_TYPE_MAP: Record<string, string> = {
+            pdf: 'PDF', doc: 'WORD', docx: 'WORD',
+            xls: 'EXCEL', xlsx: 'EXCEL', ppt: 'PPT', pptx: 'PPT',
+            csv: 'CSV', txt: 'TXT', jpg: 'IMAGE', jpeg: 'IMAGE',
+            png: 'IMAGE', webp: 'IMAGE', gif: 'IMAGE',
+        };
 
         return NextResponse.json({
             success: true,
@@ -101,6 +122,8 @@ export async function POST(request: NextRequest) {
             bytes: result.bytes,
             resource_type: result.resource_type,
             original_filename: result.original_filename,
+            filename: file.name,                          // Tên gốc CÓ extension: "bao_cao.docx"
+            file_type: FILE_TYPE_MAP[fileExt] || fileExt.toUpperCase() || 'FILE',
         });
 
     } catch (error: any) {

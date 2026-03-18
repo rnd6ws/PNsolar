@@ -7,26 +7,29 @@ import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import {
     createPhanLoaiKH, deletePhanLoaiKH,
     createNguonKH, deleteNguonKH,
-    createLyDoTuChoi, deleteLyDoTuChoi
+    createLyDoTuChoi, deleteLyDoTuChoi,
+    createNguoiGioiThieu, deleteNguoiGioiThieu
 } from "@/features/khach-hang/action";
 import { createNhomKH, deleteNhomKH } from "@/features/nhom-kh/action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-type Tab = "phan-loai" | "nguon" | "nhom" | "ly-do-tu-choi";
+type Tab = "phan-loai" | "nguon" | "nhom" | "ly-do-tu-choi" | "nguoi-gioi-thieu";
 
 interface Props {
     phanLoais: { ID: string; PL_KH: string }[];
     nguons: { ID: string; NGUON: string }[];
     nhoms: { ID: string; NHOM: string }[];
     lyDoTuChois?: { ID: string; LY_DO: string }[];
+    nguoiGioiThieus?: { ID: string; TEN_NGT: string; SO_DT_NGT?: string | null }[];
 }
 
-export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoTuChois = [] }: Props) {
+export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoTuChois = [], nguoiGioiThieus = [] }: Props) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>("phan-loai");
     const [newName, setNewName] = useState("");
+    const [newPhone, setNewPhone] = useState("");
     const [loading, setLoading] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
@@ -35,6 +38,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
         { key: "nguon", label: "Nguồn KH" },
         { key: "nhom", label: "Nhóm KH" },
         { key: "ly-do-tu-choi", label: "Lý do từ chối" },
+        { key: "nguoi-gioi-thieu", label: "Người giới thiệu" },
     ];
 
     const handleAdd = async (e: React.FormEvent) => {
@@ -46,11 +50,13 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
         if (activeTab === "phan-loai") res = await createPhanLoaiKH(newName);
         else if (activeTab === "nguon") res = await createNguonKH(newName);
         else if (activeTab === "ly-do-tu-choi") res = await createLyDoTuChoi(newName);
+        else if (activeTab === "nguoi-gioi-thieu") res = await createNguoiGioiThieu(newName, newPhone);
         else res = await createNhomKH(newName);
 
         if (res.success) {
             toast.success("Đã thêm thành công");
             setNewName("");
+            setNewPhone("");
             router.refresh();
         } else {
             toast.error((res as any).message || "Lỗi");
@@ -62,12 +68,14 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
 
     const currentItems =
         activeTab === "phan-loai"
-            ? phanLoais.map((i) => ({ id: i.ID, name: i.PL_KH }))
+            ? phanLoais.map((i) => ({ id: i.ID, name: i.PL_KH, extra: null }))
             : activeTab === "nguon"
-                ? nguons.map((i) => ({ id: i.ID, name: i.NGUON }))
+                ? nguons.map((i) => ({ id: i.ID, name: i.NGUON, extra: null }))
                 : activeTab === "ly-do-tu-choi"
-                ? lyDoTuChois.map((i) => ({ id: i.ID, name: i.LY_DO }))
-                : nhoms.map((i) => ({ id: i.ID, name: i.NHOM }));
+                ? lyDoTuChois.map((i) => ({ id: i.ID, name: i.LY_DO, extra: null }))
+                : activeTab === "nguoi-gioi-thieu"
+                ? nguoiGioiThieus.map((i) => ({ id: i.ID, name: i.TEN_NGT, extra: i.SO_DT_NGT }))
+                : nhoms.map((i) => ({ id: i.ID, name: i.NHOM, extra: null }));
 
     const placeholder =
         activeTab === "phan-loai"
@@ -76,6 +84,8 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                 ? "Tên nguồn mới..."
                 : activeTab === "ly-do-tu-choi"
                 ? "Tên lý do từ chối mới..."
+                : activeTab === "nguoi-gioi-thieu"
+                ? "Tên người giới thiệu mới..."
                 : "Tên nhóm mới...";
 
     return (
@@ -91,7 +101,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
 
             <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Thiết lập danh mục Khách hàng">
                 {/* Tabs */}
-                <div className="flex border-b border-border mb-4">
+                <div className="flex border-b border-border mb-4 overflow-x-auto whitespace-nowrap custom-scrollbar pb-1">
                     {tabs.map((tab) => (
                         <button
                             key={tab.key}
@@ -99,7 +109,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                                 ? "border-primary text-primary"
                                 : "border-transparent text-muted-foreground hover:text-foreground"
                                 }`}
-                            onClick={() => { setActiveTab(tab.key); setNewName(""); }}
+                            onClick={() => { setActiveTab(tab.key); setNewName(""); setNewPhone(""); }}
                         >
                             {tab.label}
                         </button>
@@ -107,21 +117,35 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                 </div>
 
                 <div className="space-y-4">
-                    <form onSubmit={handleAdd} className="flex gap-2">
-                        <input
-                            type="text"
-                            value={newName}
-                            onChange={(e) => setNewName(e.target.value)}
-                            placeholder={placeholder}
-                            className="input-modern flex-1"
-                            disabled={loading}
-                        />
+                    <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-2 w-full">
+                        <div className="flex-1 min-w-0">
+                            <input
+                                type="text"
+                                value={newName}
+                                onChange={(e) => setNewName(e.target.value)}
+                                placeholder={placeholder}
+                                className="input-modern w-full"
+                                disabled={loading}
+                            />
+                        </div>
+                        {activeTab === "nguoi-gioi-thieu" && (
+                            <div className="w-full sm:w-[180px] shrink-0">
+                                <input
+                                    type="text"
+                                    value={newPhone}
+                                    onChange={(e) => setNewPhone(e.target.value)}
+                                    placeholder="Số điện thoại"
+                                    className="input-modern w-full"
+                                    disabled={loading}
+                                />
+                            </div>
+                        )}
                         <button
                             type="submit"
                             disabled={loading || !newName.trim()}
-                            className="btn-premium-primary whitespace-nowrap"
+                            className="btn-premium-primary whitespace-nowrap shrink-0 h-[38px] px-4"
                         >
-                            <Plus className="w-4 h-4" /> Thêm
+                            <Plus className="w-4 h-4 mr-1.5" /> Thêm
                         </button>
                     </form>
 
@@ -133,7 +157,10 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                         )}
                         {currentItems.map((item) => (
                             <div key={item.id} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg shadow-sm">
-                                <span className="font-semibold text-sm">{item.name}</span>
+                                <span className="font-semibold text-sm">
+                                    {item.name}
+                                    {item.extra && <span className="ml-2 text-xs font-normal text-muted-foreground">({item.extra})</span>}
+                                </span>
                                 <button
                                     onClick={() => setDeleteTarget(item.id)}
                                     disabled={loading}
@@ -157,6 +184,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                     if (activeTab === "phan-loai") res = await deletePhanLoaiKH(deleteTarget);
                     else if (activeTab === "nguon") res = await deleteNguonKH(deleteTarget);
                     else if (activeTab === "ly-do-tu-choi") res = await deleteLyDoTuChoi(deleteTarget);
+                    else if (activeTab === "nguoi-gioi-thieu") res = await deleteNguoiGioiThieu(deleteTarget);
                     else res = await deleteNhomKH(deleteTarget);
                     if (res.success) {
                         toast.success("Đã xóa danh mục");

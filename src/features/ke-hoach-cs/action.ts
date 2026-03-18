@@ -303,16 +303,25 @@ export async function getNVListCS() {
     }
 }
 
-export async function getDMHHGrouped() {
+export async function getDMDichVuForCS() {
     try {
-        const data = await prisma.dMHH.findMany({
-            where: { HIEU_LUC: true },
-            select: { ID: true, MA_HH: true, TEN_HH: true, NHOM_HH: true, PHAN_LOAI: true },
-            orderBy: [{ NHOM_HH: "asc" }, { TEN_HH: "asc" }],
+        const data = await prisma.dM_DICH_VU.findMany({
+            orderBy: [{ NHOM_DV: "asc" }, { DICH_VU: "asc" }],
         });
         return { success: true, data };
     } catch {
-        return { success: false, data: [] };
+        return { success: false, data: [] as { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[] };
+    }
+}
+
+export async function getLyDoTuChoiCS() {
+    try {
+        const data = await prisma.lY_DO_TU_CHOI.findMany({
+            orderBy: { LY_DO: "asc" },
+        });
+        return { success: true, data };
+    } catch {
+        return { success: false, data: [] as { ID: string; LY_DO: string }[] };
     }
 }
 

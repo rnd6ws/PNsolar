@@ -17,9 +17,10 @@ interface FormSelectProps {
     value?: string;
     onChange?: (value: string) => void;
     className?: string;
+    disabled?: boolean;
 }
 
-export default function FormSelect({ name, options, placeholder = 'Chọn', defaultValue = '', value, onChange, className = '' }: FormSelectProps) {
+export default function FormSelect({ name, options, placeholder = 'Chọn', defaultValue = '', value, onChange, className = '', disabled = false }: FormSelectProps) {
     const isControlled = value !== undefined;
     const [internalValue, setInternalValue] = useState(defaultValue);
 
@@ -36,11 +37,15 @@ export default function FormSelect({ name, options, placeholder = 'Chọn', defa
 
     return (
         <DropdownMenu modal={false}>
-            <input type="hidden" name={name} value={currentValue} />
-            <DropdownMenuTrigger asChild>
+            <input type="hidden" name={name} value={currentValue} disabled={disabled} />
+            <DropdownMenuTrigger asChild disabled={disabled}>
                 <button
                     type="button"
-                    className={`flex items-center justify-between gap-2 input-modern w-full ${currentValue === '' ? 'text-muted-foreground/60' : 'text-foreground'} ${className}`}
+                    disabled={disabled}
+                    className={`flex items-center justify-between gap-2 input-modern w-full 
+                        ${currentValue === '' ? 'text-muted-foreground/60' : 'text-foreground'} 
+                        ${disabled ? 'opacity-50 cursor-not-allowed bg-muted/50' : ''} 
+                        ${className}`}
                 >
                     <span className="truncate flex-1 text-left">{currentLabel}</span>
                     <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />

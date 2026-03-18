@@ -9,6 +9,7 @@ import {
     getLoaiCS,
     getKetQuaCS,
     getNVListCS,
+    getLyDoTuChoiCS,
 } from "@/features/ke-hoach-cs/action";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -29,7 +30,7 @@ interface PageProps {
 export default async function KeHoachCSPage({ searchParams }: PageProps) {
     const { query, page, TRANG_THAI, LOAI_CS } = searchParams;
 
-    const [result, stats, loaiCSRes, ketQuaRes, nvRes, user] = await Promise.all([
+    const [result, stats, loaiCSRes, ketQuaRes, nvRes, lyDoRes, user] = await Promise.all([
         getKeHoachCSKH({
             query,
             page: page ? parseInt(page) : 1,
@@ -40,6 +41,7 @@ export default async function KeHoachCSPage({ searchParams }: PageProps) {
         getLoaiCS(),
         getKetQuaCS(),
         getNVListCS(),
+        getLyDoTuChoiCS(),
         getCurrentUser(),
     ]);
 
@@ -47,6 +49,7 @@ export default async function KeHoachCSPage({ searchParams }: PageProps) {
     const loaiCSList = loaiCSRes.success ? loaiCSRes.data : [];
     const ketQuaList = ketQuaRes.success ? ketQuaRes.data : [];
     const nhanViens = nvRes.success ? nvRes.data : [];
+    const lyDoList = lyDoRes.success ? lyDoRes.data : [];
 
     const trangThaiOptions = [
         { label: "Chờ báo cáo", value: "Chờ báo cáo" },
@@ -92,6 +95,7 @@ export default async function KeHoachCSPage({ searchParams }: PageProps) {
                     nhanViens={nhanViens}
                     loaiCSList={loaiCSList}
                     ketQuaList={ketQuaList}
+                    lyDoList={lyDoList}
                     currentUserId={user?.userId}
                     stats={stats}
                     trangThaiOptions={trangThaiOptions}

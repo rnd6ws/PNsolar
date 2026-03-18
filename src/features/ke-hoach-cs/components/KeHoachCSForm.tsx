@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
-import { X, Search, Clock, Building2, User, Briefcase } from "lucide-react";
+import { X, Search, Clock, Building2, User, Briefcase, Check, ChevronDown } from "lucide-react";
 import {
     searchKhachHangForCS,
     getNguoiLienHeByKH,
     getCoHoiByKH,
     createKeHoachCS,
     updateKeHoachCS,
-    getDMHHGrouped,
+    getDMDichVuForCS,
 } from "../action";
 import Modal from "@/components/Modal";
+import FormSelect from "@/components/FormSelect";
+
+type DichVuItem = { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number };
 
 interface Props {
     item?: any;
@@ -55,7 +58,7 @@ export default function KeHoachCSForm({
     // Related data
     const [nguoiLienHes, setNguoiLienHes] = useState<any[]>([]);
     const [coHois, setCoHois] = useState<any[]>([]);
-    const [dmhh, setDmhh] = useState<any[]>([]);
+    const [dmDichVu, setDmDichVu] = useState<DichVuItem[]>([]);
 
     // Form fields
     const [idLH, setIdLH] = useState(item?.ID_LH || "");
@@ -98,9 +101,11 @@ export default function KeHoachCSForm({
         }
     }, [tgTu]);
 
-    // Load DMHH
+    // Load DM_DICH_VU
     useEffect(() => {
-        getDMHHGrouped().then((r) => { if (r.success) setDmhh(r.data); });
+        getDMDichVuForCS().then((result) => {
+            if (result.success) setDmDichVu(result.data as DichVuItem[]);
+        });
     }, []);
 
     // Load lien he & co hoi khi chon KH
@@ -130,22 +135,26 @@ export default function KeHoachCSForm({
         return () => clearTimeout(timer);
     }, [khQuery, selectedKH?.TEN_KH]);
 
-    // Group DMHH by NHOM_HH
-    const dmhhGroups = dmhh.reduce((acc: Record<string, any[]>, item) => {
-        const nhom = item.NHOM_HH || "Khác";
-        if (!acc[nhom]) acc[nhom] = [];
-        acc[nhom].push(item);
-        return acc;
-    }, {});
-
-    const toggleNhom = (nhom: string) => {
-        const ids = dmhhGroups[nhom].map((h: any) => h.ID);
-        const allSelected = ids.every((id: string) => selectedDV.includes(id));
-        if (allSelected) {
-            setSelectedDV(selectedDV.filter((id) => !ids.includes(id)));
-        } else {
-            setSelectedDV([...new Set([...selectedDV, ...ids])]);
+    // Group DM_DICH_VU by NHOM_DV (useMemo like CoHoiForm)
+    const grouped = useMemo(() => {
+        const map = new Map<string, DichVuItem[]>();
+        for (const item of dmDichVu) {
+            if (!map.has(item.NHOM_DV)) map.set(item.NHOM_DV, []);
+            map.get(item.NHOM_DV)!.push(item);
         }
+        return map;
+    }, [dmDichVu]);
+
+    // Collapse state cho từng nhóm (mặc định: tất cả mở)
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+    const toggleGroupCollapse = (nhom: string) => {
+        setCollapsedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(nhom)) next.delete(nhom);
+            else next.add(nhom);
+            return next;
+        });
     };
 
     const toggleItem = (id: string) => {
@@ -153,6 +162,25 @@ export default function KeHoachCSForm({
             prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
         );
     };
+
+    const toggleNhom = (nhom: string, ids: string[]) => {
+        const allSelected = ids.every((id) => selectedDV.includes(id));
+        if (allSelected) {
+            setSelectedDV(prev => prev.filter(id => !ids.includes(id)));
+        } else {
+            setSelectedDV(prev => [...new Set([...prev, ...ids])]);
+        }
+    };
+
+    function formatCurrency(val: number) {
+        return new Intl.NumberFormat("vi-VN").format(val) + " ₫";
+    }
+
+    const totalGiaTri = useMemo(() => {
+        return dmDichVu
+            .filter(item => selectedDV.includes(item.ID))
+            .reduce((sum, item) => sum + item.GIA_TRI_TB, 0);
+    }, [selectedDV, dmDichVu]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -189,275 +217,292 @@ export default function KeHoachCSForm({
     };
 
     return (
-        <Modal 
-            isOpen={true} 
-            onClose={onClose} 
-            title={isEdit ? "Chỉnh sửa kế hoạch chăm sóc" : "Tạo kế hoạch chăm sóc"} 
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title={isEdit ? "Chỉnh sửa kế hoạch chăm sóc" : "Tạo kế hoạch chăm sóc"}
             size="xl"
         >
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-3">
                 {/* Khách hàng */}
-                    <div className="space-y-1.5 relative">
-                        <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5" />
-                            Khách hàng <span className="text-destructive">*</span>
-                        </label>
-                        <div className="relative" ref={khDropdownRef}>
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <input
-                                type="text"
-                                value={khQuery}
-                                onChange={(e) => {
-                                    setKhQuery(e.target.value);
-                                    setShowKhDropdown(true);
-                                    if (!e.target.value) {
-                                        setSelectedKH(null);
-                                    }
+                <div className="space-y-1.5 relative">
+                    <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5" />
+                        Khách hàng <span className="text-destructive">*</span>
+                    </label>
+                    <div className="relative" ref={khDropdownRef}>
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                            type="text"
+                            value={khQuery}
+                            onChange={(e) => {
+                                setKhQuery(e.target.value);
+                                setShowKhDropdown(true);
+                                if (!e.target.value) {
+                                    setSelectedKH(null);
+                                }
+                            }}
+                            onFocus={() => setShowKhDropdown(true)}
+                            placeholder="Tìm tên khách hàng, tên viết tắt..."
+                            className="input-modern pl-10! pr-10! w-full"
+                        />
+                        {khQuery && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setKhQuery("");
+                                    setSelectedKH(null);
+                                    setKhResults([]);
+                                    setShowKhDropdown(true); // Để user có thể gõ xem lại danh sách
                                 }}
-                                onFocus={() => setShowKhDropdown(true)}
-                                placeholder="Tìm tên khách hàng, tên viết tắt..."
-                                className="input-modern pl-10! pr-10! w-full"
-                            />
-                            {khQuery && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setKhQuery("");
-                                        setSelectedKH(null);
-                                        setKhResults([]);
-                                        setShowKhDropdown(true); // Để user có thể gõ xem lại danh sách
-                                    }}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors"
-                                    title="Xóa lựa chọn"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            )}
-                            {showKhDropdown && khResults.length > 0 && (
-                                <div className="absolute z-20 top-full mt-1 w-full bg-background border border-border rounded-xl shadow-xl max-h-52 overflow-y-auto">
-                                    {khResults.map((kh) => (
-                                        <button
-                                            key={kh.ID}
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedKH(kh);
-                                                setKhQuery(kh.TEN_KH);
-                                                setShowKhDropdown(false);
-                                            }}
-                                            className="w-full text-left px-4 py-2.5 hover:bg-muted transition-colors text-sm flex flex-col border-b border-border last:border-0"
-                                        >
-                                            <span className="font-semibold text-foreground">{kh.TEN_KH}</span>
-                                            {kh.TEN_VT && <span className="text-xs text-muted-foreground">{kh.TEN_VT}</span>}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        {selectedKH && (
-                            <p className="text-xs text-primary font-medium mt-1">✓ Đã chọn: {selectedKH.TEN_KH}</p>
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                                title="Xóa lựa chọn"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                        {showKhDropdown && khResults.length > 0 && (
+                            <div className="absolute z-20 top-full mt-1 w-full bg-background border border-border rounded-xl shadow-xl max-h-52 overflow-y-auto">
+                                {khResults.map((kh) => (
+                                    <button
+                                        key={kh.ID}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedKH(kh);
+                                            setKhQuery(kh.TEN_KH);
+                                            setShowKhDropdown(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2.5 hover:bg-muted transition-colors text-sm flex flex-col border-b border-border last:border-0"
+                                    >
+                                        <span className="font-semibold text-foreground">{kh.TEN_KH}</span>
+                                        {kh.TEN_VT && <span className="text-xs text-muted-foreground">{kh.TEN_VT}</span>}
+                                    </button>
+                                ))}
+                            </div>
                         )}
                     </div>
+                    {/* {selectedKH && (
+                            <p className="text-xs text-primary font-medium mt-1">✓ Đã chọn: {selectedKH.TEN_KH}</p>
+                        )} */}
+                </div>
 
-                    {/* Người liên hệ & Cơ hội */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground">Người liên hệ</label>
-                            <select
-                                value={idLH}
-                                onChange={(e) => setIdLH(e.target.value)}
-                                className="input-modern"
-                                disabled={!selectedKH}
-                            >
-                                <option value="">-- Chọn người liên hệ --</option>
-                                {nguoiLienHes.map((lh) => (
-                                    <option key={lh.ID} value={lh.ID}>
-                                        {lh.TENNGUOI_LIENHE}{lh.CHUC_VU ? ` - ${lh.CHUC_VU}` : ""}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground">Cơ hội liên quan</label>
-                            <select
-                                value={idCH}
-                                onChange={(e) => setIdCH(e.target.value)}
-                                className="input-modern"
-                                disabled={!selectedKH}
-                            >
-                                <option value="">-- Chọn cơ hội --</option>
-                                {coHois.map((ch) => (
-                                    <option key={ch.ID} value={ch.ID}>
-                                        {ch.ID_CH} ({ch.TINH_TRANG})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                {/* Người liên hệ & Cơ hội */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-muted-foreground">Người liên hệ</label>
+                        <FormSelect
+                            name="ID_LH"
+                            value={idLH}
+                            onChange={(val) => setIdLH(val)}
+                            options={nguoiLienHes.map((lh) => ({ label: `${lh.TENNGUOI_LIENHE}${lh.CHUC_VU ? ` - ${lh.CHUC_VU}` : ""}`, value: lh.ID }))}
+                            placeholder="-- Chọn người liên hệ --"
+                            disabled={!selectedKH}
+                        />
                     </div>
-
-                    {/* Loại CS & Hình thức */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground">Loại chăm sóc</label>
-                            <select value={loaiCS} onChange={(e) => setLoaiCS(e.target.value)} className="input-modern">
-                                <option value="">-- Chọn loại --</option>
-                                {loaiCSList.map((l) => (
-                                    <option key={l.ID} value={l.LOAI_CS}>{l.LOAI_CS}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground">Hình thức</label>
-                            <select value={hinhThuc} onChange={(e) => setHinhThuc(e.target.value)} className="input-modern">
-                                <option value="">-- Chọn hình thức --</option>
-                                <option value="Online">Online</option>
-                                <option value="Trực tiếp">Trực tiếp</option>
-                            </select>
-                        </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-muted-foreground">Cơ hội liên quan</label>
+                        <FormSelect
+                            name="ID_CH"
+                            value={idCH}
+                            onChange={(val) => setIdCH(val)}
+                            options={coHois.map((ch) => ({ label: `${ch.ID_CH} (${ch.TINH_TRANG})`, value: ch.ID }))}
+                            placeholder="-- Chọn cơ hội --"
+                            disabled={!selectedKH}
+                        />
                     </div>
+                </div>
 
-                    {/* Thời gian */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5" /> Thời gian từ
-                            </label>
-                            <input
-                                type="datetime-local"
-                                value={tgTu}
-                                onChange={(e) => setTgTu(e.target.value)}
-                                className="input-modern"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5" /> Thời gian đến
-                            </label>
-                            <input
-                                type="datetime-local"
-                                value={tgDen}
-                                onChange={(e) => setTgDen(e.target.value)}
-                                className="input-modern"
-                            />
-                        </div>
+                {/* Loại CS & Hình thức */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-muted-foreground">Loại chăm sóc</label>
+                        <FormSelect
+                            name="LOAI_CS"
+                            value={loaiCS}
+                            onChange={(val) => setLoaiCS(val)}
+                            options={loaiCSList.map((l) => ({ label: l.LOAI_CS, value: l.LOAI_CS }))}
+                            placeholder="-- Chọn loại --"
+                        />
                     </div>
-
-                    {/* Địa điểm & Người CS */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground">Địa điểm</label>
-                            <input
-                                type="text"
-                                value={diaDiem}
-                                onChange={(e) => setDiaDiem(e.target.value)}
-                                placeholder="Nhập địa điểm..."
-                                className="input-modern"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
-                                <User className="w-3.5 h-3.5" /> Người chăm sóc
-                            </label>
-                            <select value={nguoiCS} onChange={(e) => setNguoiCS(e.target.value)} className="input-modern">
-                                <option value="">-- Chọn nhân viên --</option>
-                                {nhanViens.map((nv) => (
-                                    <option key={nv.ID} value={nv.ID}>{nv.HO_TEN}</option>
-                                ))}
-                            </select>
-                        </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-muted-foreground">Hình thức</label>
+                        <FormSelect
+                            name="HINH_THUC"
+                            value={hinhThuc}
+                            onChange={(val) => setHinhThuc(val)}
+                            options={[
+                                { label: "Online", value: "Online" },
+                                { label: "Trực tiếp", value: "Trực tiếp" }
+                            ]}
+                            placeholder="-- Chọn hình thức --"
+                        />
                     </div>
+                </div>
 
-                    {/* Dịch vụ quan tâm */}
-                    <div className="space-y-2">
+                {/* Thời gian */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" /> Thời gian từ
+                        </label>
+                        <input
+                            type="datetime-local"
+                            value={tgTu}
+                            onChange={(e) => setTgTu(e.target.value)}
+                            className="input-modern"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" /> Thời gian đến
+                        </label>
+                        <input
+                            type="datetime-local"
+                            value={tgDen}
+                            onChange={(e) => setTgDen(e.target.value)}
+                            className="input-modern"
+                        />
+                    </div>
+                </div>
+
+                {/* Địa điểm & Người CS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-muted-foreground">Địa điểm</label>
+                        <input
+                            type="text"
+                            value={diaDiem}
+                            onChange={(e) => setDiaDiem(e.target.value)}
+                            placeholder="Nhập địa điểm..."
+                            className="input-modern"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5" /> Người chăm sóc
+                        </label>
+                        <FormSelect
+                            name="NGUOI_CS"
+                            value={nguoiCS}
+                            onChange={(val) => setNguoiCS(val)}
+                            options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
+                            placeholder="-- Chọn nhân viên --"
+                        />
+                    </div>
+                </div>
+
+                {/* Dịch vụ quan tâm */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
                         <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
                             <Briefcase className="w-3.5 h-3.5" /> Dịch vụ quan tâm
                         </label>
-                        <div className="border border-border rounded-xl max-h-56 overflow-y-auto divide-y divide-border">
-                            {Object.keys(dmhhGroups).length === 0 ? (
-                                <p className="text-xs text-muted-foreground p-4 text-center">Đang tải...</p>
-                            ) : (
-                                Object.entries(dmhhGroups).map(([nhom, items]) => {
-                                    const groupIds = items.map((h: any) => h.ID);
-                                    const allSel = groupIds.every((id) => selectedDV.includes(id));
-                                    const someSel = groupIds.some((id) => selectedDV.includes(id));
-                                    return (
-                                        <div key={nhom}>
-                                            {/* Group header */}
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleNhom(nhom)}
-                                                className="w-full flex items-center gap-2 px-3 py-2 bg-muted/50 hover:bg-muted transition-colors text-left"
-                                            >
-                                                <div
-                                                    className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                                        allSel
-                                                            ? "bg-primary border-primary"
-                                                            : someSel
-                                                            ? "bg-primary/30 border-primary"
-                                                            : "border-border bg-background"
-                                                    }`}
-                                                >
-                                                    {allSel && <span className="text-white text-[10px] leading-none">✓</span>}
-                                                    {someSel && !allSel && <span className="text-primary text-[10px] leading-none">−</span>}
-                                                </div>
-                                                <span className="text-xs font-bold text-foreground uppercase tracking-wide">{nhom}</span>
-                                                <span className="ml-auto text-xs text-muted-foreground">
-                                                    {groupIds.filter((id) => selectedDV.includes(id)).length}/{items.length}
-                                                </span>
-                                            </button>
-                                            {/* Items */}
-                                            {items.map((hh: any) => (
-                                                <button
-                                                    key={hh.ID}
-                                                    type="button"
-                                                    onClick={() => toggleItem(hh.ID)}
-                                                    className="w-full flex items-center gap-2 px-4 py-1.5 hover:bg-muted/30 transition-colors text-left"
-                                                >
-                                                    <div
-                                                        className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                                            selectedDV.includes(hh.ID)
-                                                                ? "bg-primary border-primary"
-                                                                : "border-border bg-background"
-                                                        }`}
-                                                    >
-                                                        {selectedDV.includes(hh.ID) && (
-                                                            <span className="text-white text-[9px] leading-none">✓</span>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-xs text-foreground">{hh.TEN_HH}</span>
-                                                    <span className="text-[10px] text-muted-foreground ml-auto">{hh.MA_HH}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
                         {selectedDV.length > 0 && (
-                            <p className="text-xs text-primary font-medium">Đã chọn {selectedDV.length} dịch vụ</p>
+                            <span className="text-[11px] text-primary font-semibold">
+                                Đã chọn {selectedDV.length} · {formatCurrency(totalGiaTri)}
+                            </span>
                         )}
                     </div>
-
-                    {/* Ghi chú nội bộ */}
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-muted-foreground">Ghi chú nội bộ</label>
-                        <textarea
-                            value={ghiChuNC}
-                            onChange={(e) => setGhiChuNC(e.target.value)}
-                            rows={3}
-                            placeholder="Ghi chú cho nội bộ (không hiển thị cho khách)..."
-                            className="input-modern resize-none"
-                        />
+                    <div className="border border-border rounded-xl overflow-hidden max-h-[260px] overflow-y-auto">
+                        {grouped.size === 0 ? (
+                            <p className="px-4 py-4 text-sm text-muted-foreground italic text-center">Đang tải...</p>
+                        ) : (
+                            Array.from(grouped.entries()).map(([nhom, items]) => {
+                                const selectedCount = items.filter(item => selectedDV.includes(item.ID)).length;
+                                const groupIds = items.map(i => i.ID);
+                                const allSel = groupIds.every(id => selectedDV.includes(id));
+                                const someSel = groupIds.some(id => selectedDV.includes(id));
+                                const isCollapsed = collapsedGroups.has(nhom);
+                                return (
+                                    <div key={nhom}>
+                                        {/* Group header */}
+                                        <div className="bg-primary/10 flex items-center border-b border-border sticky top-0 z-10">
+                                            {/* Checkbox select-all */}
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleNhom(nhom, groupIds)}
+                                                className="flex items-center justify-center w-10 h-8 shrink-0 hover:bg-primary/20 transition-colors"
+                                                title={allSel ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                                            >
+                                                <div className={`w-[15px] h-[15px] rounded border-2 flex items-center justify-center transition-colors ${
+                                                    allSel ? "bg-primary border-primary"
+                                                    : someSel ? "bg-primary/30 border-primary"
+                                                    : "border-border bg-background"
+                                                }`}>
+                                                    {allSel && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                                    {someSel && !allSel && <span className="text-primary text-[9px] leading-none font-bold">−</span>}
+                                                </div>
+                                            </button>
+                                            {/* Tên nhóm + badge + chevron (click để collapse) */}
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleGroupCollapse(nhom)}
+                                                className="flex-1 flex items-center gap-2 pr-3 py-1.5 text-left hover:bg-primary/20 transition-colors"
+                                            >
+                                                <span className="text-[11px] font-bold text-primary tracking-wide flex-1">{nhom}</span>
+                                                {selectedCount > 0 && (
+                                                    <span className="text-[10px] text-primary bg-primary/10 border border-primary/20 rounded-full px-1.5 py-0.5 font-medium">{selectedCount}</span>
+                                                )}
+                                                <ChevronDown className={`w-3.5 h-3.5 text-primary transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`} />
+                                            </button>
+                                        </div>
+                                        {/* Items */}
+                                        {!isCollapsed && (
+                                            <div className="divide-y divide-border/40">
+                                                {items.map(item => {
+                                                    const checked = selectedDV.includes(item.ID);
+                                                    return (
+                                                        <label
+                                                            key={item.ID}
+                                                            className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${checked ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/30"
+                                                                }`}
+                                                        >
+                                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                                <div className={`w-[16px] h-[16px] rounded border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? "bg-primary border-primary" : "border-border"
+                                                                    }`}>
+                                                                    {checked && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                                                </div>
+                                                                <input type="checkbox" checked={checked} onChange={() => toggleItem(item.ID)} className="sr-only" />
+                                                                <span className={`text-sm truncate ${checked ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                                                                    {item.DICH_VU}
+                                                                </span>
+                                                            </div>
+                                                            <span className={`text-xs whitespace-nowrap ml-2 ${checked ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                                                                {formatCurrency(item.GIA_TRI_TB)}
+                                                            </span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
+                </div>
+
+                {/* Ghi chú nội bộ */}
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-muted-foreground">Ghi chú nội bộ</label>
+                    <textarea
+                        value={ghiChuNC}
+                        onChange={(e) => setGhiChuNC(e.target.value)}
+                        rows={3}
+                        placeholder="Ghi chú cho nội bộ (không hiển thị cho khách)..."
+                        className="input-modern resize-none"
+                    />
+                </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-3 pt-6 border-t border-border mt-6">
-                    <button type="button" onClick={onClose} className="btn-premium-secondary">
+                <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-2 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
+                    <button type="button" onClick={onClose} className="btn-premium-secondary flex-1">
                         Hủy
                     </button>
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="btn-premium-primary"
+                        className="btn-premium-primary flex-1"
                     >
                         {submitting ? "Đang lưu..." : isEdit ? "Cập nhật" : "Tạo kế hoạch"}
                     </button>
