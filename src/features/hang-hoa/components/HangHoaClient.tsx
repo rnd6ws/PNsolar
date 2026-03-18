@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { createProductAction, updateProductAction, deleteProductAction } from '@/features/hang-hoa/action';
 import { toast } from 'sonner';
 import { getGiaNhapHistoryByHH } from '@/features/gia-nhap/action';
+import { getGiaBanHistoryByHH } from '@/features/gia-ban/action';
 import SearchInput from '@/components/SearchInput';
 import Pagination from '@/components/Pagination';
 import FilterSelect from '@/components/FilterSelect';
@@ -75,7 +76,7 @@ const emptyForm: FormData = {
     HINH_ANH: '', XUAT_XU: '', BAO_HANH: '', HIEU_LUC: true,
 };
 
-const DEFAULT_COLUMNS: ColumnKey[] = ['nhomHH', 'phanLoai', 'dongHang', 'model', 'dvt', 'xuatXu', 'baoHanh', 'hieuLuc', 'giaNhap'];
+const DEFAULT_COLUMNS: ColumnKey[] = ['nhomHH', 'phanLoai', 'dongHang', 'model', 'dvt', 'xuatXu', 'baoHanh', 'hieuLuc', 'giaNhap', 'giaBan'];
 
 interface GiaNhapInfo {
     DON_GIA: number;
@@ -91,6 +92,23 @@ interface GiaNhapHistoryItem {
     TEN_NCC: string;
     DON_GIA: number;
     DVT: string;
+}
+
+interface GiaBanItem {
+    GOI_GIA: string;
+    DON_GIA: number;
+    NHOM_KH: string;
+    NGAY_HIEU_LUC: string;
+}
+
+interface GiaBanHistoryItem {
+    ID: string;
+    NGAY_HIEU_LUC: string;
+    NHOM_KH: string;
+    NHOM_HH: string;
+    GOI_GIA: string;
+    DON_GIA: number;
+    GHI_CHU: string | null;
 }
 
 // ===== PRODUCT MODAL =====
@@ -481,7 +499,7 @@ function ProductModal({
 // ===== MAIN CLIENT COMPONENT =====
 export default function HangHoaClient({
     initialProducts, initialPagination, currentPage, uniqueCategories,
-    nhomHHOptions, phanLoaiOptions, dongHangOptions, giaNhapMap = {}
+    nhomHHOptions, phanLoaiOptions, dongHangOptions, giaNhapMap = {}, giaBanMap = {}
 }: {
     initialProducts: Product[];
     initialPagination: any;
@@ -491,6 +509,7 @@ export default function HangHoaClient({
     phanLoaiOptions: PhanLoaiOption[];
     dongHangOptions: DongHangOption[];
     giaNhapMap?: Record<string, GiaNhapInfo>;
+    giaBanMap?: Record<string, GiaBanItem[]>;
 }) {
     const router = useRouter();
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -502,6 +521,9 @@ export default function HangHoaClient({
     const [giaNhapHistory, setGiaNhapHistory] = useState<GiaNhapHistoryItem[]>([]);
     const [giaNhapHistoryProduct, setGiaNhapHistoryProduct] = useState<Product | null>(null);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [giaBanHistory, setGiaBanHistory] = useState<GiaBanHistoryItem[]>([]);
+    const [giaBanHistoryProduct, setGiaBanHistoryProduct] = useState<Product | null>(null);
+    const [loadingGiaBanHistory, setLoadingGiaBanHistory] = useState(false);
     const [viewProduct, setViewProduct] = useState<Product | null>(null);
 
     const handleShowHistory = async (prod: Product) => {
@@ -515,6 +537,19 @@ export default function HangHoaClient({
             setGiaNhapHistory([]);
         }
         setLoadingHistory(false);
+    };
+
+    const handleShowGiaBanHistory = async (prod: Product) => {
+        setGiaBanHistoryProduct(prod);
+        setLoadingGiaBanHistory(true);
+        try {
+            const history = await getGiaBanHistoryByHH(prod.MA_HH);
+            setGiaBanHistory(history);
+        } catch (err) {
+            console.error('Error loading gia ban history:', err);
+            setGiaBanHistory([]);
+        }
+        setLoadingGiaBanHistory(false);
     };
 
     const sortedProducts = useMemo(() => {
@@ -553,7 +588,7 @@ export default function HangHoaClient({
 
     return (
         <PermissionGuard moduleKey="hang-hoa" level="view" showNoAccess>
-            <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="space-y-6 animate-in fade-in duration-500 min-w-0 overflow-hidden">
                 {/* Page Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -704,6 +739,9 @@ export default function HangHoaClient({
                                     {show('giaNhap') && (
                                         <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Giá nhập</th>
                                     )}
+                                    {show('giaBan') && (
+                                        <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Giá bán</th>
+                                    )}
                                     <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Hành động</th>
                                 </tr>
                             </thead>
@@ -817,6 +855,28 @@ export default function HangHoaClient({
                                                         title="Xem lịch sử giá nhập"
                                                     >
                                                         {new Intl.NumberFormat('vi-VN').format(giaNhapMap[prod.MA_HH].DON_GIA)} ₫
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-[13px] text-muted-foreground">—</span>
+                                                )}
+                                            </td>
+                                        )}
+
+                                        {/* Giá bán */}
+                                        {show('giaBan') && (
+                                            <td className="p-4 align-middle text-right">
+                                                {giaBanMap[prod.MA_HH] && giaBanMap[prod.MA_HH].length > 0 ? (
+                                                    <button
+                                                        onClick={() => handleShowGiaBanHistory(prod)}
+                                                        className="flex flex-col gap-1 items-end cursor-pointer hover:opacity-80 transition-opacity"
+                                                        title="Xem lịch sử giá bán"
+                                                    >
+                                                        {giaBanMap[prod.MA_HH].map((gb, idx) => (
+                                                            <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] bg-rose-500/10 text-rose-600 border border-rose-500/15 hover:bg-rose-500/20 transition-colors">
+                                                                <span className="font-medium truncate max-w-[80px]" title={gb.GOI_GIA}>{gb.GOI_GIA}</span>
+                                                                <span className="font-bold">{new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫</span>
+                                                            </div>
+                                                        ))}
                                                     </button>
                                                 ) : (
                                                     <span className="text-[13px] text-muted-foreground">—</span>
@@ -940,6 +1000,22 @@ export default function HangHoaClient({
                                                 className="text-primary font-semibold hover:underline"
                                             >
                                                 {new Intl.NumberFormat('vi-VN').format(giaNhapMap[prod.MA_HH].DON_GIA)} ₫
+                                            </button>
+                                        </div>
+                                    )}
+                                    {giaBanMap[prod.MA_HH] && giaBanMap[prod.MA_HH].length > 0 && (
+                                        <div className="flex flex-col gap-0.5 mt-1">
+                                            <button
+                                                onClick={() => handleShowGiaBanHistory(prod)}
+                                                className="text-left hover:opacity-80 transition-opacity"
+                                            >
+                                                <span className="text-muted-foreground font-medium">Giá bán:</span>
+                                                {giaBanMap[prod.MA_HH].map((gb, idx) => (
+                                                    <div key={idx} className="flex items-center gap-1">
+                                                        <span className="text-muted-foreground">{gb.GOI_GIA}:</span>
+                                                        <span className="text-rose-600 font-semibold hover:underline">{new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫</span>
+                                                    </div>
+                                                ))}
                                             </button>
                                         </div>
                                     )}
@@ -1085,6 +1161,114 @@ export default function HangHoaClient({
                 </div>
             )}
 
+            {/* Modal Giá bán theo Nhóm KH & Gói giá */}
+            {giaBanHistoryProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between p-5 border-b">
+                            <div>
+                                <h3 className="text-base font-bold text-foreground">Bảng giá bán</h3>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    {giaBanHistoryProduct.TEN_HH} ({giaBanHistoryProduct.MA_HH})
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => { setGiaBanHistoryProduct(null); setGiaBanHistory([]); }}
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto max-h-[60vh] p-5">
+                            {loadingGiaBanHistory ? (
+                                <div className="flex items-center justify-center py-10">
+                                    <div className="w-6 h-6 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin" />
+                                </div>
+                            ) : giaBanHistory.length === 0 ? (
+                                <p className="text-center text-sm text-muted-foreground py-10">Chưa có giá bán nào.</p>
+                            ) : (() => {
+                                // Nhóm 2 cấp: NHOM_KH → GOI_GIA → lịch sử
+                                const groupedByNhomKH: Record<string, Record<string, typeof giaBanHistory>> = {};
+                                giaBanHistory.forEach(item => {
+                                    const nhomKey = item.NHOM_KH || 'Chung';
+                                    const goiKey = item.GOI_GIA || 'Khác';
+                                    if (!groupedByNhomKH[nhomKey]) groupedByNhomKH[nhomKey] = {};
+                                    if (!groupedByNhomKH[nhomKey][goiKey]) groupedByNhomKH[nhomKey][goiKey] = [];
+                                    groupedByNhomKH[nhomKey][goiKey].push(item);
+                                });
+
+                                return (
+                                    <div className="space-y-5">
+                                        {Object.entries(groupedByNhomKH).map(([nhomKH, goiGiaMap]) => {
+                                            const totalGoi = Object.keys(goiGiaMap).length;
+                                            return (
+                                                <div key={nhomKH} className="rounded-xl border border-border overflow-hidden">
+                                                    {/* Header nhóm KH */}
+                                                    <div className="bg-rose-500/5 border-b border-rose-500/15 px-4 py-2.5 flex items-center gap-2">
+                                                        <div className="w-6 h-6 rounded-full bg-rose-500/15 flex items-center justify-center shrink-0">
+                                                            <DollarSign className="w-3 h-3 text-rose-600" />
+                                                        </div>
+                                                        <span className="text-sm font-bold text-rose-600">Nhóm KH: {nhomKH}</span>
+                                                        <span className="ml-auto text-[10px] font-semibold text-rose-500/70 bg-rose-500/10 px-2 py-0.5 rounded-full">
+                                                            {totalGoi} gói
+                                                        </span>
+                                                    </div>
+                                                    {/* Các gói giá + lịch sử */}
+                                                    <div className="divide-y divide-border">
+                                                        {Object.entries(goiGiaMap).map(([goiGia, entries]) => {
+                                                            const latest = entries[0]; // đã sort desc theo ngày
+                                                            const older = entries.slice(1);
+                                                            return (
+                                                                <div key={goiGia} className="px-4 py-3">
+                                                                    {/* Giá hiện tại */}
+                                                                    <div className="flex items-center justify-between">
+                                                                        <div>
+                                                                            <span className="text-sm font-semibold text-foreground">{goiGia}</span>
+                                                                            {latest.GHI_CHU && (
+                                                                                <p className="text-[11px] text-muted-foreground italic mt-0.5">{latest.GHI_CHU}</p>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <span className="text-base font-bold text-rose-600">
+                                                                                {new Intl.NumberFormat('vi-VN').format(latest.DON_GIA)} ₫
+                                                                            </span>
+                                                                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                                                {new Date(latest.NGAY_HIEU_LUC).toLocaleDateString('vi-VN')}
+                                                                                {entries.length === 1 && <span className="ml-1.5 text-[10px] font-bold uppercase bg-rose-500 text-white px-1.5 py-0.5 rounded-full">Hiện tại</span>}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {/* Lịch sử giá cũ */}
+                                                                    {older.length > 0 && (
+                                                                        <div className="mt-2 ml-3 pl-3 border-l-2 border-rose-500/15 space-y-1.5">
+                                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Lịch sử</p>
+                                                                            {older.map(old => (
+                                                                                <div key={old.ID} className="flex items-center justify-between text-xs">
+                                                                                    <span className="text-muted-foreground">
+                                                                                        {new Date(old.NGAY_HIEU_LUC).toLocaleDateString('vi-VN')}
+                                                                                    </span>
+                                                                                    <span className="font-semibold text-muted-foreground line-through decoration-rose-300">
+                                                                                        {new Intl.NumberFormat('vi-VN').format(old.DON_GIA)} ₫
+                                                                                    </span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Modal Xem chi tiết sản phẩm */}
             {viewProduct && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1166,6 +1350,40 @@ export default function HangHoaClient({
                                     </p>
                                 </div>
                             )}
+
+                            {/* Giá bán theo nhóm KH */}
+                            {giaBanMap[viewProduct.MA_HH] && giaBanMap[viewProduct.MA_HH].length > 0 && (() => {
+                                // Nhóm theo NHOM_KH
+                                const grouped: Record<string, typeof giaBanMap[string]> = {};
+                                giaBanMap[viewProduct.MA_HH].forEach(gb => {
+                                    const key = gb.NHOM_KH || 'Chung';
+                                    if (!grouped[key]) grouped[key] = [];
+                                    grouped[key].push(gb);
+                                });
+
+                                return (
+                                    <div className="space-y-3">
+                                        {Object.entries(grouped).map(([nhomKH, items]) => (
+                                            <div key={nhomKH} className="rounded-xl border border-rose-500/20 overflow-hidden">
+                                                <div className="bg-rose-500/5 border-b border-rose-500/15 px-3 py-2 flex items-center gap-2">
+                                                    <DollarSign className="w-3 h-3 text-rose-600" />
+                                                    <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Nhóm KH: {nhomKH}</span>
+                                                </div>
+                                                <div className="divide-y divide-border">
+                                                    {items.map((gb, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between px-3 py-2">
+                                                            <span className="text-sm font-medium text-foreground">{gb.GOI_GIA}</span>
+                                                            <span className="text-sm font-bold text-rose-600">
+                                                                {new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
 
                             {/* Mô tả */}
                             {viewProduct.MO_TA && (

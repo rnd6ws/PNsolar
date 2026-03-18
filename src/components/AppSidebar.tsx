@@ -46,6 +46,7 @@ const mainNavDef = [
     { name: "Gói giá", href: "/goi-gia", icon: DollarSign, moduleKey: "goi-gia" },
     { name: "Nhà cung cấp", href: "/nha-cung-cap", icon: Truck, moduleKey: "nha-cung-cap" },
     { name: "Giá nhập", href: "/gia-nhap", icon: DollarSign, moduleKey: "gia-nhap" },
+    { name: "Giá bán", href: "/gia-ban", icon: DollarSign, moduleKey: "gia-ban" },
 ];
 
 const systemNavDef = [

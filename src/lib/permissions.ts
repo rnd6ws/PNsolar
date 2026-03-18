@@ -26,6 +26,7 @@ export const MODULES: ModuleDefinition[] = [
     { key: 'goi-gia', label: 'Gói giá', href: '/goi-gia', group: 'main' },
     { key: 'nha-cung-cap', label: 'Nhà cung cấp', href: '/nha-cung-cap', group: 'main' },
     { key: 'gia-nhap', label: 'Giá nhập', href: '/gia-nhap', group: 'main' },
+    { key: 'gia-ban', label: 'Giá bán', href: '/gia-ban', group: 'main' },
     // Nhóm Hệ thống
     { key: 'settings', label: 'Cài đặt', href: '/settings', group: 'system' },
     { key: 'phan-quyen', label: 'Phân quyền', href: '/phan-quyen', group: 'system' },

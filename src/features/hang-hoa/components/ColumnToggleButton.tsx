@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { SlidersHorizontal, Check } from 'lucide-react';
 
-export type ColumnKey = 'nhomHH' | 'phanLoai' | 'dongHang' | 'model' | 'dvt' | 'xuatXu' | 'baoHanh' | 'hieuLuc' | 'giaNhap';
+export type ColumnKey = 'nhomHH' | 'phanLoai' | 'dongHang' | 'model' | 'dvt' | 'xuatXu' | 'baoHanh' | 'hieuLuc' | 'giaNhap' | 'giaBan';
 
 interface Props {
     visibleColumns: ColumnKey[];
@@ -19,6 +19,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: 'baoHanh', label: 'Bảo hành' },
     { key: 'hieuLuc', label: 'Hiệu lực' },
     { key: 'giaNhap', label: 'Giá nhập' },
+    { key: 'giaBan', label: 'Giá bán' },
 ];
 
 export default function ColumnToggleButton({ visibleColumns, onChange }: Props) {

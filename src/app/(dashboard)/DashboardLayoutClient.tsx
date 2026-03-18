@@ -284,7 +284,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
                     </header>
 
                     {/* ── Content ──────────────────────────────── */}
-                    <div className="flex-1 overflow-auto p-4 md:p-6">
+                    <div className="flex-1 overflow-auto min-w-0 p-4 md:p-6">
                         <div className={cn(
                             "mx-auto w-full transition-all",
                             pageLayout === 'full' ? "max-w-[1600px]" : "max-w-[1280px]"

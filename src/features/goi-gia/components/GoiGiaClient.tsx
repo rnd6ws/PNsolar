@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, DollarSign, Search, AlertTriangle, Package, Calendar, Hash, ListPlus, X, Settings2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, DollarSign, Search, AlertTriangle, Package, Hash, ListPlus, X, Settings2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createGoiGiaAction, updateGoiGiaAction, deleteGoiGiaAction, createBulkGoiGiaAction } from '@/features/goi-gia/action';
 import { toast } from 'sonner';
@@ -15,7 +15,7 @@ import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
 interface GoiGia {
     ID: string;
     ID_GOI_GIA: string;
-    NGAY_HIEU_LUC?: string | Date | null;
+    HIEU_LUC?: boolean;
     MA_DONG_HANG: string;
     GOI_GIA: string;
     SL_MIN?: number | null;
@@ -29,7 +29,7 @@ interface DongHangOption {
 }
 
 interface FormData {
-    NGAY_HIEU_LUC: string;
+    HIEU_LUC: boolean;
     MA_DONG_HANG: string;
     GOI_GIA: string;
     SL_MIN: number | '';
@@ -37,7 +37,7 @@ interface FormData {
 }
 
 const emptyForm: FormData = {
-    NGAY_HIEU_LUC: '',
+    HIEU_LUC: true,
     MA_DONG_HANG: '',
     GOI_GIA: '',
     SL_MIN: '',
@@ -45,16 +45,8 @@ const emptyForm: FormData = {
 };
 
 // ===== FORMAT HELPERS =====
-function formatDate(value: string | Date | null | undefined) {
-    if (!value) return '—';
-    const d = new Date(value);
-    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function toInputDate(value: string | Date | null | undefined): string {
-    if (!value) return '';
-    const d = new Date(value);
-    return d.toISOString().split('T')[0];
+function formatHieuLuc(value: boolean | undefined) {
+    return value !== false ? '✅ Hiệu lực' : '❌ Hết hiệu lực';
 }
 
 // ===== GOI GIA MODAL =====
@@ -78,7 +70,7 @@ function GoiGiaModal({
         if (isOpen) {
             if (record) {
                 setForm({
-                    NGAY_HIEU_LUC: toInputDate(record.NGAY_HIEU_LUC),
+                    HIEU_LUC: record.HIEU_LUC !== false,
                     MA_DONG_HANG: record.MA_DONG_HANG,
                     GOI_GIA: record.GOI_GIA || '',
                     SL_MIN: record.SL_MIN ?? '',
@@ -102,7 +94,7 @@ function GoiGiaModal({
         setError(null);
         try {
             const payload = {
-                NGAY_HIEU_LUC: form.NGAY_HIEU_LUC,
+                HIEU_LUC: form.HIEU_LUC,
                 MA_DONG_HANG: form.MA_DONG_HANG,
                 GOI_GIA: form.GOI_GIA,
                 SL_MIN: form.SL_MIN === '' ? null : Number(form.SL_MIN),
@@ -175,18 +167,8 @@ function GoiGiaModal({
                             </div>
                         )}
 
-                        {/* Ngày hiệu lực + Mã dòng hàng */}
+                        {/* Hiệu lực + Mã dòng hàng */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelClass}>Ngày hiệu lực *</label>
-                                <input
-                                    type="date"
-                                    className={inputClass}
-                                    value={form.NGAY_HIEU_LUC}
-                                    onChange={e => handleChange('NGAY_HIEU_LUC', e.target.value)}
-                                    required
-                                />
-                            </div>
                             <div>
                                 <label className={labelClass}>Mã dòng hàng *</label>
                                 <select
@@ -200,6 +182,17 @@ function GoiGiaModal({
                                         <option key={dh.ID} value={dh.MA_DONG_HANG}>{dh.TEN_DONG_HANG} ({dh.MA_DONG_HANG})</option>
                                     ))}
                                 </select>
+                            </div>
+                            <div className="flex items-end">
+                                <label className="flex items-center gap-2 cursor-pointer h-9">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.HIEU_LUC}
+                                        onChange={e => handleChange('HIEU_LUC', e.target.checked as any)}
+                                        className="w-4 h-4 rounded border-input text-primary focus:ring-primary"
+                                    />
+                                    <span className="text-sm font-semibold text-muted-foreground">Còn hiệu lực</span>
+                                </label>
                             </div>
                         </div>
 
@@ -298,7 +291,6 @@ function BulkAddModal({
     onSuccess: () => void;
     dongHangOptions: DongHangOption[];
 }) {
-    const [ngayHieuLuc, setNgayHieuLuc] = useState('');
     const [rows, setRows] = useState<BulkRow[]>([{ ...emptyBulkRow }]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -308,7 +300,6 @@ function BulkAddModal({
     if (isOpen !== lastIsOpen) {
         setLastIsOpen(isOpen);
         if (isOpen) {
-            setNgayHieuLuc('');
             setRows(Array.from({ length: 10 }, () => ({ ...emptyBulkRow })));
             setError(null);
             setLoading(false);
@@ -334,7 +325,6 @@ function BulkAddModal({
 
         try {
             const payload = {
-                NGAY_HIEU_LUC: ngayHieuLuc,
                 rows: rows.map(r => ({
                     MA_DONG_HANG: r.MA_DONG_HANG,
                     GOI_GIA: r.GOI_GIA,
@@ -375,7 +365,7 @@ function BulkAddModal({
                 <div className="flex items-center justify-between p-6 border-b">
                     <div>
                         <h2 className="text-lg font-bold text-foreground">Thêm hàng loạt gói giá</h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">Chọn ngày hiệu lực chung, sau đó thêm nhiều dòng gói giá</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Thêm nhiều dòng gói giá cùng lúc</p>
                     </div>
                     <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
                         <Plus className="w-5 h-5 rotate-45" />
@@ -390,18 +380,6 @@ function BulkAddModal({
                                 <span className="whitespace-pre-line">{error}</span>
                             </div>
                         )}
-
-                        {/* Ngày hiệu lực chung */}
-                        <div className="max-w-xs">
-                            <label className={labelClass}>Ngày hiệu lực (chung cho tất cả) *</label>
-                            <input
-                                type="date"
-                                className={inputClass}
-                                value={ngayHieuLuc}
-                                onChange={e => setNgayHieuLuc(e.target.value)}
-                                required
-                            />
-                        </div>
 
                         {/* Bảng dòng */}
                         <div>
@@ -572,9 +550,9 @@ export default function GoiGiaClient({
         return [...initialData].sort((a, b) => {
             let aVal: any;
             let bVal: any;
-            if (sortConfig.key === 'NGAY_HIEU_LUC') {
-                aVal = a.NGAY_HIEU_LUC ? new Date(a.NGAY_HIEU_LUC).getTime() : 0;
-                bVal = b.NGAY_HIEU_LUC ? new Date(b.NGAY_HIEU_LUC).getTime() : 0;
+            if (sortConfig.key === 'HIEU_LUC') {
+                aVal = a.HIEU_LUC ? 1 : 0;
+                bVal = b.HIEU_LUC ? 1 : 0;
             } else {
                 aVal = (a[sortConfig.key as keyof GoiGia] || '').toString().toLowerCase();
                 bVal = (b[sortConfig.key as keyof GoiGia] || '').toString().toLowerCase();
@@ -707,7 +685,7 @@ export default function GoiGiaClient({
                             <thead>
                                 <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
                                     <th onClick={() => handleSort('ID_GOI_GIA')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Mã gói giá <SortIcon columnKey="ID_GOI_GIA" /></th>
-                                    <th onClick={() => handleSort('NGAY_HIEU_LUC')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Ngày hiệu lực <SortIcon columnKey="NGAY_HIEU_LUC" /></th>
+                                    <th onClick={() => handleSort('HIEU_LUC')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Hiệu lực <SortIcon columnKey="HIEU_LUC" /></th>
                                     <th onClick={() => handleSort('MA_DONG_HANG')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Mã dòng hàng <SortIcon columnKey="MA_DONG_HANG" /></th>
                                     <th onClick={() => handleSort('GOI_GIA')} className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Gói giá <SortIcon columnKey="GOI_GIA" /></th>
                                     <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">SL Min</th>
@@ -731,12 +709,11 @@ export default function GoiGiaClient({
                                             </div>
                                         </td>
 
-                                        {/* Ngày hiệu lực */}
+                                        {/* Hiệu lực */}
                                         <td className="p-4 align-middle">
-                                            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                                <Calendar className="w-3.5 h-3.5" />
-                                                {formatDate(row.NGAY_HIEU_LUC)}
-                                            </div>
+                                            <span className={cn("inline-flex items-center gap-1.5 text-sm font-medium px-2 py-0.5 rounded-md", row.HIEU_LUC !== false ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-red-500 bg-red-50 dark:bg-red-900/20')}>
+                                                {row.HIEU_LUC !== false ? '✅ Hiệu lực' : '❌ Hết HL'}
+                                            </span>
                                         </td>
 
                                         {/* Mã dòng hàng */}
@@ -831,7 +808,7 @@ export default function GoiGiaClient({
                                     <span className="text-sm font-bold text-emerald-600 shrink-0">{row.GOI_GIA}</span>
                                 </div>
                                 <div className="text-xs text-muted-foreground space-y-0.5">
-                                    <div>Ngày hiệu lực: <span className="text-foreground">{formatDate(row.NGAY_HIEU_LUC)}</span></div>
+                                    <div>Hiệu lực: <span className={row.HIEU_LUC !== false ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}>{row.HIEU_LUC !== false ? 'Có' : 'Không'}</span></div>
                                     <div>SL: <span className="text-foreground">{row.SL_MIN ?? '—'}</span> - <span className="text-foreground">{row.SL_MAX ?? '—'}</span></div>
                                 </div>
                                 <div className="flex items-center gap-2 pt-1 border-t">
