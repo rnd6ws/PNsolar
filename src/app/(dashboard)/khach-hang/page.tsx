@@ -1,9 +1,8 @@
 import { Metadata } from "next";
-import Link from "next/link";
 import { getKhachHangs, getPhanLoaiKH, getNguonKH, getKhachHangStats, getNVList, getNguoiGioiThieu, getLyDoTuChoi } from "@/features/khach-hang/action";
 import { getNhomKH } from "@/features/nhom-kh/action";
 import Pagination from "@/components/Pagination";
-import { Users2, UserCheck, UserX, UserCog } from "lucide-react";
+import KhachHangStatCards from "@/features/khach-hang/components/KhachHangStatCards";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import SettingKhachHangButton from "@/features/khach-hang/components/SettingKhachHangButton";
 import AddKhachHangButton from "@/features/khach-hang/components/AddKhachHangButton";
@@ -82,58 +81,8 @@ export default async function KhachHangPage({
                         </div>
                     </div>
 
-                    {/* Stat Cards (chuẩn skill) */}
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                        <Link href="/khach-hang" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-primary bg-primary/10">
-                                <Users2 className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Tổng số khách hàng</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.total}</p>
-                            </div>
-                        </Link>
-
-                        <Link href="/khach-hang?PHAN_LOAI=Khách tiềm năng" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-green-600 bg-green-500/10">
-                                <UserCheck className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Khách tiềm năng</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.tiemNang}</p>
-                            </div>
-                        </Link>
-
-                        <Link href="/khach-hang?PHAN_LOAI=Khách đang triển khai" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-orange-500 bg-orange-500/10">
-                                <UserCog className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Khách đang triển khai</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.dangTrienKhai}</p>
-                            </div>
-                        </Link>
-
-                        <Link href="/khach-hang?PHAN_LOAI=Khách đang sử dụng/ Duy trì" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-purple-600 bg-purple-500/10">
-                                <UserCheck className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Đang sử dụng/ Duy trì</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.duyTri}</p>
-                            </div>
-                        </Link>
-
-                        <Link href="/khach-hang?PHAN_LOAI=Khách không hoạt động" className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-red-500 bg-red-500/10">
-                                <UserX className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Không hoạt động</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.khongHoatDong}</p>
-                            </div>
-                        </Link>
-                    </div>
+                    {/* Stat Cards */}
+                    <KhachHangStatCards stats={stats} />
                 </div>
 
                 {/* Content Card */}

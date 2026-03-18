@@ -1,9 +1,8 @@
-import Link from "next/link";
-import { CalendarCheck2, CalendarClock, CheckCircle2, Clock3, CalendarDays, TimerOff } from "lucide-react";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import KeHoachCSPageClient from "@/features/ke-hoach-cs/components/KeHoachCSPageClient";
 import AddKeHoachButton from "@/features/ke-hoach-cs/components/AddKeHoachButton";
 import SettingKeHoachButton from "@/features/ke-hoach-cs/components/SettingKeHoachButton";
+import StatCards from "@/features/ke-hoach-cs/components/StatCards";
 import {
     getKeHoachCSKH,
     getKeHoachCSStats,
@@ -68,37 +67,6 @@ export default async function KeHoachCSPage({ searchParams }: PageProps) {
         value: l.LOAI_CS,
     }));
 
-    const statCards = [
-        {
-            label: "Tổng kế hoạch",
-            value: stats.total,
-            icon: CalendarCheck2,
-            color: "text-primary bg-primary/10",
-            filterVal: "all",
-        },
-        {
-            label: "Chờ báo cáo",
-            value: stats.choBaoCao,
-            icon: Clock3,
-            color: "text-orange-500 bg-orange-500/10",
-            filterVal: "Chờ báo cáo",
-        },
-        {
-            label: "Đã báo cáo",
-            value: stats.daBaoCao,
-            icon: CheckCircle2,
-            color: "text-green-600 bg-green-500/10",
-            filterVal: "Đã báo cáo",
-        },
-        {
-            label: "Quá hạn",
-            value: stats.quaHan,
-            icon: TimerOff,
-            color: "text-red-500 bg-red-500/10",
-            filterVal: "Quá hạn",
-        },
-    ];
-
     return (
         <PermissionGuard moduleKey="ke-hoach-cs" level="view" showNoAccess>
             <div className="space-y-6 animate-in fade-in duration-500 pb-10">
@@ -124,39 +92,7 @@ export default async function KeHoachCSPage({ searchParams }: PageProps) {
                     </div>
 
                     {/* Stat Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {statCards.map((stat) => {
-                            const isActive = stat.filterVal === "all" ? (!TRANG_THAI || TRANG_THAI === "all") : TRANG_THAI === stat.filterVal;
-                            
-                            const params = new URLSearchParams();
-                            if (query) params.set("query", query);
-                            if (LOAI_CS) params.set("LOAI_CS", LOAI_CS);
-                            if (stat.filterVal !== "all") {
-                                params.set("TRANG_THAI", stat.filterVal);
-                            }
-                            
-                            const queryStr = params.toString();
-                            const href = `/ke-hoach-cs${queryStr ? `?${queryStr}` : ""}`;
-
-                            return (
-                                <Link
-                                    key={stat.label}
-                                    href={href}
-                                    className={`bg-card border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer ${
-                                        isActive ? "border-primary ring-1 ring-primary/20" : "border-border"
-                                    }`}
-                                >
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stat.color}`}>
-                                        <stat.icon className="w-5 h-5" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm text-muted-foreground truncate">{stat.label}</p>
-                                        <p className="text-xl font-bold text-foreground leading-none mt-1 truncate">{stat.value}</p>
-                                    </div>
-                                </Link>
-                            )
-                        })}
-                    </div>
+                    <StatCards stats={stats} />
                 </div>
 
                 {/* Content Card */}

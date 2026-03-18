@@ -29,7 +29,8 @@ File này chứa TẤT CẢ các quy chuẩn UI/UX đã được chuẩn hóa tr
 - ✅ Modal & Form Styling (label không uppercase, viết hoa chữ đầu)
 - ✅ Mobile Action Dropdown (DropdownMenu + MoreHorizontal)
 - ✅ Filter qua URL (useSearchParams, KHÔNG useState)
-- ✅ **Stat Cards** (4 cards chuẩn: icon + label trên + số dưới, KHÔNG gradient)
+- ✅ **Stat Cards** (Client Component + `useTransition`, KHÔNG dùng `<Link>`)
+- ✅ **Loading Skeleton** (`loading.tsx` bắt buộc cho mỗi trang)
 - ✅ **Label viết hoa chữ đầu** (Ngày hiệu lực, KHÔNG ngày hiệu lực)
 - ✅ **Format tiền tệ** (dấu phân cách hàng nghìn, type="text" + inputMode="numeric")
 
@@ -97,10 +98,17 @@ Khi code `[Tên]PageClient.tsx` và `[Tên]List.tsx`:
   ```
 
 **Stat Cards** (giữa Header và Table Card) phải có:
+- **BẮT BUỘC** tách thành Client Component riêng (VD: `StatCards.tsx`) dùng `useTransition` + `router.replace`
+- **KHÔNG ĐƯỢC** dùng `<Link>` cho stat cards — gây delay khi click do full server re-render
 - Grid `grid-cols-2 md:grid-cols-4 gap-4` — luôn đủ **4 cards**
 - Mỗi card: icon (w-10 h-10 rounded-lg) + label `text-sm` ở **trên** + số `text-xl font-bold` ở **dưới**
 - 4 màu chuẩn: primary, orange, green, purple
+- Khi đang loading: hiển thị `Loader2 animate-spin` trên card đang active
 - **KHÔNG gradient**, **KHÔNG padding-6**
+
+**Loading Skeleton** (`loading.tsx`) bắt buộc:
+- Mỗi trang **PHẢI** có file `loading.tsx` trong thư mục route để Next.js hiển thị skeleton ngay khi URL thay đổi
+- Skeleton phải bao gồm: header, stat cards, toolbar, table rows — tất cả dùng `animate-pulse`
 
 **Xem chi tiết code mẫu tại:** `.agents/skills/create-new-feature/ui-patterns.md`
 
@@ -117,13 +125,19 @@ Trong giao diện Client (`/components/`), bạn cần sử dụng Guard:
 ### Bước 5: Tạo App Route
 Tạo `src/app/(dashboard)/[tên-tính-năng]/page.tsx` (Chỉ dùng Server Component):
 - Import và gọi các hàm fetch Data từ `action.ts`.
-- Render `<[Tên]PageClient />` ra ở đây.
+- Render `<StatCards>` (Client Component) và `<[Tên]PageClient />` ra ở đây.
 - Bọc toàn bộ trang bằng Quyền View để cấm truy cập thẳng từ Link:
   ```tsx
   <PermissionGuard moduleKey="[tên-tính-năng]" level="view" showNoAccess>
+       <StatCards stats={stats} />
        <[Tên]PageClient data={data} />
   </PermissionGuard>
   ```
+
+**BẮT BUỘC** tạo thêm file `src/app/(dashboard)/[tên-tính-năng]/loading.tsx`:
+- Hiển thị skeleton cho header, stat cards, toolbar và table rows
+- Dùng `animate-pulse` cho mọi phần tử skeleton
+- Xem code mẫu tại `ui-patterns.md` section 12
 
 ### Bước 6: Cập nhật Thanh Điều Hướng (Sidebar)
 Mở `src/components/AppSidebar.tsx` và gắn vào mảng Nav:
@@ -158,6 +172,8 @@ Khớp tên `moduleKey` và cho `available: true`.
 - CẤM dùng `uppercase` cho label trong modal/form.
 - CẤM viết label chữ thường (phải viết hoa chữ đầu: "Ngày hiệu lực" không phải "ngày hiệu lực").
 - CẤM dùng gradient card hoặc card chỉ có 1-3 cái — phải đúng 4 stat cards kiểu chuẩn.
+- CẤM dùng `<Link>` cho stat cards — phải dùng Client Component + `useTransition` + `router.replace` để tránh delay.
+- CẤM tạo trang mà KHÔNG có `loading.tsx` — mỗi route PHẢI có file loading skeleton.
 - CẤM dùng `type="number"` cho trường tiền tệ — phải dùng `type="text"` + format dấu phân cách.
 - CẤM dùng **xóa mềm** (Soft Delete / `DELETED_AT`) — toàn bộ dự án đã chuyển sang **xóa cứng** (`prisma.[model].delete()`). KHÔNG thêm field `DELETED_AT` vào schema, KHÔNG dùng `update({ data: { DELETED_AT: new Date() } })`.
 - CẤM bỏ sót **toast thông báo** — mọi thao tác Thêm/Sửa/Xóa **phải** có `toast.success()` khi thành công và `toast.error()` khi thất bại. Import từ `sonner`.
