@@ -6,7 +6,7 @@ import {
     FileText, Image as ImageIcon, Paperclip, Link2, CheckCircle2,
     TimerOff, MessageSquare, AlertCircle, Phone, ExternalLink, Download
 } from "lucide-react";
-import { getDMDichVuForCS } from "../action";
+import { getDMDichVuForCS, getCoHoiByKH } from "../action";
 import { formatFileSize } from "@/hooks/useFileUpload";
 import { getNguoiLienHeById } from "@/features/nguoi-lh/action";
 
@@ -106,6 +106,7 @@ interface Props {
 export default function KeHoachCSDetail({ item, nhanViens, onClose }: Props) {
     const [dichVuMap, setDichVuMap] = useState<Map<string, string>>(new Map());
     const [nguoiLienHe, setNguoiLienHe] = useState<{ TENNGUOI_LIENHE: string; CHUC_VU?: string | null; SDT?: string | null } | null>(null);
+    const [coHoi, setCoHoi] = useState<{ ID_CH: string; TINH_TRANG: string } | null>(null);
 
     useEffect(() => {
         // Fetch Dịch vụ quan tâm
@@ -125,7 +126,17 @@ export default function KeHoachCSDetail({ item, nhanViens, onClose }: Props) {
                 }
             });
         }
-    }, [item.ID_LH]);
+        
+        // Fetch Cơ hội
+        if (item.ID_CH && item.ID_KH) {
+            getCoHoiByKH(item.ID_KH).then((res) => {
+                if (res.success) {
+                    const ch = res.data.find((c: any) => c.ID === item.ID_CH);
+                    if (ch) setCoHoi(ch);
+                }
+            });
+        }
+    }, [item.ID_LH, item.ID_CH, item.ID_KH]);
 
     const nhanVienName = nhanViens.find((nv) => nv.ID === item.NGUOI_CS)?.HO_TEN || item.NGUOI_CS || "—";
     const dichVuIds: string[] = Array.isArray(item.DICH_VU_QT) ? item.DICH_VU_QT : [];
@@ -191,6 +202,24 @@ export default function KeHoachCSDetail({ item, nhanViens, onClose }: Props) {
                                                 </>
                                             ) : (
                                                 <p className="text-sm text-foreground">{item.ID_LH}</p>
+                                            )}
+                                        </InfoRow>
+                                    )}
+                                    {item.ID_CH && (
+                                        <InfoRow icon={FileText} label="Cơ hội liên kết">
+                                            {coHoi ? (
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <p className="text-sm font-bold text-foreground">{coHoi.ID_CH}</p>
+                                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
+                                                        coHoi.TINH_TRANG === 'Đang mở' ? 'bg-green-50 text-green-700 border-green-200' 
+                                                        : coHoi.TINH_TRANG === 'Đóng thành công' ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                        : 'bg-muted text-muted-foreground border-border'
+                                                    }`}>
+                                                        {coHoi.TINH_TRANG}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-foreground">{item.ID_CH}</p>
                                             )}
                                         </InfoRow>
                                     )}

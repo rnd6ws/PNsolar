@@ -157,45 +157,58 @@ export default function KeHoachCSList({
             : <ArrowDown className="w-3 h-3 ml-1 inline-block text-primary" />;
     };
 
-    const ActionButtons = ({ item }: { item: any }) => (
-        <>
-            {/* Xem chi tiết */}
-            <button
-                onClick={() => setViewItem(item)}
-                className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                title="Xem chi tiết"
-            >
-                <Eye className="w-3.5 h-3.5" />
-            </button>
-            <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
+    const ActionButtons = ({ item }: { item: any }) => {
+        const isCancelled = item.TRANG_THAI === "Hủy" || item.TRANG_THAI === "Đã hủy";
+        return (
+            <>
+                {/* Xem chi tiết */}
                 <button
-                    onClick={() => setBaoCaoItem(item)}
-                    className="p-1.5 rounded-lg hover:bg-green-50 text-muted-foreground hover:text-green-600 transition-colors"
-                    title="Báo cáo"
+                    onClick={() => setViewItem(item)}
+                    className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                    title="Xem chi tiết"
                 >
-                    <FileText className="w-3.5 h-3.5" />
+                    <Eye className="w-3.5 h-3.5" />
                 </button>
-            </PermissionGuard>
-            <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
-                <button
-                    onClick={() => setEditItem(item)}
-                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                    title="Chỉnh sửa"
-                >
-                    <Pencil className="w-3.5 h-3.5" />
-                </button>
-            </PermissionGuard>
-            <PermissionGuard moduleKey="ke-hoach-cs" level="delete">
-                <button
-                    onClick={() => setDeleteItem(item)}
-                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    title="Xóa"
-                >
-                    <Trash2 className="w-3.5 h-3.5" />
-                </button>
-            </PermissionGuard>
-        </>
-    );
+                <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
+                    <button
+                        onClick={() => setBaoCaoItem(item)}
+                        disabled={isCancelled}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                            isCancelled 
+                            ? "opacity-50 cursor-not-allowed text-muted-foreground bg-transparent" 
+                            : "hover:bg-green-50 text-muted-foreground hover:text-green-600"
+                        }`}
+                        title={isCancelled ? "Kế hoạch đã hủy" : "Báo cáo"}
+                    >
+                        <FileText className="w-3.5 h-3.5" />
+                    </button>
+                </PermissionGuard>
+                <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
+                    <button
+                        onClick={() => setEditItem(item)}
+                        disabled={isCancelled}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                            isCancelled 
+                            ? "opacity-50 cursor-not-allowed text-muted-foreground bg-transparent" 
+                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
+                        title={isCancelled ? "Kế hoạch đã hủy" : "Chỉnh sửa"}
+                    >
+                        <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                </PermissionGuard>
+                <PermissionGuard moduleKey="ke-hoach-cs" level="delete">
+                    <button
+                        onClick={() => setDeleteItem(item)}
+                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Xóa"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                </PermissionGuard>
+            </>
+        );
+    };
 
     if (data.length === 0) {
         return (
