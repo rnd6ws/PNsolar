@@ -18,6 +18,19 @@ export async function getNguoiLienHe(idKh: string) {
     }
 }
 
+export async function getNguoiLienHeById(id: string) {
+    try {
+        const data = await prisma.nGUOI_LIENHE.findUnique({
+            where: { ID: id },
+            select: { TENNGUOI_LIENHE: true, CHUC_VU: true, SDT: true },
+        });
+        return { success: true, data };
+    } catch (error) {
+        console.error("[getNguoiLienHeById]", error);
+        return { success: false, data: null };
+    }
+}
+
 export async function createNguoiLienHe(data: {
     ID_KH: string;
     TENNGUOI_LIENHE: string;

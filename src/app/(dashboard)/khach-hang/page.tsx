@@ -67,6 +67,7 @@ export default async function KhachHangPage({
                                     nguons={nguons as any}
                                     nhoms={nhoms as any}
                                     lyDoTuChois={lyDoTuChois as any}
+                                    nguoiGioiThieus={nguoiGioiThieus as any}
                                 />
                             </PermissionGuard>
                             <PermissionGuard moduleKey="khach-hang" level="add">

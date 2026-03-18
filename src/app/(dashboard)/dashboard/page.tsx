@@ -11,6 +11,7 @@ import {
     CreditCard, Wallet, PieChart, Bell,
     UserCheck, Calendar, Shield, HelpCircle,
     Layers, Archive, Map, DollarSign, Target,
+    CalendarCheck2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/features/phan-quyen/PermissionContext";
@@ -65,6 +66,16 @@ const moduleGroups: ModuleGroup[] = [
                 bgColor: "bg-orange-50 dark:bg-orange-950/50",
                 available: true,
                 moduleKey: "co-hoi",
+            },
+            {
+                name: "Kế hoạch chăm sóc",
+                description: "Lập kế hoạch & theo dõi chăm sóc khách hàng.",
+                href: "/ke-hoach-cs",
+                icon: CalendarCheck2,
+                color: "text-teal-600",
+                bgColor: "bg-teal-50 dark:bg-teal-950/50",
+                available: true,
+                moduleKey: "ke-hoach-cs",
             },
             {
                 name: "Chấm công",

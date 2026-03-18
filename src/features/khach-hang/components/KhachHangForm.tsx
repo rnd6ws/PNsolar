@@ -321,7 +321,9 @@ export function KhachHangForm({
                 </div>
             </div>
 
-            {/* Row 5: Nhóm KH & Phân loại */}
+            {/* Tách Form: Nhóm KH và Nguồn chung hàng, Người giới thiệu nằm riêng hàng dưới */}
+            <input type="hidden" name="PHAN_LOAI" value={defaultValues?.PHAN_LOAI || "Chưa thẩm định"} />
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-muted-foreground">Nhóm KH</label>
@@ -332,19 +334,6 @@ export function KhachHangForm({
                         placeholder="-- Chọn nhóm --"
                     />
                 </div>
-                <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-muted-foreground">Phân loại</label>
-                    <FormSelect
-                        name="PHAN_LOAI"
-                        defaultValue={defaultValues?.PHAN_LOAI || ""}
-                        options={phanLoais.map((p) => ({ label: p.PL_KH, value: p.PL_KH }))}
-                        placeholder="-- Chọn phân loại --"
-                    />
-                </div>
-            </div>
-
-            {/* Row 6: Nguồn & Người giới thiệu */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-muted-foreground">Nguồn</label>
                     <FormSelect
@@ -358,87 +347,75 @@ export function KhachHangForm({
                         placeholder="-- Chọn nguồn --"
                     />
                 </div>
-
-                {selectedNguon === CTV_NGUON ? (
-                    <div key="ngt-ctv" className="space-y-1.5">
-                        <label className="text-sm font-semibold text-muted-foreground">
-                            Người giới thiệu <span className="text-destructive">*</span>
-                        </label>
-                        <input type="hidden" name="NGUOI_GIOI_THIEU" value={selectedNgtId} />
-                        <div className="relative" ref={ngtRef}>
-                            <button
-                                type="button"
-                                onClick={() => { setNgtOpen(prev => !prev); setNgtSearch(""); setShowQuickAdd(false); }}
-                                className="input-modern w-full flex items-center justify-between gap-2 text-left"
-                            >
-                                <span className={selectedNgt ? "text-foreground" : "text-muted-foreground/60 text-sm"}>
-                                    {selectedNgt ? <>{selectedNgt.TEN_NGT}{selectedNgt.SO_DT_NGT && <span className="ml-1.5 text-xs text-muted-foreground">({selectedNgt.SO_DT_NGT})</span>}</> : "-- Chọn người giới thiệu --"}
-                                </span>
-                                <div className="flex items-center gap-1 shrink-0">
-                                    {selectedNgtId && (
-                                        <span role="button" onClick={(e) => { e.stopPropagation(); setSelectedNgtId(""); }} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors">
-                                            <X className="w-3.5 h-3.5" />
-                                        </span>
-                                    )}
-                                    {ngtOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                                </div>
-                            </button>
-
-                            {ngtOpen && (
-                                <div className="absolute z-50 bottom-full left-0 right-0 mb-1 bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-1 duration-150">
-                                    <div className="p-2 border-b border-border">
-                                        <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/50 rounded-lg">
-                                            <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                            <input autoFocus type="text" placeholder="Tìm theo tên hoặc SĐT..." value={ngtSearch} onChange={(e) => setNgtSearch(e.target.value)} className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted-foreground/60" />
-                                        </div>
-                                    </div>
-                                    <div className="max-h-48 overflow-y-auto">
-                                        {filteredNgts.length === 0 ? (
-                                            <p className="text-center text-sm text-muted-foreground py-4">Không tìm thấy</p>
-                                        ) : filteredNgts.map(ngt => (
-                                            <button key={ngt.ID} type="button" onClick={() => { setSelectedNgtId(ngt.ID); setNgtOpen(false); setNgtSearch(""); }} className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-primary/5 transition-colors ${selectedNgtId === ngt.ID ? "bg-primary/10 text-primary font-semibold" : "text-foreground"}`}>
-                                                <span>{ngt.TEN_NGT}</span>
-                                                {ngt.SO_DT_NGT && <span className="text-xs text-muted-foreground shrink-0">{ngt.SO_DT_NGT}</span>}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="border-t border-border p-2">
-                                        {!showQuickAdd ? (
-                                            <button type="button" onClick={() => setShowQuickAdd(true)} className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5 rounded-lg transition-colors">
-                                                <UserPlus className="w-4 h-4" /> Thêm người giới thiệu mới
-                                            </button>
-                                        ) : (
-                                            <div className="space-y-2 pt-1">
-                                                <p className="text-sm font-semibold text-muted-foreground px-1">Thêm nhanh</p>
-                                                <input type="text" placeholder="Tên người giới thiệu *" value={quickAddName} onChange={(e) => setQuickAddName(e.target.value)} className="input-modern text-sm" />
-                                                <input type="text" placeholder="Số điện thoại" value={quickAddPhone} onChange={(e) => setQuickAddPhone(e.target.value)} className="input-modern text-sm" />
-                                                <div className="flex gap-2">
-                                                    <button type="button" onClick={() => { setShowQuickAdd(false); setQuickAddName(""); setQuickAddPhone(""); }} className="btn-premium-secondary flex-1 text-sm">Hủy</button>
-                                                    <button type="button" onClick={handleQuickAdd} disabled={quickAddLoading} className="btn-premium-primary flex-1 text-sm flex items-center justify-center gap-1.5">
-                                                        {quickAddLoading ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <><Plus className="w-3.5 h-3.5" />Thêm</>}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <div key="ngt-text" className="space-y-1.5">
-                        <label className="text-sm font-semibold text-muted-foreground">Người giới thiệu</label>
-                        <input
-                            disabled={true}
-                            name="NGUOI_GIOI_THIEU"
-                            className="input-modern"
-                            placeholder="Tên người giới thiệu"
-                            value={nguoiGioiThieuText}
-                            onChange={(e) => setNguoiGioiThieuText(e.target.value)}
-                        />
-                    </div>
-                )}
             </div>
+
+            {selectedNguon === CTV_NGUON && (
+                <div key="ngt-ctv" className="space-y-1.5">
+                    <label className="text-sm font-semibold text-muted-foreground">
+                        Người giới thiệu <span className="text-destructive">*</span>
+                    </label>
+                    <input type="hidden" name="NGUOI_GIOI_THIEU" value={selectedNgtId} />
+                    <div className="relative" ref={ngtRef}>
+                        <button
+                            type="button"
+                            onClick={() => { setNgtOpen(prev => !prev); setNgtSearch(""); setShowQuickAdd(false); }}
+                            className="input-modern w-full flex items-center justify-between gap-2 text-left"
+                        >
+                            <span className={selectedNgt ? "text-foreground" : "text-muted-foreground/60 text-sm"}>
+                                {selectedNgt ? <>{selectedNgt.TEN_NGT}{selectedNgt.SO_DT_NGT && <span className="ml-1.5 text-xs text-muted-foreground">({selectedNgt.SO_DT_NGT})</span>}</> : "-- Chọn người giới thiệu --"}
+                            </span>
+                            <div className="flex items-center gap-1 shrink-0">
+                                {selectedNgtId && (
+                                    <span role="button" onClick={(e) => { e.stopPropagation(); setSelectedNgtId(""); }} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors">
+                                        <X className="w-3.5 h-3.5" />
+                                    </span>
+                                )}
+                                {ngtOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                            </div>
+                        </button>
+
+                        {ngtOpen && (
+                            <div className="absolute z-50 bottom-full left-0 right-0 mb-1 bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-1 duration-150">
+                                <div className="p-2 border-b border-border">
+                                    <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/50 rounded-lg">
+                                        <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                        <input autoFocus type="text" placeholder="Tìm theo tên hoặc SĐT..." value={ngtSearch} onChange={(e) => setNgtSearch(e.target.value)} className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted-foreground/60" />
+                                    </div>
+                                </div>
+                                <div className="max-h-48 overflow-y-auto">
+                                    {filteredNgts.length === 0 ? (
+                                        <p className="text-center text-sm text-muted-foreground py-4">Không tìm thấy</p>
+                                    ) : filteredNgts.map(ngt => (
+                                        <button key={ngt.ID} type="button" onClick={() => { setSelectedNgtId(ngt.ID); setNgtOpen(false); setNgtSearch(""); }} className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-primary/5 transition-colors ${selectedNgtId === ngt.ID ? "bg-primary/10 text-primary font-semibold" : "text-foreground"}`}>
+                                            <span>{ngt.TEN_NGT}</span>
+                                            {ngt.SO_DT_NGT && <span className="text-xs text-muted-foreground shrink-0">{ngt.SO_DT_NGT}</span>}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="border-t border-border p-2">
+                                    {!showQuickAdd ? (
+                                        <button type="button" onClick={() => setShowQuickAdd(true)} className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5 rounded-lg transition-colors">
+                                            <UserPlus className="w-4 h-4" /> Thêm người giới thiệu mới
+                                        </button>
+                                    ) : (
+                                        <div className="space-y-2 pt-1">
+                                            <p className="text-sm font-semibold text-muted-foreground px-1">Thêm nhanh</p>
+                                            <input type="text" placeholder="Tên người giới thiệu *" value={quickAddName} onChange={(e) => setQuickAddName(e.target.value)} className="input-modern text-sm" />
+                                            <input type="text" placeholder="Số điện thoại" value={quickAddPhone} onChange={(e) => setQuickAddPhone(e.target.value)} className="input-modern text-sm" />
+                                            <div className="flex gap-2">
+                                                <button type="button" onClick={() => { setShowQuickAdd(false); setQuickAddName(""); setQuickAddPhone(""); }} className="btn-premium-secondary flex-1 text-sm">Hủy</button>
+                                                <button type="button" onClick={handleQuickAdd} disabled={quickAddLoading} className="btn-premium-primary flex-1 text-sm flex items-center justify-center gap-1.5">
+                                                    {quickAddLoading ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <><Plus className="w-3.5 h-3.5" />Thêm</>}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Row 7: Sales phụ trách & NV chăm sóc */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

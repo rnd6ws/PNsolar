@@ -242,6 +242,7 @@ model KHTN {
   NGUOI_DAI_DIEN NGUOI_DAI_DIEN[]
   NGUOI_LIENHE   NGUOI_LIENHE[]
   CO_HOI         CO_HOI[]
+  KEHOACH_CSKH   KEHOACH_CSKH[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -425,4 +426,60 @@ model GIA_BAN {
   @@index([NHOM_KH, NHOM_HH, MA_HH])
   @@fulltext([MA_HH, TEN_HH, NHOM_KH, NHOM_HH, GOI_GIA])
   @@map("GIA_BAN")
+}
+
+// ===== LOẠI CHĂM SÓC (Care Type) =====
+model LOAI_CHAM_SOC {
+  ID      String @id @default(auto()) @map("_id") @db.ObjectId
+  LOAI_CS String @unique
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("LOAI_CHAM_SOC")
+}
+
+// ===== KẾT QUẢ CHĂM SÓC (Care Result) =====
+model KET_QUA_CS {
+  ID    String @id @default(auto()) @map("_id") @db.ObjectId
+  KQ_CS String @unique
+  XL_CS String?
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("KET_QUA_CS")
+}
+
+// ===== KẾ HOẠCH CHĂM SÓC KHÁCH HÀNG =====
+model KEHOACH_CSKH {
+  ID         String    @id @default(auto()) @map("_id") @db.ObjectId
+  ID_KH      String    @db.ObjectId
+  KH         KHTN      @relation(fields: [ID_KH], references: [ID])
+  ID_LH      String?   // Người liên hệ (NGUOI_LIENHE.ID)
+  ID_CH      String?   // Cơ hội (CO_HOI.ID)
+  LOAI_CS    String?   // Loại chăm sóc
+  TG_TU      DateTime? // Thời gian từ
+  TG_DEN     DateTime? // Thời gian đến
+  HINH_THUC  String?   // Online / Trực tiếp
+  DIA_DIEM   String?
+  NGUOI_CS   String?   // Người chăm sóc (DSNV.ID)
+  NGAY_CS_TT DateTime? // Ngày chăm sóc thực tế
+  HINH_ANH   String?
+  FILE       String?
+  LINK_BC    String?   // Link báo cáo
+  DICH_VU_QT Json?     // Dịch vụ quan tâm (mảng DMHH.ID)
+  KQ_CS      String?   // Kết quả
+  XL_CS      String?   // Xử lý
+  NOI_DUNG_TD String?  // Nội dung trao đổi
+  LY_DO_TC   String?   // Lý do từ chối
+  GHI_CHU_NC String?   // Ghi chú nội bộ
+  TRANG_THAI String    @default("Chờ báo cáo")
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([ID_KH])
+  @@index([TRANG_THAI])
+  @@map("KEHOACH_CSKH")
 }
