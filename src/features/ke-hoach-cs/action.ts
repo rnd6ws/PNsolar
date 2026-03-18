@@ -27,7 +27,13 @@ export async function getKeHoachCSKH(filters: {
         });
     }
 
-    if (TRANG_THAI && TRANG_THAI !== "all") andConditions.push({ TRANG_THAI });
+    if (TRANG_THAI && TRANG_THAI !== "all") {
+        if (TRANG_THAI === "Quá hạn") {
+            andConditions.push({ TRANG_THAI: "Chờ báo cáo", TG_DEN: { lt: new Date() } });
+        } else {
+            andConditions.push({ TRANG_THAI });
+        }
+    }
     if (LOAI_CS && LOAI_CS !== "all") andConditions.push({ LOAI_CS });
 
     if (andConditions.length > 0) where.AND = andConditions;
@@ -46,9 +52,24 @@ export async function getKeHoachCSKH(filters: {
             prisma.kEHOACH_CSKH.count({ where }),
         ]);
 
+        const validLhIds = Array.from(new Set(data.map((d) => d.ID_LH).filter(Boolean))) as string[];
+        let lhMap: Record<string, any> = {};
+        if (validLhIds.length > 0) {
+            const nguoiLienHes = await prisma.nGUOI_LIENHE.findMany({
+                where: { ID: { in: validLhIds } },
+                select: { ID: true, TENNGUOI_LIENHE: true, CHUC_VU: true, SDT: true },
+            });
+            lhMap = Object.fromEntries(nguoiLienHes.map((n) => [n.ID, n]));
+        }
+
+        const mappedData = data.map((d) => ({
+            ...d,
+            NGUOI_LH: d.ID_LH ? lhMap[d.ID_LH] || null : null,
+        }));
+
         return {
             success: true,
-            data,
+            data: mappedData,
             pagination: {
                 page,
                 limit,
@@ -67,17 +88,16 @@ export async function getKeHoachCSStats() {
         const total = await prisma.kEHOACH_CSKH.count();
         const choBaoCao = await prisma.kEHOACH_CSKH.count({ where: { TRANG_THAI: "Chờ báo cáo" } });
         const daBaoCao = await prisma.kEHOACH_CSKH.count({ where: { TRANG_THAI: "Đã báo cáo" } });
-        const thangNay = await prisma.kEHOACH_CSKH.count({
+        const quaHan = await prisma.kEHOACH_CSKH.count({
             where: {
-                CREATED_AT: {
-                    gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-                },
+                TRANG_THAI: "Chờ báo cáo",
+                TG_DEN: { lt: new Date() }
             },
         });
 
-        return { total, choBaoCao, daBaoCao, thangNay };
+        return { total, choBaoCao, daBaoCao, quaHan };
     } catch (error) {
-        return { total: 0, choBaoCao: 0, daBaoCao: 0, thangNay: 0 };
+        return { total: 0, choBaoCao: 0, daBaoCao: 0, quaHan: 0 };
     }
 }
 
@@ -156,6 +176,19 @@ export async function submitBaoCaoCS(id: string, data: any) {
         return { success: true };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi nộp báo cáo" };
+    }
+}
+
+export async function cancelKeHoachCS(id: string) {
+    try {
+        await prisma.kEHOACH_CSKH.update({
+            where: { ID: id },
+            data: { TRANG_THAI: "Hủy" },
+        });
+        revalidatePath("/ke-hoach-cs");
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, message: error.message || "Lỗi hủy kế hoạch" };
     }
 }
 
@@ -254,7 +287,7 @@ export async function searchKhachHangForCS(query: string) {
                     { TEN_VT: { contains: query, mode: "insensitive" } },
                 ],
             },
-            select: { ID: true, TEN_KH: true, TEN_VT: true },
+            select: { ID: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true },
             take: 15,
             orderBy: { TEN_KH: "asc" },
         });
@@ -269,7 +302,7 @@ export async function getNguoiLienHeByKH(idKh: string) {
         const data = await prisma.nGUOI_LIENHE.findMany({
             where: { ID_KH: idKh, HIEU_LUC: "Đang hiệu lực" },
             select: { ID: true, TENNGUOI_LIENHE: true, CHUC_VU: true, SDT: true },
-            orderBy: { TENNGUOI_LIENHE: "asc" },
+            orderBy: { CREATED_AT: "desc" },
         });
         return { success: true, data };
     } catch {

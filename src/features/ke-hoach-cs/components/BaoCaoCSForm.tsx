@@ -10,12 +10,12 @@ import { formatFileSize } from "@/hooks/useFileUpload";
 // Helper: icon + màu theo ext
 function getFileStyle(name: string): { label: string; color: string } {
     const ext = name.split(".").pop()?.toLowerCase() || "";
-    if (["pdf"].includes(ext))          return { label: "PDF",   color: "text-red-500 bg-red-50 border-red-200" };
-    if (["doc", "docx"].includes(ext)) return { label: "WORD",  color: "text-blue-600 bg-blue-50 border-blue-200" };
+    if (["pdf"].includes(ext)) return { label: "PDF", color: "text-red-500 bg-red-50 border-red-200" };
+    if (["doc", "docx"].includes(ext)) return { label: "WORD", color: "text-blue-600 bg-blue-50 border-blue-200" };
     if (["xls", "xlsx"].includes(ext)) return { label: "EXCEL", color: "text-green-600 bg-green-50 border-green-200" };
-    if (["ppt", "pptx"].includes(ext)) return { label: "PPT",   color: "text-orange-500 bg-orange-50 border-orange-200" };
-    if (["csv"].includes(ext))          return { label: "CSV",   color: "text-teal-600 bg-teal-50 border-teal-200" };
-    if (["txt"].includes(ext))          return { label: "TXT",   color: "text-muted-foreground bg-muted/40 border-border" };
+    if (["ppt", "pptx"].includes(ext)) return { label: "PPT", color: "text-orange-500 bg-orange-50 border-orange-200" };
+    if (["csv"].includes(ext)) return { label: "CSV", color: "text-teal-600 bg-teal-50 border-teal-200" };
+    if (["txt"].includes(ext)) return { label: "TXT", color: "text-muted-foreground bg-muted/40 border-border" };
     return { label: ext.toUpperCase() || "FILE", color: "text-muted-foreground bg-muted/40 border-border" };
 }
 
@@ -249,12 +249,12 @@ export default function BaoCaoCSForm({ item, ketQuaList, lyDoList, onSuccess, on
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground">Xử lý</label>
+                            <label className="text-sm font-semibold text-muted-foreground">Xếp loại</label>
                             <input
                                 type="text"
                                 value={xlCS}
                                 onChange={(e) => setXlCS(e.target.value)}
-                                placeholder="Hướng xử lý..."
+                                placeholder="Xếp loại..."
                                 className="input-modern"
                             />
                         </div>

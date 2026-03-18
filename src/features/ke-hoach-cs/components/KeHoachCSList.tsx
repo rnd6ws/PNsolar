@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
     ArrowUpDown, ArrowUp, ArrowDown,
     Pencil, Trash2, FileText, MoreHorizontal,
-    Clock, MapPin, User, CheckCircle2, TimerOff, ChevronDown, ChevronRight, Eye
+    Clock, MapPin, User, CheckCircle2, TimerOff, ChevronDown, ChevronRight, Eye, XCircle
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PermissionGuard, usePermissions } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
-import { deleteKeHoachCS } from "../action";
+import { deleteKeHoachCS, cancelKeHoachCS } from "../action";
 import type { ColumnKey } from "./ColumnToggleButton";
 import KeHoachCSForm from "./KeHoachCSForm";
 import BaoCaoCSForm from "./BaoCaoCSForm";
@@ -35,6 +35,8 @@ interface Props {
 const TRANG_THAI_COLORS: Record<string, string> = {
     "Chờ báo cáo": "bg-amber-100 text-amber-700 border-amber-200",
     "Đã báo cáo": "bg-green-100 text-green-700 border-green-200",
+    "Đã hủy": "bg-red-100 text-red-700 border-red-200",
+    "Hủy": "bg-red-100 text-red-700 border-red-200",
 };
 
 const formatDateTime = (d: any) => {
@@ -58,11 +60,12 @@ const getNVName = (id: string, nhanViens: any[]) => {
 export default function KeHoachCSList({
     data, nhanViens, loaiCSList, ketQuaList, lyDoList, currentUserId, visibleColumns, groupBy,
 }: Props) {
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>({ key: "TG_TU", direction: "desc" });
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
     const [baoCaoItem, setBaoCaoItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
+    const [cancelItem, setCancelItem] = useState<any>(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
@@ -96,6 +99,12 @@ export default function KeHoachCSList({
             } else if (sortConfig.key === "khachHang") {
                 aVal = (a.KH?.TEN_KH || "").toLowerCase();
                 bVal = (b.KH?.TEN_KH || "").toLowerCase();
+            } else if (sortConfig.key === "NGUOI_CS") {
+                aVal = getNVName(a.NGUOI_CS, nhanViens).toLowerCase();
+                bVal = getNVName(b.NGUOI_CS, nhanViens).toLowerCase();
+            } else if (sortConfig.key === "DICH_VU_QT") {
+                aVal = Array.isArray(a.DICH_VU_QT) ? a.DICH_VU_QT.length : 0;
+                bVal = Array.isArray(b.DICH_VU_QT) ? b.DICH_VU_QT.length : 0;
             } else {
                 aVal = (a[sortConfig.key] || "").toString().toLowerCase();
                 bVal = (b[sortConfig.key] || "").toString().toLowerCase();
@@ -104,7 +113,7 @@ export default function KeHoachCSList({
             if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
             return 0;
         });
-    }, [data, sortConfig]);
+    }, [data, sortConfig, nhanViens]);
 
     const groupedData = useMemo(() => {
         if (!groupBy || groupBy === "none") {
@@ -200,9 +209,9 @@ export default function KeHoachCSList({
 
     return (
         <>
-            {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
-                <table className="w-full text-left border-collapse text-[13px]">
+            {/* Desktop & Mobile Table (User Request: Use table for all devices) */}
+            <div className="overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse text-[13px] whitespace-nowrap">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
                             <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-8">#</th>
@@ -215,27 +224,52 @@ export default function KeHoachCSList({
                                 </th>
                             )}
                             {visibleColumns.includes("loaiCS") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px]">Loại CS</th>
+                                <th
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    onClick={() => handleSort("LOAI_CS")}
+                                >
+                                    Loại CS <SortIcon columnKey="LOAI_CS" />
+                                </th>
                             )}
                             {visibleColumns.includes("thoiGian") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground"
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
                                     onClick={() => handleSort("TG_TU")}
                                 >
                                     Thời gian <SortIcon columnKey="TG_TU" />
                                 </th>
                             )}
                             {visibleColumns.includes("hinhThuc") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px]">Hình thức</th>
+                                <th
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    onClick={() => handleSort("HINH_THUC")}
+                                >
+                                    Hình thức <SortIcon columnKey="HINH_THUC" />
+                                </th>
                             )}
                             {visibleColumns.includes("nguoiCS") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px]">Người CS</th>
+                                <th
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    onClick={() => handleSort("NGUOI_CS")}
+                                >
+                                    Người CS <SortIcon columnKey="NGUOI_CS" />
+                                </th>
                             )}
                             {visibleColumns.includes("dichVuQT") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px]">Dịch vụ QT</th>
+                                <th
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    onClick={() => handleSort("DICH_VU_QT")}
+                                >
+                                    Dịch vụ QT <SortIcon columnKey="DICH_VU_QT" />
+                                </th>
                             )}
                             {visibleColumns.includes("trangThai") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px]">Trạng thái</th>
+                                <th
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    onClick={() => handleSort("TRANG_THAI")}
+                                >
+                                    Trạng thái <SortIcon columnKey="TRANG_THAI" />
+                                </th>
                             )}
                             <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">Thao tác</th>
                         </tr>
@@ -272,20 +306,27 @@ export default function KeHoachCSList({
                                             {visibleColumns.includes("khachHang") && (
                                                 <td className="px-4 py-3">
                                                     <div className="font-semibold text-foreground text-[13px]">{item.KH?.TEN_KH}</div>
-                                                    {item.KH?.TEN_VT && <div className="text-xs text-muted-foreground">{item.KH.TEN_VT}</div>}
+                                                    {item.NGUOI_LH ? (
+                                                        <div className="text-xs text-muted-foreground mt-0.5">
+                                                            {item.NGUOI_LH.TENNGUOI_LIENHE}
+                                                            {item.NGUOI_LH.CHUC_VU && <span> - {item.NGUOI_LH.CHUC_VU}</span>}
+                                                        </div>
+                                                    ) : item.KH?.TEN_VT ? (
+                                                        <div className="text-xs text-muted-foreground mt-0.5">{item.KH.TEN_VT}</div>
+                                                    ) : null}
                                                 </td>
                                             )}
                                             {visibleColumns.includes("loaiCS") && (
-                                                <td className="px-4 py-3 text-sm text-muted-foreground">{item.LOAI_CS || "—"}</td>
+                                                <td className="px-4 py-3 text-sm text-muted-foreground text-center">{item.LOAI_CS || "—"}</td>
                                             )}
                                             {visibleColumns.includes("thoiGian") && (
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 text-center">
                                                     <div className="text-xs text-foreground">{formatDateTime(item.TG_TU)}</div>
                                                     <div className="text-xs text-muted-foreground">→ {formatDateTime(item.TG_DEN)}</div>
                                                 </td>
                                             )}
                                             {visibleColumns.includes("hinhThuc") && (
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 text-center">
                                                     {item.HINH_THUC ? (
                                                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${item.HINH_THUC === "Online"
                                                             ? "bg-blue-50 text-blue-700 border-blue-200"
@@ -297,25 +338,46 @@ export default function KeHoachCSList({
                                                 </td>
                                             )}
                                             {visibleColumns.includes("nguoiCS") && (
-                                                <td className="px-4 py-3 text-sm text-muted-foreground">
+                                                <td className="px-4 py-3 text-sm text-muted-foreground text-center">
                                                     {getNVName(item.NGUOI_CS, nhanViens)}
                                                 </td>
                                             )}
                                             {visibleColumns.includes("dichVuQT") && (
-                                                <td className="px-4 py-3 text-xs text-muted-foreground">
+                                                <td className="px-4 py-3 text-xs text-muted-foreground text-center">
                                                     {Array.isArray(item.DICH_VU_QT) && item.DICH_VU_QT.length > 0
                                                         ? `${item.DICH_VU_QT.length} dịch vụ`
                                                         : "—"}
                                                 </td>
                                             )}
                                             {visibleColumns.includes("trangThai") && (
-                                                <td className="px-4 py-3">
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${TRANG_THAI_COLORS[item.TRANG_THAI] || "bg-muted text-muted-foreground border-border"}`}>
-                                                        {item.TRANG_THAI === "Đã báo cáo"
-                                                            ? <CheckCircle2 className="w-3 h-3" />
-                                                            : <TimerOff className="w-3 h-3" />}
-                                                        {item.TRANG_THAI}
-                                                    </span>
+                                                <td className="px-4 py-3 text-center">
+                                                    <div className="inline-flex flex-col items-center gap-1">
+                                                        <div className="flex items-center gap-1">
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${TRANG_THAI_COLORS[item.TRANG_THAI] || "bg-muted text-muted-foreground border-border"}`}>
+                                                                {item.TRANG_THAI === "Đã báo cáo"
+                                                                    ? <CheckCircle2 className="w-3 h-3" />
+                                                                    : (item.TRANG_THAI === "Đã hủy" || item.TRANG_THAI === "Hủy")
+                                                                        ? <XCircle className="w-3 h-3" />
+                                                                        : <TimerOff className="w-3 h-3" />}
+                                                                {item.TRANG_THAI}
+                                                            </span>
+                                                            {item.TRANG_THAI === "Chờ báo cáo" && (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); setCancelItem(item); }}
+                                                                    className="p-1 rounded-full text-muted-foreground hover:bg-red-100 hover:text-red-600 transition-colors shrink-0"
+                                                                    title="Chuyển sang Hủy"
+                                                                >
+                                                                    <XCircle className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        {item.TRANG_THAI === "Chờ báo cáo" && item.TG_DEN && new Date() > new Date(item.TG_DEN) && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-red-100 text-red-600 border-red-200">
+                                                                <TimerOff className="w-3 h-3" />
+                                                                Quá hạn
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             )}
                                             <td className="px-4 py-3">
@@ -330,115 +392,6 @@ export default function KeHoachCSList({
                         })}
                     </tbody>
                 </table>
-            </div>
-
-            {/* Mobile Cards */}
-            <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-                {groupedData.map((group, gIdx) => {
-                    const isExpanded = expandedGroups[group.label] || false;
-                    return (
-                        <div key={gIdx} className="flex flex-col gap-4">
-                            {group.label && (
-                                <button
-                                    onClick={() => toggleGroup(group.label)}
-                                    className="flex items-center justify-between w-full mt-2 first:mt-0 text-left bg-primary/5 hover:bg-primary/10 border border-primary/10 px-3 py-2.5 rounded-lg transition-colors"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                                        <span className="font-bold text-foreground text-sm">{group.label}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-xs font-medium shrink-0">
-                                        <span className="text-muted-foreground">Tổng: {group.total}</span>
-                                        <span className="text-green-600">Xong: {group.hoanThanh}</span>
-                                        {group.huy > 0 && <span className="text-red-500">Hủy: {group.huy}</span>}
-                                    </div>
-                                </button>
-                            )}
-                            {(!group.label || isExpanded) && group.items.map((item) => (
-                                <div key={item.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div>
-                                            <div className="font-bold text-foreground text-sm">{item.KH?.TEN_KH}</div>
-                                            {item.KH?.TEN_VT && <div className="text-xs text-muted-foreground">{item.KH.TEN_VT}</div>}
-                                        </div>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${TRANG_THAI_COLORS[item.TRANG_THAI] || "bg-muted text-muted-foreground border-border"}`}>
-                                                {item.TRANG_THAI === "Đã báo cáo" ? <CheckCircle2 className="w-3 h-3" /> : <TimerOff className="w-3 h-3" />}
-                                                {item.TRANG_THAI}
-                                            </span>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
-                                                        <MoreHorizontal className="w-4 h-4" />
-                                                    </button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-36 rounded-xl">
-                                                    <DropdownMenuItem onClick={() => setViewItem(item)}>
-                                                        <Eye className="w-3.5 h-3.5 mr-2" /> Xem chi tiết
-                                                    </DropdownMenuItem>
-                                                    {canEditCS && (
-                                                        <DropdownMenuItem onClick={() => setBaoCaoItem(item)}>
-                                                            <FileText className="w-3.5 h-3.5 mr-2" /> Báo cáo
-                                                        </DropdownMenuItem>
-                                                    )}
-                                                    {canEditCS && (
-                                                        <DropdownMenuItem onClick={() => setEditItem(item)}>
-                                                            <Pencil className="w-3.5 h-3.5 mr-2" /> Chỉnh sửa
-                                                        </DropdownMenuItem>
-                                                    )}
-                                                    {canDeleteCS && (
-                                                        <DropdownMenuItem
-                                                            className="text-destructive"
-                                                            onClick={() => setDeleteItem(item)}
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Xóa
-                                                        </DropdownMenuItem>
-                                                    )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                        {item.LOAI_CS && (
-                                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                                                <Clock className="w-3 h-3 shrink-0" />
-                                                <span>{item.LOAI_CS}</span>
-                                            </div>
-                                        )}
-                                        {item.HINH_THUC && (
-                                            <div>
-                                                <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium border ${item.HINH_THUC === "Online"
-                                                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                    : "bg-purple-50 text-purple-700 border-purple-200"
-                                                    }`}>
-                                                    {item.HINH_THUC}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {item.DIA_DIEM && (
-                                            <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
-                                                <MapPin className="w-3 h-3 shrink-0" />
-                                                <span className="truncate">{item.DIA_DIEM}</span>
-                                            </div>
-                                        )}
-                                        {item.NGUOI_CS && (
-                                            <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
-                                                <User className="w-3 h-3 shrink-0" />
-                                                <span>{getNVName(item.NGUOI_CS, nhanViens)}</span>
-                                            </div>
-                                        )}
-                                        <div className="col-span-2 pt-1 border-t border-border">
-                                            <div className="text-muted-foreground">
-                                                {formatDateTime(item.TG_TU)} → {formatDateTime(item.TG_DEN)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    );
-                })}
             </div>
 
             {/* Modals */}
@@ -482,6 +435,22 @@ export default function KeHoachCSList({
                 itemName={deleteItem?.KH?.TEN_KH}
                 itemDetail={`Thời gian: ${formatDateTime(deleteItem?.TG_TU)}`}
                 confirmText="Xóa kế hoạch"
+            />
+            <DeleteConfirmDialog
+                isOpen={!!cancelItem}
+                onClose={() => setCancelItem(null)}
+                onConfirm={async () => {
+                    const result = await cancelKeHoachCS(cancelItem.ID);
+                    if (result.success) toast.success("Đã hủy kế hoạch!");
+                    else toast.error(result.message);
+                    handleSuccess();
+                    return result;
+                }}
+                title="Xác nhận hủy kế hoạch"
+                description="Bạn có chắc chắn muốn hủy kế hoạch này không?"
+                itemName={cancelItem?.KH?.TEN_KH}
+                itemDetail={`Thời gian: ${formatDateTime(cancelItem?.TG_TU)}`}
+                confirmText="Xác nhận Hủy"
             />
         </>
     );

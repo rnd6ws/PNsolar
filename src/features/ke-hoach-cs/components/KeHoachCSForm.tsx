@@ -111,11 +111,30 @@ export default function KeHoachCSForm({
     // Load lien he & co hoi khi chon KH
     useEffect(() => {
         if (selectedKH?.ID) {
+            const shouldAutoSelect = !isEdit || selectedKH.ID !== item?.ID_KH;
+            
             getNguoiLienHeByKH(selectedKH.ID).then((r) => {
-                if (r.success) setNguoiLienHes(r.data);
+                if (r.success) {
+                    setNguoiLienHes(r.data);
+                    if (shouldAutoSelect && r.data.length > 0) {
+                        setIdLH(r.data[0].ID);
+                    } else if (shouldAutoSelect) {
+                        setIdLH("");
+                    }
+                }
             });
             getCoHoiByKH(selectedKH.ID).then((r) => {
-                if (r.success) setCoHois(r.data);
+                if (r.success) {
+                    setCoHois(r.data);
+                    if (shouldAutoSelect) {
+                        const openCH = r.data.find((c: any) => c.TINH_TRANG === "Đang mở");
+                        if (openCH) {
+                            setIdCH(openCH.ID);
+                        } else {
+                            setIdCH("");
+                        }
+                    }
+                }
             });
         } else {
             setNguoiLienHes([]);
@@ -123,7 +142,7 @@ export default function KeHoachCSForm({
             setIdLH("");
             setIdCH("");
         }
-    }, [selectedKH?.ID]);
+    }, [selectedKH?.ID, isEdit, item?.ID_KH]);
 
     // Search KH
     useEffect(() => {
@@ -272,10 +291,19 @@ export default function KeHoachCSForm({
                                             setKhQuery(kh.TEN_KH);
                                             setShowKhDropdown(false);
                                         }}
-                                        className="w-full text-left px-4 py-2.5 hover:bg-muted transition-colors text-sm flex flex-col border-b border-border last:border-0"
+                                        className="w-full text-left px-4 py-2.5 hover:bg-muted transition-colors text-sm flex items-center gap-3 border-b border-border last:border-0"
                                     >
-                                        <span className="font-semibold text-foreground">{kh.TEN_KH}</span>
-                                        {kh.TEN_VT && <span className="text-xs text-muted-foreground">{kh.TEN_VT}</span>}
+                                        <div className="w-8 h-8 rounded flex items-center justify-center shrink-0 overflow-hidden bg-primary/10 border border-primary/10">
+                                            {kh.HINH_ANH ? (
+                                                <img src={kh.HINH_ANH} alt="Logo" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="font-bold text-primary text-xs">{(kh.TEN_VT || kh.TEN_KH).charAt(0).toUpperCase()}</span>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col flex-1 min-w-0">
+                                            <span className="font-semibold text-foreground truncate">{kh.TEN_KH}</span>
+                                            {kh.TEN_VT && <span className="text-xs text-muted-foreground truncate">{kh.TEN_VT}</span>}
+                                        </div>
                                     </button>
                                 ))}
                             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Download, Settings2, CalendarCheck2, Clock, CheckCircle2, Calendar, Grid, CalendarDays, FileText, Building2, X, ChevronDown } from "lucide-react";
+import { Download, Settings2, Grid, CalendarDays, FileText, Building2, X, ChevronDown } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -25,21 +25,17 @@ interface Props {
     ketQuaList: { ID: string; KQ_CS: string; XL_CS?: string | null }[];
     lyDoList: { ID: string; LY_DO: string }[];
     currentUserId?: string;
-    stats: {
-        total: number;
-        choBaoCao: number;
-        daBaoCao: number;
-        thangNay: number;
-    };
+    stats?: any;
     trangThaiOptions: { label: string; value: string }[];
     loaiCSOptions: { label: string; value: string }[];
+    pagination?: any;
 }
 
 const DEFAULT_COLUMNS: ColumnKey[] = ["khachHang", "loaiCS", "thoiGian", "hinhThuc", "nguoiCS", "trangThai"];
 
 export default function KeHoachCSPageClient({
     data, nhanViens, loaiCSList, ketQuaList, lyDoList,
-    currentUserId, stats, trangThaiOptions, loaiCSOptions,
+    currentUserId, trangThaiOptions, loaiCSOptions,
 }: Props) {
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [groupBy, setGroupBy] = useState<string>("TG_TU");
@@ -47,56 +43,19 @@ export default function KeHoachCSPageClient({
     const [showAddForm, setShowAddForm] = useState(false);
     const [formKey, setFormKey] = useState(0);
 
+    const GROUP_LABELS: Record<string, string> = {
+        "TG_TU": "Theo ngày",
+        "LOAI_CS": "Theo loại CS",
+        "khachHang": "Theo KH",
+    };
+
     const handleSuccess = () => {
         setShowAddForm(false);
         setFormKey((k) => k + 1);
     };
 
-    // Stat cards
-    const statCards = [
-        {
-            label: "Tổng kế hoạch",
-            value: stats.total,
-            icon: CalendarCheck2,
-            color: "text-primary bg-primary/10",
-        },
-        {
-            label: "Chờ báo cáo",
-            value: stats.choBaoCao,
-            icon: Clock,
-            color: "text-orange-500 bg-orange-500/10",
-        },
-        {
-            label: "Đã báo cáo",
-            value: stats.daBaoCao,
-            icon: CheckCircle2,
-            color: "text-green-600 bg-green-500/10",
-        },
-        {
-            label: "Tháng này",
-            value: stats.thangNay,
-            icon: Calendar,
-            color: "text-purple-600 bg-purple-500/10",
-        },
-    ];
-
     return (
         <>
-            {/* Stat Cards */}
-            <div className="px-5 pt-5 grid grid-cols-2 md:grid-cols-4 gap-4">
-                {statCards.map((stat) => (
-                    <div key={stat.label} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-                        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", stat.color)}>
-                            <stat.icon className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">{stat.label}</p>
-                            <p className="text-xl font-bold text-foreground leading-none mt-1">{stat.value}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
             {/* Toolbar */}
             <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
                 <div className="flex items-center justify-between gap-3 w-full">
@@ -132,7 +91,7 @@ export default function KeHoachCSPageClient({
                                     )}
                                 >
                                     <Grid className="w-4 h-4" />
-                                    <span>Nhóm</span>
+                                    <span>{GROUP_LABELS[groupBy] || "Nhóm"}</span>
                                     <ChevronDown className="w-3.5 h-3.5 opacity-50" />
                                 </button>
                             </DropdownMenuTrigger>
@@ -184,7 +143,7 @@ export default function KeHoachCSPageClient({
                                             )}
                                         >
                                             <Grid className="w-4 h-4" />
-                                            <span>Nhóm</span>
+                                            <span>{GROUP_LABELS[groupBy] || "Nhóm"}</span>
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="start" className="w-48 rounded-xl font-medium">
