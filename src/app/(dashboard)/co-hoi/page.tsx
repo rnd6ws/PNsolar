@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getCoHois, getDmCoHoi, getCoHoiStats } from "@/features/co-hoi/action";
+import { getCoHois, getDmDichVu, getCoHoiStats } from "@/features/co-hoi/action";
 import Pagination from "@/components/Pagination";
 import { Target, TrendingUp, CheckCircle2, XCircle } from "lucide-react";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -31,9 +31,9 @@ export default async function CoHoiPage({
     const query = params.query;
     const TINH_TRANG = params.TINH_TRANG;
 
-    const [{ data = [], pagination }, { data: dmCoHoi = [] }, stats] = await Promise.all([
+    const [{ data = [], pagination }, { data: dmDichVu = [] }, stats] = await Promise.all([
         getCoHois({ query, page, limit: 10, TINH_TRANG }),
-        getDmCoHoi(),
+        getDmDichVu(),
         getCoHoiStats(),
     ]);
 
@@ -55,10 +55,10 @@ export default async function CoHoiPage({
                         </div>
                         <div className="flex items-center gap-3">
                             <PermissionGuard moduleKey="co-hoi" level="manage">
-                                <SettingCoHoiButton dmCoHoi={dmCoHoi as any} />
+                                <SettingCoHoiButton dmDichVu={dmDichVu as any} />
                             </PermissionGuard>
                             <PermissionGuard moduleKey="co-hoi" level="add">
-                                <AddCoHoiButton dmCoHoi={dmCoHoi as any} />
+                                <AddCoHoiButton dmDichVu={dmDichVu as any} />
                             </PermissionGuard>
                         </div>
                     </div>
@@ -111,7 +111,7 @@ export default async function CoHoiPage({
                 <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col mt-2 relative">
                     <CoHoiPageClient
                         data={data as any}
-                        dmCoHoi={dmCoHoi as any}
+                        dmDichVu={dmDichVu as any}
                         tinhTrangOptions={tinhTrangOptions}
                     />
 

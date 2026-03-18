@@ -31,11 +31,11 @@ async function generateIdCh(tenVt: string): Promise<string> {
     return `${prefix}${seq}`;
 }
 
-// ─── DM_CO_HOI ─────────────────────────────────────────────────
+// ─── DM_DICH_VU ─────────────────────────────────────────────────
 
-export async function getDmCoHoi() {
+export async function getDmDichVu() {
     try {
-        const data = await prisma.dM_CO_HOI.findMany({
+        const data = await prisma.dM_DICH_VU.findMany({
             orderBy: [{ NHOM_DV: "asc" }, { DICH_VU: "asc" }],
         });
         return { success: true, data };
@@ -44,12 +44,12 @@ export async function getDmCoHoi() {
     }
 }
 
-export async function createDmCoHoi(nhomDv: string, dichVu: string, giaTri: number) {
+export async function createDmDichVu(nhomDv: string, dichVu: string, giaTri: number) {
     try {
         if (!nhomDv.trim() || !dichVu.trim()) {
             return { success: false, message: "Vui lòng nhập đầy đủ thông tin" };
         }
-        await prisma.dM_CO_HOI.create({
+        await prisma.dM_DICH_VU.create({
             data: { NHOM_DV: nhomDv.trim(), DICH_VU: dichVu.trim(), GIA_TRI_TB: giaTri },
         });
         revalidatePath("/co-hoi");
@@ -59,9 +59,9 @@ export async function createDmCoHoi(nhomDv: string, dichVu: string, giaTri: numb
     }
 }
 
-export async function deleteDmCoHoi(id: string) {
+export async function deleteDmDichVu(id: string) {
     try {
-        await prisma.dM_CO_HOI.delete({ where: { ID: id } });
+        await prisma.dM_DICH_VU.delete({ where: { ID: id } });
         revalidatePath("/co-hoi");
         return { success: true };
     } catch (error: any) {
@@ -101,7 +101,7 @@ export async function getCoHois(filters: {
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { NGAY_TAO: "desc" },
-                include: { KH: { select: { ID: true, TEN_KH: true, TEN_VT: true, DIEN_THOAI: true } } },
+                include: { KH: { select: { ID: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true } } },
             }),
             prisma.cO_HOI.count({ where }),
         ]);
@@ -160,6 +160,7 @@ export async function createCoHoi(data: any) {
         await prisma.cO_HOI.create({
             data: {
                 ID_CH: idCh,
+                NGAY_TAO: data.NGAY_TAO ? new Date(data.NGAY_TAO) : new Date(),
                 ID_KH: data.ID_KH,
                 NHU_CAU: data.NHU_CAU || [],
                 GHI_CHU_NC: data.GHI_CHU_NC || null,
@@ -210,17 +211,20 @@ export async function deleteCoHoi(id: string) {
 }
 
 // ─── Tìm kiếm khách hàng từ KHTN ───────────────────────────────
-export async function searchKhachHang(query: string) {
+export async function searchKhachHang(query?: string) {
     try {
-        const data = await prisma.kHTN.findMany({
-            where: {
+        const where = query?.trim()
+            ? {
                 OR: [
-                    { TEN_KH: { contains: query, mode: "insensitive" } },
-                    { DIEN_THOAI: { contains: query, mode: "insensitive" } },
+                    { TEN_KH: { contains: query, mode: "insensitive" as const } },
+                    { TEN_VT: { contains: query, mode: "insensitive" as const } },
                 ],
-            },
-            select: { ID: true, TEN_KH: true, TEN_VT: true, DIEN_THOAI: true },
-            take: 10,
+            }
+            : {};
+        const data = await prisma.kHTN.findMany({
+            where,
+            select: { ID: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true },
+            take: 20,
             orderBy: { TEN_KH: "asc" },
         });
         return { success: true, data };

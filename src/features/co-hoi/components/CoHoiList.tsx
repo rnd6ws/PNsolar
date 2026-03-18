@@ -1,7 +1,9 @@
 "use client";
 
+import React from "react";
+
 import { useState, useMemo } from "react";
-import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
+import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users } from "lucide-react";
 import { toast } from "sonner";
 import { deleteCoHoi, updateCoHoi, createCoHoi } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -13,8 +15,9 @@ import type { ColumnKey } from "./ColumnToggleButton";
 
 interface Props {
     data: any[];
-    dmCoHoi: { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[];
+    dmDichVu: { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[];
     visibleColumns?: ColumnKey[];
+    groupByKH?: boolean;
 }
 
 function formatDate(val: any) {
@@ -38,12 +41,13 @@ function getTinhTrangBadge(tt: string) {
 }
 
 // ─── Chi tiết Cơ hội ──────────────────────────────────────────
-function CoHoiDetail({ item, dmCoHoi, onClose }: { item: any; dmCoHoi: any[]; onClose: () => void }) {
+function CoHoiDetail({ item, dmDichVu, onClose }: { item: any; dmDichVu: any[]; onClose: () => void }) {
     const nhuCauIds: string[] = item.NHU_CAU || [];
-    const selectedDv = dmCoHoi.filter(d => nhuCauIds.includes(d.ID));
+    const selectedDv = dmDichVu.filter(d => nhuCauIds.includes(d.ID));
+    const totalGiaTri = selectedDv.reduce((sum: number, d: any) => sum + (d.GIA_TRI_TB || 0), 0);
 
     const grouped = useMemo(() => {
-        const map = new Map<string, typeof dmCoHoi>();
+        const map = new Map<string, typeof dmDichVu>();
         for (const d of selectedDv) {
             if (!map.has(d.NHOM_DV)) map.set(d.NHOM_DV, []);
             map.get(d.NHOM_DV)!.push(d);
@@ -51,59 +55,90 @@ function CoHoiDetail({ item, dmCoHoi, onClose }: { item: any; dmCoHoi: any[]; on
         return map;
     }, [selectedDv]);
 
+    const infoItems = [
+        { label: "Ngày tạo", value: formatDate(item.NGAY_TAO) },
+        { label: "Ngày dự kiến chốt", value: formatDate(item.NGAY_DK_CHOT) },
+        ...(item.NGAY_DONG ? [{ label: "Ngày đóng", value: formatDate(item.NGAY_DONG) }] : []),
+        ...(item.LY_DO ? [{ label: "Lý do", value: item.LY_DO }] : []),
+    ].filter(i => i.value && i.value !== "—");
+
     return (
-        <div className="space-y-5 pt-2">
-            <div className="flex items-center justify-between pb-4 border-b border-border">
-                <div>
-                    <p className="text-xs text-muted-foreground font-medium">Mã cơ hội</p>
-                    <h3 className="text-lg font-bold text-foreground font-mono">{item.ID_CH}</h3>
-                </div>
-                {getTinhTrangBadge(item.TINH_TRANG)}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm">
-                {[
-                    { label: "Khách hàng", value: item.KH?.TEN_KH },
-                    { label: "Ngày tạo", value: formatDate(item.NGAY_TAO) },
-                    { label: "Giá trị dự kiến", value: formatCurrency(item.GIA_TRI_DU_KIEN) },
-                    { label: "Ngày dự kiến chốt", value: formatDate(item.NGAY_DK_CHOT) },
-                    { label: "Ngày đóng", value: formatDate(item.NGAY_DONG) },
-                    { label: "Lý do", value: item.LY_DO },
-                ].map(({ label, value }) => value && value !== "—" ? (
-                    <div key={label} className="bg-muted/30 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground font-medium mb-0.5">{label}</p>
-                        <p className="font-semibold text-foreground">{value}</p>
+        <div className="space-y-4 pt-1">
+            {/* ── Khách hàng ── */}
+            <div className="flex items-center gap-3 bg-muted/30 border border-border rounded-xl px-4 py-3">
+                {item.KH?.HINH_ANH ? (
+                    <img src={item.KH.HINH_ANH} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-xs font-bold text-primary">{item.KH?.TEN_VT || item.KH?.TEN_KH?.charAt(0) || "?"}</span>
                     </div>
-                ) : null)}
+                )}
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        {item.KH?.TEN_VT && (
+                            <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">{item.KH.TEN_VT}</span>
+                        )}
+                        <p className="text-sm font-semibold text-foreground truncate">{item.KH?.TEN_KH || "—"}</p>
+                    </div>
+                </div>
             </div>
 
-            {grouped.size > 0 && (
-                <div className="space-y-2">
-                    <p className="text-sm font-semibold text-muted-foreground">Nhu cầu dịch vụ</p>
-                    <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
-                        {Array.from(grouped.entries()).map(([nhom, items]) => (
-                            <div key={nhom}>
-                                <div className="px-4 py-2 bg-muted/40 text-xs font-bold text-muted-foreground uppercase">{nhom}</div>
-                                {items.map((d: any) => (
-                                    <div key={d.ID} className="flex justify-between px-4 py-2.5 text-sm">
-                                        <span className="text-foreground">{d.DICH_VU}</span>
-                                        <span className="text-muted-foreground font-mono text-xs">{formatCurrency(d.GIA_TRI_TB)}</span>
-                                    </div>
-                                ))}
+            {/* ── Layout 2 cột ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* CỘT TRÁI: Thông tin */}
+                <div className="space-y-3">
+                    {/* Giá trị dự kiến - nổi bật */}
+                    <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground font-medium">Giá trị dự kiến</span>
+                        <span className="text-base font-bold text-primary">{formatCurrency(item.GIA_TRI_DU_KIEN || totalGiaTri)}</span>
+                    </div>
+
+                    {/* Các thông tin ngày tháng */}
+                    <div className="grid grid-cols-2 gap-2">
+                        {infoItems.map(({ label, value }) => (
+                            <div key={label} className="bg-muted/20 border border-border/60 rounded-lg px-3 py-2.5">
+                                <p className="text-[10px] text-muted-foreground font-medium mb-0.5">{label}</p>
+                                <p className="text-sm font-semibold text-foreground">{value}</p>
                             </div>
                         ))}
                     </div>
-                </div>
-            )}
 
-            {item.GHI_CHU_NC && (
-                <div className="bg-muted/30 rounded-lg p-3 text-sm">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Ghi chú nhu cầu</p>
-                    <p className="text-foreground whitespace-pre-wrap">{item.GHI_CHU_NC}</p>
+                    {/* Ghi chú */}
+                    {item.GHI_CHU_NC && (
+                        <div className="bg-muted/20 border border-border/60 rounded-lg px-3 py-2.5">
+                            <p className="text-[10px] text-muted-foreground font-medium mb-1">Ghi chú nhu cầu</p>
+                            <p className="text-sm text-foreground whitespace-pre-wrap">{item.GHI_CHU_NC}</p>
+                        </div>
+                    )}
                 </div>
-            )}
 
-            <div className="pt-2">
+                {/* CỘT PHẢI: Nhu cầu dịch vụ */}
+                {grouped.size > 0 && (
+                    <div className="space-y-1.5">
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Nhu cầu dịch vụ ({selectedDv.length})</p>
+                        <div className="border border-border rounded-xl overflow-hidden">
+                            {Array.from(grouped.entries()).map(([nhom, items]) => (
+                                <div key={nhom}>
+                                    <div className="px-3 py-1.5 bg-primary/10 border-b border-border">
+                                        <span className="text-[11px] font-bold text-primary tracking-wide">{nhom}</span>
+                                    </div>
+                                    <div className="divide-y divide-border/40">
+                                        {items.map((d: any) => (
+                                            <div key={d.ID} className="flex items-center justify-between px-3 py-2 text-sm">
+                                                <span className="text-foreground font-medium truncate">{d.DICH_VU}</span>
+                                                <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">{formatCurrency(d.GIA_TRI_TB)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* ── Đóng ── */}
+            <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-2 bg-card border-t py-3 px-5 md:px-6 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
                 <button onClick={onClose} className="btn-premium-secondary w-full">Đóng</button>
             </div>
         </div>
@@ -111,7 +146,7 @@ function CoHoiDetail({ item, dmCoHoi, onClose }: { item: any; dmCoHoi: any[]; on
 }
 
 // ─── Component chính ──────────────────────────────────────────
-export default function CoHoiList({ data, dmCoHoi, visibleColumns }: Props) {
+export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = false }: Props) {
     const cols = visibleColumns ?? ["ngayTao", "nhuCau", "giaTriDK", "dkChot", "tinhTrang"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
     const [editItem, setEditItem] = useState<any>(null);
@@ -119,6 +154,7 @@ export default function CoHoiList({ data, dmCoHoi, visibleColumns }: Props) {
     const [deleteItem, setDeleteItem] = useState<{ ID: string; ID_CH: string } | null>(null);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
     const sortedData = useMemo(() => {
         if (!sortConfig) return data;
@@ -139,6 +175,31 @@ export default function CoHoiList({ data, dmCoHoi, visibleColumns }: Props) {
             return 0;
         });
     }, [data, sortConfig]);
+
+    // Group by khách hàng
+    const groupedByKH = useMemo(() => {
+        if (!groupByKH) return null;
+        const map = new Map<string, { kh: any; items: any[]; totalGiaTri: number }>();
+        for (const item of sortedData) {
+            const khId = item.ID_KH || "unknown";
+            if (!map.has(khId)) {
+                map.set(khId, { kh: item.KH, items: [], totalGiaTri: 0 });
+            }
+            const group = map.get(khId)!;
+            group.items.push(item);
+            group.totalGiaTri += item.GIA_TRI_DU_KIEN || 0;
+        }
+        return map;
+    }, [sortedData, groupByKH]);
+
+    const toggleGroup = (khId: string) => {
+        setExpandedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(khId)) next.delete(khId);
+            else next.add(khId);
+            return next;
+        });
+    };
 
     const handleSort = (key: string) => {
         setSortConfig(prev =>
@@ -171,6 +232,113 @@ export default function CoHoiList({ data, dmCoHoi, visibleColumns }: Props) {
         if (res.success) { toast.success("Đã xóa cơ hội"); setDeleteItem(null); }
         else toast.error((res as any).message || "Lỗi xóa");
         setLoading(false);
+    };
+
+    // ── Render helpers ──
+    const renderDesktopRow = (item: any, idx: number, nhuCauIds: string[], selectedDv: any[]) => (
+        <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
+            <td className="px-4 py-3 align-middle text-muted-foreground text-xs">{idx + 1}</td>
+            {show("ngayTao") && (
+                <td className="px-4 py-3 align-middle text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDate(item.NGAY_TAO)}
+                </td>
+            )}
+            <td className="px-4 py-3 align-middle text-left">
+                <p className="font-mono text-xs text-primary font-semibold">{item.ID_CH}</p>
+                {!groupByKH && <p className="text-xs text-muted-foreground mt-0.5">{item.KH?.TEN_KH}</p>}
+            </td>
+            {show("nhuCau") && (
+                <td className="px-4 py-3 align-middle">
+                    {selectedDv.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 justify-center">
+                            {selectedDv.slice(0, 3).map(d => (
+                                <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+                                    {d.DICH_VU}
+                                </span>
+                            ))}
+                            {selectedDv.length > 3 && (
+                                <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
+                            )}
+                        </div>
+                    ) : <span className="text-xs text-muted-foreground">—</span>}
+                </td>
+            )}
+            {show("giaTriDK") && (
+                <td className="px-4 py-3 align-middle text-xs font-semibold text-foreground">
+                    {formatCurrency(item.GIA_TRI_DU_KIEN)}
+                </td>
+            )}
+            {show("dkChot") && (
+                <td className="px-4 py-3 align-middle text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDate(item.NGAY_DK_CHOT)}
+                </td>
+            )}
+            {show("tinhTrang") && (
+                <td className="px-4 py-3 align-middle">
+                    {getTinhTrangBadge(item.TINH_TRANG)}
+                </td>
+            )}
+            <td className="px-4 py-3 align-middle text-right">
+                <div className="flex justify-end gap-1 items-center">
+                    <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem chi tiết">
+                        <Eye className="w-4 h-4" />
+                    </button>
+                    <PermissionGuard moduleKey="co-hoi" level="edit">
+                        <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
+                            <Edit2 className="w-4 h-4" />
+                        </button>
+                    </PermissionGuard>
+                    <PermissionGuard moduleKey="co-hoi" level="delete">
+                        <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa">
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </PermissionGuard>
+                </div>
+            </td>
+        </tr>
+    );
+
+    const renderMobileCard = (item: any, idx: number) => {
+        const nhuCauIds: string[] = item.NHU_CAU || [];
+        const selectedDv = dmDichVu.filter(d => nhuCauIds.includes(d.ID));
+        return (
+            <div key={item.ID} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                    <div>
+                        <p className="font-mono text-xs text-primary font-semibold">{item.ID_CH}</p>
+                        {!groupByKH && <p className="text-sm font-semibold text-foreground mt-0.5">{item.KH?.TEN_KH}</p>}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                        {getTinhTrangBadge(item.TINH_TRANG)}
+                    </div>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>{formatDate(item.NGAY_TAO)}</span>
+                    <span className="font-semibold text-foreground">{formatCurrency(item.GIA_TRI_DU_KIEN)}</span>
+                </div>
+                {selectedDv.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                        {selectedDv.slice(0, 3).map(d => (
+                            <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+                                {d.DICH_VU}
+                            </span>
+                        ))}
+                        {selectedDv.length > 3 && (
+                            <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
+                        )}
+                    </div>
+                )}
+                <div className="flex justify-end gap-1 pt-1">
+                    <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem"><Eye className="w-4 h-4" /></button>
+                    <PermissionGuard moduleKey="co-hoi" level="edit">
+                        <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa"><Edit2 className="w-4 h-4" /></button>
+                    </PermissionGuard>
+                    <PermissionGuard moduleKey="co-hoi" level="delete">
+                        <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa"><Trash2 className="w-4 h-4" /></button>
+                    </PermissionGuard>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -211,72 +379,62 @@ export default function CoHoiList({ data, dmCoHoi, visibleColumns }: Props) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {sortedData.map((item, idx) => {
-                            const nhuCauIds: string[] = item.NHU_CAU || [];
-                            const selectedDv = dmCoHoi.filter(d => nhuCauIds.includes(d.ID));
-                            return (
-                                <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
-                                    <td className="px-4 py-3 align-middle text-muted-foreground text-xs">{idx + 1}</td>
-                                    {show("ngayTao") && (
-                                        <td className="px-4 py-3 align-middle text-xs text-muted-foreground whitespace-nowrap">
-                                            {formatDate(item.NGAY_TAO)}
-                                        </td>
-                                    )}
-                                    <td className="px-4 py-3 align-middle text-left">
-                                        <p className="font-mono text-xs text-primary font-semibold">{item.ID_CH}</p>
-                                        <p className="text-xs text-muted-foreground mt-0.5">{item.KH?.TEN_KH}</p>
-                                    </td>
-                                    {show("nhuCau") && (
-                                        <td className="px-4 py-3 align-middle">
-                                            {selectedDv.length > 0 ? (
-                                                <div className="flex flex-wrap gap-1 justify-center">
-                                                    {selectedDv.slice(0, 3).map(d => (
-                                                        <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-                                                            {d.DICH_VU}
-                                                        </span>
-                                                    ))}
-                                                    {selectedDv.length > 3 && (
-                                                        <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
-                                                    )}
+                        {groupByKH && groupedByKH ? (
+                            /* ── Grouped by KH ── */
+                            Array.from(groupedByKH.entries()).map(([khId, group]) => {
+                                const isCollapsed = !expandedGroups.has(khId);
+                                const colCount = 3 + (show("ngayTao") ? 1 : 0) + (show("nhuCau") ? 1 : 0) + (show("giaTriDK") ? 1 : 0) + (show("dkChot") ? 1 : 0) + (show("tinhTrang") ? 1 : 0);
+                                return (
+                                    <React.Fragment key={khId}>
+                                        {/* Header nhóm */}
+                                        <tr
+                                            onClick={() => toggleGroup(khId)}
+                                            className="bg-primary/5 hover:bg-primary/10 cursor-pointer transition-colors"
+                                        >
+                                            <td colSpan={colCount} className="px-4 py-2.5">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        {group.kh?.HINH_ANH ? (
+                                                            <img src={group.kh.HINH_ANH} alt="" className="w-7 h-7 rounded-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                                                                <span className="text-[9px] font-bold text-primary">{group.kh?.TEN_VT || group.kh?.TEN_KH?.charAt(0)}</span>
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                {group.kh?.TEN_VT && (
+                                                                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">{group.kh.TEN_VT}</span>
+                                                                )}
+                                                                <span className="text-sm font-semibold text-foreground">{group.kh?.TEN_KH || "—"}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[11px] text-muted-foreground">{group.items.length} cơ hội</span>
+                                                        <span className="text-xs font-semibold text-primary">{formatCurrency(group.totalGiaTri)}</span>
+                                                        {isCollapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
+                                                    </div>
                                                 </div>
-                                            ) : <span className="text-xs text-muted-foreground">—</span>}
-                                        </td>
-                                    )}
-                                    {show("giaTriDK") && (
-                                        <td className="px-4 py-3 align-middle text-xs font-semibold text-foreground">
-                                            {formatCurrency(item.GIA_TRI_DU_KIEN)}
-                                        </td>
-                                    )}
-                                    {show("dkChot") && (
-                                        <td className="px-4 py-3 align-middle text-xs text-muted-foreground whitespace-nowrap">
-                                            {formatDate(item.NGAY_DK_CHOT)}
-                                        </td>
-                                    )}
-                                    {show("tinhTrang") && (
-                                        <td className="px-4 py-3 align-middle">
-                                            {getTinhTrangBadge(item.TINH_TRANG)}
-                                        </td>
-                                    )}
-                                    <td className="px-4 py-3 align-middle text-right">
-                                        <div className="flex justify-end gap-1 items-center">
-                                            <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem chi tiết">
-                                                <Eye className="w-4 h-4" />
-                                            </button>
-                                            <PermissionGuard moduleKey="co-hoi" level="edit">
-                                                <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                            </PermissionGuard>
-                                            <PermissionGuard moduleKey="co-hoi" level="delete">
-                                                <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </PermissionGuard>
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                                            </td>
+                                        </tr>
+                                        {/* Items */}
+                                        {!isCollapsed && group.items.map((item, idx) => {
+                                            const nhuCauIds: string[] = item.NHU_CAU || [];
+                                            const selectedDv = dmDichVu.filter(d => nhuCauIds.includes(d.ID));
+                                            return renderDesktopRow(item, idx, nhuCauIds, selectedDv);
+                                        })}
+                                    </React.Fragment>
+                                );
+                            })
+                        ) : (
+                            /* ── Flat View ── */
+                            sortedData.map((item, idx) => {
+                                const nhuCauIds: string[] = item.NHU_CAU || [];
+                                const selectedDv = dmDichVu.filter(d => nhuCauIds.includes(d.ID));
+                                return renderDesktopRow(item, idx, nhuCauIds, selectedDv);
+                            })
+                        )}
                         {data.length === 0 && (
                             <tr>
                                 <td colSpan={8} className="px-6 py-16 text-center text-muted-foreground italic">
@@ -290,51 +448,42 @@ export default function CoHoiList({ data, dmCoHoi, visibleColumns }: Props) {
 
             {/* ── Mobile Cards ── */}
             <div className="lg:hidden divide-y divide-border">
-                {sortedData.map((item, idx) => {
-                    const nhuCauIds: string[] = item.NHU_CAU || [];
-                    const selectedDv = dmCoHoi.filter(d => nhuCauIds.includes(d.ID));
-                    return (
-                        <div key={item.ID} className="p-4 space-y-2.5">
-                            <div className="flex items-start justify-between gap-2">
-                                <div>
-                                    <p className="font-mono text-xs text-primary font-semibold">{item.ID_CH}</p>
-                                    <p className="text-sm font-semibold text-foreground mt-0.5">{item.KH?.TEN_KH}</p>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                    {getTinhTrangBadge(item.TINH_TRANG)}
-                                </div>
+                {groupByKH && groupedByKH ? (
+                    Array.from(groupedByKH.entries()).map(([khId, group]) => {
+                        const isCollapsed = !expandedGroups.has(khId);
+                        return (
+                            <div key={khId}>
+                                {/* Header nhóm mobile */}
+                                <button
+                                    onClick={() => toggleGroup(khId)}
+                                    className="w-full flex items-center justify-between px-4 py-3 bg-primary/5 hover:bg-primary/10 transition-colors"
+                                >
+                                    <div className="flex items-center gap-2.5">
+                                        {group.kh?.HINH_ANH ? (
+                                            <img src={group.kh.HINH_ANH} alt="" className="w-7 h-7 rounded-full object-cover" />
+                                        ) : (
+                                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <span className="text-[9px] font-bold text-primary">{group.kh?.TEN_VT || group.kh?.TEN_KH?.charAt(0)}</span>
+                                            </div>
+                                        )}
+                                        <div className="text-left">
+                                            <p className="text-sm font-semibold text-foreground">{group.kh?.TEN_KH || "—"}</p>
+                                            <p className="text-[11px] text-muted-foreground">{group.items.length} cơ hội · <span className="text-primary font-semibold">{formatCurrency(group.totalGiaTri)}</span></p>
+                                        </div>
+                                    </div>
+                                    {isCollapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
+                                </button>
+                                {!isCollapsed && (
+                                    <div className="divide-y divide-border/50">
+                                        {group.items.map((item, idx) => renderMobileCard(item, idx))}
+                                    </div>
+                                )}
                             </div>
-
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                <span>{formatDate(item.NGAY_TAO)}</span>
-                                <span className="font-semibold text-foreground">{formatCurrency(item.GIA_TRI_DU_KIEN)}</span>
-                            </div>
-
-                            {selectedDv.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                    {selectedDv.slice(0, 3).map(d => (
-                                        <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-                                            {d.DICH_VU}
-                                        </span>
-                                    ))}
-                                    {selectedDv.length > 3 && (
-                                        <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
-                                    )}
-                                </div>
-                            )}
-
-                            <div className="flex justify-end gap-1 pt-1">
-                                <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem"><Eye className="w-4 h-4" /></button>
-                                <PermissionGuard moduleKey="co-hoi" level="edit">
-                                    <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa"><Edit2 className="w-4 h-4" /></button>
-                                </PermissionGuard>
-                                <PermissionGuard moduleKey="co-hoi" level="delete">
-                                    <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa"><Trash2 className="w-4 h-4" /></button>
-                                </PermissionGuard>
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })
+                ) : (
+                    sortedData.map((item, idx) => renderMobileCard(item, idx))
+                )}
                 {data.length === 0 && (
                     <div className="px-6 py-16 text-center text-muted-foreground italic">
                         Chưa có cơ hội nào. Hãy thêm mới!
@@ -343,8 +492,15 @@ export default function CoHoiList({ data, dmCoHoi, visibleColumns }: Props) {
             </div>
 
             {/* Modal: Xem chi tiết */}
-            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết cơ hội" size="lg">
-                {viewItem && <CoHoiDetail item={viewItem} dmCoHoi={dmCoHoi} onClose={() => setViewItem(null)} />}
+            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title={viewItem ? `Chi tiết · ${viewItem.ID_CH}` : "Chi tiết cơ hội"} size="lg">
+                {viewItem && (
+                    <>
+                        <div className="flex items-center justify-between -mt-2 mb-3">
+                            {getTinhTrangBadge(viewItem.TINH_TRANG)}
+                        </div>
+                        <CoHoiDetail item={viewItem} dmDichVu={dmDichVu} onClose={() => setViewItem(null)} />
+                    </>
+                )}
             </Modal>
 
             {/* Modal: Sửa */}
@@ -353,7 +509,7 @@ export default function CoHoiList({ data, dmCoHoi, visibleColumns }: Props) {
                     <CoHoiForm
                         key={editItem.ID}
                         defaultValues={editItem}
-                        dmCoHoi={dmCoHoi}
+                        dmDichVu={dmDichVu}
                         loading={loading}
                         onSubmit={handleUpdate}
                         onCancel={() => setEditItem(null)}

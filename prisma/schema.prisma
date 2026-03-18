@@ -371,8 +371,8 @@ model LY_DO_TU_CHOI {
   @@map("LY_DO_TU_CHOI")
 }
 
-// ===== DANH MỤC CƠ HỘI (Service Catalog) =====
-model DM_CO_HOI {
+// ===== DANH MỤC DỊCH VỤ (Service Catalog) =====
+model DM_DICH_VU {
   ID         String @id @default(auto()) @map("_id") @db.ObjectId
   NHOM_DV    String // Nhóm dịch vụ
   DICH_VU    String // Tên dịch vụ
@@ -382,7 +382,7 @@ model DM_CO_HOI {
   UPDATED_AT DateTime @updatedAt
 
   @@index([NHOM_DV])
-  @@map("DM_CO_HOI")
+  @@map("DM_DICH_VU")
 }
 
 // ===== CƠ HỘI (Opportunity) =====
@@ -392,7 +392,7 @@ model CO_HOI {
   NGAY_TAO        DateTime  @default(now())
   ID_KH           String    @db.ObjectId
   KH              KHTN      @relation(fields: [ID_KH], references: [ID])
-  NHU_CAU         Json? // Mảng các DM_CO_HOI ID được chọn
+  NHU_CAU         Json? // Mảng các DM_DICH_VU ID được chọn
   GHI_CHU_NC      String?
   GIA_TRI_DU_KIEN Float?
   NGAY_DK_CHOT    DateTime?
