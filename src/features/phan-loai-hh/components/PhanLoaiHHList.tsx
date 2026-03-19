@@ -21,7 +21,7 @@ export default function PhanLoaiHHList({
     goiGiaMap?: Record<string, { count: number; latestDate: string | null; items: any[] }>,
 }) {
     const [editMode, setEditMode] = useState<any>(null);
-    const [dongHHModal, setDongHHModal] = useState<{ mode: 'ADD' | 'EDIT', phanLoaiId: string, itemData?: any, dvtNhom?: string } | null>(null);
+    const [dongHHModal, setDongHHModal] = useState<{ mode: 'ADD' | 'EDIT', phanLoaiId: string, phanLoaiMa: string, itemData?: any, dvtNhom?: string } | null>(null);
     const [expandedSubRows, setExpandedSubRows] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [goiGiaDetail, setGoiGiaDetail] = useState<{ maDongHang: string; tenDongHang: string; items: any[]; latestDate: string | null } | null>(null);
@@ -95,7 +95,7 @@ export default function PhanLoaiHHList({
         if (!dongHHModal) return;
         setBulkLoading(true);
         setBulkError(null);
-        const res = await createBulkDongHH(dongHHModal.phanLoaiId, bulkRows);
+        const res = await createBulkDongHH(dongHHModal.phanLoaiMa, bulkRows);
         if (res.success) {
             toast.success(res.message);
             setDongHHModal(null);
@@ -175,7 +175,7 @@ export default function PhanLoaiHHList({
         setLoading(true);
 
         const formData = new FormData(e.currentTarget);
-        formData.append("PHAN_LOAI_ID", dongHHModal.phanLoaiId);
+        formData.append("MA_PHAN_LOAI", dongHHModal.phanLoaiMa);
 
         let res;
         if (dongHHModal.mode === 'ADD') {
@@ -260,7 +260,7 @@ export default function PhanLoaiHHList({
                                         <div className="flex justify-end gap-1">
                                             <PermissionGuard moduleKey="phan-loai-hh" level="add">
                                                 <button
-                                                    onClick={() => { setDongHHModal({ mode: 'ADD', phanLoaiId: item.ID, dvtNhom: item.DVT_NHOM }); setBulkRows([getEmptyBulkRow(item.DVT_NHOM)]); }}
+                                                    onClick={() => { setDongHHModal({ mode: 'ADD', phanLoaiId: item.ID, phanLoaiMa: item.MA_PHAN_LOAI, dvtNhom: item.DVT_NHOM }); setBulkRows([getEmptyBulkRow(item.DVT_NHOM)]); }}
                                                     className="p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors"
                                                     title="Thêm dòng hàng"
                                                 >
@@ -355,7 +355,7 @@ export default function PhanLoaiHHList({
                                                                 <td className="text-right pr-4 py-2">
                                                                     <div className="flex justify-end gap-1">
                                                                         <PermissionGuard moduleKey="phan-loai-hh" level="edit">
-                                                                            <button onClick={() => setDongHHModal({ mode: 'EDIT', phanLoaiId: item.ID, itemData: child })} className="p-1 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-md transition-colors" title="Sửa">
+                                                                            <button onClick={() => setDongHHModal({ mode: 'EDIT', phanLoaiId: item.ID, phanLoaiMa: item.MA_PHAN_LOAI, itemData: child })} className="p-1 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-md transition-colors" title="Sửa">
                                                                                 <Edit2 className="w-3.5 h-3.5" />
                                                                             </button>
                                                                         </PermissionGuard>
@@ -412,7 +412,7 @@ export default function PhanLoaiHHList({
                         <div className="flex items-center gap-2 pt-1 border-t">
                             <span className="flex-1 text-xs text-muted-foreground font-medium">DVT: {item.DVT_NHOM}</span>
                             <PermissionGuard moduleKey="phan-loai-hh" level="add">
-                                <button onClick={() => { setDongHHModal({ mode: 'ADD', phanLoaiId: item.ID, dvtNhom: item.DVT_NHOM }); setBulkRows([getEmptyBulkRow(item.DVT_NHOM)]); }} className="p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Thêm dòng hàng">
+                                <button onClick={() => { setDongHHModal({ mode: 'ADD', phanLoaiId: item.ID, phanLoaiMa: item.MA_PHAN_LOAI, dvtNhom: item.DVT_NHOM }); setBulkRows([getEmptyBulkRow(item.DVT_NHOM)]); }} className="p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Thêm dòng hàng">
                                     <Plus className="w-4 h-4" />
                                 </button>
                             </PermissionGuard>
@@ -441,7 +441,7 @@ export default function PhanLoaiHHList({
                                             </div>
                                             <div className="flex gap-1">
                                                 <PermissionGuard moduleKey="phan-loai-hh" level="edit">
-                                                    <button onClick={() => setDongHHModal({ mode: 'EDIT', phanLoaiId: item.ID, itemData: child })} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-md transition-colors">
+                                                    <button onClick={() => setDongHHModal({ mode: 'EDIT', phanLoaiId: item.ID, phanLoaiMa: item.MA_PHAN_LOAI, itemData: child })} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-md transition-colors">
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
                                                 </PermissionGuard>

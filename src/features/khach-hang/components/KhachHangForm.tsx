@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Search, MapPin, ChevronDown, ChevronUp, Plus, X, UserPlus } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 import FormSelect from "@/components/FormSelect";
-import { lookupCompanyByTaxCode, getCoordinatesFromAddress, createNguoiGioiThieu } from "@/features/khach-hang/action";
+import { lookupCompanyByTaxCode, getCoordinatesFromAddress, createNguoiGioiThieu, checkTenVietTatTrung } from "@/features/khach-hang/action";
 import { toast } from "sonner";
 
 export interface KhachHangFormProps {
@@ -41,6 +41,9 @@ export function KhachHangForm({
     const [showCoordinates, setShowCoordinates] = useState(false);
     const [lat, setLat] = useState(defaultValues?.LAT?.toString() || "");
     const [long, setLong] = useState(defaultValues?.LONG?.toString() || "");
+
+    const [viettatLoading, setViettatLoading] = useState(false);
+    const [viettatError, setViettatError] = useState<string | null>(null);
 
     // Người đại diện
     const defaultNguoiDaiDien = defaultValues?.NGUOI_DAI_DIEN?.[0] || null;
@@ -177,8 +180,28 @@ export function KhachHangForm({
         setLookupLoading(false);
     };
 
+    const handleCheckTenVt = async (e: React.FocusEvent<HTMLInputElement>) => {
+        const val = e.target.value.trim();
+        if (!val) {
+            setViettatError(null);
+            return;
+        }
+        setViettatLoading(true);
+        const exists = await checkTenVietTatTrung(val, defaultValues?.ID);
+        if (exists) {
+            setViettatError("Tên viết tắt này đã được sử dụng");
+        } else {
+            setViettatError(null);
+        }
+        setViettatLoading(false);
+    };
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (viettatError) {
+            toast.error("Vui lòng khắc phục lỗi tên viết tắt trước khi lưu");
+            return;
+        }
         const fd = new FormData(e.currentTarget);
         const data = Object.fromEntries(fd.entries());
         onSubmit(data, hinhAnh, lat, long);
@@ -188,7 +211,7 @@ export function KhachHangForm({
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 pt-0">
             {/* Avatar */}
             <div className="flex justify-center space-y-0">
-                <ImageUpload value={hinhAnh} onChange={setHinhAnh} size={88} />
+                <ImageUpload value={hinhAnh} onChange={setHinhAnh} size={88} folder="pnsolar/khach-hang" />
             </div>
 
             {/* Row 1: MÃ KH, TEN KH */}
@@ -201,7 +224,11 @@ export function KhachHangForm({
             <div className="grid grid-cols-1 md:grid-cols-14 gap-4">
                 <div className="space-y-1.5 md:col-span-6 lg:col-span-6">
                     <label className="text-sm font-semibold text-muted-foreground">Tên viết tắt</label>
-                    <input name="TEN_VT" className="input-modern" placeholder="Nhập tên viết tắt" defaultValue={defaultValues?.TEN_VT ?? ""} />
+                    <div className="relative">
+                        <input name="TEN_VT" className={`input-modern w-full pr-9 ${viettatError ? 'border-destructive focus:ring-destructive/40' : ''}`} placeholder="Nhập tên viết tắt" defaultValue={defaultValues?.TEN_VT ?? ""} onBlur={handleCheckTenVt} />
+                        {viettatLoading && <div className="absolute right-3 top-[11px] w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />}
+                    </div>
+                    {viettatError && <p className="text-xs text-destructive font-medium">{viettatError}</p>}
                 </div>
                 <div className="space-y-1.5 md:col-span-4 lg:col-span-4">
                     <label className="text-sm font-semibold text-muted-foreground">Ngày thành lập</label>
@@ -323,7 +350,7 @@ export function KhachHangForm({
 
             {/* Tách Form: Nhóm KH và Nguồn chung hàng, Người giới thiệu nằm riêng hàng dưới */}
             <input type="hidden" name="PHAN_LOAI" value={defaultValues?.PHAN_LOAI || "Chưa thẩm định"} />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-muted-foreground">Nhóm KH</label>

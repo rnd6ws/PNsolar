@@ -10,21 +10,39 @@ import AddGiaNhapButton from "./AddGiaNhapButton";
 import BulkAddGiaNhapButton from "./BulkAddGiaNhapButton";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
 
+// ===== TYPES =====
+interface NhomHHOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
+interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
 interface NccOption { ID: string; MA_NCC: string; TEN_NCC: string; }
-interface HHOption { ID: string; MA_HH: string; TEN_HH: string; DON_VI_TINH: string; }
+export interface HHOption {
+    ID: string;
+    MA_HH: string;
+    TEN_HH: string;
+    DON_VI_TINH: string;
+    MA_PHAN_LOAI: string;
+    MA_DONG_HANG: string;
+    PHAN_LOAI_REL?: { TEN_PHAN_LOAI: string } | null;
+    DONG_HANG_REL?: { TEN_DONG_HANG: string } | null;
+}
 
 const DEFAULT_COLUMNS: ColumnKey[] = ["tenNcc", "tenHH", "dvt", "donGia"];
 
 interface Props {
     data: any[];
+    nhomHHOptions: NhomHHOption[];
+    phanLoaiOptions: PhanLoaiOption[];
+    dongHangOptions: DongHangOption[];
+    goiGiaOptions: GoiGiaOption[];
     nccOptions: NccOption[];
     hhOptions: HHOption[];
-    filterNccOptions: { value: string; label: string }[];
-    filterHHOptions: { value: string; label: string }[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
-export default function GiaNhapPageClient({ data, nccOptions, hhOptions, filterNccOptions, filterHHOptions, pagination }: Props) {
+export default function GiaNhapPageClient({
+    data, nhomHHOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, nccOptions, hhOptions, pagination
+}: Props) {
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
 
@@ -35,6 +53,12 @@ export default function GiaNhapPageClient({ data, nccOptions, hhOptions, filterN
         const sum = data.reduce((acc: number, d: any) => acc + (d.DON_GIA || 0), 0);
         return Math.round(sum / data.length);
     }, [data]);
+
+    const nhomHHFilterOpts = nhomHHOptions.map(n => ({ value: n.MA_NHOM, label: n.TEN_NHOM }));
+    const phanLoaiFilterOpts = phanLoaiOptions.map(p => ({ value: p.MA_PHAN_LOAI, label: p.TEN_PHAN_LOAI }));
+    const dongHangFilterOpts = dongHangOptions.map(d => ({ value: d.MA_DONG_HANG, label: d.TEN_DONG_HANG }));
+    const goiGiaFilterOpts = goiGiaOptions.map(g => ({ value: g.ID_GOI_GIA, label: g.GOI_GIA }));
+    const nccFilterOpts = nccOptions.map(n => ({ value: n.MA_NCC, label: `${n.MA_NCC} - ${n.TEN_NCC}` }));
 
     const stats = [
         { label: 'Tổng giá nhập', value: pagination.total, icon: DollarSign, color: 'text-primary bg-primary/10' },
@@ -52,8 +76,22 @@ export default function GiaNhapPageClient({ data, nccOptions, hhOptions, filterN
                     <p className="text-sm text-muted-foreground mt-1">Quản lý giá nhập hàng hóa từ nhà cung cấp.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <BulkAddGiaNhapButton nccOptions={nccOptions} hhOptions={hhOptions} />
-                    <AddGiaNhapButton nccOptions={nccOptions} hhOptions={hhOptions} />
+                    <BulkAddGiaNhapButton
+                        nhomHHOptions={nhomHHOptions}
+                        phanLoaiOptions={phanLoaiOptions}
+                        dongHangOptions={dongHangOptions}
+                        goiGiaOptions={goiGiaOptions}
+                        nccOptions={nccOptions}
+                        hhOptions={hhOptions}
+                    />
+                    <AddGiaNhapButton
+                        nhomHHOptions={nhomHHOptions}
+                        phanLoaiOptions={phanLoaiOptions}
+                        dongHangOptions={dongHangOptions}
+                        goiGiaOptions={goiGiaOptions}
+                        nccOptions={nccOptions}
+                        hhOptions={hhOptions}
+                    />
                 </div>
             </div>
 
@@ -78,7 +116,7 @@ export default function GiaNhapPageClient({ data, nccOptions, hhOptions, filterN
                 <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
                     <div className="flex items-center justify-between gap-3 w-full">
                         <div className="flex-1 w-full lg:max-w-[400px]">
-                            <SearchInput placeholder="Tìm theo NCC, mã HH, tên HH..." />
+                            <SearchInput placeholder="Tìm theo mã NCC, mã HH..." />
                         </div>
 
                         {/* Nút Lọc cho Mobile */}
@@ -93,21 +131,13 @@ export default function GiaNhapPageClient({ data, nccOptions, hhOptions, filterN
                         </div>
 
                         {/* Desktop Toolbar */}
-                        <div className="hidden lg:flex items-center gap-3 w-auto">
-                            <FilterSelect
-                                paramKey="MA_NCC"
-                                options={filterNccOptions}
-                                placeholder="Nhà cung cấp"
-                            />
-                            <FilterSelect
-                                paramKey="MA_HH"
-                                options={filterHHOptions}
-                                placeholder="Hàng hóa"
-                            />
+                        <div className="hidden lg:flex items-center gap-3 w-auto flex-wrap">
+                            <FilterSelect paramKey="MA_NHOM_HH" options={nhomHHFilterOpts} placeholder="Nhóm HH" />
+                            <FilterSelect paramKey="MA_PHAN_LOAI" options={phanLoaiFilterOpts} placeholder="Phân loại" />
+                            <FilterSelect paramKey="MA_DONG_HANG" options={dongHangFilterOpts} placeholder="Dòng hàng" />
+                            <FilterSelect paramKey="MA_GOI_GIA" options={goiGiaFilterOpts} placeholder="Gói giá" />
+                            <FilterSelect paramKey="MA_NCC" options={nccFilterOpts} placeholder="NCC" />
                             <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
-                            <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0" title="Xuất Excel">
-                                <Download className="w-4 h-4" />
-                            </button>
                         </div>
                     </div>
 
@@ -115,22 +145,14 @@ export default function GiaNhapPageClient({ data, nccOptions, hhOptions, filterN
                     {showFilters && (
                         <div className="flex lg:hidden flex-col gap-3 w-full bg-muted/30 p-4 rounded-xl border border-border animate-in slide-in-from-top-2 fade-in duration-200">
                             <div className="flex flex-col gap-3 w-full">
-                                <FilterSelect
-                                    paramKey="MA_NCC"
-                                    options={filterNccOptions}
-                                    placeholder="Nhà cung cấp"
-                                />
-                                <FilterSelect
-                                    paramKey="MA_HH"
-                                    options={filterHHOptions}
-                                    placeholder="Hàng hóa"
-                                />
+                                <FilterSelect paramKey="MA_NHOM_HH" options={nhomHHFilterOpts} placeholder="Nhóm HH" />
+                                <FilterSelect paramKey="MA_PHAN_LOAI" options={phanLoaiFilterOpts} placeholder="Phân loại" />
+                                <FilterSelect paramKey="MA_DONG_HANG" options={dongHangFilterOpts} placeholder="Dòng hàng" />
+                                <FilterSelect paramKey="MA_GOI_GIA" options={goiGiaFilterOpts} placeholder="Gói giá" />
+                                <FilterSelect paramKey="MA_NCC" options={nccFilterOpts} placeholder="NCC" />
                             </div>
                             <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-border w-full">
                                 <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
-                                <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex" title="Xuất Excel">
-                                    <Download className="w-4 h-4" />
-                                </button>
                             </div>
                         </div>
                     )}
@@ -140,6 +162,10 @@ export default function GiaNhapPageClient({ data, nccOptions, hhOptions, filterN
                 <GiaNhapList
                     data={data}
                     visibleColumns={visibleColumns}
+                    nhomHHOptions={nhomHHOptions}
+                    phanLoaiOptions={phanLoaiOptions}
+                    dongHangOptions={dongHangOptions}
+                    goiGiaOptions={goiGiaOptions}
                     nccOptions={nccOptions}
                     hhOptions={hhOptions}
                 />

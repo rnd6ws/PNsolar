@@ -1,0 +1,21 @@
+﻿🚀 Bắt đầu migrate GIA_NHAP → thêm MA_NHOM_HH, MA_PHAN_LOAI, MA_DONG_HANG, MA_GOI_GIA
+
+📋 DMHH: 5 bản ghi
+PHANLOAI_HH: 5 ban ghi
+NHOM_HH: 4 ban ghi
+📋 GOI_GIA active: 13 bản ghi
+
+📦 Tổng GIA_NHAP: 5 bản ghi
+
+   ⚠️  MA_HH=CFE-WL-15: Dòng hàng LOG không có gói giá active nào!
+   ⏭️  MA_HH=SUN-3K-SG04LP1-EU-SM1: Đã có đủ dữ liệu → skip
+   ⏭️  MA_HH=SUN-5K-SG04LP1-EU-SM2: Đã có đủ dữ liệu → skip
+   ⏭️  MA_HH=VFD500-20T00400-PV: Đã có đủ dữ liệu → skip
+   ⏭️  MA_HH=AIKO-A610-MAH72Mw: Đã có đủ dữ liệu → skip
+
+════════════════════════════════════════════════════════════
+🎉 MIGRATE GIA_NHAP HOÀN TẤT!
+════════════════════════════════════════════════════════════
+   ✅ Đã migrate:  0
+   ⏭️  Đã skip:     4
+   ❌ Lỗi:         1

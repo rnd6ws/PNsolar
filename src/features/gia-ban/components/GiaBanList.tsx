@@ -15,16 +15,18 @@ import Modal from "@/components/Modal";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import type { ColumnKey } from "./ColumnToggleButton";
 
-interface NhomKhOption { ID: string; NHOM: string; }
 interface NhomHhOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
 interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
-interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; }
+interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; MA_PHAN_LOAI: string; MA_DONG_HANG: string; PHAN_LOAI_REL?: { TEN_PHAN_LOAI: string } | null; DONG_HANG_REL?: { TEN_DONG_HANG: string } | null; }
 
 interface Props {
     data: any[];
     visibleColumns?: ColumnKey[];
-    nhomKhOptions: NhomKhOption[];
     nhomHhOptions: NhomHhOption[];
+    phanLoaiOptions: PhanLoaiOption[];
+    dongHangOptions: DongHangOption[];
     goiGiaOptions: GoiGiaOption[];
     hhOptions: HHOption[];
 }
@@ -41,29 +43,34 @@ function formatCurrency(val: number) {
 // ─── Form ────────────────────────────────────────────────────
 function GiaBanForm({
     defaultValues, loading, onSubmit, onCancel, submitLabel,
-    nhomKhOptions, nhomHhOptions, goiGiaOptions, hhOptions
+    nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions
 }: {
     defaultValues?: any;
     loading: boolean;
     onSubmit: (data: any) => void;
     onCancel: () => void;
     submitLabel: string;
-    nhomKhOptions: NhomKhOption[];
     nhomHhOptions: NhomHhOption[];
+    phanLoaiOptions: PhanLoaiOption[];
+    dongHangOptions: DongHangOption[];
     goiGiaOptions: GoiGiaOption[];
     hhOptions: HHOption[];
 }) {
-    const [nhomKh, setNhomKh] = useState(defaultValues?.NHOM_KH || "");
-    const [nhomHh, setNhomHh] = useState(defaultValues?.NHOM_HH || "");
-    const [goiGia, setGoiGia] = useState(defaultValues?.GOI_GIA || "");
+    const [nhomHh, setNhomHh] = useState(defaultValues?.MA_NHOM_HH || "");
+    const [phanLoai, setPhanLoai] = useState(defaultValues?.MA_PHAN_LOAI || "");
+    const [dongHang, setDongHang] = useState(defaultValues?.MA_DONG_HANG || "");
+    const [goiGia, setGoiGia] = useState(defaultValues?.MA_GOI_GIA || "");
     const [maHH, setMaHH] = useState(defaultValues?.MA_HH || "");
     const [ghiChu, setGhiChu] = useState(defaultValues?.GHI_CHU || "");
     const initDonGia = defaultValues?.DON_GIA ?? 0;
     const [donGiaValue, setDonGiaValue] = useState(initDonGia);
     const [donGiaDisplay, setDonGiaDisplay] = useState(initDonGia > 0 ? new Intl.NumberFormat('vi-VN').format(initDonGia) : '');
 
+    // Filter cascade: Phân loại → Dòng hàng → Gói giá → Hàng hóa
+    const filteredDongHang = phanLoai ? dongHangOptions.filter(d => d.MA_PHAN_LOAI === phanLoai) : dongHangOptions;
+    const filteredGoiGia = dongHang ? goiGiaOptions.filter(g => g.MA_DONG_HANG === dongHang) : goiGiaOptions;
+    const filteredHH = dongHang ? hhOptions.filter(h => h.MA_DONG_HANG === dongHang) : (phanLoai ? hhOptions.filter(h => h.MA_PHAN_LOAI === phanLoai) : hhOptions);
     const selectedHH = hhOptions.find(h => h.MA_HH === maHH);
-    const filteredHH = nhomHh ? hhOptions.filter(h => h.NHOM_HH === nhomHh) : hhOptions;
 
     const handleDonGiaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/[^0-9]/g, '');
@@ -78,11 +85,11 @@ function GiaBanForm({
 
         onSubmit({
             NGAY_HIEU_LUC: fd.get("NGAY_HIEU_LUC") as string,
-            NHOM_KH: nhomKh,
-            NHOM_HH: nhomHh,
-            GOI_GIA: goiGia,
+            MA_NHOM_HH: nhomHh,
+            MA_PHAN_LOAI: phanLoai,
+            MA_DONG_HANG: dongHang,
+            MA_GOI_GIA: goiGia,
             MA_HH: maHH,
-            TEN_HH: selectedHH?.TEN_HH || "",
             DON_GIA: donGiaValue,
             GHI_CHU: ghiChu || undefined,
         });
@@ -104,58 +111,74 @@ function GiaBanForm({
                 />
             </div>
 
-            {/* Nhóm KH + Nhóm HH */}
+            {/* Nhóm HH + Phân loại */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className={labelClass}>Nhóm khách hàng <span className="text-destructive">*</span></label>
-                    <select
-                        value={nhomKh}
-                        onChange={e => setNhomKh(e.target.value)}
-                        required
-                        className="input-modern"
-                    >
-                        <option value="">-- Chọn nhóm KH --</option>
-                        {nhomKhOptions.map(n => (
-                            <option key={n.ID} value={n.NHOM}>{n.NHOM}</option>
-                        ))}
-                    </select>
-                </div>
                 <div className="space-y-1.5">
                     <label className={labelClass}>Nhóm hàng hóa <span className="text-destructive">*</span></label>
                     <select
                         value={nhomHh}
-                        onChange={e => { setNhomHh(e.target.value); setMaHH(""); }}
+                        onChange={e => { setNhomHh(e.target.value); }}
                         required
                         className="input-modern"
                     >
                         <option value="">-- Chọn nhóm HH --</option>
                         {nhomHhOptions.map(n => (
-                            <option key={n.ID} value={n.TEN_NHOM}>{n.MA_NHOM} - {n.TEN_NHOM}</option>
+                            <option key={n.ID} value={n.MA_NHOM}>{n.MA_NHOM} - {n.TEN_NHOM}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="space-y-1.5">
+                    <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
+                    <select
+                        value={phanLoai}
+                        onChange={e => { setPhanLoai(e.target.value); setDongHang(""); setGoiGia(""); setMaHH(""); }}
+                        required
+                        className="input-modern"
+                    >
+                        <option value="">-- Chọn phân loại --</option>
+                        {phanLoaiOptions.map(p => (
+                            <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.MA_PHAN_LOAI} - {p.TEN_PHAN_LOAI}</option>
                         ))}
                     </select>
                 </div>
             </div>
 
-            {/* Gói giá */}
-            <div className="space-y-1.5">
-                <label className={labelClass}>Gói giá <span className="text-destructive">*</span></label>
-                <select
-                    value={goiGia}
-                    onChange={e => setGoiGia(e.target.value)}
-                    required
-                    className="input-modern"
-                >
-                    <option value="">-- Chọn gói giá --</option>
-                    {goiGiaOptions.map(g => (
-                        <option key={g.ID} value={g.GOI_GIA}>{g.ID_GOI_GIA} - {g.GOI_GIA}</option>
-                    ))}
-                </select>
+            {/* Dòng hàng + Gói giá */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
+                    <select
+                        value={dongHang}
+                        onChange={e => { setDongHang(e.target.value); setGoiGia(""); setMaHH(""); }}
+                        required
+                        className="input-modern"
+                    >
+                        <option value="">-- Chọn dòng hàng --</option>
+                        {filteredDongHang.map(d => (
+                            <option key={d.ID} value={d.MA_DONG_HANG}>{d.MA_DONG_HANG} - {d.TEN_DONG_HANG}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="space-y-1.5">
+                    <label className={labelClass}>Gói giá <span className="text-destructive">*</span></label>
+                    <select
+                        value={goiGia}
+                        onChange={e => setGoiGia(e.target.value)}
+                        required
+                        className="input-modern"
+                    >
+                        <option value="">-- Chọn gói giá --</option>
+                        {filteredGoiGia.map(g => (
+                            <option key={g.ID} value={g.ID_GOI_GIA}>{g.ID_GOI_GIA} - {g.GOI_GIA}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Mã HH + Tên HH */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <label className={labelClass}>Mã hàng hóa <span className="text-destructive">*</span></label>
+                    <label className={labelClass}>Hàng hóa <span className="text-destructive">*</span></label>
                     <select
                         value={maHH}
                         onChange={e => setMaHH(e.target.value)}
@@ -211,13 +234,13 @@ function GiaBanForm({
 }
 
 // ─── Component chính ──────────────────────────────────────────
-export default function GiaBanList({ data, visibleColumns, nhomKhOptions, nhomHhOptions, goiGiaOptions, hhOptions }: Props) {
+export default function GiaBanList({ data, visibleColumns, nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions }: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 
-    const cols = visibleColumns ?? ["nhomKh", "nhomHh", "goiGia", "tenHH", "donGia", "ghiChu"] as ColumnKey[];
+    const cols = visibleColumns ?? ["nhomHh", "phanLoai", "dongHang", "goiGia", "hangHoa", "donGia", "ghiChu"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
 
     const sortedData = useMemo(() => {
@@ -281,26 +304,30 @@ export default function GiaBanList({ data, visibleColumns, nhomKhOptions, nhomHh
                             <th onClick={() => handleSort("NGAY_HIEU_LUC")} className={`${thSortClass} whitespace-nowrap`}>
                                 Ngày HL <SortIcon columnKey="NGAY_HIEU_LUC" />
                             </th>
-                            {show("nhomKh") && (
-                                <th onClick={() => handleSort("NHOM_KH")} className={thSortClass}>
-                                    Nhóm KH <SortIcon columnKey="NHOM_KH" />
+                            {show("nhomHh") && (
+                                <th onClick={() => handleSort("MA_NHOM_HH")} className={thSortClass}>
+                                    Nhóm hàng <SortIcon columnKey="MA_NHOM_HH" />
                                 </th>
                             )}
-                            {show("nhomHh") && (
-                                <th onClick={() => handleSort("NHOM_HH")} className={thSortClass}>
-                                    Nhóm HH <SortIcon columnKey="NHOM_HH" />
+                            {show("phanLoai") && (
+                                <th onClick={() => handleSort("MA_PHAN_LOAI")} className={thSortClass}>
+                                    Phân loại <SortIcon columnKey="MA_PHAN_LOAI" />
+                                </th>
+                            )}
+                            {show("dongHang") && (
+                                <th onClick={() => handleSort("MA_DONG_HANG")} className={thSortClass}>
+                                    Dòng hàng <SortIcon columnKey="MA_DONG_HANG" />
                                 </th>
                             )}
                             {show("goiGia") && (
-                                <th onClick={() => handleSort("GOI_GIA")} className={thSortClass}>
-                                    Gói giá <SortIcon columnKey="GOI_GIA" />
+                                <th onClick={() => handleSort("MA_GOI_GIA")} className={thSortClass}>
+                                    Gói giá <SortIcon columnKey="MA_GOI_GIA" />
                                 </th>
                             )}
-                            <th onClick={() => handleSort("MA_HH")} className={thSortClass}>
-                                Mã HH <SortIcon columnKey="MA_HH" />
-                            </th>
-                            {show("tenHH") && (
-                                <th className={thClass}>Tên HH</th>
+                            {show("hangHoa") && (
+                                <th onClick={() => handleSort("MA_HH")} className={thSortClass}>
+                                    Hàng hóa <SortIcon columnKey="MA_HH" />
+                                </th>
                             )}
                             {show("donGia") && (
                                 <th onClick={() => handleSort("DON_GIA")} className={`${thSortClass} text-right`}>
@@ -319,27 +346,34 @@ export default function GiaBanList({ data, visibleColumns, nhomKhOptions, nhomHh
                                 <td className="px-4 py-3 align-middle text-xs text-muted-foreground font-medium whitespace-nowrap">
                                     {formatDate(item.NGAY_HIEU_LUC)}
                                 </td>
-                                {show("nhomKh") && (
-                                    <td className="px-4 py-3 align-middle text-xs text-foreground">
-                                        {item.NHOM_KH}
-                                    </td>
-                                )}
                                 {show("nhomHh") && (
                                     <td className="px-4 py-3 align-middle text-xs text-foreground">
-                                        {item.NHOM_HH}
+                                        {item.NHOM?.TEN_NHOM || item.MA_NHOM_HH}
+                                    </td>
+                                )}
+                                {show("phanLoai") && (
+                                    <td className="px-4 py-3 align-middle text-xs text-foreground">
+                                        {item.PHAN_LOAI_REL?.TEN_PHAN_LOAI || item.MA_PHAN_LOAI}
+                                    </td>
+                                )}
+                                {show("dongHang") && (
+                                    <td className="px-4 py-3 align-middle text-xs text-foreground">
+                                        {item.DONG_HANG_REL?.TEN_DONG_HANG || item.MA_DONG_HANG}
                                     </td>
                                 )}
                                 {show("goiGia") && (
                                     <td className="px-4 py-3 align-middle text-xs text-foreground">
-                                        {item.GOI_GIA}
+                                        {item.GOI_GIA_REL?.GOI_GIA || item.MA_GOI_GIA}
                                     </td>
                                 )}
-                                <td className="px-4 py-3 align-middle">
-                                    <span className="font-mono text-xs font-semibold text-primary">{item.MA_HH}</span>
-                                </td>
-                                {show("tenHH") && (
-                                    <td className="px-4 py-3 align-middle text-xs text-foreground max-w-[200px] truncate">
-                                        {item.TEN_HH}
+                                {show("hangHoa") && (
+                                    <td className="px-4 py-3 align-middle">
+                                        <div>
+                                            <span className="font-mono text-xs font-semibold text-primary">{item.MA_HH}</span>
+                                            <p className="text-[11px] text-muted-foreground truncate max-w-[200px]">
+                                                {item.HANG_HOA?.TEN_HH || ""}
+                                            </p>
+                                        </div>
                                     </td>
                                 )}
                                 {show("donGia") && (
@@ -400,7 +434,7 @@ export default function GiaBanList({ data, visibleColumns, nhomKhOptions, nhomHh
                                     <Package className="w-5 h-5 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-foreground text-sm">{item.TEN_HH}</p>
+                                    <p className="font-semibold text-foreground text-sm">{item.HANG_HOA?.TEN_HH || item.MA_HH}</p>
                                     <p className="text-xs text-primary font-mono">{item.MA_HH}</p>
                                 </div>
                             </div>
@@ -425,9 +459,10 @@ export default function GiaBanList({ data, visibleColumns, nhomKhOptions, nhomHh
                             </DropdownMenu>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                            <p><span className="font-medium">Nhóm KH:</span> {item.NHOM_KH}</p>
-                            <p><span className="font-medium">Nhóm HH:</span> {item.NHOM_HH}</p>
-                            <p><span className="font-medium">Gói giá:</span> {item.GOI_GIA}</p>
+                            <p><span className="font-medium">Nhóm:</span> {item.NHOM?.TEN_NHOM || item.MA_NHOM_HH}</p>
+                            <p><span className="font-medium">Phân loại:</span> {item.PHAN_LOAI_REL?.TEN_PHAN_LOAI || item.MA_PHAN_LOAI}</p>
+                            <p><span className="font-medium">Dòng hàng:</span> {item.DONG_HANG_REL?.TEN_DONG_HANG || item.MA_DONG_HANG}</p>
+                            <p><span className="font-medium">Gói giá:</span> {item.GOI_GIA_REL?.GOI_GIA || item.MA_GOI_GIA}</p>
                             <p><span className="font-medium">Ngày HL:</span> {formatDate(item.NGAY_HIEU_LUC)}</p>
                         </div>
                         <div className="flex items-center justify-between pt-2 border-t border-border">
@@ -448,8 +483,9 @@ export default function GiaBanList({ data, visibleColumns, nhomKhOptions, nhomHh
                         onSubmit={handleUpdate}
                         onCancel={() => setEditItem(null)}
                         submitLabel="Cập nhật"
-                        nhomKhOptions={nhomKhOptions}
                         nhomHhOptions={nhomHhOptions}
+                        phanLoaiOptions={phanLoaiOptions}
+                        dongHangOptions={dongHangOptions}
                         goiGiaOptions={goiGiaOptions}
                         hhOptions={hhOptions}
                     />
@@ -471,8 +507,8 @@ export default function GiaBanList({ data, visibleColumns, nhomKhOptions, nhomHh
                     return res;
                 }}
                 title="Xác nhận xóa giá bán"
-                itemName={deleteItem ? `${deleteItem.MA_HH} - ${deleteItem.TEN_HH}` : undefined}
-                itemDetail={deleteItem ? `Nhóm KH: ${deleteItem.NHOM_KH} \u2022 ${formatCurrency(deleteItem.DON_GIA)} \u20ab` : undefined}
+                itemName={deleteItem ? `${deleteItem.MA_HH} - ${deleteItem.HANG_HOA?.TEN_HH || ''}` : undefined}
+                itemDetail={deleteItem ? `${formatCurrency(deleteItem.DON_GIA)} \u20ab` : undefined}
                 confirmText="Xóa"
             />
         </>
