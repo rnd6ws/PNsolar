@@ -7,23 +7,26 @@ import { toast } from "sonner";
 import { createGiaBan } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 
-interface NhomKhOption { ID: string; NHOM: string; }
 interface NhomHhOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
 interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
-interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; }
+interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; MA_PHAN_LOAI: string; MA_DONG_HANG: string; PHAN_LOAI_REL?: { TEN_PHAN_LOAI: string } | null; DONG_HANG_REL?: { TEN_DONG_HANG: string } | null; }
 
 interface Props {
-    nhomKhOptions: NhomKhOption[];
     nhomHhOptions: NhomHhOption[];
+    phanLoaiOptions: PhanLoaiOption[];
+    dongHangOptions: DongHangOption[];
     goiGiaOptions: GoiGiaOption[];
     hhOptions: HHOption[];
 }
 
-export default function AddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiGiaOptions, hhOptions }: Props) {
+export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions }: Props) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [nhomKh, setNhomKh] = useState("");
     const [nhomHh, setNhomHh] = useState("");
+    const [phanLoai, setPhanLoai] = useState("");
+    const [dongHang, setDongHang] = useState("");
     const [goiGia, setGoiGia] = useState("");
     const [maHH, setMaHH] = useState("");
     const [donGiaDisplay, setDonGiaDisplay] = useState("");
@@ -32,10 +35,10 @@ export default function AddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiGiaOp
 
     const selectedHH = hhOptions.find(h => h.MA_HH === maHH);
 
-    // Filter HH by nhomHh
-    const filteredHH = nhomHh
-        ? hhOptions.filter(h => h.NHOM_HH === nhomHh)
-        : hhOptions;
+    // Filter cascade
+    const filteredDongHang = phanLoai ? dongHangOptions.filter(d => d.MA_PHAN_LOAI === phanLoai) : dongHangOptions;
+    const filteredGoiGia = dongHang ? goiGiaOptions.filter(g => g.MA_DONG_HANG === dongHang) : goiGiaOptions;
+    const filteredHH = dongHang ? hhOptions.filter(h => h.MA_DONG_HANG === dongHang) : (phanLoai ? hhOptions.filter(h => h.MA_PHAN_LOAI === phanLoai) : hhOptions);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -44,11 +47,11 @@ export default function AddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiGiaOp
         setLoading(true);
         const res = await createGiaBan({
             NGAY_HIEU_LUC: fd.get("NGAY_HIEU_LUC") as string,
-            NHOM_KH: nhomKh,
-            NHOM_HH: nhomHh,
-            GOI_GIA: goiGia,
+            MA_NHOM_HH: nhomHh,
+            MA_PHAN_LOAI: phanLoai,
+            MA_DONG_HANG: dongHang,
+            MA_GOI_GIA: goiGia,
             MA_HH: maHH,
-            TEN_HH: selectedHH?.TEN_HH || "",
             DON_GIA: donGiaValue,
             GHI_CHU: ghiChu || undefined,
         });
@@ -64,8 +67,9 @@ export default function AddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiGiaOp
 
     const handleClose = () => {
         setOpen(false);
-        setNhomKh("");
         setNhomHh("");
+        setPhanLoai("");
+        setDongHang("");
         setGoiGia("");
         setMaHH("");
         setDonGiaDisplay("");
@@ -107,58 +111,74 @@ export default function AddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiGiaOp
                         />
                     </div>
 
-                    {/* Nhóm KH + Nhóm HH */}
+                    {/* Nhóm HH + Phân loại */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className={labelClass}>Nhóm khách hàng <span className="text-destructive">*</span></label>
-                            <select
-                                value={nhomKh}
-                                onChange={e => setNhomKh(e.target.value)}
-                                required
-                                className="input-modern"
-                            >
-                                <option value="">-- Chọn nhóm KH --</option>
-                                {nhomKhOptions.map(n => (
-                                    <option key={n.ID} value={n.NHOM}>{n.NHOM}</option>
-                                ))}
-                            </select>
-                        </div>
                         <div className="space-y-1.5">
                             <label className={labelClass}>Nhóm hàng hóa <span className="text-destructive">*</span></label>
                             <select
                                 value={nhomHh}
-                                onChange={e => { setNhomHh(e.target.value); setMaHH(""); }}
+                                onChange={e => { setNhomHh(e.target.value); }}
                                 required
                                 className="input-modern"
                             >
                                 <option value="">-- Chọn nhóm HH --</option>
                                 {nhomHhOptions.map(n => (
-                                    <option key={n.ID} value={n.TEN_NHOM}>{n.MA_NHOM} - {n.TEN_NHOM}</option>
+                                    <option key={n.ID} value={n.MA_NHOM}>{n.MA_NHOM} - {n.TEN_NHOM}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
+                            <select
+                                value={phanLoai}
+                                onChange={e => { setPhanLoai(e.target.value); setDongHang(""); setGoiGia(""); setMaHH(""); }}
+                                required
+                                className="input-modern"
+                            >
+                                <option value="">-- Chọn phân loại --</option>
+                                {phanLoaiOptions.map(p => (
+                                    <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.MA_PHAN_LOAI} - {p.TEN_PHAN_LOAI}</option>
                                 ))}
                             </select>
                         </div>
                     </div>
 
-                    {/* Gói giá */}
-                    <div className="space-y-1.5">
-                        <label className={labelClass}>Gói giá <span className="text-destructive">*</span></label>
-                        <select
-                            value={goiGia}
-                            onChange={e => setGoiGia(e.target.value)}
-                            required
-                            className="input-modern"
-                        >
-                            <option value="">-- Chọn gói giá --</option>
-                            {goiGiaOptions.map(g => (
-                                <option key={g.ID} value={g.GOI_GIA}>{g.ID_GOI_GIA} - {g.GOI_GIA}</option>
-                            ))}
-                        </select>
+                    {/* Dòng hàng + Gói giá */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
+                            <select
+                                value={dongHang}
+                                onChange={e => { setDongHang(e.target.value); setGoiGia(""); setMaHH(""); }}
+                                required
+                                className="input-modern"
+                            >
+                                <option value="">-- Chọn dòng hàng --</option>
+                                {filteredDongHang.map(d => (
+                                    <option key={d.ID} value={d.MA_DONG_HANG}>{d.MA_DONG_HANG} - {d.TEN_DONG_HANG}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className={labelClass}>Gói giá <span className="text-destructive">*</span></label>
+                            <select
+                                value={goiGia}
+                                onChange={e => setGoiGia(e.target.value)}
+                                required
+                                className="input-modern"
+                            >
+                                <option value="">-- Chọn gói giá --</option>
+                                {filteredGoiGia.map(g => (
+                                    <option key={g.ID} value={g.ID_GOI_GIA}>{g.ID_GOI_GIA} - {g.GOI_GIA}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Mã HH + Tên HH */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className={labelClass}>Mã hàng hóa <span className="text-destructive">*</span></label>
+                            <label className={labelClass}>Hàng hóa <span className="text-destructive">*</span></label>
                             <select
                                 value={maHH}
                                 onChange={e => setMaHH(e.target.value)}

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function HangHoaPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; NHOM_HH?: string; PHAN_LOAI?: string; DONG_HANG?: string }> }) {
+export default async function HangHoaPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; NHOM_HH?: string; MA_PHAN_LOAI?: string; MA_DONG_HANG?: string }> }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
 
@@ -20,8 +20,8 @@ export default async function HangHoaPage({ searchParams }: { searchParams: Prom
         query: params.query,
         page,
         NHOM_HH: params.NHOM_HH,
-        PHAN_LOAI: params.PHAN_LOAI,
-        DONG_HANG: params.DONG_HANG
+        MA_PHAN_LOAI: params.MA_PHAN_LOAI,
+        MA_DONG_HANG: params.MA_DONG_HANG,
     });
 
     // Get unique categories for the filter selects
@@ -48,3 +48,4 @@ export default async function HangHoaPage({ searchParams }: { searchParams: Prom
         />
     );
 }
+

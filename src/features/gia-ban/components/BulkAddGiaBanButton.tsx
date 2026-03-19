@@ -6,41 +6,44 @@ import { toast } from "sonner";
 import { createBulkGiaBan } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 
-interface NhomKhOption { ID: string; NHOM: string; }
 interface NhomHhOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
 interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
-interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; }
+interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; MA_PHAN_LOAI: string; MA_DONG_HANG: string; PHAN_LOAI_REL?: { TEN_PHAN_LOAI: string } | null; DONG_HANG_REL?: { TEN_DONG_HANG: string } | null; }
 
 interface BulkRow {
-    NHOM_KH: string;
-    NHOM_HH: string;
-    GOI_GIA: string;
+    MA_NHOM_HH: string;
+    MA_PHAN_LOAI: string;
+    MA_DONG_HANG: string;
+    MA_GOI_GIA: string;
     MA_HH: string;
     DON_GIA: number;
     donGiaDisplay: string;
     GHI_CHU: string;
 }
 
-const emptyRow: BulkRow = { NHOM_KH: '', NHOM_HH: '', GOI_GIA: '', MA_HH: '', DON_GIA: 0, donGiaDisplay: '', GHI_CHU: '' };
+const emptyRow: BulkRow = { MA_NHOM_HH: '', MA_PHAN_LOAI: '', MA_DONG_HANG: '', MA_GOI_GIA: '', MA_HH: '', DON_GIA: 0, donGiaDisplay: '', GHI_CHU: '' };
 
 interface Props {
-    nhomKhOptions: NhomKhOption[];
     nhomHhOptions: NhomHhOption[];
+    phanLoaiOptions: PhanLoaiOption[];
+    dongHangOptions: DongHangOption[];
     goiGiaOptions: GoiGiaOption[];
     hhOptions: HHOption[];
 }
 
-export default function BulkAddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiGiaOptions, hhOptions }: Props) {
+export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [ngayHieuLuc, setNgayHieuLuc] = useState('');
-    const [rows, setRows] = useState<BulkRow[]>(Array.from({ length: 5 }, () => ({ ...emptyRow })));
+    const [rows, setRows] = useState<BulkRow[]>(Array.from({ length: 3 }, () => ({ ...emptyRow })));
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const handleOpen = () => {
         setIsOpen(true);
         setNgayHieuLuc(new Date().toISOString().split('T')[0]);
-        setRows(Array.from({ length: 5 }, () => ({ ...emptyRow })));
+        setRows(Array.from({ length: 3 }, () => ({ ...emptyRow })));
         setError(null);
         setLoading(false);
     };
@@ -59,8 +62,9 @@ export default function BulkAddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiG
         setRows(prev => prev.map((row, i) => {
             if (i !== index) return row;
             const updated = { ...row, [key]: value };
-            // Reset MA_HH khi đổi NHOM_HH
-            if (key === 'NHOM_HH') updated.MA_HH = '';
+            // Reset cascade
+            if (key === 'MA_PHAN_LOAI') { updated.MA_DONG_HANG = ''; updated.MA_GOI_GIA = ''; updated.MA_HH = ''; }
+            if (key === 'MA_DONG_HANG') { updated.MA_GOI_GIA = ''; updated.MA_HH = ''; }
             return updated;
         }));
     };
@@ -75,8 +79,18 @@ export default function BulkAddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiG
         } : row));
     };
 
-    const getFilteredHH = (nhomHh: string) => {
-        return nhomHh ? hhOptions.filter(h => h.NHOM_HH === nhomHh) : hhOptions;
+    const getFilteredDongHang = (maPhanLoai: string) => {
+        return maPhanLoai ? dongHangOptions.filter(d => d.MA_PHAN_LOAI === maPhanLoai) : dongHangOptions;
+    };
+
+    const getFilteredGoiGia = (maDongHang: string) => {
+        return maDongHang ? goiGiaOptions.filter(g => g.MA_DONG_HANG === maDongHang) : goiGiaOptions;
+    };
+
+    const getFilteredHH = (maDongHang: string, maPhanLoai: string) => {
+        if (maDongHang) return hhOptions.filter(h => h.MA_DONG_HANG === maDongHang);
+        if (maPhanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === maPhanLoai);
+        return hhOptions;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -88,9 +102,10 @@ export default function BulkAddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiG
             const result = await createBulkGiaBan({
                 NGAY_HIEU_LUC: ngayHieuLuc,
                 rows: rows.map(r => ({
-                    NHOM_KH: r.NHOM_KH,
-                    NHOM_HH: r.NHOM_HH,
-                    GOI_GIA: r.GOI_GIA,
+                    MA_NHOM_HH: r.MA_NHOM_HH,
+                    MA_PHAN_LOAI: r.MA_PHAN_LOAI,
+                    MA_DONG_HANG: r.MA_DONG_HANG,
+                    MA_GOI_GIA: r.MA_GOI_GIA,
                     MA_HH: r.MA_HH,
                     DON_GIA: r.DON_GIA,
                     GHI_CHU: r.GHI_CHU || undefined,
@@ -189,72 +204,76 @@ export default function BulkAddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiG
                                     </button>
                                 </div>
 
-                                {/* Table header - Desktop */}
-                                <div className="hidden md:grid md:grid-cols-[1fr_1fr_1fr_1fr_150px_1fr_40px] gap-2 mb-2 px-1">
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Nhóm KH *</span>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Nhóm HH *</span>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gói giá *</span>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Hàng hóa *</span>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Đơn giá (VNĐ) *</span>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ghi chú</span>
-                                    <span></span>
-                                </div>
-
                                 {/* Rows */}
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {rows.map((row, idx) => (
                                         <div
                                             key={idx}
-                                            className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_150px_1fr_40px] gap-2 p-3 md:p-1 bg-muted/20 md:bg-transparent rounded-lg md:rounded-none border md:border-0 border-border"
+                                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 p-4 bg-muted/20 rounded-xl border border-border"
                                         >
-                                            {/* Nhóm KH */}
-                                            <div>
-                                                <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Nhóm KH *</label>
-                                                <select
-                                                    className={selectClass}
-                                                    value={row.NHOM_KH}
-                                                    onChange={e => updateRow(idx, 'NHOM_KH', e.target.value)}
-                                                    required
-                                                >
-                                                    <option value="">-- Nhóm KH --</option>
-                                                    {nhomKhOptions.map(n => (
-                                                        <option key={n.ID} value={n.NHOM}>{n.NHOM}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
                                             {/* Nhóm HH */}
                                             <div>
-                                                <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Nhóm HH *</label>
+                                                <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Nhóm HH *</label>
                                                 <select
                                                     className={selectClass}
-                                                    value={row.NHOM_HH}
-                                                    onChange={e => updateRow(idx, 'NHOM_HH', e.target.value)}
+                                                    value={row.MA_NHOM_HH}
+                                                    onChange={e => updateRow(idx, 'MA_NHOM_HH', e.target.value)}
                                                     required
                                                 >
                                                     <option value="">-- Nhóm HH --</option>
                                                     {nhomHhOptions.map(n => (
-                                                        <option key={n.ID} value={n.TEN_NHOM}>{n.MA_NHOM} - {n.TEN_NHOM}</option>
+                                                        <option key={n.ID} value={n.MA_NHOM}>{n.MA_NHOM} - {n.TEN_NHOM}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            {/* Phân loại */}
+                                            <div>
+                                                <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Phân loại *</label>
+                                                <select
+                                                    className={selectClass}
+                                                    value={row.MA_PHAN_LOAI}
+                                                    onChange={e => updateRow(idx, 'MA_PHAN_LOAI', e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="">-- Phân loại --</option>
+                                                    {phanLoaiOptions.map(p => (
+                                                        <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.MA_PHAN_LOAI} - {p.TEN_PHAN_LOAI}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            {/* Dòng hàng */}
+                                            <div>
+                                                <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dòng hàng *</label>
+                                                <select
+                                                    className={selectClass}
+                                                    value={row.MA_DONG_HANG}
+                                                    onChange={e => updateRow(idx, 'MA_DONG_HANG', e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="">-- Dòng hàng --</option>
+                                                    {getFilteredDongHang(row.MA_PHAN_LOAI).map(d => (
+                                                        <option key={d.ID} value={d.MA_DONG_HANG}>{d.MA_DONG_HANG} - {d.TEN_DONG_HANG}</option>
                                                     ))}
                                                 </select>
                                             </div>
                                             {/* Gói giá */}
                                             <div>
-                                                <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Gói giá *</label>
+                                                <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Gói giá *</label>
                                                 <select
                                                     className={selectClass}
-                                                    value={row.GOI_GIA}
-                                                    onChange={e => updateRow(idx, 'GOI_GIA', e.target.value)}
+                                                    value={row.MA_GOI_GIA}
+                                                    onChange={e => updateRow(idx, 'MA_GOI_GIA', e.target.value)}
                                                     required
                                                 >
                                                     <option value="">-- Gói giá --</option>
-                                                    {goiGiaOptions.map(g => (
-                                                        <option key={g.ID} value={g.GOI_GIA}>{g.ID_GOI_GIA} - {g.GOI_GIA}</option>
+                                                    {getFilteredGoiGia(row.MA_DONG_HANG).map(g => (
+                                                        <option key={g.ID} value={g.ID_GOI_GIA}>{g.ID_GOI_GIA} - {g.GOI_GIA}</option>
                                                     ))}
                                                 </select>
                                             </div>
-                                            {/* HH */}
+                                            {/* Hàng hóa */}
                                             <div>
-                                                <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Hàng hóa *</label>
+                                                <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Hàng hóa *</label>
                                                 <select
                                                     className={selectClass}
                                                     value={row.MA_HH}
@@ -262,14 +281,14 @@ export default function BulkAddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiG
                                                     required
                                                 >
                                                     <option value="">-- Chọn HH --</option>
-                                                    {getFilteredHH(row.NHOM_HH).map(h => (
+                                                    {getFilteredHH(row.MA_DONG_HANG, row.MA_PHAN_LOAI).map(h => (
                                                         <option key={h.ID} value={h.MA_HH}>{h.MA_HH} - {h.TEN_HH}</option>
                                                     ))}
                                                 </select>
                                             </div>
                                             {/* Đơn giá */}
                                             <div>
-                                                <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Đơn giá *</label>
+                                                <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Đơn giá *</label>
                                                 <input
                                                     type="text"
                                                     inputMode="numeric"
@@ -282,7 +301,7 @@ export default function BulkAddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiG
                                             </div>
                                             {/* Ghi chú */}
                                             <div>
-                                                <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Ghi chú</label>
+                                                <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Ghi chú</label>
                                                 <input
                                                     type="text"
                                                     className={inputClass}
@@ -292,15 +311,15 @@ export default function BulkAddGiaBanButton({ nhomKhOptions, nhomHhOptions, goiG
                                                 />
                                             </div>
                                             {/* Xóa dòng */}
-                                            <div className="flex items-center justify-center">
+                                            <div className="flex items-end justify-center">
                                                 <button
                                                     type="button"
                                                     onClick={() => removeRow(idx)}
                                                     disabled={rows.length === 1}
-                                                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    className="h-9 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 text-xs"
                                                     title="Xóa dòng"
                                                 >
-                                                    <X className="w-4 h-4" />
+                                                    <X className="w-4 h-4" /> Xóa
                                                 </button>
                                             </div>
                                         </div>

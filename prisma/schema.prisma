@@ -46,9 +46,14 @@ enum ROLE {
 model DMHH {
   ID          String  @id @default(auto()) @map("_id") @db.ObjectId
   MA_HH       String  @unique
-  NHOM_HH     String?
-  PHAN_LOAI   String
-  DONG_HANG   String
+  NHOM_HH     String? // Nhóm hàng (text, không bắt buộc)
+
+  MA_PHAN_LOAI String
+  PHAN_LOAI_REL PHANLOAI_HH @relation(fields: [MA_PHAN_LOAI], references: [MA_PHAN_LOAI])
+
+  MA_DONG_HANG String
+  DONG_HANG_REL DONG_HH @relation(fields: [MA_DONG_HANG], references: [MA_DONG_HANG])
+
   TEN_HH      String
   MODEL       String
   MO_TA       String?
@@ -58,11 +63,12 @@ model DMHH {
   BAO_HANH    String?
   HIEU_LUC    Boolean @default(true)
 
+  GIA_BANS GIA_BAN[] // Relation ngược từ GIA_BAN
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
 
-  @@index([NHOM_HH, PHAN_LOAI, DONG_HANG])
+  @@index([NHOM_HH, MA_PHAN_LOAI, MA_DONG_HANG])
   @@fulltext([TEN_HH, MODEL, MA_HH])
   @@map("DMHH")
 }
@@ -76,7 +82,8 @@ model PHANLOAI_HH {
   NHOM          String?
 
   DONG_HHS DONG_HH[] // Relation to DONG_HH
-
+  GIA_BANS GIA_BAN[] // Relation ngược từ GIA_BAN
+  DMHHS    DMHH[]    // Relation ngược từ DMHH
 
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
@@ -87,8 +94,8 @@ model PHANLOAI_HH {
 // ===== DÒNG HÀNG HÓA =====
 model DONG_HH {
   ID            String      @id @default(auto()) @map("_id") @db.ObjectId
-  PHAN_LOAI_ID  String      @db.ObjectId
-  PHAN_LOAI     PHANLOAI_HH @relation(fields: [PHAN_LOAI_ID], references: [ID])
+  MA_PHAN_LOAI  String
+  PHAN_LOAI     PHANLOAI_HH @relation(fields: [MA_PHAN_LOAI], references: [MA_PHAN_LOAI])
   MA_DONG_HANG  String      @unique // ID dòng hàng
   TEN_DONG_HANG String // Dòng hàng
   TIEN_TO       String? // Tiền tố tên
@@ -96,11 +103,13 @@ model DONG_HH {
   XUAT_XU       String? // Xuất xứ
   DVT           String? // ĐVT
 
+  GIA_BANS GIA_BAN[] // Relation ngược từ GIA_BAN
+  DMHHS    DMHH[]    // Relation ngược từ DMHH
 
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
 
-  @@index([PHAN_LOAI_ID])
+  @@index([MA_PHAN_LOAI])
   @@map("DONG_HH")
 }
 
@@ -110,6 +119,7 @@ model NHOM_HH {
   MA_NHOM  String @unique
   TEN_NHOM String
 
+  GIA_BANS GIA_BAN[] // Relation ngược từ GIA_BAN
 
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
@@ -311,6 +321,8 @@ model GOI_GIA {
   SL_MIN        Int?
   SL_MAX        Int?
 
+  GIA_BANS GIA_BAN[] // Relation ngược từ GIA_BAN
+
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
 
@@ -412,19 +424,33 @@ model CO_HOI {
 model GIA_BAN {
   ID             String    @id @default(auto()) @map("_id") @db.ObjectId
   NGAY_HIEU_LUC  DateTime
-  NHOM_KH        String
-  NHOM_HH        String
-  GOI_GIA        String
+
+  // --- Các cột liên kết (lưu mã, dùng @relation để lấy tên) ---
+  MA_NHOM_HH     String
+  NHOM           NHOM_HH     @relation(fields: [MA_NHOM_HH], references: [MA_NHOM])
+
+  MA_PHAN_LOAI   String
+  PHAN_LOAI_REL  PHANLOAI_HH @relation(fields: [MA_PHAN_LOAI], references: [MA_PHAN_LOAI])
+
+  MA_DONG_HANG   String
+  DONG_HANG_REL  DONG_HH     @relation(fields: [MA_DONG_HANG], references: [MA_DONG_HANG])
+
+  MA_GOI_GIA     String
+  GOI_GIA_REL    GOI_GIA     @relation(fields: [MA_GOI_GIA], references: [ID_GOI_GIA])
+
   MA_HH          String
-  TEN_HH         String
+  HANG_HOA       DMHH        @relation(fields: [MA_HH], references: [MA_HH])
+
+  // --- Các cột dữ liệu ---
   DON_GIA        Float
   GHI_CHU        String?
 
   CREATED_AT DateTime  @default(now())
   UPDATED_AT DateTime  @updatedAt
 
-  @@index([NHOM_KH, NHOM_HH, MA_HH])
-  @@fulltext([MA_HH, TEN_HH, NHOM_KH, NHOM_HH, GOI_GIA])
+  @@index([MA_NHOM_HH, MA_PHAN_LOAI, MA_DONG_HANG])
+  @@index([MA_HH])
+  @@fulltext([MA_HH, MA_NHOM_HH, MA_GOI_GIA])
   @@map("GIA_BAN")
 }
 
