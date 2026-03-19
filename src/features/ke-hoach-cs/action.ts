@@ -325,6 +325,71 @@ export async function getCoHoiByKH(idKh: string) {
     }
 }
 
+export async function getKeHoachCSByKH(idKh: string) {
+    try {
+        const data = await prisma.kEHOACH_CSKH.findMany({
+            where: { ID_KH: idKh },
+            orderBy: { TG_TU: "desc" },
+            select: {
+                ID: true,
+                ID_LH: true,
+                LOAI_CS: true,
+                TG_TU: true,
+                TG_DEN: true,
+                HINH_THUC: true,
+                DIA_DIEM: true,
+                NGUOI_CS: true,
+                TRANG_THAI: true,
+                NGAY_CS_TT: true,
+                KQ_CS: true,
+                XL_CS: true,
+                GHI_CHU_NC: true,
+                NOI_DUNG_TD: true,
+                DICH_VU_QT: true,
+                CREATED_AT: true,
+            },
+        });
+
+        // Resolve người liên hệ
+        const validLhIds = Array.from(new Set(data.map((d) => d.ID_LH).filter(Boolean))) as string[];
+        let lhMap: Record<string, any> = {};
+        if (validLhIds.length > 0) {
+            const nguoiLienHes = await prisma.nGUOI_LIENHE.findMany({
+                where: { ID: { in: validLhIds } },
+                select: { ID: true, TENNGUOI_LIENHE: true, CHUC_VU: true },
+            });
+            lhMap = Object.fromEntries(nguoiLienHes.map((n) => [n.ID, n]));
+        }
+
+        // Resolve tên dịch vụ từ IDs trong DICH_VU_QT
+        const allDvIds = Array.from(
+            new Set(data.flatMap((d) => (Array.isArray(d.DICH_VU_QT) ? d.DICH_VU_QT as string[] : [])))
+        );
+        let dvMap: Record<string, string> = {};
+        if (allDvIds.length > 0) {
+            const dvList = await prisma.dM_DICH_VU.findMany({
+                where: { ID: { in: allDvIds } },
+                select: { ID: true, DICH_VU: true },
+            });
+            dvMap = Object.fromEntries(dvList.map((dv) => [dv.ID, dv.DICH_VU]));
+        }
+
+        return {
+            success: true,
+            data: data.map((d) => ({
+                ...d,
+                NGUOI_LH: d.ID_LH ? lhMap[d.ID_LH] || null : null,
+                // Map IDs → tên dịch vụ (giữ ID nếu không tìm thấy tên)
+                DICH_VU_NAMES: Array.isArray(d.DICH_VU_QT)
+                    ? (d.DICH_VU_QT as string[]).map((id) => dvMap[id] || id)
+                    : [],
+            })),
+        };
+    } catch {
+        return { success: false, data: [] as any[] };
+    }
+}
+
 export async function getNVListCS() {
     try {
         const data = await prisma.dSNV.findMany({

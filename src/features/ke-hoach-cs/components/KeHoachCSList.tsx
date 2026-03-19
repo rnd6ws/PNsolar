@@ -171,7 +171,7 @@ export default function KeHoachCSList({
                 </button>
                 <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
                     <button
-                        onClick={() => setBaoCaoItem(item)}
+                        onClick={isCancelled ? undefined : () => setBaoCaoItem(item)}
                         disabled={isCancelled}
                         className={`p-1.5 rounded-lg transition-colors ${
                             isCancelled 
@@ -186,13 +186,8 @@ export default function KeHoachCSList({
                 <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
                     <button
                         onClick={() => setEditItem(item)}
-                        disabled={isCancelled}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                            isCancelled 
-                            ? "opacity-50 cursor-not-allowed text-muted-foreground bg-transparent" 
-                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                        }`}
-                        title={isCancelled ? "Kế hoạch đã hủy" : "Chỉnh sửa"}
+                        className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        title="Chỉnh sửa"
                     >
                         <Pencil className="w-3.5 h-3.5" />
                     </button>

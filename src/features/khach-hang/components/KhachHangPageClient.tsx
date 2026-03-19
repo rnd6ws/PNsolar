@@ -18,13 +18,14 @@ interface Props {
     nhomOptions: { label: string; value: string }[];
     phanLoaiOptions: { label: string; value: string }[];
     nguonOptions: { label: string; value: string }[];
+    currentUserId?: string;
 }
 
 const DEFAULT_COLUMNS: ColumnKey[] = ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "nguonSales"];
 
 export default function KhachHangPageClient({
     data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois,
-    nhomOptions, phanLoaiOptions, nguonOptions,
+    nhomOptions, phanLoaiOptions, nguonOptions, currentUserId,
 }: Props) {
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
@@ -97,6 +98,7 @@ export default function KhachHangPageClient({
                     nguoiGioiThieus={nguoiGioiThieus}
                     lyDoTuChois={lyDoTuChois}
                     visibleColumns={visibleColumns}
+                    currentUserId={currentUserId}
                 />
             </div>
         </>

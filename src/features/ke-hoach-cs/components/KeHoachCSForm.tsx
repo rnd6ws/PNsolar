@@ -21,6 +21,8 @@ interface Props {
     nhanViens: { ID: string; HO_TEN: string }[];
     loaiCSList: { ID: string; LOAI_CS: string }[];
     currentUserId?: string;
+    /** Khi truyền vào, KH sẽ được set sẵn và không cho phép thay đổi */
+    defaultKhachHang?: { ID: string; TEN_KH: string; TEN_VT?: string | null };
     onSuccess: () => void;
     onClose: () => void;
 }
@@ -30,16 +32,21 @@ export default function KeHoachCSForm({
     nhanViens,
     loaiCSList,
     currentUserId,
+    defaultKhachHang,
     onSuccess,
     onClose,
 }: Props) {
     const isEdit = !!item;
+    // KH cố định khi mở từ trang khách hàng
+    const isKHLocked = !!defaultKhachHang && !isEdit;
 
     // KH search
     const [khQuery, setKhQuery] = useState(item?.KH?.TEN_KH || "");
     const [khResults, setKhResults] = useState<any[]>([]);
     const [selectedKH, setSelectedKH] = useState<{ ID: string; TEN_KH: string; TEN_VT?: string | null } | null>(
-        item ? { ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT } : null
+        item ? { ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT }
+        : defaultKhachHang ? defaultKhachHang
+        : null
     );
     const [showKhDropdown, setShowKhDropdown] = useState(false);
     const khDropdownRef = useRef<HTMLDivElement>(null);
@@ -249,69 +256,80 @@ export default function KeHoachCSForm({
                         <Building2 className="w-3.5 h-3.5" />
                         Khách hàng <span className="text-destructive">*</span>
                     </label>
-                    <div className="relative" ref={khDropdownRef}>
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                            type="text"
-                            value={khQuery}
-                            onChange={(e) => {
-                                setKhQuery(e.target.value);
-                                setShowKhDropdown(true);
-                                if (!e.target.value) {
-                                    setSelectedKH(null);
-                                }
-                            }}
-                            onFocus={() => setShowKhDropdown(true)}
-                            placeholder="Tìm tên khách hàng, tên viết tắt..."
-                            className="input-modern pl-10! pr-10! w-full"
-                        />
-                        {khQuery && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setKhQuery("");
-                                    setSelectedKH(null);
-                                    setKhResults([]);
-                                    setShowKhDropdown(true); // Để user có thể gõ xem lại danh sách
-                                }}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors"
-                                title="Xóa lựa chọn"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
-                        {showKhDropdown && khResults.length > 0 && (
-                            <div className="absolute z-20 top-full mt-1 w-full bg-background border border-border rounded-xl shadow-xl max-h-52 overflow-y-auto">
-                                {khResults.map((kh) => (
-                                    <button
-                                        key={kh.ID}
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedKH(kh);
-                                            setKhQuery(kh.TEN_KH);
-                                            setShowKhDropdown(false);
-                                        }}
-                                        className="w-full text-left px-4 py-2.5 hover:bg-muted transition-colors text-sm flex items-center gap-3 border-b border-border last:border-0"
-                                    >
-                                        <div className="w-8 h-8 rounded flex items-center justify-center shrink-0 overflow-hidden bg-primary/10 border border-primary/10">
-                                            {kh.HINH_ANH ? (
-                                                <img src={kh.HINH_ANH} alt="Logo" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="font-bold text-primary text-xs">{(kh.TEN_VT || kh.TEN_KH).charAt(0).toUpperCase()}</span>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col flex-1 min-w-0">
-                                            <span className="font-semibold text-foreground truncate">{kh.TEN_KH}</span>
-                                            {kh.TEN_VT && <span className="text-xs text-muted-foreground truncate">{kh.TEN_VT}</span>}
-                                        </div>
-                                    </button>
-                                ))}
+                    {isKHLocked ? (
+                        /* Hiển thị badge KH cố định — không cho phép thay đổi */
+                        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-primary/30 bg-primary/5">
+                            <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                                <Building2 className="w-4 h-4 text-primary" />
                             </div>
-                        )}
-                    </div>
-                    {/* {selectedKH && (
-                            <p className="text-xs text-primary font-medium mt-1">✓ Đã chọn: {selectedKH.TEN_KH}</p>
-                        )} */}
+                            <div className="flex flex-col flex-1 min-w-0">
+                                <span className="font-semibold text-foreground text-sm truncate">{selectedKH?.TEN_KH}</span>
+                                {selectedKH?.TEN_VT && <span className="text-xs text-muted-foreground truncate">{selectedKH.TEN_VT}</span>}
+                            </div>
+                            <span className="text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full shrink-0">Đã chọn</span>
+                        </div>
+                    ) : (
+                        <div className="relative" ref={khDropdownRef}>
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={khQuery}
+                                onChange={(e) => {
+                                    setKhQuery(e.target.value);
+                                    setShowKhDropdown(true);
+                                    if (!e.target.value) {
+                                        setSelectedKH(null);
+                                    }
+                                }}
+                                onFocus={() => setShowKhDropdown(true)}
+                                placeholder="Tìm tên khách hàng, tên viết tắt..."
+                                className="input-modern pl-10! pr-10! w-full"
+                            />
+                            {khQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setKhQuery("");
+                                        setSelectedKH(null);
+                                        setKhResults([]);
+                                        setShowKhDropdown(true);
+                                    }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                                    title="Xóa lựa chọn"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                            {showKhDropdown && khResults.length > 0 && (
+                                <div className="absolute z-20 top-full mt-1 w-full bg-background border border-border rounded-xl shadow-xl max-h-52 overflow-y-auto">
+                                    {khResults.map((kh) => (
+                                        <button
+                                            key={kh.ID}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedKH(kh);
+                                                setKhQuery(kh.TEN_KH);
+                                                setShowKhDropdown(false);
+                                            }}
+                                            className="w-full text-left px-4 py-2.5 hover:bg-muted transition-colors text-sm flex items-center gap-3 border-b border-border last:border-0"
+                                        >
+                                            <div className="w-8 h-8 rounded flex items-center justify-center shrink-0 overflow-hidden bg-primary/10 border border-primary/10">
+                                                {kh.HINH_ANH ? (
+                                                    <img src={kh.HINH_ANH} alt="Logo" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="font-bold text-primary text-xs">{(kh.TEN_VT || kh.TEN_KH).charAt(0).toUpperCase()}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col flex-1 min-w-0">
+                                                <span className="font-semibold text-foreground truncate">{kh.TEN_KH}</span>
+                                                {kh.TEN_VT && <span className="text-xs text-muted-foreground truncate">{kh.TEN_VT}</span>}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Người liên hệ & Cơ hội */}

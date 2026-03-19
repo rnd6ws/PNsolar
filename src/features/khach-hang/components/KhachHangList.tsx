@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
-import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, UserPlus, MoreHorizontal, Settings2, UserCheck, UserX } from "lucide-react";
+import { useState, useRef, useMemo, useEffect } from "react";
+import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, UserPlus, MoreHorizontal, Settings2, UserCheck, UserX, CalendarPlus2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteKhachHang, updateKhachHang, createKhachHang, lookupCompanyByTaxCode, thamDinhKhachHang } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -22,6 +22,7 @@ interface Props {
     nguoiGioiThieus: { ID: string; TEN_NGT: string; SO_DT_NGT?: string | null }[];
     lyDoTuChois?: { ID: string; LY_DO: string }[];
     visibleColumns?: ColumnKey[];
+    currentUserId?: string;
 }
 
 function formatDate(val: any) {
@@ -31,110 +32,27 @@ function formatDate(val: any) {
 
 import { KhachHangForm } from "./KhachHangForm";
 import NguoiLienHeModal from "@/features/nguoi-lh/components/NguoiLienHeModal";
+import KeHoachCSForm from "@/features/ke-hoach-cs/components/KeHoachCSForm";
+import { getLoaiCS, getKeHoachCSByKH } from "@/features/ke-hoach-cs/action";
 
-// ─── Màn hình xem chi tiết ────────────────────────────────────
-function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClose }: { kh: any; nhanViens: { ID: string; HO_TEN: string }[]; nguoiGioiThieus: { ID: string; TEN_NGT: string }[]; onClose: () => void }) {
-    const getNVName = (id: string) => nhanViens.find(nv => nv.ID === id)?.HO_TEN || id;
-    const getNGTName = (id: string) => nguoiGioiThieus.find(n => n.ID === id)?.TEN_NGT || id;
-    return (
-        <div className="space-y-5 pt-2">
-            <div className="flex items-center gap-4 pb-4 border-b border-border">
-                {kh.HINH_ANH ? (
-                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border shadow-sm shrink-0">
-                        <Image src={kh.HINH_ANH} alt={kh.TEN_KH} fill className="object-cover" />
-                    </div>
-                ) : (
-                    <div className="w-16 h-16 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                        <UserCircle className="w-8 h-8 text-primary/50" />
-                    </div>
-                )}
-                <div>
-                    <h3 className="text-lg font-bold text-foreground">{kh.TEN_KH}</h3>
-                    {kh.TEN_VT && <p className="text-sm text-muted-foreground">{kh.TEN_VT}</p>}
-                </div>
-            </div>
+import KhachHangDetail from "./KhachHangDetail";
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                {kh.DIEN_THOAI && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="w-4 h-4 shrink-0 text-primary/60" />
-                        <span>{kh.DIEN_THOAI}</span>
-                    </div>
-                )}
-                {kh.EMAIL && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <Mail className="w-4 h-4 shrink-0 text-primary/60" />
-                        <span className="truncate">{kh.EMAIL}</span>
-                    </div>
-                )}
-                {kh.DIA_CHI && (
-                    <div className="flex items-start gap-2 text-muted-foreground col-span-2">
-                        <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-primary/60" />
-                        <span>{kh.DIA_CHI}</span>
-                    </div>
-                )}
-                {kh.MST && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <Building2 className="w-4 h-4 shrink-0 text-primary/60" />
-                        <span>MST: {kh.MST}</span>
-                    </div>
-                )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm">
-                {[
-                    { label: "Nhóm KH", value: kh.NHOM_KH },
-                    { label: "Phân loại", value: kh.PHAN_LOAI },
-                    { label: "Nguồn", value: kh.NGUON },
-                    { label: "Người giới thiệu", value: getNGTName(kh.NGUOI_GIOI_THIEU) },
-                    { label: "Sales phụ trách", value: getNVName(kh.SALES_PT) },
-                    { label: "NV chăm sóc", value: getNVName(kh.NV_CS) },
-                    { label: "Ngày ghi nhận", value: formatDate(kh.NGAY_GHI_NHAN) },
-                    { label: "Ngày thành lập", value: formatDate(kh.NGAY_THANH_LAP) },
-                ].map(({ label, value }) => value ? (
-                    <div key={label} className="bg-muted/30 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground font-medium mb-0.5">{label}</p>
-                        <p className="font-semibold text-foreground">{value}</p>
-                    </div>
-                ) : null)}
-            </div>
-
-            {kh.LY_DO_TU_CHOI && (
-                <div className="bg-muted/30 rounded-lg p-3 text-destructive">
-                    <p className="text-xs font-medium mb-1.5 opacity-80">Lý do từ chối</p>
-                    <p className="text-sm font-bold whitespace-pre-wrap leading-tight">{kh.LY_DO_TU_CHOI}</p>
-                </div>
-            )}
-
-            {kh.LICH_SU && (
-                <div className="bg-muted/30 rounded-lg p-3 text-sm">
-                    <p className="text-xs text-muted-foreground font-medium mb-1.5">Lịch sử ghi chú</p>
-                    <p className="text-foreground whitespace-pre-wrap leading-snug">{kh.LICH_SU}</p>
-                </div>
-            )}
-
-            {(kh.LAT || kh.LONG) && (
-                <div className="bg-muted/30 rounded-lg p-3 text-sm">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Tọa độ</p>
-                    <p className="font-mono text-foreground">LAT: {kh.LAT} | LONG: {kh.LONG}</p>
-                </div>
-            )}
-
-            <div className="pt-2">
-                <button onClick={onClose} className="btn-premium-secondary w-full">Đóng</button>
-            </div>
-        </div>
-    );
-}
 
 // ─── Component chính ──────────────────────────────────────────
-export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois = [], visibleColumns }: Props) {
+export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois = [], visibleColumns, currentUserId }: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>(null);
     const [nguoiLHItem, setNguoiLHItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
+    const [keHoachCSItem, setKeHoachCSItem] = useState<{ ID: string; TEN_KH: string; TEN_VT?: string | null } | null>(null);
+    const [loaiCSList, setLoaiCSList] = useState<{ ID: string; LOAI_CS: string }[]>([]);
+
+    // Load loaiCSList once (lazy)
+    useEffect(() => {
+        getLoaiCS().then((r) => { if (r.success) setLoaiCSList(r.data as any); });
+    }, []);
     const [thamDinhItem, setThamDinhItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
     const [confirmTiemNangItem, setConfirmTiemNangItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
     const [deleteItem, setDeleteItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
@@ -277,41 +195,41 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                     <thead>
                         {/* Header dùng bg-primary/10 giống phan-loai-hh */}
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] w-10 text-center">#</th>
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-10 text-center">#</th>
                             {show("ngayGhiNhan") && (
-                                <th onClick={() => handleSort("NGAY_GHI_NHAN")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden xl:table-cell w-28 whitespace-nowrap cursor-pointer group hover:text-foreground text-center">
+                                <th onClick={() => handleSort("NGAY_GHI_NHAN")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell w-28 whitespace-nowrap cursor-pointer group hover:text-foreground text-center">
                                     Ngày GN <SortIcon columnKey="NGAY_GHI_NHAN" />
                                 </th>
                             )}
-                            <th onClick={() => handleSort("TEN_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] cursor-pointer group hover:text-foreground text-left">
+                            <th onClick={() => handleSort("TEN_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-left">
                                 Khách hàng <SortIcon columnKey="TEN_KH" />
                             </th>
                             {show("lienHe") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden md:table-cell text-center">Liên hệ</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden md:table-cell text-center">Liên hệ</th>
                             )}
                             {show("nhom") && (
-                                <th onClick={() => handleSort("NHOM_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground text-center">
+                                <th onClick={() => handleSort("NHOM_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground text-center">
                                     Nhóm KH <SortIcon columnKey="NHOM_KH" />
                                 </th>
                             )}
                             {show("phanLoai") && (
-                                <th onClick={() => handleSort("PHAN_LOAI")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground text-center">
+                                <th onClick={() => handleSort("PHAN_LOAI")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground text-center">
                                     Phân loại <SortIcon columnKey="PHAN_LOAI" />
                                 </th>
                             )}
                             {show("nhanVienPT") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden lg:table-cell text-center">NV chăm sóc</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell text-center">NV chăm sóc</th>
                             )}
                             {show("nguonSales") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden xl:table-cell text-center">Nguồn / Sales</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">Nguồn / Sales</th>
                             )}
                             {show("diaChi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden xl:table-cell text-center">Địa chỉ</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">Địa chỉ</th>
                             )}
                             {show("mst") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] max-md:table-cell hidden xl:table-cell text-center">MST</th>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">MST</th>
                             )}
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[11px] text-right">Hành động</th>
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -440,6 +358,15 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
+                                        <PermissionGuard moduleKey="ke-hoach-cs" level="add">
+                                            <button
+                                                onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })}
+                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors"
+                                                title="Lên kế hoạch CSKH"
+                                            >
+                                                <CalendarPlus2 className="w-4 h-4" />
+                                            </button>
+                                        </PermissionGuard>
                                         <PermissionGuard moduleKey="khach-hang" level="manage">
                                             <button
                                                 onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
@@ -559,7 +486,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             </Modal>
 
             {/* Modal: Xem chi tiết */}
-            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết khách hàng" size="lg">
+            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết khách hàng" size="xl">
                 {viewItem && <KhachHangDetail kh={viewItem} nhanViens={nhanViens} nguoiGioiThieus={nguoiGioiThieus} onClose={() => setViewItem(null)} />}
             </Modal>
 
@@ -607,7 +534,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                 {confirmTiemNangItem && (
                     <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">Bạn có chắc chắn muốn xác nhận <span className="font-semibold text-foreground">{confirmTiemNangItem.TEN_KH}</span> là khách tiềm năng?</p>
-                        
+
                         <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
                             <button
                                 type="button"
@@ -652,6 +579,22 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                 onClose={() => setNguoiLHItem(null)}
                 khachHang={nguoiLHItem}
             />
+
+            {/* Modal: Lên kế hoạch CSKH từ trang khách hàng */}
+            {keHoachCSItem && (
+                <KeHoachCSForm
+                    key={keHoachCSItem.ID}
+                    nhanViens={nhanViens}
+                    loaiCSList={loaiCSList}
+                    currentUserId={currentUserId}
+                    defaultKhachHang={keHoachCSItem}
+                    onSuccess={() => {
+                        setKeHoachCSItem(null);
+                        toast.success("Đã tạo kế hoạch CSKH!");
+                    }}
+                    onClose={() => setKeHoachCSItem(null)}
+                />
+            )}
         </>
     );
 }

@@ -188,7 +188,7 @@ export function KhachHangForm({
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 pt-0">
             {/* Avatar */}
             <div className="flex justify-center space-y-0">
-                <ImageUpload value={hinhAnh} onChange={setHinhAnh} size={88} />
+                <ImageUpload value={hinhAnh} onChange={setHinhAnh} size={88} folder="pnsolar/khach-hang" />
             </div>
 
             {/* Row 1: MÃ KH, TEN KH */}
@@ -323,7 +323,7 @@ export function KhachHangForm({
 
             {/* Tách Form: Nhóm KH và Nguồn chung hàng, Người giới thiệu nằm riêng hàng dưới */}
             <input type="hidden" name="PHAN_LOAI" value={defaultValues?.PHAN_LOAI || "Chưa thẩm định"} />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-muted-foreground">Nhóm KH</label>
