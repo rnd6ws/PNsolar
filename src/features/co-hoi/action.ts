@@ -122,6 +122,19 @@ export async function getCoHois(filters: {
     }
 }
 
+export async function getCoHoiByKH(khId: string) {
+    try {
+        const data = await prisma.cO_HOI.findMany({
+            where: { ID_KH: khId },
+            orderBy: { NGAY_TAO: "desc" },
+            include: { KH: { select: { ID: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true } } },
+        });
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, data: [] };
+    }
+}
+
 export async function getCoHoiStats() {
     try {
         const total = await prisma.cO_HOI.count();

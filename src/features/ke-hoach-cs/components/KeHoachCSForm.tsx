@@ -43,10 +43,10 @@ export default function KeHoachCSForm({
     // KH search
     const [khQuery, setKhQuery] = useState(item?.KH?.TEN_KH || "");
     const [khResults, setKhResults] = useState<any[]>([]);
-    const [selectedKH, setSelectedKH] = useState<{ ID: string; TEN_KH: string; TEN_VT?: string | null } | null>(
-        item ? { ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT }
-        : defaultKhachHang ? defaultKhachHang
-        : null
+    const [selectedKH, setSelectedKH] = useState<{ ID: string; TEN_KH: string; TEN_VT?: string | null; HINH_ANH?: string } | null>(
+        item ? { ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT, HINH_ANH: item.KH?.HINH_ANH }
+            : defaultKhachHang ? defaultKhachHang
+                : null
     );
     const [showKhDropdown, setShowKhDropdown] = useState(false);
     const khDropdownRef = useRef<HTMLDivElement>(null);
@@ -119,7 +119,7 @@ export default function KeHoachCSForm({
     useEffect(() => {
         if (selectedKH?.ID) {
             const shouldAutoSelect = !isEdit || selectedKH.ID !== item?.ID_KH;
-            
+
             getNguoiLienHeByKH(selectedKH.ID).then((r) => {
                 if (r.success) {
                     setNguoiLienHes(r.data);
@@ -251,81 +251,125 @@ export default function KeHoachCSForm({
         >
             <form onSubmit={handleSubmit} className="space-y-3">
                 {/* Khách hàng */}
-                <div className="space-y-1.5 relative">
-                    <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+                <div className="space-y-1.5 relative" ref={khDropdownRef}>
+                    <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5 mb-1">
                         <Building2 className="w-3.5 h-3.5" />
                         Khách hàng <span className="text-destructive">*</span>
                     </label>
                     {isKHLocked ? (
                         /* Hiển thị badge KH cố định — không cho phép thay đổi */
-                        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-primary/30 bg-primary/5">
-                            <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-                                <Building2 className="w-4 h-4 text-primary" />
-                            </div>
+                        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+                            {selectedKH?.HINH_ANH ? (
+                                <img src={selectedKH.HINH_ANH} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                            ) : (
+                                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                    <Building2 className="w-4 h-4 text-primary" />
+                                </div>
+                            )}
                             <div className="flex flex-col flex-1 min-w-0">
-                                <span className="font-semibold text-foreground text-sm truncate">{selectedKH?.TEN_KH}</span>
-                                {selectedKH?.TEN_VT && <span className="text-xs text-muted-foreground truncate">{selectedKH.TEN_VT}</span>}
+                                <div className="flex items-center gap-2">
+                                    {selectedKH?.TEN_VT && (
+                                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">{selectedKH.TEN_VT}</span>
+                                    )}
+                                    <p className="text-sm font-semibold text-foreground truncate">{selectedKH?.TEN_KH}</p>
+                                </div>
                             </div>
                             <span className="text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full shrink-0">Đã chọn</span>
                         </div>
+                    ) : selectedKH ? (
+                        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+                            {selectedKH.HINH_ANH ? (
+                                <img src={selectedKH.HINH_ANH} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                            ) : (
+                                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                    <User className="w-4 h-4 text-primary" />
+                                </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    {selectedKH.TEN_VT && (
+                                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">{selectedKH.TEN_VT}</span>
+                                    )}
+                                    <p className="text-sm font-semibold text-foreground truncate">{selectedKH.TEN_KH}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedKH(null);
+                                    setKhQuery("");
+                                    setKhResults([]);
+                                }}
+                                className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors shrink-0"
+                                title="Xóa lựa chọn"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
                     ) : (
-                        <div className="relative" ref={khDropdownRef}>
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <div className="relative">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <input
                                 type="text"
                                 value={khQuery}
                                 onChange={(e) => {
                                     setKhQuery(e.target.value);
                                     setShowKhDropdown(true);
-                                    if (!e.target.value) {
-                                        setSelectedKH(null);
-                                    }
                                 }}
                                 onFocus={() => setShowKhDropdown(true)}
-                                placeholder="Tìm tên khách hàng, tên viết tắt..."
-                                className="input-modern pl-10! pr-10! w-full"
+                                placeholder="Chọn hoặc tìm khách hàng..."
+                                className="input-modern pl-10! pr-9! w-full"
                             />
                             {khQuery && (
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setKhQuery("");
-                                        setSelectedKH(null);
                                         setKhResults([]);
                                         setShowKhDropdown(true);
                                     }}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
                                     title="Xóa lựa chọn"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
                             )}
-                            {showKhDropdown && khResults.length > 0 && (
-                                <div className="absolute z-20 top-full mt-1 w-full bg-background border border-border rounded-xl shadow-xl max-h-52 overflow-y-auto">
-                                    {khResults.map((kh) => (
-                                        <button
-                                            key={kh.ID}
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedKH(kh);
-                                                setKhQuery(kh.TEN_KH);
-                                                setShowKhDropdown(false);
-                                            }}
-                                            className="w-full text-left px-4 py-2.5 hover:bg-muted transition-colors text-sm flex items-center gap-3 border-b border-border last:border-0"
-                                        >
-                                            <div className="w-8 h-8 rounded flex items-center justify-center shrink-0 overflow-hidden bg-primary/10 border border-primary/10">
+                            {showKhDropdown && (
+                                <div className="absolute z-50 left-0 right-0 top-full mt-1 w-full bg-card border border-border rounded-xl shadow-lg max-h-56 overflow-y-auto">
+                                    {khResults.length === 0 && khQuery.trim() ? (
+                                        <div className="px-4 py-4 text-center text-sm text-muted-foreground">Không tìm thấy khách hàng</div>
+                                    ) : khResults.length === 0 ? (
+                                        <div className="px-4 py-4 text-center text-sm text-muted-foreground">Chưa có khách hàng</div>
+                                    ) : (
+                                        khResults.map((kh) => (
+                                            <button
+                                                key={kh.ID}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedKH(kh);
+                                                    setKhQuery(kh.TEN_KH);
+                                                    setShowKhDropdown(false);
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 hover:bg-muted transition-colors flex items-center gap-3 border-b border-border/30 last:border-b-0"
+                                            >
                                                 {kh.HINH_ANH ? (
-                                                    <img src={kh.HINH_ANH} alt="Logo" className="w-full h-full object-cover" />
+                                                    <img src={kh.HINH_ANH} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
                                                 ) : (
-                                                    <span className="font-bold text-primary text-xs">{(kh.TEN_VT || kh.TEN_KH).charAt(0).toUpperCase()}</span>
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                                        <span className="text-[10px] font-bold text-primary">{kh.TEN_VT || kh.TEN_KH?.charAt(0)}</span>
+                                                    </div>
                                                 )}
-                                            </div>
-                                            <div className="flex flex-col flex-1 min-w-0">
-                                                <span className="font-semibold text-foreground truncate">{kh.TEN_KH}</span>
-                                                {kh.TEN_VT && <span className="text-xs text-muted-foreground truncate">{kh.TEN_VT}</span>}
-                                            </div>
-                                        </button>
-                                    ))}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        {kh.TEN_VT && (
+                                                            <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">{kh.TEN_VT}</span>
+                                                        )}
+                                                        <p className="text-sm font-medium text-foreground truncate">{kh.TEN_KH}</p>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        ))
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -449,7 +493,7 @@ export default function KeHoachCSForm({
                             </span>
                         )}
                     </div>
-                    <div className="border border-border rounded-xl overflow-hidden max-h-[260px] overflow-y-auto">
+                    <div className="border border-border rounded-xl overflow-x-hidden overflow-y-auto max-h-[300px]">
                         {grouped.size === 0 ? (
                             <p className="px-4 py-4 text-sm text-muted-foreground italic text-center">Đang tải...</p>
                         ) : (
@@ -462,7 +506,7 @@ export default function KeHoachCSForm({
                                 return (
                                     <div key={nhom}>
                                         {/* Group header */}
-                                        <div className="bg-primary/10 flex items-center border-b border-border sticky top-0 z-10">
+                                        <div className="bg-primary/10 flex items-center border-b border-border">
                                             {/* Checkbox select-all */}
                                             <button
                                                 type="button"
@@ -470,11 +514,10 @@ export default function KeHoachCSForm({
                                                 className="flex items-center justify-center w-10 h-8 shrink-0 hover:bg-primary/20 transition-colors"
                                                 title={allSel ? "Bỏ chọn tất cả" : "Chọn tất cả"}
                                             >
-                                                <div className={`w-[15px] h-[15px] rounded border-2 flex items-center justify-center transition-colors ${
-                                                    allSel ? "bg-primary border-primary"
-                                                    : someSel ? "bg-primary/30 border-primary"
-                                                    : "border-border bg-background"
-                                                }`}>
+                                                <div className={`w-[15px] h-[15px] rounded border-2 flex items-center justify-center transition-colors ${allSel ? "bg-primary border-primary"
+                                                        : someSel ? "bg-primary/30 border-primary"
+                                                            : "border-border bg-background"
+                                                    }`}>
                                                     {allSel && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
                                                     {someSel && !allSel && <span className="text-primary text-[9px] leading-none font-bold">−</span>}
                                                 </div>

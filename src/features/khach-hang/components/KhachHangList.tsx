@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo, useEffect } from "react";
-import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, UserPlus, MoreHorizontal, Settings2, UserCheck, UserX, CalendarPlus2 } from "lucide-react";
+import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, UserPlus, MoreHorizontal, Settings2, UserCheck, UserX, CalendarPlus2, Target } from "lucide-react";
 import { toast } from "sonner";
 import { deleteKhachHang, updateKhachHang, createKhachHang, lookupCompanyByTaxCode, thamDinhKhachHang } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -27,13 +27,17 @@ interface Props {
 
 function formatDate(val: any) {
     if (!val) return "";
-    return new Date(val).toLocaleDateString("vi-VN");
+    const d = new Date(val);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
 import { KhachHangForm } from "./KhachHangForm";
 import NguoiLienHeModal from "@/features/nguoi-lh/components/NguoiLienHeModal";
 import KeHoachCSForm from "@/features/ke-hoach-cs/components/KeHoachCSForm";
 import { getLoaiCS, getKeHoachCSByKH } from "@/features/ke-hoach-cs/action";
+import { getDmDichVu, createCoHoi } from "@/features/co-hoi/action";
+import { CoHoiForm } from "@/features/co-hoi/components/CoHoiForm";
 
 import KhachHangDetail from "./KhachHangDetail";
 
@@ -47,11 +51,14 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>(null);
     const [nguoiLHItem, setNguoiLHItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
     const [keHoachCSItem, setKeHoachCSItem] = useState<{ ID: string; TEN_KH: string; TEN_VT?: string | null } | null>(null);
+    const [taoCoHoiItem, setTaoCoHoiItem] = useState<{ ID_KH: string; KH: any } | null>(null);
     const [loaiCSList, setLoaiCSList] = useState<{ ID: string; LOAI_CS: string }[]>([]);
+    const [dmDichVuList, setDmDichVuList] = useState<any[]>([]);
 
-    // Load loaiCSList once (lazy)
+    // Load loaiCSList and dmDichVuList once (lazy)
     useEffect(() => {
         getLoaiCS().then((r) => { if (r.success) setLoaiCSList(r.data as any); });
+        getDmDichVu().then((r) => { if (r.success) setDmDichVuList(r.data as any); });
     }, []);
     const [thamDinhItem, setThamDinhItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
     const [confirmTiemNangItem, setConfirmTiemNangItem] = useState<{ ID: string; TEN_KH: string } | null>(null);
@@ -131,6 +138,18 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             setDeleteItem(null);
         } else {
             toast.error((res as any).message || "Lỗi xóa");
+        }
+        setLoading(false);
+    };
+
+    const handleTaoCoHoi = async (formData: any) => {
+        setLoading(true);
+        const res = await createCoHoi(formData);
+        if (res.success) {
+            toast.success("Đã tạo cơ hội mới");
+            setTaoCoHoiItem(null);
+        } else {
+            toast.error((res as any).message || "Lỗi tạo cơ hội");
         }
         setLoading(false);
     };
@@ -241,7 +260,11 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         {formatDate(item.NGAY_GHI_NHAN)}
                                     </td>
                                 )}
-                                <td className="px-4 py-3 align-middle text-left">
+                                <td 
+                                    className="px-4 py-3 align-middle text-left cursor-pointer group/name transition-colors"
+                                    onClick={() => setViewItem(item)}
+                                    title="Xem chi tiết"
+                                >
                                     <div className="flex items-center gap-3">
                                         {item.HINH_ANH ? (
                                             <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-border shrink-0">
@@ -253,7 +276,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                             </div>
                                         )}
                                         <div>
-                                            <p className="font-normal text-foreground text-xs leading-tight">{item.TEN_KH}</p>
+                                            <p className="font-normal text-foreground group-hover/name:text-primary transition-colors text-xs leading-tight">{item.TEN_KH}</p>
                                         </div>
                                     </div>
                                 </td>
@@ -365,6 +388,15 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                 title="Lên kế hoạch CSKH"
                                             >
                                                 <CalendarPlus2 className="w-4 h-4" />
+                                            </button>
+                                        </PermissionGuard>
+                                        <PermissionGuard moduleKey="co-hoi" level="add">
+                                            <button
+                                                onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })}
+                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-orange-500 rounded-lg transition-colors"
+                                                title="Tạo cơ hội"
+                                            >
+                                                <Target className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="khach-hang" level="manage">
@@ -595,6 +627,19 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                     onClose={() => setKeHoachCSItem(null)}
                 />
             )}
+
+            {/* Modal: Tạo cơ hội từ trang khách hàng */}
+            <Modal isOpen={!!taoCoHoiItem} onClose={() => setTaoCoHoiItem(null)} title="Thêm cơ hội mới" size="lg">
+                <CoHoiForm
+                    key={taoCoHoiItem ? taoCoHoiItem.ID_KH : "add-co-hoi-closed"}
+                    defaultValues={taoCoHoiItem}
+                    dmDichVu={dmDichVuList}
+                    loading={loading}
+                    onSubmit={handleTaoCoHoi}
+                    onCancel={() => setTaoCoHoiItem(null)}
+                    submitLabel="Lưu cơ hội"
+                />
+            </Modal>
         </>
     );
 }

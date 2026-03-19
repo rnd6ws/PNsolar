@@ -77,6 +77,28 @@ export async function getKhachHangs(filters: {
     }
 }
 
+export async function getKhachHangById(id: string) {
+    try {
+        const data = await prisma.kHTN.findUnique({
+            where: { ID: id },
+            include: { 
+                NGUOI_DAI_DIEN: true,
+                _count: {
+                    select: { 
+                        NGUOI_LIENHE: {
+                            where: { HIEU_LUC: "Đang hiệu lực" }
+                        } 
+                    }
+                }
+            }
+        });
+        if (!data) return { success: false, message: "Không tìm thấy khách hàng" };
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, message: "Lỗi lấy thông tin khách hàng" };
+    }
+}
+
 export async function getKhachHangStats() {
     try {
         const user = await getCurrentUser();

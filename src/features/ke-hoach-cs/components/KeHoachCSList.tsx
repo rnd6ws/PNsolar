@@ -169,7 +169,7 @@ export default function KeHoachCSList({
                 >
                     <Eye className="w-3.5 h-3.5" />
                 </button>
-                <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
+                {(item.NGUOI_CS === currentUserId || canEditCS) && (
                     <button
                         onClick={isCancelled ? undefined : () => setBaoCaoItem(item)}
                         disabled={isCancelled}
@@ -182,7 +182,7 @@ export default function KeHoachCSList({
                     >
                         <FileText className="w-3.5 h-3.5" />
                     </button>
-                </PermissionGuard>
+                )}
                 <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
                     <button
                         onClick={() => setEditItem(item)}
@@ -218,8 +218,8 @@ export default function KeHoachCSList({
     return (
         <>
             {/* Desktop & Mobile Table (User Request: Use table for all devices) */}
-            <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse text-[13px] whitespace-nowrap">
+            <div className="w-full overflow-x-auto">
+                <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
                             <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-8">#</th>
@@ -313,7 +313,13 @@ export default function KeHoachCSList({
                                             <td className="px-4 py-3 text-muted-foreground text-xs">{idx + 1}</td>
                                             {visibleColumns.includes("khachHang") && (
                                                 <td className="px-4 py-3">
-                                                    <div className="font-semibold text-foreground text-[13px]">{item.KH?.TEN_KH}</div>
+                                                    <div 
+                                                        className="font-semibold text-foreground text-[13px] cursor-pointer hover:text-primary transition-colors inline-block"
+                                                        onClick={(e) => { e.stopPropagation(); setViewItem(item); }}
+                                                        title="Xem chi tiết kế hoạch"
+                                                    >
+                                                        {item.KH?.TEN_KH}
+                                                    </div>
                                                     {item.NGUOI_LH ? (
                                                         <div className="text-xs text-muted-foreground mt-0.5">
                                                             {item.NGUOI_LH.TENNGUOI_LIENHE}

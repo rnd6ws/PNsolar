@@ -15,8 +15,13 @@ export async function getKeHoachCSKH(filters: {
 } = {}) {
     const { page = 1, limit = 20, query, TRANG_THAI, LOAI_CS } = filters;
 
+    const user = await getCurrentUser();
     const where: any = {};
     const andConditions: any[] = [];
+
+    if (user && user.ROLE === "STAFF") {
+        andConditions.push({ NGUOI_CS: user.userId });
+    }
 
     if (query) {
         andConditions.push({
@@ -85,12 +90,20 @@ export async function getKeHoachCSKH(filters: {
 
 export async function getKeHoachCSStats() {
     try {
+        const user = await getCurrentUser();
+        const baseWhere: any = {};
+        
+        if (user && user.ROLE === "STAFF") {
+            baseWhere.NGUOI_CS = user.userId;
+        }
+
         const [total, choBaoCao, daBaoCao, quaHan] = await Promise.all([
-            prisma.kEHOACH_CSKH.count(),
-            prisma.kEHOACH_CSKH.count({ where: { TRANG_THAI: "Chờ báo cáo" } }),
-            prisma.kEHOACH_CSKH.count({ where: { TRANG_THAI: "Đã báo cáo" } }),
+            prisma.kEHOACH_CSKH.count({ where: baseWhere }),
+            prisma.kEHOACH_CSKH.count({ where: { ...baseWhere, TRANG_THAI: "Chờ báo cáo" } }),
+            prisma.kEHOACH_CSKH.count({ where: { ...baseWhere, TRANG_THAI: "Đã báo cáo" } }),
             prisma.kEHOACH_CSKH.count({
                 where: {
+                    ...baseWhere,
                     TRANG_THAI: "Chờ báo cáo",
                     TG_DEN: { lt: new Date() }
                 },

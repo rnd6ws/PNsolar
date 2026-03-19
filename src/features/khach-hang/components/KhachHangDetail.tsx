@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { UserCircle, Phone, Mail, Building2, MapPin, Search } from "lucide-react";
 import { getKeHoachCSByKH } from "@/features/ke-hoach-cs/action";
+import { getCoHoiByKH, getDmDichVu } from "@/features/co-hoi/action";
 
 interface KhachHangDetailProps {
     kh: any;
@@ -16,17 +17,31 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
     const getNVName = (id: string) => nhanViens.find(nv => nv.ID === id)?.HO_TEN || "—";
     const getNGTName = (id: string) => nguoiGioiThieus.find(n => n.ID === id)?.TEN_NGT || "—";
 
-    const [activeTab, setActiveTab] = useState<"info" | "cskh" | "lichsu">("info");
+    const [activeTab, setActiveTab] = useState<"info" | "cohoi" | "cskh" | "lichsu">("info");
     const [cskhList, setCskhList] = useState<any[] | null>(null);
     const [cskhLoading, setCskhLoading] = useState(false);
 
-    const handleTabChange = async (tab: "info" | "cskh" | "lichsu") => {
+    const [coHoiList, setCoHoiList] = useState<any[] | null>(null);
+    const [dmDichVuList, setDmDichVuList] = useState<any[]>([]);
+    const [coHoiLoading, setCoHoiLoading] = useState(false);
+
+    const handleTabChange = async (tab: "info" | "cohoi" | "cskh" | "lichsu") => {
         setActiveTab(tab);
         if (tab === "cskh" && cskhList === null) {
             setCskhLoading(true);
             const r = await getKeHoachCSByKH(kh.ID);
             if (r.success) setCskhList(r.data);
             setCskhLoading(false);
+        }
+        if (tab === "cohoi" && coHoiList === null) {
+            setCoHoiLoading(true);
+            const [r1, r2] = await Promise.all([
+                getCoHoiByKH(kh.ID),
+                getDmDichVu(),
+            ]);
+            if (r1.success) setCoHoiList(r1.data);
+            if (r2.success) setDmDichVuList(r2.data as any);
+            setCoHoiLoading(false);
         }
     };
 
@@ -42,7 +57,9 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
 
     function formatDate(val: any) {
         if (!val) return "";
-        return new Date(val).toLocaleDateString("vi-VN");
+        const d = new Date(val);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
     }
 
     const TRANG_THAI_COLORS: Record<string, string> = {
@@ -55,6 +72,7 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
     const tabs = [
         { key: "info" as const, label: "Thông tin chung" },
         { key: "cskh" as const, label: "Lịch sử chăm sóc" },
+        { key: "cohoi" as const, label: "Cơ hội" },
         { key: "lichsu" as const, label: "Lịch sử ghi chú" },
     ];
 
@@ -75,6 +93,11 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                     <h3 className="text-base font-bold text-foreground leading-tight truncate">{kh.TEN_KH}</h3>
                     {kh.TEN_VT && <p className="text-sm text-muted-foreground mt-0.5">{kh.TEN_VT}</p>}
                     <div className="flex flex-wrap gap-3 mt-2">
+                        {kh.MST && (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Building2 className="w-3 h-3 text-primary/60" />MST: {kh.MST}
+                            </span>
+                        )}
                         {kh.DIEN_THOAI && (
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Phone className="w-3 h-3 text-primary/60" />{kh.DIEN_THOAI}
@@ -83,11 +106,6 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                         {kh.EMAIL && (
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Mail className="w-3 h-3 text-primary/60" />{kh.EMAIL}
-                            </span>
-                        )}
-                        {kh.MST && (
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Building2 className="w-3 h-3 text-primary/60" />MST: {kh.MST}
                             </span>
                         )}
                     </div>
@@ -118,28 +136,27 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                     <div className="p-5 md:p-6 space-y-5">
                         {/* Địa chỉ */}
                         {kh.DIA_CHI && (
-                            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <div className="flex items-start gap-2 text-sm">
                                 <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-primary/60" />
                                 <span>{kh.DIA_CHI}</span>
                             </div>
                         )}
 
                         {/* Grid thông tin */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
                             {[
-                                { label: "Nhóm KH", value: kh.NHOM_KH },
-                                { label: "Phân loại", value: kh.PHAN_LOAI },
-                                { label: "Nguồn", value: kh.NGUON },
-                                { label: "Người giới thiệu", value: kh.NGUOI_GIOI_THIEU ? getNGTName(kh.NGUOI_GIOI_THIEU) : null },
-                                { label: "Sales phụ trách", value: kh.SALES_PT ? getNVName(kh.SALES_PT) : null },
-                                { label: "NV chăm sóc", value: kh.NV_CS ? getNVName(kh.NV_CS) : null },
-                                { label: "Ngày ghi nhận", value: formatDate(kh.NGAY_GHI_NHAN) },
-                                { label: "Ngày thành lập", value: formatDate(kh.NGAY_THANH_LAP) },
-                                { label: "Ngày hiệu lực HĐ", value: formatDate(kh.NGAY_HL_HD) },
+                                { label: "Ngày ghi nhận", value: kh.NGAY_GHI_NHAN ? formatDate(kh.NGAY_GHI_NHAN) : "-" },
+                                { label: "Ngày thành lập", value: kh.NGAY_THANH_LAP ? formatDate(kh.NGAY_THANH_LAP) : "-" },
+                                { label: "Phân loại", value: kh.PHAN_LOAI || "-" },
+                                { label: "Nguồn", value: kh.NGUON || "-" },
+                                { label: "Nhóm KH", value: kh.NHOM_KH || "-" },
+                                { label: "Sales phụ trách", value: kh.SALES_PT ? getNVName(kh.SALES_PT) : "-" },
+                                { label: "NV chăm sóc", value: kh.NV_CS ? getNVName(kh.NV_CS) : "-" },
+                                { label: "Người giới thiệu", value: kh.NGUOI_GIOI_THIEU ? getNGTName(kh.NGUOI_GIOI_THIEU) : "-" },
                             ].map(({ label, value }) => value ? (
-                                <div key={label} className="bg-muted/30 rounded-xl p-3 border border-border/40">
-                                    <p className="text-[11px] text-muted-foreground font-medium mb-1">{label}</p>
-                                    <p className="text-sm font-semibold text-foreground leading-tight">{value}</p>
+                                <div key={label} className="flex items-start gap-2 text-sm">
+                                    <span className="text-muted-foreground w-32 shrink-0">{label}:</span>
+                                    <span className="font-semibold text-foreground flex-1">{value}</span>
                                 </div>
                             ) : null)}
                         </div>
@@ -148,28 +165,43 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                         {kh.NGUOI_DAI_DIEN && kh.NGUOI_DAI_DIEN.length > 0 && (
                             <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
                                 <p className="text-xs font-semibold text-primary mb-3 uppercase tracking-wider">Thông tin người đại diện</p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {kh.NGUOI_DAI_DIEN.map((dd: any) => (
-                                        <div key={dd.ID} className="bg-background rounded-lg p-3 border border-border shadow-sm">
-                                            <p className="font-bold text-foreground text-sm">{dd.NGUOI_DD}</p>
-                                            {dd.CHUC_VU && <p className="text-xs text-muted-foreground mt-0.5">{dd.CHUC_VU}</p>}
-                                            <div className="mt-2 space-y-1">
-                                                {dd.SDT && (
-                                                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                        <Phone className="w-3 h-3 text-primary/60" /> {dd.SDT}
-                                                    </p>
-                                                )}
-                                                {dd.EMAIL && (
-                                                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                        <Mail className="w-3 h-3 text-primary/60" /> {dd.EMAIL}
-                                                    </p>
-                                                )}
-                                                {dd.NGAY_SINH && (
-                                                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                        <UserCircle className="w-3 h-3 text-primary/60" /> Sinh ngày: {formatDate(dd.NGAY_SINH)}
-                                                    </p>
-                                                )}
+                                        <div key={dd.ID} className="space-y-2.5">
+                                            <div className="flex items-start gap-2 text-sm">
+                                                <span className="text-muted-foreground w-24 shrink-0">Họ và tên:</span>
+                                                <span className="font-semibold text-foreground flex-1">{dd.NGUOI_DD}</span>
                                             </div>
+                                            {dd.CHUC_VU && (
+                                                <div className="flex items-start gap-2 text-sm">
+                                                    <span className="text-muted-foreground w-24 shrink-0">Chức vụ:</span>
+                                                    <span className="font-semibold text-foreground flex-1">{dd.CHUC_VU}</span>
+                                                </div>
+                                            )}
+                                            {dd.SDT && (
+                                                <div className="flex items-start gap-2 text-sm">
+                                                    <span className="text-muted-foreground w-24 shrink-0">Điện thoại:</span>
+                                                    <span className="font-semibold text-foreground flex-1 flex items-center gap-1.5 xl:whitespace-nowrap">
+                                                        <Phone className="w-3.5 h-3.5 text-primary/60 shrink-0" /> {dd.SDT}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {dd.EMAIL && (
+                                                <div className="flex items-start gap-2 text-sm">
+                                                    <span className="text-muted-foreground w-24 shrink-0">Email:</span>
+                                                    <span className="font-semibold text-foreground flex-1 flex items-center gap-1.5 break-all">
+                                                        <Mail className="w-3.5 h-3.5 text-primary/60 shrink-0" /> {dd.EMAIL}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {dd.NGAY_SINH && (
+                                                <div className="flex items-start gap-2 text-sm">
+                                                    <span className="text-muted-foreground w-24 shrink-0">Ngày sinh:</span>
+                                                    <span className="font-semibold text-foreground flex-1 flex items-center gap-1.5">
+                                                        <UserCircle className="w-3.5 h-3.5 text-primary/60 shrink-0" /> {formatDate(dd.NGAY_SINH)}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -279,6 +311,81 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* === TAB 1.5: CƠ HỘI === */}
+                {activeTab === "cohoi" && (
+                    <div className="p-5 md:p-6">
+                        {coHoiLoading ? (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                <p className="text-sm">Đang tải cơ hội...</p>
+                            </div>
+                        ) : coHoiList && coHoiList.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                                <Search className="w-10 h-10 mb-3 opacity-20" />
+                                <p className="font-semibold">Chưa có cơ hội nào</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {(coHoiList || []).map((ch: any) => {
+                                    const nhuCauIds: string[] = ch.NHU_CAU || [];
+                                    const selectedDv = dmDichVuList.filter(d => nhuCauIds.includes(d.ID));
+                                    const formatCurrency = (val: any) => val || val === 0 ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(val) : "—";
+
+                                    let ttCls = "bg-muted text-muted-foreground border-transparent";
+                                    let ttBgCls = "bg-card";
+                                    const low = (ch.TINH_TRANG || "").toLowerCase();
+                                    if (low.includes("mở")) {
+                                        ttCls = "bg-blue-50 text-blue-700 border-blue-200";
+                                        ttBgCls = "bg-blue-50/30";
+                                    } else if (low.includes("thành công") || low.includes("thanh cong")) {
+                                        ttCls = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                                        ttBgCls = "bg-emerald-50/20";
+                                    } else if (low.includes("thất bại") || low.includes("that bai")) {
+                                        ttCls = "bg-red-50 text-red-700 border-red-200";
+                                        ttBgCls = "bg-red-50/20";
+                                    }
+
+                                    return (
+                                        <div key={ch.ID} className={`border border-border rounded-xl p-4 shadow-sm transition-colors ${ttBgCls}`}>
+                                            <div className="flex items-start justify-between gap-4 mb-3">
+                                                <div>
+                                                    <p className="text-sm font-semibold text-primary">{ch.ID_CH}</p>
+                                                    <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Khởi tạo: <span className="text-foreground">{formatDate(ch.NGAY_TAO)}</span></p>
+                                                </div>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${ttCls}`}>{ch.TINH_TRANG}</span>
+                                            </div>
+
+                                            <div className="flex items-center justify-between mt-3 mb-3 bg-card/80 rounded-lg p-2.5 border border-border/50">
+                                                <div>
+                                                    <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Dự kiến chốt</p>
+                                                    <p className="font-semibold text-foreground text-sm">{formatDate(ch.NGAY_DK_CHOT)}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Giá trị DK / Thực tế</p>
+                                                    <p className="font-bold text-foreground text-sm text-primary">{formatCurrency(ch.GIA_TRI_DU_KIEN)}</p>
+                                                </div>
+                                            </div>
+
+                                            {selectedDv.length > 0 && (
+                                                <div className="pt-3 border-t border-border/60">
+                                                    <p className="text-[10px] text-muted-foreground font-medium uppercase mb-1.5 tracking-wider">Nhu cầu & Dịch vụ ({selectedDv.length})</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {selectedDv.map(d => (
+                                                            <span key={d.ID} className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-background border border-border text-foreground hover:bg-muted transition-colors">
+                                                                {d.DICH_VU}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
