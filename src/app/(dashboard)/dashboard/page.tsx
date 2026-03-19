@@ -11,7 +11,7 @@ import {
     CreditCard, Wallet, PieChart, Bell,
     UserCheck, Calendar, Shield, HelpCircle,
     Layers, Archive, Map, DollarSign, Target,
-    CalendarCheck2,
+    CalendarCheck2, ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/features/phan-quyen/PermissionContext";
@@ -195,6 +195,16 @@ const moduleGroups: ModuleGroup[] = [
                 color: "text-sky-600",
                 bgColor: "bg-sky-50 dark:bg-sky-950/50",
                 available: false,
+            },
+            {
+                name: "Hạng mục KS",
+                description: "Quản lý loại công trình, nhóm và hạng mục khảo sát.",
+                href: "/hang-muc-ks",
+                icon: ClipboardCheck,
+                color: "text-indigo-600",
+                bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
+                available: true,
+                moduleKey: "hang-muc-ks",
             },
         ],
     },

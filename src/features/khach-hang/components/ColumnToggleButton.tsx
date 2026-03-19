@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { SlidersHorizontal, Check } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
 export type ColumnKey =
     | "lienHe"
@@ -56,30 +56,38 @@ export default function ColumnToggleButton({ visibleColumns, onChange }: Props) 
         <div className="relative" ref={ref}>
             <button
                 onClick={() => setOpen((v) => !v)}
-                className={`p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm ${open ? "bg-muted ring-2 ring-ring" : ""}`}
+                className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${open ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted text-muted-foreground"}`}
                 title="Ẩn/hiện cột"
             >
                 <SlidersHorizontal className="w-4 h-4" />
             </button>
 
             {open && (
-                <div className="absolute right-0 top-full mt-2 w-52 bg-popover border border-border rounded-xl shadow-lg p-2 animate-in fade-in zoom-in-95 duration-150 z-50">
-                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2 pb-2">
-                        Hiển thị cột
-                    </p>
-                    {ALL_COLUMNS.map((col) => {
-                        const isVisible = visibleColumns.includes(col.key);
-                        return (
-                            <button
-                                key={col.key}
-                                onClick={() => toggle(col.key)}
-                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${isVisible ? "text-foreground font-medium" : "text-muted-foreground"} hover:bg-muted`}
-                            >
-                                <span>{col.label}</span>
-                                {isVisible && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
-                            </button>
-                        );
-                    })}
+                <div className="absolute right-0 top-full mt-2 w-52 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="p-2 border-b border-border">
+                        <p className="text-xs font-bold text-muted-foreground tracking-widest px-2 uppercase">HIỂN THỊ CỘT</p>
+                    </div>
+                    <div className="p-1.5 space-y-0.5">
+                        {ALL_COLUMNS.map((col) => {
+                            const isVisible = visibleColumns.includes(col.key);
+                            return (
+                                <label
+                                    key={col.key}
+                                    className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={isVisible}
+                                        onChange={() => toggle(col.key)}
+                                        className="rounded border-border accent-primary w-3.5 h-3.5 cursor-pointer"
+                                    />
+                                    <span className={`text-sm ${isVisible ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                                        {col.label}
+                                    </span>
+                                </label>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </div>
