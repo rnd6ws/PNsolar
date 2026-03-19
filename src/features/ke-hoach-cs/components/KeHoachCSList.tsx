@@ -347,18 +347,18 @@ export default function KeHoachCSList({
                                                 </td>
                                             )}
                                             {visibleColumns.includes("loaiCS") && (
-                                                <td className="px-4 py-3 text-sm text-muted-foreground text-center">{item.LOAI_CS || "—"}</td>
+                                                <td className="px-4 py-3 text-xs text-muted-foreground text-center">{item.LOAI_CS || "—"}</td>
                                             )}
                                             {visibleColumns.includes("thoiGian") && (
                                                 <td className="px-4 py-3 text-center">
-                                                    <div className="text-xs text-foreground">{formatDateTime(item.TG_TU)}</div>
-                                                    <div className="text-xs text-muted-foreground">→ {formatDateTime(item.TG_DEN)}</div>
+                                                    <div className="text-[11px] text-foreground">{formatDateTime(item.TG_TU)}</div>
+                                                    <div className="text-[11px] text-muted-foreground">→ {formatDateTime(item.TG_DEN)}</div>
                                                 </td>
                                             )}
                                             {visibleColumns.includes("hinhThuc") && (
                                                 <td className="px-4 py-3 text-center">
                                                     {item.HINH_THUC ? (
-                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${item.HINH_THUC === "Online"
+                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-medium border ${item.HINH_THUC === "Online"
                                                             ? "bg-blue-50 text-blue-700 border-blue-200"
                                                             : "bg-purple-50 text-purple-700 border-purple-200"
                                                             }`}>
@@ -368,7 +368,7 @@ export default function KeHoachCSList({
                                                 </td>
                                             )}
                                             {visibleColumns.includes("nguoiCS") && (
-                                                <td className="px-4 py-3 text-sm text-muted-foreground text-center">
+                                                <td className="px-4 py-3 text-xs text-muted-foreground text-center">
                                                     {getNVName(item.NGUOI_CS, nhanViens)}
                                                 </td>
                                             )}
@@ -381,7 +381,7 @@ export default function KeHoachCSList({
                                                             title="Xem chi tiết dịch vụ quan tâm"
                                                         >
                                                             {item.DICH_VU_QT.slice(0, 4).map((id: string) => (
-                                                                <span key={id} className="max-w-[130px] truncate inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border" title={dichVuMap.get(id) || id}>
+                                                                <span key={id} className="max-w-[130px] truncate inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border" title={dichVuMap.get(id) || id}>
                                                                     <span className="truncate">{dichVuMap.get(id) || id}</span>
                                                                 </span>
                                                             ))}
@@ -391,14 +391,14 @@ export default function KeHoachCSList({
                                                                 </span>
                                                             )}
                                                         </div>
-                                                    ) : <span className="text-xs text-muted-foreground block text-center">—</span>}
+                                                    ) : <span className="text-[11px] text-muted-foreground block text-center">—</span>}
                                                 </td>
                                             )}
                                             {visibleColumns.includes("trangThai") && (
                                                 <td className="px-4 py-3 text-center">
                                                     <div className="inline-flex flex-col items-center gap-1">
                                                         <div className="flex items-center gap-1">
-                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${TRANG_THAI_COLORS[item.TRANG_THAI] || "bg-muted text-muted-foreground border-border"}`}>
+                                                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border ${TRANG_THAI_COLORS[item.TRANG_THAI] || "bg-muted text-muted-foreground border-border"}`}>
                                                                 {item.TRANG_THAI === "Đã báo cáo"
                                                                     ? <CheckCircle2 className="w-3 h-3" />
                                                                     : (item.TRANG_THAI === "Đã hủy" || item.TRANG_THAI === "Hủy")
@@ -412,12 +412,12 @@ export default function KeHoachCSList({
                                                                     className="p-1 rounded-full text-muted-foreground hover:bg-red-100 hover:text-red-600 transition-colors shrink-0"
                                                                     title="Chuyển sang Hủy"
                                                                 >
-                                                                    <XCircle className="w-4 h-4" />
+                                                                    <XCircle className="w-3.5 h-3.5" />
                                                                 </button>
                                                             )}
                                                         </div>
                                                         {item.TRANG_THAI === "Chờ báo cáo" && item.TG_DEN && new Date() > new Date(item.TG_DEN) && (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-red-100 text-red-600 border-red-200">
+                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border bg-red-100 text-red-600 border-red-200">
                                                                 <TimerOff className="w-3 h-3" />
                                                                 Quá hạn
                                                             </span>
