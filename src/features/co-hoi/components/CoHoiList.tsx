@@ -2,8 +2,8 @@
 
 import React from "react";
 
-import { useState, useMemo } from "react";
-import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users, CalendarPlus2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteCoHoi, updateCoHoi, createCoHoi } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -12,6 +12,9 @@ import Modal from "@/components/Modal";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { CoHoiForm } from "./CoHoiForm";
 import type { ColumnKey } from "./ColumnToggleButton";
+import { getNVList } from "@/features/khach-hang/action";
+import { getLoaiCS } from "@/features/ke-hoach-cs/action";
+import KeHoachCSForm from "@/features/ke-hoach-cs/components/KeHoachCSForm";
 
 interface Props {
     data: any[];
@@ -145,16 +148,76 @@ function CoHoiDetail({ item, dmDichVu, onClose }: { item: any; dmDichVu: any[]; 
     );
 }
 
+// ─── Chi tiết Nhu cầu ──────────────────────────────────────────
+function NhuCauDetail({ item, dmDichVu, onClose }: { item: any; dmDichVu: any[]; onClose: () => void }) {
+    const nhuCauIds: string[] = item.NHU_CAU || [];
+    const selectedDv = dmDichVu.filter(d => nhuCauIds.includes(d.ID));
+
+    const grouped = useMemo(() => {
+        const map = new Map<string, typeof dmDichVu>();
+        for (const d of selectedDv) {
+            if (!map.has(d.NHOM_DV)) map.set(d.NHOM_DV, []);
+            map.get(d.NHOM_DV)!.push(d);
+        }
+        return map;
+    }, [selectedDv]);
+
+    if (selectedDv.length === 0) {
+        return <div className="p-6 text-center text-muted-foreground">Không có chi tiết nhu cầu.</div>;
+    }
+
+    return (
+        <div className="space-y-3">
+            <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground font-medium">Tổng nhu cầu</span>
+                <span className="text-base font-bold text-primary">{selectedDv.length} dịch vụ</span>
+            </div>
+
+            <div className="border border-border rounded-xl overflow-hidden max-h-[50vh] overflow-y-auto">
+                {Array.from(grouped.entries()).map(([nhom, items]) => (
+                    <div key={nhom}>
+                        <div className="px-3 py-2 bg-muted/50 border-b border-border sticky top-0 z-10 backdrop-blur-sm">
+                            <span className="text-[11px] font-bold text-foreground tracking-wide uppercase">{nhom}</span>
+                        </div>
+                        <div className="divide-y divide-border/40">
+                            {items.map((d: any) => (
+                                <div key={d.ID} className="flex items-center justify-between px-4 py-2.5 text-sm hover:bg-muted/30 transition-colors">
+                                    <span className="text-foreground font-medium">{d.DICH_VU}</span>
+                                    <span className="text-xs text-muted-foreground ml-4">{formatCurrency(d.GIA_TRI_TB)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 z-10 shadow-sm">
+                <button onClick={onClose} className="btn-premium-secondary w-full">Đóng</button>
+            </div>
+        </div>
+    );
+}
+
 // ─── Component chính ──────────────────────────────────────────
 export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = false }: Props) {
     const cols = visibleColumns ?? ["ngayTao", "nhuCau", "giaTriDK", "dkChot", "tinhTrang"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
+    const [viewNhuCauItem, setViewNhuCauItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<{ ID: string; ID_CH: string } | null>(null);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+    const [keHoachCSItem, setKeHoachCSItem] = useState<{ ID: string; TEN_KH: string; TEN_VT?: string | null; ID_CH?: string } | null>(null);
+    const [nhanViens, setNhanViens] = useState<any[]>([]);
+    const [loaiCSList, setLoaiCSList] = useState<any[]>([]);
+
+    useEffect(() => {
+        getNVList().then((r) => { if (r.success) setNhanViens(r.data as any); });
+        getLoaiCS().then((r) => { if (r.success) setLoaiCSList(r.data as any); });
+    }, []);
 
     const sortedData = useMemo(() => {
         if (!sortConfig) return data;
@@ -244,20 +307,24 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                 </td>
             )}
             <td className="px-4 py-3 align-middle text-left">
-                <p className="font-mono text-xs text-primary font-semibold">{item.ID_CH}</p>
+                <p className="text-xs text-primary font-semibold">{item.ID_CH}</p>
                 {!groupByKH && <p className="text-xs text-muted-foreground mt-0.5">{item.KH?.TEN_KH}</p>}
             </td>
             {show("nhuCau") && (
                 <td className="px-4 py-3 align-middle">
                     {selectedDv.length > 0 ? (
-                        <div className="flex flex-wrap gap-1 justify-center">
+                        <div
+                            className="flex flex-wrap gap-1 justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setViewNhuCauItem(item)}
+                            title="Xen chi tiết nhu cầu"
+                        >
                             {selectedDv.slice(0, 3).map(d => (
                                 <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
                                     {d.DICH_VU}
                                 </span>
                             ))}
                             {selectedDv.length > 3 && (
-                                <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
+                                <span className="text-[10px] text-primary/80 font-semibold bg-primary/10 px-1.5 rounded-full flex items-center">+{selectedDv.length - 3}</span>
                             )}
                         </div>
                     ) : <span className="text-xs text-muted-foreground">—</span>}
@@ -283,6 +350,11 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                     <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem chi tiết">
                         <Eye className="w-4 h-4" />
                     </button>
+                    <PermissionGuard moduleKey="ke-hoach-cs" level="add">
+                        <button onClick={() => setKeHoachCSItem({ ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT, ID_CH: item.ID })} className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors" title="Lên kế hoạch CSKH">
+                            <CalendarPlus2 className="w-4 h-4" />
+                        </button>
+                    </PermissionGuard>
                     <PermissionGuard moduleKey="co-hoi" level="edit">
                         <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
                             <Edit2 className="w-4 h-4" />
@@ -305,7 +377,7 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
             <div key={item.ID} className="p-4 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
                     <div>
-                        <p className="font-mono text-xs text-primary font-semibold">{item.ID_CH}</p>
+                        <p className="text-xs text-primary font-semibold">{item.ID_CH}</p>
                         {!groupByKH && <p className="text-sm font-semibold text-foreground mt-0.5">{item.KH?.TEN_KH}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -317,19 +389,25 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                     <span className="font-semibold text-foreground">{formatCurrency(item.GIA_TRI_DU_KIEN)}</span>
                 </div>
                 {selectedDv.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
+                    <div
+                        className="flex flex-wrap gap-1 cursor-pointer hover:opacity-80 transition-opacity mt-1"
+                        onClick={() => setViewNhuCauItem(item)}
+                    >
                         {selectedDv.slice(0, 3).map(d => (
                             <span key={d.ID} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
                                 {d.DICH_VU}
                             </span>
                         ))}
                         {selectedDv.length > 3 && (
-                            <span className="text-[10px] text-muted-foreground">+{selectedDv.length - 3}</span>
+                            <span className="text-[10px] text-primary/80 font-semibold bg-primary/10 px-1.5 rounded-full flex items-center">+{selectedDv.length - 3}</span>
                         )}
                     </div>
                 )}
                 <div className="flex justify-end gap-1 pt-1">
                     <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem"><Eye className="w-4 h-4" /></button>
+                    <PermissionGuard moduleKey="ke-hoach-cs" level="add">
+                        <button onClick={() => setKeHoachCSItem({ ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT, ID_CH: item.ID })} className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors" title="Lên kế hoạch CSKH"><CalendarPlus2 className="w-4 h-4" /></button>
+                    </PermissionGuard>
                     <PermissionGuard moduleKey="co-hoi" level="edit">
                         <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa"><Edit2 className="w-4 h-4" /></button>
                     </PermissionGuard>
@@ -503,6 +581,13 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                 )}
             </Modal>
 
+            {/* Modal: Xem chi tiết nhu cầu */}
+            <Modal isOpen={!!viewNhuCauItem} onClose={() => setViewNhuCauItem(null)} title={viewNhuCauItem ? `Nhu cầu · ${viewNhuCauItem.KH?.TEN_KH || viewNhuCauItem.ID_CH}` : "Chi tiết nhu cầu"} size="md">
+                {viewNhuCauItem && (
+                    <NhuCauDetail item={viewNhuCauItem} dmDichVu={dmDichVu} onClose={() => setViewNhuCauItem(null)} />
+                )}
+            </Modal>
+
             {/* Modal: Sửa */}
             <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật cơ hội" size="lg">
                 {editItem && (
@@ -517,6 +602,22 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                     />
                 )}
             </Modal>
+
+            {/* Modal: Lên kế hoạch CSKH */}
+            {keHoachCSItem && (
+                <KeHoachCSForm
+                    key={keHoachCSItem.ID}
+                    nhanViens={nhanViens}
+                    loaiCSList={loaiCSList}
+                    defaultKhachHang={keHoachCSItem}
+                    defaultCoHoiId={keHoachCSItem.ID_CH}
+                    onSuccess={() => {
+                        setKeHoachCSItem(null);
+                        toast.success("Đã tạo kế hoạch CSKH!");
+                    }}
+                    onClose={() => setKeHoachCSItem(null)}
+                />
+            )}
 
             {/* Modal: Xác nhận xóa */}
             <DeleteConfirmDialog

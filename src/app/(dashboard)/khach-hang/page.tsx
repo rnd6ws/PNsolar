@@ -7,6 +7,7 @@ import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuar
 import SettingKhachHangButton from "@/features/khach-hang/components/SettingKhachHangButton";
 import AddKhachHangButton from "@/features/khach-hang/components/AddKhachHangButton";
 import KhachHangPageClient from "@/features/khach-hang/components/KhachHangPageClient";
+import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
     title: "Khách hàng | PN Solar",
@@ -27,7 +28,7 @@ export default async function KhachHangPage({
     const PHAN_LOAI = params.PHAN_LOAI;
     const NGUON = params.NGUON;
 
-    const [{ data = [], pagination }, { data: phanLoais = [] }, { data: nguons = [] }, { data: nhoms = [] }, stats, { data: nhanViens = [] }, { data: nguoiGioiThieus = [] }, { data: lyDoTuChois = [] }] =
+    const [{ data = [], pagination }, { data: phanLoais = [] }, { data: nguons = [] }, { data: nhoms = [] }, stats, { data: nhanViens = [] }, { data: nguoiGioiThieus = [] }, { data: lyDoTuChois = [] }, user] =
         await Promise.all([
             getKhachHangs({ query, page, limit: 10, NHOM_KH, PHAN_LOAI, NGUON }),
             getPhanLoaiKH(),
@@ -36,7 +37,8 @@ export default async function KhachHangPage({
             getKhachHangStats(),
             getNVList(),
             getNguoiGioiThieu(),
-            getLyDoTuChoi()
+            getLyDoTuChoi(),
+            getCurrentUser()
         ]);
 
     const nhomOptions = Array.from(new Set((nhoms as any[]).map((n: any) => n.NHOM))).filter(Boolean).map(val => ({ label: String(val), value: String(val) }));
@@ -98,6 +100,7 @@ export default async function KhachHangPage({
                         nhomOptions={nhomOptions}
                         phanLoaiOptions={phanLoaiOptions}
                         nguonOptions={nguonOptions}
+                        currentUserId={user?.userId}
                     />
 
                     {(pagination as any) && (pagination as any).totalPages > 1 && (

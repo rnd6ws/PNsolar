@@ -202,7 +202,7 @@ function GoiGiaModal({
                             <input
                                 type="text"
                                 className={inputClass}
-                                placeholder="VD: 5,000,000 VNĐ / Wp"
+                                placeholder="VD: Giá niêm yết"
                                 value={form.GOI_GIA}
                                 onChange={e => handleChange('GOI_GIA', e.target.value)}
                                 required
@@ -431,7 +431,7 @@ function BulkAddModal({
                                             <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Gói giá *</label>
                                             <input
                                                 className={inputClass}
-                                                placeholder="VD: 5,000,000"
+                                                placeholder="VD: Giá niêm yết"
                                                 value={row.GOI_GIA}
                                                 onChange={e => updateRow(idx, 'GOI_GIA', e.target.value)}
                                                 required

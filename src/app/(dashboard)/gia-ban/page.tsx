@@ -1,7 +1,8 @@
 import {
     getGiaBanList,
-    getNhomKhOptions,
     getNhomHhOptions,
+    getPhanLoaiOptions,
+    getDongHangOptions,
     getGoiGiaOptions,
     getHangHoaOptionsForGiaBan,
     getUniqueFiltersInGiaBan
@@ -14,14 +15,14 @@ export default async function GiaBanPage({ searchParams }: { searchParams: any }
     const params = await searchParams;
     const page = Number(params?.page) || 1;
     const query = params?.q || "";
-    const NHOM_KH = params?.NHOM_KH || "";
     const NHOM_HH = params?.NHOM_HH || "";
     const GOI_GIA = params?.GOI_GIA || "";
 
-    const [result, nhomKhOptions, nhomHhOptions, goiGiaOptions, hhOptions, uniqueFilters] = await Promise.all([
-        getGiaBanList({ page, limit: 15, query, NHOM_KH, NHOM_HH, GOI_GIA }),
-        getNhomKhOptions(),
+    const [result, nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions, uniqueFilters] = await Promise.all([
+        getGiaBanList({ page, limit: 15, query, NHOM_HH, GOI_GIA }),
         getNhomHhOptions(),
+        getPhanLoaiOptions(),
+        getDongHangOptions(),
         getGoiGiaOptions(),
         getHangHoaOptionsForGiaBan(),
         getUniqueFiltersInGiaBan(),
@@ -34,11 +35,11 @@ export default async function GiaBanPage({ searchParams }: { searchParams: any }
         <PermissionGuard moduleKey="gia-ban" level="view" showNoAccess>
             <GiaBanPageClient
                 data={data}
-                nhomKhOptions={nhomKhOptions}
                 nhomHhOptions={nhomHhOptions}
+                phanLoaiOptions={phanLoaiOptions}
+                dongHangOptions={dongHangOptions}
                 goiGiaOptions={goiGiaOptions}
                 hhOptions={hhOptions}
-                filterNhomKhOptions={uniqueFilters.nhomKhOptions}
                 filterNhomHhOptions={uniqueFilters.nhomHhOptions}
                 filterGoiGiaOptions={uniqueFilters.goiGiaOptions}
                 pagination={pagination}

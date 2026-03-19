@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Settings, Trash2, Plus } from "lucide-react";
+import { Settings, Trash2, Plus, Edit2, Save } from "lucide-react";
 import Modal from "@/components/Modal";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import {
     createPhanLoaiKH, deletePhanLoaiKH,
     createNguonKH, deleteNguonKH,
     createLyDoTuChoi, deleteLyDoTuChoi,
-    createNguoiGioiThieu, deleteNguoiGioiThieu
+    createNguoiGioiThieu, deleteNguoiGioiThieu, updateNguoiGioiThieu
 } from "@/features/khach-hang/action";
 import { createNhomKH, deleteNhomKH } from "@/features/nhom-kh/action";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
     const [newPhone, setNewPhone] = useState("");
     const [loading, setLoading] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+    const [editTarget, setEditTarget] = useState<string | null>(null);
 
     const tabs: { key: Tab; label: string }[] = [
         { key: "phan-loai", label: "Phân loại KH" },
@@ -47,21 +48,38 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
         setLoading(true);
 
         let res;
-        if (activeTab === "phan-loai") res = await createPhanLoaiKH(newName);
-        else if (activeTab === "nguon") res = await createNguonKH(newName);
-        else if (activeTab === "ly-do-tu-choi") res = await createLyDoTuChoi(newName);
-        else if (activeTab === "nguoi-gioi-thieu") res = await createNguoiGioiThieu(newName, newPhone);
-        else res = await createNhomKH(newName);
+        if (editTarget) {
+            if (activeTab === "nguoi-gioi-thieu") {
+                res = await updateNguoiGioiThieu(editTarget, newName, newPhone);
+            } else {
+                toast.error("Chưa hỗ trợ chỉnh sửa cho danh mục này");
+                setLoading(false);
+                return;
+            }
+        } else {
+            if (activeTab === "phan-loai") res = await createPhanLoaiKH(newName);
+            else if (activeTab === "nguon") res = await createNguonKH(newName);
+            else if (activeTab === "ly-do-tu-choi") res = await createLyDoTuChoi(newName);
+            else if (activeTab === "nguoi-gioi-thieu") res = await createNguoiGioiThieu(newName, newPhone);
+            else res = await createNhomKH(newName);
+        }
 
         if (res.success) {
-            toast.success("Đã thêm thành công");
+            toast.success(editTarget ? "Đã cập nhật thành công" : "Đã thêm thành công");
             setNewName("");
             setNewPhone("");
+            setEditTarget(null);
             router.refresh();
         } else {
             toast.error((res as any).message || "Lỗi");
         }
         setLoading(false);
+    };
+
+    const cancelEdit = () => {
+        setEditTarget(null);
+        setNewName("");
+        setNewPhone("");
     };
 
 
@@ -109,7 +127,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                                 ? "border-primary text-primary"
                                 : "border-transparent text-muted-foreground hover:text-foreground"
                                 }`}
-                            onClick={() => { setActiveTab(tab.key); setNewName(""); setNewPhone(""); }}
+                            onClick={() => { setActiveTab(tab.key); setNewName(""); setNewPhone(""); setEditTarget(null); }}
                         >
                             {tab.label}
                         </button>
@@ -145,8 +163,19 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                             disabled={loading || !newName.trim()}
                             className="btn-premium-primary whitespace-nowrap shrink-0 h-[38px] px-4"
                         >
-                            <Plus className="w-4 h-4 mr-1.5" /> Thêm
+                            {editTarget ? <Save className="w-4 h-4 mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />} 
+                            {editTarget ? "Lưu" : "Thêm"}
                         </button>
+                        {editTarget && (
+                            <button
+                                type="button"
+                                onClick={cancelEdit}
+                                disabled={loading}
+                                className="btn-premium-secondary whitespace-nowrap shrink-0 h-[38px] px-4"
+                            >
+                                Hủy
+                            </button>
+                        )}
                     </form>
 
                     <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1 border border-border p-2 rounded-xl bg-muted/10">
@@ -161,13 +190,30 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                                     {item.name}
                                     {item.extra && <span className="ml-2 text-xs font-normal text-muted-foreground">({item.extra})</span>}
                                 </span>
-                                <button
-                                    onClick={() => setDeleteTarget(item.id)}
-                                    disabled={loading}
-                                    className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <div className="flex gap-1">
+                                    {activeTab === "nguoi-gioi-thieu" && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEditTarget(item.id);
+                                                setNewName(item.name);
+                                                setNewPhone(item.extra || "");
+                                            }}
+                                            disabled={loading}
+                                            className="p-1 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded transition-colors"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setDeleteTarget(item.id)}
+                                        disabled={loading}
+                                        className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

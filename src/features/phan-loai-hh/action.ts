@@ -93,9 +93,19 @@ export async function updatePhanLoaiHH(id: string, updateData: any) {
 
 export async function deletePhanLoaiHH(id: string) {
     try {
-        // Xóa các dòng hàng con trước
+        // Tìm mã phân loại từ ID
+        const phanLoai = await prisma.pHANLOAI_HH.findUnique({
+            where: { ID: id },
+            select: { MA_PHAN_LOAI: true }
+        });
+
+        if (!phanLoai) {
+            return { success: false, message: "Không tìm thấy phân loại" };
+        }
+
+        // Xóa các dòng hàng con trước (theo MA_PHAN_LOAI)
         await prisma.dONG_HH.deleteMany({
-            where: { PHAN_LOAI_ID: id }
+            where: { MA_PHAN_LOAI: phanLoai.MA_PHAN_LOAI }
         });
 
         await prisma.pHANLOAI_HH.delete({
@@ -113,7 +123,7 @@ export async function deletePhanLoaiHH(id: string) {
 
 export async function createDongHH(formData: FormData) {
     try {
-        const PHAN_LOAI_ID = formData.get("PHAN_LOAI_ID")?.toString().trim();
+        const MA_PHAN_LOAI = formData.get("MA_PHAN_LOAI")?.toString().trim();
         const MA_DONG_HANG = formData.get("MA_DONG_HANG")?.toString().trim();
         const TEN_DONG_HANG = formData.get("TEN_DONG_HANG")?.toString().trim();
         const TIEN_TO = formData.get("TIEN_TO")?.toString().trim() || null;
@@ -121,7 +131,7 @@ export async function createDongHH(formData: FormData) {
         const XUAT_XU = formData.get("XUAT_XU")?.toString().trim() || null;
         const DVT = formData.get("DVT")?.toString().trim() || null;
 
-        if (!PHAN_LOAI_ID || !MA_DONG_HANG || !TEN_DONG_HANG) {
+        if (!MA_PHAN_LOAI || !MA_DONG_HANG || !TEN_DONG_HANG) {
             return { success: false, message: "Vui lòng điền đầy đủ thông tin mã, tên và chọn phân loại" };
         }
 
@@ -135,7 +145,7 @@ export async function createDongHH(formData: FormData) {
 
         await prisma.dONG_HH.create({
             data: {
-                PHAN_LOAI_ID,
+                MA_PHAN_LOAI,
                 MA_DONG_HANG,
                 TEN_DONG_HANG,
                 TIEN_TO,
@@ -232,7 +242,7 @@ export async function createBulkDongHH(phanLoaiId: string, rows: { MA_DONG_HANG:
 
             await prisma.dONG_HH.create({
                 data: {
-                    PHAN_LOAI_ID: phanLoaiId,
+                    MA_PHAN_LOAI: phanLoaiId,
                     MA_DONG_HANG: ma,
                     TEN_DONG_HANG: ten,
                     TIEN_TO: row.TIEN_TO?.trim() || null,
