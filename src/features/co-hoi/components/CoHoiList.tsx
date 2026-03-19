@@ -2,8 +2,8 @@
 
 import React from "react";
 
-import { useState, useMemo } from "react";
-import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users, CalendarPlus2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteCoHoi, updateCoHoi, createCoHoi } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -12,6 +12,9 @@ import Modal from "@/components/Modal";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { CoHoiForm } from "./CoHoiForm";
 import type { ColumnKey } from "./ColumnToggleButton";
+import { getNVList } from "@/features/khach-hang/action";
+import { getLoaiCS } from "@/features/ke-hoach-cs/action";
+import KeHoachCSForm from "@/features/ke-hoach-cs/components/KeHoachCSForm";
 
 interface Props {
     data: any[];
@@ -207,6 +210,15 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
+    const [keHoachCSItem, setKeHoachCSItem] = useState<{ ID: string; TEN_KH: string; TEN_VT?: string | null; ID_CH?: string } | null>(null);
+    const [nhanViens, setNhanViens] = useState<any[]>([]);
+    const [loaiCSList, setLoaiCSList] = useState<any[]>([]);
+
+    useEffect(() => {
+        getNVList().then((r) => { if (r.success) setNhanViens(r.data as any); });
+        getLoaiCS().then((r) => { if (r.success) setLoaiCSList(r.data as any); });
+    }, []);
+
     const sortedData = useMemo(() => {
         if (!sortConfig) return data;
         return [...data].sort((a, b) => {
@@ -338,6 +350,11 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                     <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem chi tiết">
                         <Eye className="w-4 h-4" />
                     </button>
+                    <PermissionGuard moduleKey="ke-hoach-cs" level="add">
+                        <button onClick={() => setKeHoachCSItem({ ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT, ID_CH: item.ID })} className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors" title="Lên kế hoạch CSKH">
+                            <CalendarPlus2 className="w-4 h-4" />
+                        </button>
+                    </PermissionGuard>
                     <PermissionGuard moduleKey="co-hoi" level="edit">
                         <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
                             <Edit2 className="w-4 h-4" />
@@ -388,6 +405,9 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                 )}
                 <div className="flex justify-end gap-1 pt-1">
                     <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem"><Eye className="w-4 h-4" /></button>
+                    <PermissionGuard moduleKey="ke-hoach-cs" level="add">
+                        <button onClick={() => setKeHoachCSItem({ ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT, ID_CH: item.ID })} className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors" title="Lên kế hoạch CSKH"><CalendarPlus2 className="w-4 h-4" /></button>
+                    </PermissionGuard>
                     <PermissionGuard moduleKey="co-hoi" level="edit">
                         <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa"><Edit2 className="w-4 h-4" /></button>
                     </PermissionGuard>
@@ -582,6 +602,22 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                     />
                 )}
             </Modal>
+
+            {/* Modal: Lên kế hoạch CSKH */}
+            {keHoachCSItem && (
+                <KeHoachCSForm
+                    key={keHoachCSItem.ID}
+                    nhanViens={nhanViens}
+                    loaiCSList={loaiCSList}
+                    defaultKhachHang={keHoachCSItem}
+                    defaultCoHoiId={keHoachCSItem.ID_CH}
+                    onSuccess={() => {
+                        setKeHoachCSItem(null);
+                        toast.success("Đã tạo kế hoạch CSKH!");
+                    }}
+                    onClose={() => setKeHoachCSItem(null)}
+                />
+            )}
 
             {/* Modal: Xác nhận xóa */}
             <DeleteConfirmDialog

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, Fragment, useEffect } from "react";
 import { toast } from "sonner";
 import {
     ArrowUpDown, ArrowUp, ArrowDown,
-    Pencil, Trash2, FileText, MoreHorizontal,
+    Pencil, Trash2, ClipboardCheck, MoreHorizontal,
     Clock, MapPin, User, CheckCircle2, TimerOff, ChevronDown, ChevronRight, Eye, XCircle
 } from "lucide-react";
 import {
@@ -15,11 +15,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PermissionGuard, usePermissions } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
-import { deleteKeHoachCS, cancelKeHoachCS } from "../action";
+import { deleteKeHoachCS, cancelKeHoachCS, getDMDichVuForCS } from "../action";
 import type { ColumnKey } from "./ColumnToggleButton";
 import KeHoachCSForm from "./KeHoachCSForm";
 import BaoCaoCSForm from "./BaoCaoCSForm";
 import KeHoachCSDetail from "./KeHoachCSDetail";
+import Modal from "@/components/Modal";
 
 interface Props {
     data: any[];
@@ -68,6 +69,19 @@ export default function KeHoachCSList({
     const [cancelItem, setCancelItem] = useState<any>(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+    const [dichVuMap, setDichVuMap] = useState<Map<string, string>>(new Map());
+    const [viewDichVuItem, setViewDichVuItem] = useState<any>(null);
+
+    useEffect(() => {
+        getDMDichVuForCS().then((res) => {
+            if (res.success) {
+                const map = new Map<string, string>();
+                res.data.forEach((dv: any) => map.set(dv.ID, dv.DICH_VU));
+                setDichVuMap(map);
+            }
+        });
+    }, []);
 
     const toggleGroup = (key: string) => {
         setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -180,7 +194,7 @@ export default function KeHoachCSList({
                         }`}
                         title={isCancelled ? "Kế hoạch đã hủy" : "Báo cáo"}
                     >
-                        <FileText className="w-3.5 h-3.5" />
+                        <ClipboardCheck className="w-3.5 h-3.5" />
                     </button>
                 )}
                 <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
@@ -359,10 +373,25 @@ export default function KeHoachCSList({
                                                 </td>
                                             )}
                                             {visibleColumns.includes("dichVuQT") && (
-                                                <td className="px-4 py-3 text-xs text-muted-foreground text-center">
-                                                    {Array.isArray(item.DICH_VU_QT) && item.DICH_VU_QT.length > 0
-                                                        ? `${item.DICH_VU_QT.length} dịch vụ`
-                                                        : "—"}
+                                                <td className="px-4 py-3 align-middle">
+                                                    {Array.isArray(item.DICH_VU_QT) && item.DICH_VU_QT.length > 0 ? (
+                                                        <div
+                                                            className="flex flex-wrap gap-1 justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                                                            onClick={(e) => { e.stopPropagation(); setViewDichVuItem(item); }}
+                                                            title="Xem chi tiết dịch vụ quan tâm"
+                                                        >
+                                                            {item.DICH_VU_QT.slice(0, 4).map((id: string) => (
+                                                                <span key={id} className="max-w-[130px] truncate inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border" title={dichVuMap.get(id) || id}>
+                                                                    <span className="truncate">{dichVuMap.get(id) || id}</span>
+                                                                </span>
+                                                            ))}
+                                                            {item.DICH_VU_QT.length > 4 && (
+                                                                <span className="text-[10px] text-primary/80 font-semibold bg-primary/10 px-1.5 rounded-full flex items-center shrink-0">
+                                                                    +{item.DICH_VU_QT.length - 4}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : <span className="text-xs text-muted-foreground block text-center">—</span>}
                                                 </td>
                                             )}
                                             {visibleColumns.includes("trangThai") && (
@@ -437,6 +466,32 @@ export default function KeHoachCSList({
                     onClose={() => setEditItem(null)}
                 />
             )}
+            
+            {/* Modal: Xem chi tiết dịch vụ quan tâm */}
+            <Modal isOpen={!!viewDichVuItem} onClose={() => setViewDichVuItem(null)} title={viewDichVuItem ? `Dịch vụ quan tâm · ${viewDichVuItem.KH?.TEN_KH}` : "Dịch vụ quan tâm"} size="md">
+                {viewDichVuItem && (
+                    <div className="space-y-3">
+                        <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 flex items-center justify-between mb-2">
+                            <span className="text-xs text-muted-foreground font-medium">Tổng số dịch vụ</span>
+                            <span className="text-base font-bold text-primary">{viewDichVuItem.DICH_VU_QT?.length || 0} dịch vụ</span>
+                        </div>
+                        <div className="border border-border rounded-xl overflow-hidden max-h-[50vh] overflow-y-auto divide-y divide-border/40">
+                            {Array.isArray(viewDichVuItem.DICH_VU_QT) && viewDichVuItem.DICH_VU_QT.map((id: string, idx: number) => (
+                                <div key={idx} className="flex items-center px-4 py-3 text-sm hover:bg-muted/30 transition-colors">
+                                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground mr-3 shrink-0">
+                                        {idx + 1}
+                                    </div>
+                                    <span className="text-foreground font-medium">{dichVuMap.get(id) || id}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 z-10 shadow-sm">
+                            <button onClick={() => setViewDichVuItem(null)} className="btn-premium-secondary w-full">Đóng</button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
             <DeleteConfirmDialog
                 isOpen={!!deleteItem}
                 onClose={() => setDeleteItem(null)}

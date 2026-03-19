@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useRef, useMemo, useEffect } from "react";
-import { Edit2, Trash2, MapPin, Phone, Mail, Building2, UserCircle, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, UserPlus, MoreHorizontal, Settings2, UserCheck, UserX, CalendarPlus2, Target, ClipboardCheck } from "lucide-react";
+import {
+    Edit2, Trash2, MapPin, Phone,
+    Mail, Building2, UserCircle, Eye, Search,
+    ArrowUpDown, ArrowUp, ArrowDown, UserPlus,
+    MoreHorizontal, Settings2, UserCheck, UserX,
+    CalendarPlus2, Target, ShieldCheck, KeyRound
+} from "lucide-react";
 import { toast } from "sonner";
 import { deleteKhachHang, updateKhachHang, createKhachHang, lookupCompanyByTaxCode, thamDinhKhachHang } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -315,7 +321,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild>
                                                                 <button className="p-1 hover:bg-muted text-muted-foreground hover:text-indigo-600 rounded-md transition-colors shadow-sm border border-border bg-background" title="Thẩm định khách hàng">
-                                                                    <ClipboardCheck className="w-3.5 h-3.5 text-indigo-500/80" />
+                                                                    <KeyRound className="w-3.5 h-3.5 text-indigo-500/80" />
                                                                 </button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="start" className="w-48 rounded-xl shadow-md border-border">

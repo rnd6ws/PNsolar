@@ -23,6 +23,7 @@ interface Props {
     currentUserId?: string;
     /** Khi truyền vào, KH sẽ được set sẵn và không cho phép thay đổi */
     defaultKhachHang?: { ID: string; TEN_KH: string; TEN_VT?: string | null };
+    defaultCoHoiId?: string;
     onSuccess: () => void;
     onClose: () => void;
 }
@@ -33,12 +34,14 @@ export default function KeHoachCSForm({
     loaiCSList,
     currentUserId,
     defaultKhachHang,
+    defaultCoHoiId,
     onSuccess,
     onClose,
 }: Props) {
     const isEdit = !!item;
     // KH cố định khi mở từ trang khách hàng
     const isKHLocked = !!defaultKhachHang && !isEdit;
+    const isCoHoiLocked = !!defaultCoHoiId && !isEdit;
 
     // KH search
     const [khQuery, setKhQuery] = useState(item?.KH?.TEN_KH || "");
@@ -69,7 +72,7 @@ export default function KeHoachCSForm({
 
     // Form fields
     const [idLH, setIdLH] = useState(item?.ID_LH || "");
-    const [idCH, setIdCH] = useState(item?.ID_CH || "");
+    const [idCH, setIdCH] = useState(item?.ID_CH || defaultCoHoiId || "");
     const [loaiCS, setLoaiCS] = useState(item?.LOAI_CS || "");
     const [hinhThuc, setHinhThuc] = useState(item?.HINH_THUC || "");
     const [diaDiem, setDiaDiem] = useState(item?.DIA_DIEM || "");
@@ -134,11 +137,15 @@ export default function KeHoachCSForm({
                 if (r.success) {
                     setCoHois(r.data);
                     if (shouldAutoSelect) {
-                        const openCH = r.data.find((c: any) => c.TINH_TRANG === "Đang mở");
-                        if (openCH) {
-                            setIdCH(openCH.ID);
+                        if (defaultCoHoiId) {
+                            setIdCH(defaultCoHoiId);
                         } else {
-                            setIdCH("");
+                            const openCH = r.data.find((c: any) => c.TINH_TRANG === "Đang mở");
+                            if (openCH) {
+                                setIdCH(openCH.ID);
+                            } else {
+                                setIdCH("");
+                            }
                         }
                     }
                 }
@@ -397,7 +404,7 @@ export default function KeHoachCSForm({
                             onChange={(val) => setIdCH(val)}
                             options={coHois.map((ch) => ({ label: `${ch.ID_CH} (${ch.TINH_TRANG})`, value: ch.ID }))}
                             placeholder="-- Chọn cơ hội --"
-                            disabled={!selectedKH}
+                            disabled={!selectedKH || isCoHoiLocked}
                         />
                     </div>
                 </div>

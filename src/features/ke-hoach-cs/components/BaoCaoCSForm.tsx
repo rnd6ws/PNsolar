@@ -477,7 +477,7 @@ export default function BaoCaoCSForm({ item, ketQuaList, lyDoList, onSuccess, on
                         ) : (
                             <>
                                 <CheckCircle className="w-4 h-4" />
-                                Nộp báo cáo
+                                Gửi báo cáo
                                 {(pendingImgs.length + pendingFiles.length) > 0 && (
                                     <span className="text-xs opacity-75">({pendingImgs.length + pendingFiles.length} file sẽ upload)</span>
                                 )}

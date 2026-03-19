@@ -24,18 +24,21 @@ interface Props {
     onChange: (cols: ColumnKey[]) => void;
 }
 
-import { useState } from "react";
-import { Columns3 } from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useState, useRef, useEffect } from "react";
+import { SlidersHorizontal } from "lucide-react";
 
 export default function ColumnToggleButton({ visibleColumns, onChange }: Props) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
     const toggle = (key: ColumnKey) => {
         if (visibleColumns.includes(key)) {
             onChange(visibleColumns.filter((c) => c !== key));
@@ -45,30 +48,40 @@ export default function ColumnToggleButton({ visibleColumns, onChange }: Props) 
     };
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button
-                    className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex items-center gap-1.5 text-xs font-medium"
-                    title="Ẩn/hiện cột"
-                >
-                    <Columns3 className="w-4 h-4" />
-                    <span className="hidden lg:inline">Cột</span>
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 rounded-xl">
-                <DropdownMenuLabel className="text-xs">Hiển thị cột</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {ALL_COLUMNS.map((col) => (
-                    <DropdownMenuCheckboxItem
-                        key={col.key}
-                        checked={visibleColumns.includes(col.key)}
-                        onCheckedChange={() => toggle(col.key)}
-                        className="text-sm"
-                    >
-                        {col.label}
-                    </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setOpen(!open)}
+                className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${open ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted text-muted-foreground"}`}
+                title="Ẩn/hiện cột"
+            >
+                <SlidersHorizontal className="w-4 h-4" />
+            </button>
+
+            {open && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="p-2 border-b border-border">
+                        <p className="text-xs font-bold text-muted-foreground tracking-widest px-2">HIỂN THỊ CỘT</p>
+                    </div>
+                    <div className="p-1.5 space-y-0.5">
+                        {ALL_COLUMNS.map((col) => (
+                            <label
+                                key={col.key}
+                                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={visibleColumns.includes(col.key)}
+                                    onChange={() => toggle(col.key)}
+                                    className="rounded border-border accent-primary w-3.5 h-3.5"
+                                />
+                                <span className={`text-sm ${visibleColumns.includes(col.key) ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                                    {col.label}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
