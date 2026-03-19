@@ -198,16 +198,21 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                             {/* Hiệu lực */}
                             <div>
                                 <label className="block text-xs font-medium text-muted-foreground mb-1">Hiệu lực</label>
-                                <FormSelect
-                                    name="HIEU_LUC"
-                                    value={form.HIEU_LUC}
-                                    onChange={(val) => setForm(prev => ({ ...prev, HIEU_LUC: val }))}
-                                    options={[
-                                        { label: "Đang hiệu lực", value: "Đang hiệu lực" },
-                                        { label: "Hết hiệu lực", value: "Hết hiệu lực" }
-                                    ]}
-                                    className="h-[38px]! border-border"
-                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setForm(prev => ({ ...prev, HIEU_LUC: prev.HIEU_LUC === "Đang hiệu lực" ? "Hết hiệu lực" : "Đang hiệu lực" }))}
+                                    className={`w-full h-[38px] flex items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
+                                        form.HIEU_LUC === "Đang hiệu lực"
+                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50 dark:hover:bg-emerald-900/50"
+                                            : "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50 dark:hover:bg-rose-900/50"
+                                    }`}
+                                >
+                                    {form.HIEU_LUC === "Đang hiệu lực" ? (
+                                        <><CheckCircle2 className="w-4 h-4" /> Đang hiệu lực</>
+                                    ) : (
+                                        <><XCircle className="w-4 h-4" /> Hết hiệu lực</>
+                                    )}
+                                </button>
                             </div>
                         </div>
 

@@ -36,7 +36,7 @@ export default function KhachHangPageClient({
             <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
                 <div className="flex items-center justify-between gap-3 w-full">
                     <div className="flex-1 w-full lg:max-w-[400px]">
-                        <SearchInput placeholder="Tìm theo tên/SĐT khách hàng..." />
+                        <SearchInput placeholder="Tìm theo tên/viết tắt/SĐT..." />
                     </div>
                     
                     {/* Nút Lọc cho Mobile */}

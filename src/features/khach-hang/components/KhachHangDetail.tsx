@@ -71,8 +71,8 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
 
     const tabs = [
         { key: "info" as const, label: "Thông tin chung" },
-        { key: "cskh" as const, label: "Lịch sử chăm sóc" },
         { key: "cohoi" as const, label: "Cơ hội" },
+        { key: "cskh" as const, label: "Lịch sử chăm sóc" },
         { key: "lichsu" as const, label: "Lịch sử ghi chú" },
     ];
 
@@ -226,6 +226,81 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                     </div>
                 )}
 
+                {/* === TAB 1.5: CƠ HỘI === */}
+                {activeTab === "cohoi" && (
+                    <div className="p-5 md:p-6">
+                        {coHoiLoading ? (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                <p className="text-sm">Đang tải cơ hội...</p>
+                            </div>
+                        ) : coHoiList && coHoiList.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                                <Search className="w-10 h-10 mb-3 opacity-20" />
+                                <p className="font-semibold">Chưa có cơ hội nào</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {(coHoiList || []).map((ch: any) => {
+                                    const nhuCauIds: string[] = ch.NHU_CAU || [];
+                                    const selectedDv = dmDichVuList.filter(d => nhuCauIds.includes(d.ID));
+                                    const formatCurrency = (val: any) => val || val === 0 ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(val) : "—";
+
+                                    let ttCls = "bg-muted text-muted-foreground border-transparent";
+                                    let ttBgCls = "bg-card";
+                                    const low = (ch.TINH_TRANG || "").toLowerCase();
+                                    if (low.includes("mở")) {
+                                        ttCls = "bg-blue-50 text-blue-700 border-blue-200";
+                                        ttBgCls = "bg-blue-50/30";
+                                    } else if (low.includes("thành công") || low.includes("thanh cong")) {
+                                        ttCls = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                                        ttBgCls = "bg-emerald-50/20";
+                                    } else if (low.includes("thất bại") || low.includes("that bai")) {
+                                        ttCls = "bg-red-50 text-red-700 border-red-200";
+                                        ttBgCls = "bg-red-50/20";
+                                    }
+
+                                    return (
+                                        <div key={ch.ID} className={`border border-border rounded-xl p-4 shadow-sm transition-colors ${ttBgCls}`}>
+                                            <div className="flex items-start justify-between gap-4 mb-3">
+                                                <div>
+                                                    <p className="text-sm font-semibold text-primary">{ch.ID_CH}</p>
+                                                    <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Khởi tạo: <span className="text-foreground">{formatDate(ch.NGAY_TAO)}</span></p>
+                                                </div>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${ttCls}`}>{ch.TINH_TRANG}</span>
+                                            </div>
+
+                                            <div className="flex items-center justify-between mt-3 mb-3 bg-card/80 rounded-lg p-2.5 border border-border/50">
+                                                <div>
+                                                    <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Dự kiến chốt</p>
+                                                    <p className="font-semibold text-foreground text-sm">{formatDate(ch.NGAY_DK_CHOT)}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Giá trị DK / Thực tế</p>
+                                                    <p className="font-bold text-foreground text-sm text-primary">{formatCurrency(ch.GIA_TRI_DU_KIEN)}</p>
+                                                </div>
+                                            </div>
+
+                                            {selectedDv.length > 0 && (
+                                                <div className="pt-3 border-t border-border/60">
+                                                    <p className="text-[10px] text-muted-foreground font-medium uppercase mb-1.5 tracking-wider">Nhu cầu & Dịch vụ ({selectedDv.length})</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {selectedDv.map(d => (
+                                                            <span key={d.ID} className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-background border border-border text-foreground hover:bg-muted transition-colors">
+                                                                {d.DICH_VU}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* === TAB 2: LỊCH SỬ CHĂM SÓC === */}
                 {activeTab === "cskh" && (
                     <div className="p-5 md:p-6">
@@ -244,8 +319,8 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                 {(cskhList || []).map((cs: any) => (
                                     <div key={cs.ID} className="border border-border rounded-xl overflow-hidden">
                                         {/* Header card */}
-                                        <div className="flex items-center gap-4 px-4 py-2.5 bg-muted/30 border-b border-border">
-                                            <span className="text-[12px] font-bold text-foreground shrink-0">{formatDT(cs.TG_TU)}</span>
+                                        <div className="flex items-center gap-4 px-4 py-2.5 bg-primary/5 border-b border-primary/10">
+                                            <span className="text-[12px] font-bold text-primary shrink-0">{formatDT(cs.TG_TU)}</span>
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 {cs.LOAI_CS && (
                                                     <span className="text-xs font-semibold text-foreground">{cs.LOAI_CS}</span>
@@ -311,81 +386,6 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                         </div>
                                     </div>
                                 ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* === TAB 1.5: CƠ HỘI === */}
-                {activeTab === "cohoi" && (
-                    <div className="p-5 md:p-6">
-                        {coHoiLoading ? (
-                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                <p className="text-sm">Đang tải cơ hội...</p>
-                            </div>
-                        ) : coHoiList && coHoiList.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                                <Search className="w-10 h-10 mb-3 opacity-20" />
-                                <p className="font-semibold">Chưa có cơ hội nào</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {(coHoiList || []).map((ch: any) => {
-                                    const nhuCauIds: string[] = ch.NHU_CAU || [];
-                                    const selectedDv = dmDichVuList.filter(d => nhuCauIds.includes(d.ID));
-                                    const formatCurrency = (val: any) => val || val === 0 ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(val) : "—";
-
-                                    let ttCls = "bg-muted text-muted-foreground border-transparent";
-                                    let ttBgCls = "bg-card";
-                                    const low = (ch.TINH_TRANG || "").toLowerCase();
-                                    if (low.includes("mở")) {
-                                        ttCls = "bg-blue-50 text-blue-700 border-blue-200";
-                                        ttBgCls = "bg-blue-50/30";
-                                    } else if (low.includes("thành công") || low.includes("thanh cong")) {
-                                        ttCls = "bg-emerald-50 text-emerald-700 border-emerald-200";
-                                        ttBgCls = "bg-emerald-50/20";
-                                    } else if (low.includes("thất bại") || low.includes("that bai")) {
-                                        ttCls = "bg-red-50 text-red-700 border-red-200";
-                                        ttBgCls = "bg-red-50/20";
-                                    }
-
-                                    return (
-                                        <div key={ch.ID} className={`border border-border rounded-xl p-4 shadow-sm transition-colors ${ttBgCls}`}>
-                                            <div className="flex items-start justify-between gap-4 mb-3">
-                                                <div>
-                                                    <p className="text-sm font-semibold text-primary">{ch.ID_CH}</p>
-                                                    <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Khởi tạo: <span className="text-foreground">{formatDate(ch.NGAY_TAO)}</span></p>
-                                                </div>
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${ttCls}`}>{ch.TINH_TRANG}</span>
-                                            </div>
-
-                                            <div className="flex items-center justify-between mt-3 mb-3 bg-card/80 rounded-lg p-2.5 border border-border/50">
-                                                <div>
-                                                    <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Dự kiến chốt</p>
-                                                    <p className="font-semibold text-foreground text-sm">{formatDate(ch.NGAY_DK_CHOT)}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Giá trị DK / Thực tế</p>
-                                                    <p className="font-bold text-foreground text-sm text-primary">{formatCurrency(ch.GIA_TRI_DU_KIEN)}</p>
-                                                </div>
-                                            </div>
-
-                                            {selectedDv.length > 0 && (
-                                                <div className="pt-3 border-t border-border/60">
-                                                    <p className="text-[10px] text-muted-foreground font-medium uppercase mb-1.5 tracking-wider">Nhu cầu & Dịch vụ ({selectedDv.length})</p>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {selectedDv.map(d => (
-                                                            <span key={d.ID} className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-background border border-border text-foreground hover:bg-muted transition-colors">
-                                                                {d.DICH_VU}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
                             </div>
                         )}
                     </div>

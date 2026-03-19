@@ -49,7 +49,7 @@ export async function getKeHoachCSKH(filters: {
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
-                orderBy: { CREATED_AT: "desc" },
+                orderBy: { TG_TU: "desc" },
                 include: {
                     KH: { select: { ID: true, TEN_KH: true, TEN_VT: true } },
                 },

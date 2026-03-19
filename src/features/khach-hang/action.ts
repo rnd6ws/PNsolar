@@ -29,6 +29,7 @@ export async function getKhachHangs(filters: {
         andConditions.push({
             OR: [
                 { TEN_KH: { contains: query, mode: "insensitive" } },
+                { TEN_VT: { contains: query, mode: "insensitive" } },
                 { DIEN_THOAI: { contains: query, mode: "insensitive" } },
             ],
         });
@@ -96,6 +97,20 @@ export async function getKhachHangById(id: string) {
         return { success: true, data };
     } catch (error) {
         return { success: false, message: "Lỗi lấy thông tin khách hàng" };
+    }
+}
+
+export async function checkTenVietTatTrung(tenVt: string, currentId?: string) {
+    if (!tenVt) return false;
+    try {
+        const where: any = { TEN_VT: { equals: tenVt, mode: "insensitive" } };
+        if (currentId) {
+            where.ID = { not: currentId };
+        }
+        const exists = await prisma.kHTN.findFirst({ where });
+        return !!exists;
+    } catch (error) {
+        return false;
     }
 }
 
@@ -415,6 +430,19 @@ export async function createNguoiGioiThieu(tenNgt: string, soDtNgt?: string) {
         return { success: true, data: record };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi tạo người giới thiệu" };
+    }
+}
+
+export async function updateNguoiGioiThieu(id: string, tenNgt: string, soDtNgt?: string) {
+    try {
+        if (!tenNgt.trim()) return { success: false, message: "Vui lòng nhập tên người giới thiệu" };
+        const record = await prisma.nGUOI_GIOI_THIEU.update({
+            where: { ID: id },
+            data: { TEN_NGT: tenNgt.trim(), SO_DT_NGT: soDtNgt?.trim() || null },
+        });
+        return { success: true, data: record };
+    } catch (error: any) {
+        return { success: false, message: error.message || "Lỗi cập nhật người giới thiệu" };
     }
 }
 

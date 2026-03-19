@@ -60,7 +60,7 @@ const getNVName = (id: string, nhanViens: any[]) => {
 export default function KeHoachCSList({
     data, nhanViens, loaiCSList, ketQuaList, lyDoList, currentUserId, visibleColumns, groupBy,
 }: Props) {
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>({ key: "TG_TU", direction: "desc" });
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
     const [baoCaoItem, setBaoCaoItem] = useState<any>(null);
@@ -225,7 +225,7 @@ export default function KeHoachCSList({
                             <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-8">#</th>
                             {visibleColumns.includes("khachHang") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground"
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground min-w-[180px]"
                                     onClick={() => handleSort("khachHang")}
                                 >
                                     Khách hàng <SortIcon columnKey="khachHang" />
@@ -233,7 +233,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("loaiCS") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[120px]"
                                     onClick={() => handleSort("LOAI_CS")}
                                 >
                                     Loại CS <SortIcon columnKey="LOAI_CS" />
@@ -241,7 +241,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("thoiGian") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[140px]"
                                     onClick={() => handleSort("TG_TU")}
                                 >
                                     Thời gian <SortIcon columnKey="TG_TU" />
@@ -249,7 +249,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("hinhThuc") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[100px]"
                                     onClick={() => handleSort("HINH_THUC")}
                                 >
                                     Hình thức <SortIcon columnKey="HINH_THUC" />
@@ -257,7 +257,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("nguoiCS") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[140px]"
                                     onClick={() => handleSort("NGUOI_CS")}
                                 >
                                     Người CS <SortIcon columnKey="NGUOI_CS" />
@@ -265,7 +265,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("dichVuQT") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[100px]"
                                     onClick={() => handleSort("DICH_VU_QT")}
                                 >
                                     Dịch vụ QT <SortIcon columnKey="DICH_VU_QT" />
@@ -273,13 +273,13 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("trangThai") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center"
+                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[140px]"
                                     onClick={() => handleSort("TRANG_THAI")}
                                 >
                                     Trạng thái <SortIcon columnKey="TRANG_THAI" />
                                 </th>
                             )}
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">Thao tác</th>
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right min-w-[120px]">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -314,7 +314,9 @@ export default function KeHoachCSList({
                                             {visibleColumns.includes("khachHang") && (
                                                 <td className="px-4 py-3">
                                                     <div 
-                                                        className="font-semibold text-foreground text-[13px] cursor-pointer hover:text-primary transition-colors inline-block"
+                                                        className={`font-semibold text-[13px] cursor-pointer hover:text-primary transition-colors inline-block ${
+                                                            (item.TRANG_THAI === "Hủy" || item.TRANG_THAI === "Đã hủy") ? "text-red-600 dark:text-red-500" : "text-foreground"
+                                                        }`}
                                                         onClick={(e) => { e.stopPropagation(); setViewItem(item); }}
                                                         title="Xem chi tiết kế hoạch"
                                                     >
