@@ -483,3 +483,41 @@ model KEHOACH_CSKH {
   @@index([TRANG_THAI])
   @@map("KEHOACH_CSKH")
 }
+
+// ===== TỪ ĐIỂN LOẠI CÔNG TRÌNH =====
+model CD_LOAI_CONG_TRINH {
+  ID              String  @id @default(auto()) @map("_id") @db.ObjectId
+  LOAI_CONG_TRINH String  @unique
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("CD_LOAI_CONG_TRINH")
+}
+
+// ===== TỪ ĐIỂN NHÓM KHẢO SÁT =====
+model CD_NHOM_KS {
+  ID      String  @id @default(auto()) @map("_id") @db.ObjectId
+  NHOM_KS String  @unique
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("CD_NHOM_KS")
+}
+
+// ===== HẠNG MỤC KHẢO SÁT =====
+model HANG_MUC_KS {
+  ID              String   @id @default(auto()) @map("_id") @db.ObjectId
+  LOAI_CONG_TRINH String
+  NHOM_KS         String
+  HANG_MUC_KS     String
+  HIEU_LUC        Boolean  @default(true)
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([LOAI_CONG_TRINH, NHOM_KS])
+  @@fulltext([LOAI_CONG_TRINH, NHOM_KS, HANG_MUC_KS])
+  @@map("HANG_MUC_KS")
+}
