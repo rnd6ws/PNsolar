@@ -260,7 +260,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         {formatDate(item.NGAY_GHI_NHAN)}
                                     </td>
                                 )}
-                                <td 
+                                <td
                                     className="px-4 py-3 align-middle text-left cursor-pointer group/name transition-colors"
                                     onClick={() => setViewItem(item)}
                                     title="Xem chi tiết"
@@ -340,7 +340,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                 )}
                                             </div>
                                             {item.LY_DO_TU_CHOI && item.PHAN_LOAI === "Không phù hợp" && (
-                                                <p className="text-[10px] text-destructive italic max-w-[150px] whitespace-normal leading-tight opacity-90 break-words">
+                                                <p className="text-[10px] text-destructive italic max-w-[150px] whitespace-normal leading-tight opacity-90 wrap-break-word">
                                                     {item.LY_DO_TU_CHOI}
                                                 </p>
                                             )}
@@ -381,15 +381,6 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
-                                        <PermissionGuard moduleKey="ke-hoach-cs" level="add">
-                                            <button
-                                                onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })}
-                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors"
-                                                title="Lên kế hoạch CSKH"
-                                            >
-                                                <CalendarPlus2 className="w-4 h-4" />
-                                            </button>
-                                        </PermissionGuard>
                                         <PermissionGuard moduleKey="co-hoi" level="add">
                                             <button
                                                 onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })}
@@ -399,7 +390,16 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                 <Target className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
-                                        <PermissionGuard moduleKey="khach-hang" level="manage">
+                                        <PermissionGuard moduleKey="ke-hoach-cs" level="add">
+                                            <button
+                                                onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })}
+                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors"
+                                                title="Lên kế hoạch CSKH"
+                                            >
+                                                <CalendarPlus2 className="w-4 h-4" />
+                                            </button>
+                                        </PermissionGuard>
+                                        <PermissionGuard moduleKey="khach-hang" level="add">
                                             <button
                                                 onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
                                                 className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors relative group"

@@ -416,16 +416,26 @@ export default function KeHoachCSForm({
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-muted-foreground">Hình thức</label>
-                        <FormSelect
-                            name="HINH_THUC"
-                            value={hinhThuc}
-                            onChange={(val) => setHinhThuc(val)}
-                            options={[
-                                { label: "Online", value: "Online" },
-                                { label: "Trực tiếp", value: "Trực tiếp" }
-                            ]}
-                            placeholder="-- Chọn hình thức --"
-                        />
+                        <button
+                            type="button"
+                            onClick={() => setHinhThuc(hinhThuc === "Online" ? "Trực tiếp" : "Online")}
+                            className={`w-full flex items-center justify-between px-4 py-[9px] rounded-xl border transition-colors relative overflow-hidden ${
+                                hinhThuc === 'Online' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' : 
+                                hinhThuc === 'Trực tiếp' ? 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
+                                'bg-muted border-border text-muted-foreground'
+                            }`}
+                        >
+                            <span className="relative z-10 font-semibold text-sm">
+                                {hinhThuc || "Chọn hình thức"}
+                            </span>
+                            <div className="relative z-10 flex items-center justify-center w-6 h-6 rounded-full bg-background shadow-sm border border-border/50">
+                                <div className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                                    hinhThuc === 'Online' ? 'bg-blue-500' : 
+                                    hinhThuc === 'Trực tiếp' ? 'bg-purple-500' :
+                                    'bg-transparent'
+                                }`} />
+                            </div>
+                        </button>
                     </div>
                 </div>
 

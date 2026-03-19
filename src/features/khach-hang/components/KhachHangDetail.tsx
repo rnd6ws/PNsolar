@@ -277,7 +277,7 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Giá trị DK / Thực tế</p>
-                                                    <p className="font-bold text-foreground text-sm text-primary">{formatCurrency(ch.GIA_TRI_DU_KIEN)}</p>
+                                                    <p className="font-bold text-foreground text-sm">{formatCurrency(ch.GIA_TRI_DU_KIEN)}</p>
                                                 </div>
                                             </div>
 
