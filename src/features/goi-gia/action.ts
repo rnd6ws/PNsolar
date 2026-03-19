@@ -59,6 +59,9 @@ export async function getGoiGiaList(filters: {
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
+                include: {
+                    DONG_HANG_REL: { select: { TEN_DONG_HANG: true } },
+                },
                 orderBy: { CREATED_AT: 'desc' },
             }),
             prisma.gOI_GIA.count({ where }),
@@ -84,10 +87,15 @@ export async function getGoiGiaList(filters: {
 export async function getUniqueDongHangInGoiGia() {
     try {
         const records = await prisma.gOI_GIA.findMany({
-            select: { MA_DONG_HANG: true },
+            select: { MA_DONG_HANG: true, DONG_HANG_REL: { select: { TEN_DONG_HANG: true } } },
         });
-        const unique = Array.from(new Set(records.map((r: any) => r.MA_DONG_HANG).filter(Boolean)));
-        return unique as string[];
+        const map = new Map<string, string>();
+        for (const r of records) {
+            if (r.MA_DONG_HANG && !map.has(r.MA_DONG_HANG)) {
+                map.set(r.MA_DONG_HANG, r.DONG_HANG_REL?.TEN_DONG_HANG || r.MA_DONG_HANG);
+            }
+        }
+        return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
     } catch (error) {
         console.error('[getUniqueDongHangInGoiGia]', error);
         return [];

@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import {
-    Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown,
-    MoreHorizontal, AlertTriangle, Building2, Package
+    Edit2, Trash2, ArrowUpDown, ArrowUp, ArrowDown,
+    MoreHorizontal, Package
 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteGiaNhap, updateGiaNhap } from "../action";
@@ -14,13 +14,21 @@ import {
 import Modal from "@/components/Modal";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import type { ColumnKey } from "./ColumnToggleButton";
+import type { HHOption } from "./GiaNhapPageClient";
 
+interface NhomHHOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
+interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
 interface NccOption { ID: string; MA_NCC: string; TEN_NCC: string; }
-interface HHOption { ID: string; MA_HH: string; TEN_HH: string; DON_VI_TINH: string; }
 
 interface Props {
     data: any[];
     visibleColumns?: ColumnKey[];
+    nhomHHOptions: NhomHHOption[];
+    phanLoaiOptions: PhanLoaiOption[];
+    dongHangOptions: DongHangOption[];
+    goiGiaOptions: GoiGiaOption[];
     nccOptions: NccOption[];
     hhOptions: HHOption[];
 }
@@ -34,26 +42,41 @@ function formatCurrency(val: number) {
     return new Intl.NumberFormat("vi-VN").format(val);
 }
 
-// ─── Form ────────────────────────────────────────────────────
+// ─── Cascade Form ────────────────────────────────────────────────────
 function GiaNhapForm({
-    defaultValues, loading, onSubmit, onCancel, submitLabel, nccOptions, hhOptions
+    defaultValues, loading, onSubmit, onCancel, submitLabel,
+    nhomHHOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, nccOptions, hhOptions
 }: {
     defaultValues?: any;
     loading: boolean;
     onSubmit: (data: any) => void;
     onCancel: () => void;
     submitLabel: string;
+    nhomHHOptions: NhomHHOption[];
+    phanLoaiOptions: PhanLoaiOption[];
+    dongHangOptions: DongHangOption[];
+    goiGiaOptions: GoiGiaOption[];
     nccOptions: NccOption[];
     hhOptions: HHOption[];
 }) {
+    const [maNhomHH, setMaNhomHH] = useState(defaultValues?.MA_NHOM_HH || "");
+    const [maPhanLoai, setMaPhanLoai] = useState(defaultValues?.MA_PHAN_LOAI || "");
+    const [maDongHang, setMaDongHang] = useState(defaultValues?.MA_DONG_HANG || "");
+    const [maGoiGia, setMaGoiGia] = useState(defaultValues?.MA_GOI_GIA || "");
     const [maNcc, setMaNcc] = useState(defaultValues?.MA_NCC || "");
     const [maHH, setMaHH] = useState(defaultValues?.MA_HH || "");
     const initDonGia = defaultValues?.DON_GIA ?? 0;
     const [donGiaValue, setDonGiaValue] = useState(initDonGia);
     const [donGiaDisplay, setDonGiaDisplay] = useState(initDonGia > 0 ? new Intl.NumberFormat('vi-VN').format(initDonGia) : '');
 
-    const selectedNcc = nccOptions.find(n => n.MA_NCC === maNcc);
-    const selectedHH = hhOptions.find(h => h.MA_HH === maHH);
+    // Cascade filter
+    const filteredDongHang = dongHangOptions.filter(d => !maPhanLoai || d.MA_PHAN_LOAI === maPhanLoai);
+    const filteredGoiGia = goiGiaOptions.filter(g => !maDongHang || g.MA_DONG_HANG === maDongHang);
+    const filteredHH = hhOptions.filter(h => {
+        if (maDongHang && h.MA_DONG_HANG !== maDongHang) return false;
+        if (maPhanLoai && h.MA_PHAN_LOAI !== maPhanLoai) return false;
+        return true;
+    });
 
     const handleDonGiaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/[^0-9]/g, '');
@@ -65,14 +88,14 @@ function GiaNhapForm({
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
-
         onSubmit({
             NGAY_HIEU_LUC: fd.get("NGAY_HIEU_LUC") as string,
+            MA_NHOM_HH: maNhomHH,
+            MA_PHAN_LOAI: maPhanLoai,
+            MA_DONG_HANG: maDongHang,
+            MA_GOI_GIA: maGoiGia,
             MA_NCC: maNcc,
-            TEN_NCC: selectedNcc?.TEN_NCC || "",
             MA_HH: maHH,
-            TEN_HH: selectedHH?.TEN_HH || "",
-            DVT: selectedHH?.DON_VI_TINH || "",
             DON_GIA: donGiaValue,
         });
     };
@@ -81,7 +104,7 @@ function GiaNhapForm({
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4 pt-0">
-            {/* Row 1: Ngày hiệu lực */}
+            {/* Ngày hiệu lực */}
             <div className="space-y-1.5">
                 <label className={labelClass}>Ngày hiệu lực <span className="text-destructive">*</span></label>
                 <input
@@ -93,16 +116,55 @@ function GiaNhapForm({
                 />
             </div>
 
-            {/* Row 2: NCC */}
+            {/* Nhóm HH + Phân loại */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <label className={labelClass}>Mã NCC <span className="text-destructive">*</span></label>
-                    <select
-                        value={maNcc}
-                        onChange={e => setMaNcc(e.target.value)}
-                        required
-                        className="input-modern"
-                    >
+                    <label className={labelClass}>Nhóm HH <span className="text-destructive">*</span></label>
+                    <select value={maNhomHH} onChange={e => setMaNhomHH(e.target.value)} required className="input-modern">
+                        <option value="">-- Chọn nhóm HH --</option>
+                        {nhomHHOptions.map(n => (
+                            <option key={n.ID} value={n.MA_NHOM}>{n.TEN_NHOM}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="space-y-1.5">
+                    <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
+                    <select value={maPhanLoai} onChange={e => { setMaPhanLoai(e.target.value); setMaDongHang(""); setMaGoiGia(""); setMaHH(""); }} required className="input-modern">
+                        <option value="">-- Chọn phân loại --</option>
+                        {phanLoaiOptions.map(p => (
+                            <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* Dòng hàng + Gói giá */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
+                    <select value={maDongHang} onChange={e => { setMaDongHang(e.target.value); setMaGoiGia(""); setMaHH(""); }} required className="input-modern">
+                        <option value="">-- Chọn dòng hàng --</option>
+                        {filteredDongHang.map(d => (
+                            <option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="space-y-1.5">
+                    <label className={labelClass}>Gói giá <span className="text-destructive">*</span></label>
+                    <select value={maGoiGia} onChange={e => setMaGoiGia(e.target.value)} required className="input-modern">
+                        <option value="">-- Chọn gói giá --</option>
+                        {filteredGoiGia.map(g => (
+                            <option key={g.ID} value={g.ID_GOI_GIA}>{g.GOI_GIA}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* NCC + HH */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className={labelClass}>Nhà cung cấp <span className="text-destructive">*</span></label>
+                    <select value={maNcc} onChange={e => setMaNcc(e.target.value)} required className="input-modern">
                         <option value="">-- Chọn NCC --</option>
                         {nccOptions.map(n => (
                             <option key={n.ID} value={n.MA_NCC}>{n.MA_NCC} - {n.TEN_NCC}</option>
@@ -110,38 +172,17 @@ function GiaNhapForm({
                     </select>
                 </div>
                 <div className="space-y-1.5">
-                    <label className={labelClass}>Tên NCC</label>
-                    <input className="input-modern bg-muted/30" readOnly value={selectedNcc?.TEN_NCC || "Theo mã NCC"} />
-                </div>
-            </div>
-
-            {/* Row 3: HH */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="space-y-1.5 md:col-span-4">
-                    <label className={labelClass}>Mã HH <span className="text-destructive">*</span></label>
-                    <select
-                        value={maHH}
-                        onChange={e => setMaHH(e.target.value)}
-                        required
-                        className="input-modern"
-                    >
-                        <option value="">-- Chọn HH --</option>
-                        {hhOptions.map(h => (
-                            <option key={h.ID} value={h.MA_HH}>{h.MA_HH}</option>
+                    <label className={labelClass}>Hàng hóa <span className="text-destructive">*</span></label>
+                    <select value={maHH} onChange={e => setMaHH(e.target.value)} required className="input-modern">
+                        <option value="">-- Chọn hàng hóa --</option>
+                        {filteredHH.map(h => (
+                            <option key={h.ID} value={h.MA_HH}>{h.MA_HH} - {h.TEN_HH}</option>
                         ))}
                     </select>
                 </div>
-                <div className="space-y-1.5 md:col-span-5">
-                    <label className={labelClass}>Tên hàng hóa</label>
-                    <input className="input-modern bg-muted/30" readOnly value={selectedHH?.TEN_HH || "Theo mã HH"} />
-                </div>
-                <div className="space-y-1.5 md:col-span-3">
-                    <label className={labelClass}>ĐVT</label>
-                    <input className="input-modern bg-muted/30" readOnly value={selectedHH?.DON_VI_TINH || "Theo mã HH"} />
-                </div>
             </div>
 
-            {/* Row 4: Đơn giá */}
+            {/* Đơn giá */}
             <div className="space-y-1.5">
                 <label className={labelClass}>Đơn giá (VNĐ) <span className="text-destructive">*</span></label>
                 <input
@@ -155,7 +196,7 @@ function GiaNhapForm({
                 />
             </div>
 
-            {/* Nút submit */}
+            {/* Submit */}
             <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
                 <button type="button" onClick={onCancel} className="btn-premium-secondary flex-1">Hủy bỏ</button>
                 <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
@@ -167,7 +208,10 @@ function GiaNhapForm({
 }
 
 // ─── Component chính ──────────────────────────────────────────
-export default function GiaNhapList({ data, visibleColumns, nccOptions, hhOptions }: Props) {
+export default function GiaNhapList({
+    data, visibleColumns,
+    nhomHHOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, nccOptions, hhOptions
+}: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -224,7 +268,6 @@ export default function GiaNhapList({ data, visibleColumns, nccOptions, hhOption
         setLoading(false);
     };
 
-
     const thClass = "h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]";
     const thSortClass = `${thClass} cursor-pointer group hover:text-foreground`;
 
@@ -238,21 +281,12 @@ export default function GiaNhapList({ data, visibleColumns, nccOptions, hhOption
                             <th onClick={() => handleSort("NGAY_HIEU_LUC")} className={`${thSortClass} whitespace-nowrap`}>
                                 Ngày HL <SortIcon columnKey="NGAY_HIEU_LUC" />
                             </th>
-                            <th onClick={() => handleSort("MA_NCC")} className={thSortClass}>
-                                Mã NCC <SortIcon columnKey="MA_NCC" />
-                            </th>
-                            {show("tenNcc") && (
-                                <th className={thClass}>Tên NCC</th>
-                            )}
-                            <th onClick={() => handleSort("MA_HH")} className={thSortClass}>
-                                Mã HH <SortIcon columnKey="MA_HH" />
-                            </th>
-                            {show("tenHH") && (
-                                <th className={thClass}>Tên HH</th>
-                            )}
-                            {show("dvt") && (
-                                <th className={thClass}>ĐVT</th>
-                            )}
+                            <th className={thClass}>Nhóm HH</th>
+                            <th className={thClass}>Phân loại</th>
+                            <th className={thClass}>Dòng hàng</th>
+                            <th className={thClass}>Gói giá</th>
+                            <th className={thClass}>NCC</th>
+                            {show("tenHH") && <th className={thClass}>Hàng hóa</th>}
                             {show("donGia") && (
                                 <th onClick={() => handleSort("DON_GIA")} className={`${thSortClass} text-right`}>
                                     Đơn giá <SortIcon columnKey="DON_GIA" />
@@ -267,25 +301,15 @@ export default function GiaNhapList({ data, visibleColumns, nccOptions, hhOption
                                 <td className="px-4 py-3 align-middle text-xs text-muted-foreground font-medium whitespace-nowrap">
                                     {formatDate(item.NGAY_HIEU_LUC)}
                                 </td>
-                                <td className="px-4 py-3 align-middle">
-                                    <span className="font-mono text-xs font-semibold text-primary">{item.MA_NCC}</span>
-                                </td>
-                                {show("tenNcc") && (
-                                    <td className="px-4 py-3 align-middle text-xs text-foreground max-w-[200px] truncate">
-                                        {item.TEN_NCC}
-                                    </td>
-                                )}
-                                <td className="px-4 py-3 align-middle">
-                                    <span className="font-mono text-xs font-semibold text-primary">{item.MA_HH}</span>
-                                </td>
+                                <td className="px-4 py-3 align-middle text-xs">{item.NHOM_GN?.TEN_NHOM || item.MA_NHOM_HH}</td>
+                                <td className="px-4 py-3 align-middle text-xs">{item.PHAN_LOAI_GN?.TEN_PHAN_LOAI || item.MA_PHAN_LOAI}</td>
+                                <td className="px-4 py-3 align-middle text-xs">{item.DONG_HANG_GN?.TEN_DONG_HANG || item.MA_DONG_HANG}</td>
+                                <td className="px-4 py-3 align-middle text-xs">{item.GOI_GIA_GN?.GOI_GIA || item.MA_GOI_GIA}</td>
+                                <td className="px-4 py-3 align-middle text-xs">{item.NCC_REL?.TEN_NCC || item.MA_NCC}</td>
                                 {show("tenHH") && (
-                                    <td className="px-4 py-3 align-middle text-xs text-foreground max-w-[200px] truncate">
-                                        {item.TEN_HH}
-                                    </td>
-                                )}
-                                {show("dvt") && (
-                                    <td className="px-4 py-3 align-middle text-xs text-muted-foreground">
-                                        {item.DVT}
+                                    <td className="px-4 py-3 align-middle text-xs max-w-[200px] truncate">
+                                        <span className="font-mono text-primary font-semibold">{item.MA_HH}</span>
+                                        {item.HH_REL?.TEN_HH && <span className="ml-1 text-muted-foreground">- {item.HH_REL.TEN_HH}</span>}
                                     </td>
                                 )}
                                 {show("donGia") && (
@@ -296,20 +320,12 @@ export default function GiaNhapList({ data, visibleColumns, nccOptions, hhOption
                                 <td className="px-4 py-3 align-middle text-right">
                                     <div className="flex justify-end gap-1 items-center">
                                         <PermissionGuard moduleKey="gia-nhap" level="edit">
-                                            <button
-                                                onClick={() => setEditItem(item)}
-                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors"
-                                                title="Sửa"
-                                            >
+                                            <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="gia-nhap" level="delete">
-                                            <button
-                                                onClick={() => setDeleteItem(item)}
-                                                className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
-                                                title="Xóa"
-                                            >
+                                            <button onClick={() => setDeleteItem(item)} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa">
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
@@ -341,7 +357,7 @@ export default function GiaNhapList({ data, visibleColumns, nccOptions, hhOption
                                     <Package className="w-5 h-5 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-foreground text-sm">{item.TEN_HH}</p>
+                                    <p className="font-semibold text-foreground text-sm">{item.HH_REL?.TEN_HH || item.MA_HH}</p>
                                     <p className="text-xs text-primary font-mono">{item.MA_HH}</p>
                                 </div>
                             </div>
@@ -366,9 +382,9 @@ export default function GiaNhapList({ data, visibleColumns, nccOptions, hhOption
                             </DropdownMenu>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                            <p><span className="font-medium">NCC:</span> {item.MA_NCC}</p>
+                            <p><span className="font-medium">NCC:</span> {item.NCC_REL?.TEN_NCC || item.MA_NCC}</p>
                             <p><span className="font-medium">Ngày HL:</span> {formatDate(item.NGAY_HIEU_LUC)}</p>
-                            <p><span className="font-medium">ĐVT:</span> {item.DVT}</p>
+                            <p><span className="font-medium">Nhóm:</span> {item.NHOM_GN?.TEN_NHOM || item.MA_NHOM_HH}</p>
                             <p className="font-semibold text-emerald-600">{formatCurrency(item.DON_GIA)} ₫</p>
                         </div>
                     </div>
@@ -385,6 +401,10 @@ export default function GiaNhapList({ data, visibleColumns, nccOptions, hhOption
                         onSubmit={handleUpdate}
                         onCancel={() => setEditItem(null)}
                         submitLabel="Cập nhật"
+                        nhomHHOptions={nhomHHOptions}
+                        phanLoaiOptions={phanLoaiOptions}
+                        dongHangOptions={dongHangOptions}
+                        goiGiaOptions={goiGiaOptions}
                         nccOptions={nccOptions}
                         hhOptions={hhOptions}
                     />
@@ -406,8 +426,8 @@ export default function GiaNhapList({ data, visibleColumns, nccOptions, hhOption
                     return res;
                 }}
                 title="Xác nhận xóa giá nhập"
-                itemName={deleteItem ? `${deleteItem.MA_HH} - ${deleteItem.TEN_HH}` : undefined}
-                itemDetail={deleteItem ? `NCC: ${deleteItem.MA_NCC} \u2022 ${formatCurrency(deleteItem.DON_GIA)} \u20ab` : undefined}
+                itemName={deleteItem ? `${deleteItem.MA_HH} - ${deleteItem.HH_REL?.TEN_HH || ''}` : undefined}
+                itemDetail={deleteItem ? `NCC: ${deleteItem.NCC_REL?.TEN_NCC || deleteItem.MA_NCC} \u2022 ${formatCurrency(deleteItem.DON_GIA)} \u20ab` : undefined}
                 confirmText="Xóa"
             />
         </>

@@ -4,7 +4,102 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { ActionResponse } from '@/lib/types';
 
-// ===== Lấy giá nhập hiện hành cho tất cả HH (ngày hiệu lực <= hôm nay, mới nhất) =====
+// ===== Include chuẩn cho query GIA_NHAP =====
+const GIA_NHAP_INCLUDE = {
+    NHOM_GN: { select: { TEN_NHOM: true } },
+    PHAN_LOAI_GN: { select: { TEN_PHAN_LOAI: true } },
+    DONG_HANG_GN: { select: { TEN_DONG_HANG: true } },
+    GOI_GIA_GN: { select: { GOI_GIA: true } },
+    NCC_REL: { select: { TEN_NCC: true } },
+    HH_REL: { select: { TEN_HH: true, DON_VI_TINH: true } },
+};
+
+// ===== OPTIONS: Lấy danh sách dropdown giống GIA_BAN =====
+
+export async function getNhomHHOptions() {
+    try {
+        return await prisma.nHOM_HH.findMany({
+            select: { ID: true, MA_NHOM: true, TEN_NHOM: true },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+    } catch (error) {
+        console.error('[getNhomHHOptions]', error);
+        return [];
+    }
+}
+
+export async function getPhanLoaiOptions() {
+    try {
+        return await prisma.pHANLOAI_HH.findMany({
+            select: { ID: true, MA_PHAN_LOAI: true, TEN_PHAN_LOAI: true },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+    } catch (error) {
+        console.error('[getPhanLoaiOptions]', error);
+        return [];
+    }
+}
+
+export async function getDongHangOptions() {
+    try {
+        return await prisma.dONG_HH.findMany({
+            select: { ID: true, MA_DONG_HANG: true, TEN_DONG_HANG: true, MA_PHAN_LOAI: true },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+    } catch (error) {
+        console.error('[getDongHangOptions]', error);
+        return [];
+    }
+}
+
+export async function getGoiGiaOptions() {
+    try {
+        return await prisma.gOI_GIA.findMany({
+            where: { HIEU_LUC: true },
+            select: { ID: true, ID_GOI_GIA: true, GOI_GIA: true, MA_DONG_HANG: true },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+    } catch (error) {
+        console.error('[getGoiGiaOptions]', error);
+        return [];
+    }
+}
+
+export async function getNccOptions() {
+    try {
+        return await prisma.nCC.findMany({
+            select: { ID: true, MA_NCC: true, TEN_NCC: true },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+    } catch (error) {
+        console.error('[getNccOptions]', error);
+        return [];
+    }
+}
+
+export async function getHangHoaOptionsForGiaNhap() {
+    try {
+        return await prisma.dMHH.findMany({
+            where: { HIEU_LUC: true },
+            select: {
+                ID: true,
+                MA_HH: true,
+                TEN_HH: true,
+                DON_VI_TINH: true,
+                MA_PHAN_LOAI: true,
+                MA_DONG_HANG: true,
+                PHAN_LOAI_REL: { select: { TEN_PHAN_LOAI: true } },
+                DONG_HANG_REL: { select: { TEN_DONG_HANG: true } },
+            },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+    } catch (error) {
+        console.error('[getHangHoaOptionsForGiaNhap]', error);
+        return [];
+    }
+}
+
+// ===== Lấy giá nhập hiện hành cho tất cả HH =====
 export async function getGiaNhapMapByHangHoa(): Promise<Record<string, { DON_GIA: number; NGAY_HIEU_LUC: string; MA_NCC: string; TEN_NCC: string }>> {
     try {
         const today = new Date();
@@ -12,6 +107,7 @@ export async function getGiaNhapMapByHangHoa(): Promise<Record<string, { DON_GIA
             where: {
                 NGAY_HIEU_LUC: { lte: today },
             },
+            include: { NCC_REL: { select: { TEN_NCC: true } } },
             orderBy: { NGAY_HIEU_LUC: 'desc' },
         });
 
@@ -22,7 +118,7 @@ export async function getGiaNhapMapByHangHoa(): Promise<Record<string, { DON_GIA
                     DON_GIA: r.DON_GIA,
                     NGAY_HIEU_LUC: r.NGAY_HIEU_LUC.toISOString(),
                     MA_NCC: r.MA_NCC,
-                    TEN_NCC: r.TEN_NCC,
+                    TEN_NCC: r.NCC_REL?.TEN_NCC || r.MA_NCC,
                 };
             }
         }
@@ -37,8 +133,10 @@ export async function getGiaNhapMapByHangHoa(): Promise<Record<string, { DON_GIA
 export async function getGiaNhapHistoryByHH(maHH: string) {
     try {
         const records = await prisma.gIA_NHAP.findMany({
-            where: {
-                MA_HH: maHH,
+            where: { MA_HH: maHH },
+            include: {
+                NCC_REL: { select: { TEN_NCC: true } },
+                HH_REL: { select: { DON_VI_TINH: true } },
             },
             orderBy: { NGAY_HIEU_LUC: 'desc' },
         });
@@ -46,49 +144,12 @@ export async function getGiaNhapHistoryByHH(maHH: string) {
             ID: r.ID,
             NGAY_HIEU_LUC: r.NGAY_HIEU_LUC.toISOString(),
             MA_NCC: r.MA_NCC,
-            TEN_NCC: r.TEN_NCC,
+            TEN_NCC: r.NCC_REL?.TEN_NCC || r.MA_NCC,
             DON_GIA: r.DON_GIA,
-            DVT: r.DVT,
+            DVT: r.HH_REL?.DON_VI_TINH || '',
         }));
     } catch (error) {
         console.error('[getGiaNhapHistoryByHH]', error);
-        return [];
-    }
-}
-
-// ===== Lấy danh sách NCC cho dropdown =====
-export async function getNccOptionsForGiaNhap() {
-    try {
-        const data = await prisma.nCC.findMany({
-            select: {
-                ID: true,
-                MA_NCC: true,
-                TEN_NCC: true,
-            },
-            orderBy: { CREATED_AT: 'asc' },
-        });
-        return data;
-    } catch (error) {
-        console.error('[getNccOptionsForGiaNhap]', error);
-        return [];
-    }
-}
-
-// ===== Lấy danh sách DMHH cho dropdown =====
-export async function getHangHoaOptionsForGiaNhap() {
-    try {
-        const data = await prisma.dMHH.findMany({
-            select: {
-                ID: true,
-                MA_HH: true,
-                TEN_HH: true,
-                DON_VI_TINH: true,
-            },
-            orderBy: { CREATED_AT: 'asc' },
-        });
-        return data;
-    } catch (error) {
-        console.error('[getHangHoaOptionsForGiaNhap]', error);
         return [];
     }
 }
@@ -100,31 +161,32 @@ export async function getGiaNhapList(filters: {
     limit?: number;
     MA_NCC?: string;
     MA_HH?: string;
+    MA_NHOM_HH?: string;
+    MA_PHAN_LOAI?: string;
+    MA_DONG_HANG?: string;
+    MA_GOI_GIA?: string;
 } = {}): Promise<ActionResponse> {
-    const { page = 1, limit = 10, query, MA_NCC, MA_HH } = filters;
+    const { page = 1, limit = 15, query, MA_NCC, MA_HH, MA_NHOM_HH, MA_PHAN_LOAI, MA_DONG_HANG, MA_GOI_GIA } = filters;
 
     const where: any = {};
-
     const andConditions: any[] = [];
 
     if (query) {
         andConditions.push({
             OR: [
                 { MA_NCC: { contains: query, mode: 'insensitive' } },
-                { TEN_NCC: { contains: query, mode: 'insensitive' } },
                 { MA_HH: { contains: query, mode: 'insensitive' } },
-                { TEN_HH: { contains: query, mode: 'insensitive' } },
+                { MA_NHOM_HH: { contains: query, mode: 'insensitive' } },
             ]
         });
     }
 
-    if (MA_NCC && MA_NCC !== 'all') {
-        andConditions.push({ MA_NCC });
-    }
-
-    if (MA_HH && MA_HH !== 'all') {
-        andConditions.push({ MA_HH });
-    }
+    if (MA_NHOM_HH && MA_NHOM_HH !== 'all') andConditions.push({ MA_NHOM_HH });
+    if (MA_PHAN_LOAI && MA_PHAN_LOAI !== 'all') andConditions.push({ MA_PHAN_LOAI });
+    if (MA_DONG_HANG && MA_DONG_HANG !== 'all') andConditions.push({ MA_DONG_HANG });
+    if (MA_GOI_GIA && MA_GOI_GIA !== 'all') andConditions.push({ MA_GOI_GIA });
+    if (MA_NCC && MA_NCC !== 'all') andConditions.push({ MA_NCC });
+    if (MA_HH && MA_HH !== 'all') andConditions.push({ MA_HH });
 
     if (andConditions.length > 0) {
         where.AND = andConditions;
@@ -134,6 +196,7 @@ export async function getGiaNhapList(filters: {
         const [data, total] = await Promise.all([
             prisma.gIA_NHAP.findMany({
                 where,
+                include: GIA_NHAP_INCLUDE,
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { NGAY_HIEU_LUC: 'desc' },
@@ -157,49 +220,32 @@ export async function getGiaNhapList(filters: {
     }
 }
 
-// ===== Lấy unique NCC & HH trong bảng GIA_NHAP (cho filter) =====
-export async function getUniqueFiltersInGiaNhap() {
-    try {
-        const records = await prisma.gIA_NHAP.findMany({
-            select: { MA_NCC: true, TEN_NCC: true, MA_HH: true, TEN_HH: true },
-        });
-        const uniqueNcc = Array.from(
-            new Map(records.map((r: any) => [r.MA_NCC, { value: r.MA_NCC, label: `${r.MA_NCC} - ${r.TEN_NCC}` }])).values()
-        );
-        const uniqueHH = Array.from(
-            new Map(records.map((r: any) => [r.MA_HH, { value: r.MA_HH, label: `${r.MA_HH} - ${r.TEN_HH}` }])).values()
-        );
-        return { nccOptions: uniqueNcc, hhOptions: uniqueHH };
-    } catch (error) {
-        console.error('[getUniqueFiltersInGiaNhap]', error);
-        return { nccOptions: [], hhOptions: [] };
-    }
-}
-
 // ===== Tạo Giá nhập =====
 export async function createGiaNhap(data: {
     NGAY_HIEU_LUC: string;
+    MA_NHOM_HH: string;
+    MA_PHAN_LOAI: string;
+    MA_DONG_HANG: string;
+    MA_GOI_GIA: string;
     MA_NCC: string;
-    TEN_NCC: string;
     MA_HH: string;
-    TEN_HH: string;
-    DVT: string;
     DON_GIA: number;
 }) {
     try {
         if (!data.NGAY_HIEU_LUC) return { success: false, message: 'Ngày hiệu lực là bắt buộc.' };
-        if (!data.MA_NCC) return { success: false, message: 'Mã NCC là bắt buộc.' };
-        if (!data.MA_HH) return { success: false, message: 'Mã HH là bắt buộc.' };
+        if (!data.MA_NCC) return { success: false, message: 'NCC là bắt buộc.' };
+        if (!data.MA_HH) return { success: false, message: 'Hàng hóa là bắt buộc.' };
         if (data.DON_GIA == null || data.DON_GIA < 0) return { success: false, message: 'Đơn giá không hợp lệ.' };
 
         await prisma.gIA_NHAP.create({
             data: {
                 NGAY_HIEU_LUC: new Date(data.NGAY_HIEU_LUC),
+                MA_NHOM_HH: data.MA_NHOM_HH,
+                MA_PHAN_LOAI: data.MA_PHAN_LOAI,
+                MA_DONG_HANG: data.MA_DONG_HANG,
+                MA_GOI_GIA: data.MA_GOI_GIA,
                 MA_NCC: data.MA_NCC,
-                TEN_NCC: data.TEN_NCC,
                 MA_HH: data.MA_HH,
-                TEN_HH: data.TEN_HH,
-                DVT: data.DVT,
                 DON_GIA: data.DON_GIA,
             }
         });
@@ -215,11 +261,12 @@ export async function createGiaNhap(data: {
 // ===== Cập nhật Giá nhập =====
 export async function updateGiaNhap(id: string, data: {
     NGAY_HIEU_LUC: string;
+    MA_NHOM_HH: string;
+    MA_PHAN_LOAI: string;
+    MA_DONG_HANG: string;
+    MA_GOI_GIA: string;
     MA_NCC: string;
-    TEN_NCC: string;
     MA_HH: string;
-    TEN_HH: string;
-    DVT: string;
     DON_GIA: number;
 }) {
     try {
@@ -227,11 +274,12 @@ export async function updateGiaNhap(id: string, data: {
             where: { ID: id },
             data: {
                 NGAY_HIEU_LUC: new Date(data.NGAY_HIEU_LUC),
+                MA_NHOM_HH: data.MA_NHOM_HH,
+                MA_PHAN_LOAI: data.MA_PHAN_LOAI,
+                MA_DONG_HANG: data.MA_DONG_HANG,
+                MA_GOI_GIA: data.MA_GOI_GIA,
                 MA_NCC: data.MA_NCC,
-                TEN_NCC: data.TEN_NCC,
                 MA_HH: data.MA_HH,
-                TEN_HH: data.TEN_HH,
-                DVT: data.DVT,
                 DON_GIA: data.DON_GIA,
             }
         });
@@ -260,57 +308,41 @@ export async function deleteGiaNhap(id: string) {
 // ===== Thêm hàng loạt Giá nhập =====
 export async function createBulkGiaNhap(payload: {
     NGAY_HIEU_LUC: string;
-    rows: { MA_NCC: string; MA_HH: string; DON_GIA: number }[];
+    rows: {
+        MA_NHOM_HH: string;
+        MA_PHAN_LOAI: string;
+        MA_DONG_HANG: string;
+        MA_GOI_GIA: string;
+        MA_NCC: string;
+        MA_HH: string;
+        DON_GIA: number;
+    }[];
 }) {
     try {
         if (!payload.NGAY_HIEU_LUC) return { success: false, message: 'Ngày hiệu lực là bắt buộc.' };
 
         const validRows = payload.rows.filter(r => r.MA_NCC && r.MA_HH && r.DON_GIA > 0);
-        if (validRows.length === 0) return { success: false, message: 'Cần ít nhất 1 dòng hợp lệ (có NCC, HH và đơn giá > 0).' };
+        if (validRows.length === 0) return { success: false, message: 'Cần ít nhất 1 dòng hợp lệ.' };
 
-        // Lookup NCC
-        const nccRecords = await prisma.nCC.findMany({
-            where: { MA_NCC: { in: [...new Set(validRows.map(r => r.MA_NCC))] } },
-            select: { MA_NCC: true, TEN_NCC: true },
-        });
-        const nccMap: Record<string, string> = {};
-        nccRecords.forEach(n => { nccMap[n.MA_NCC] = n.TEN_NCC; });
-
-        // Lookup HH
-        const hhRecords = await prisma.dMHH.findMany({
-            where: { MA_HH: { in: [...new Set(validRows.map(r => r.MA_HH))] } },
-            select: { MA_HH: true, TEN_HH: true, DON_VI_TINH: true },
-        });
-        const hhMap: Record<string, { TEN_HH: string; DON_VI_TINH: string | null }> = {};
-        hhRecords.forEach(h => { hhMap[h.MA_HH] = { TEN_HH: h.TEN_HH, DON_VI_TINH: h.DON_VI_TINH }; });
-
-        // Validate
-        const errors: string[] = [];
-        validRows.forEach((r, i) => {
-            if (!nccMap[r.MA_NCC]) errors.push(`Dòng ${i + 1}: Mã NCC "${r.MA_NCC}" không tồn tại.`);
-            if (!hhMap[r.MA_HH]) errors.push(`Dòng ${i + 1}: Mã HH "${r.MA_HH}" không tồn tại.`);
-        });
-        if (errors.length > 0) return { success: false, message: errors.join('\n') };
-
-        // Create all
         const ngayHieuLuc = new Date(payload.NGAY_HIEU_LUC);
-        const createData = validRows.map(r => ({
-            NGAY_HIEU_LUC: ngayHieuLuc,
-            MA_NCC: r.MA_NCC,
-            TEN_NCC: nccMap[r.MA_NCC] || '',
-            MA_HH: r.MA_HH,
-            TEN_HH: hhMap[r.MA_HH]?.TEN_HH || '',
-            DVT: hhMap[r.MA_HH]?.DON_VI_TINH || '',
-            DON_GIA: r.DON_GIA,
-        }));
 
-        // Prisma MongoDB doesn't support createMany, create one by one
-        for (const item of createData) {
-            await prisma.gIA_NHAP.create({ data: item });
+        for (const row of validRows) {
+            await prisma.gIA_NHAP.create({
+                data: {
+                    NGAY_HIEU_LUC: ngayHieuLuc,
+                    MA_NHOM_HH: row.MA_NHOM_HH,
+                    MA_PHAN_LOAI: row.MA_PHAN_LOAI,
+                    MA_DONG_HANG: row.MA_DONG_HANG,
+                    MA_GOI_GIA: row.MA_GOI_GIA,
+                    MA_NCC: row.MA_NCC,
+                    MA_HH: row.MA_HH,
+                    DON_GIA: row.DON_GIA,
+                }
+            });
         }
 
         revalidatePath('/gia-nhap');
-        return { success: true, message: `Đã thêm ${createData.length} giá nhập thành công!` };
+        return { success: true, message: `Đã thêm ${validRows.length} giá nhập thành công!` };
     } catch (error: any) {
         console.error('[createBulkGiaNhap]', error);
         return { success: false, message: 'Lỗi server khi thêm hàng loạt giá nhập.' };

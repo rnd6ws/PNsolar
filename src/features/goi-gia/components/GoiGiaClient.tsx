@@ -17,6 +17,7 @@ interface GoiGia {
     ID_GOI_GIA: string;
     HIEU_LUC?: boolean;
     MA_DONG_HANG: string;
+    DONG_HANG_REL?: { TEN_DONG_HANG: string } | null;
     GOI_GIA: string;
     SL_MIN?: number | null;
     SL_MAX?: number | null;
@@ -534,7 +535,7 @@ export default function GoiGiaClient({
     initialData: GoiGia[];
     initialPagination: any;
     currentPage: number;
-    uniqueDongHang: string[];
+    uniqueDongHang: { value: string; label: string }[];
     dongHangOptions: DongHangOption[];
 }) {
     const router = useRouter();
@@ -659,7 +660,7 @@ export default function GoiGiaClient({
                             <div className="hidden lg:flex items-center gap-3 w-auto">
                                 <FilterSelect
                                     paramKey="MA_DONG_HANG"
-                                    options={uniqueDongHang.map(v => ({ label: v, value: v }))}
+                                    options={uniqueDongHang}
                                     placeholder="Dòng hàng"
                                 />
                             </div>
@@ -671,7 +672,7 @@ export default function GoiGiaClient({
                                 <div className="flex flex-col gap-3 w-full">
                                     <FilterSelect
                                         paramKey="MA_DONG_HANG"
-                                        options={uniqueDongHang.map(v => ({ label: v, value: v }))}
+                                        options={uniqueDongHang}
                                         placeholder="Dòng hàng"
                                     />
                                 </div>
@@ -719,7 +720,7 @@ export default function GoiGiaClient({
                                         {/* Mã dòng hàng */}
                                         <td className="p-4 align-middle">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-secondary text-secondary-foreground border border-border">
-                                                {row.MA_DONG_HANG}
+                                                {row.DONG_HANG_REL?.TEN_DONG_HANG || row.MA_DONG_HANG}
                                             </span>
                                         </td>
 
@@ -802,7 +803,7 @@ export default function GoiGiaClient({
                                         </div>
                                         <div className="min-w-0">
                                             <p className="font-medium text-foreground text-base leading-tight font-mono">{row.ID_GOI_GIA}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">{row.MA_DONG_HANG}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">{row.DONG_HANG_REL?.TEN_DONG_HANG || row.MA_DONG_HANG}</p>
                                         </div>
                                     </div>
                                     <span className="text-sm font-bold text-emerald-600 shrink-0">{row.GOI_GIA}</span>
@@ -875,7 +876,7 @@ export default function GoiGiaClient({
                     }}
                     title="Xác nhận xóa gói giá"
                     itemName={deleteRecord ? `Mã: ${deleteRecord.ID_GOI_GIA}` : undefined}
-                    itemDetail={deleteRecord ? `Dòng hàng: ${deleteRecord.MA_DONG_HANG} • Giá: ${deleteRecord.GOI_GIA}` : undefined}
+                    itemDetail={deleteRecord ? `Dòng hàng: ${deleteRecord.DONG_HANG_REL?.TEN_DONG_HANG || deleteRecord.MA_DONG_HANG} • Giá: ${deleteRecord.GOI_GIA}` : undefined}
                     confirmText="Xóa gói giá"
                 />
                 <BulkAddModal
