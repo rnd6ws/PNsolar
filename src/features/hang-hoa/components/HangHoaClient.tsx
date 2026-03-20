@@ -110,6 +110,7 @@ interface GiaBanHistoryItem {
     MA_GOI_GIA: string;
     DON_GIA: number;
     GHI_CHU: string | null;
+    GOI_GIA_NAME: string;
     NHOM?: { TEN_NHOM: string } | null;
     GOI_GIA_REL?: { GOI_GIA: string } | null;
 }
@@ -1190,7 +1191,7 @@ export default function HangHoaClient({
                     <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between p-5 border-b">
                             <div>
-                                <h3 className="text-base font-bold text-foreground">Bảng giá bán</h3>
+                                <h3 className="text-base font-bold text-foreground">Giá bán & Lịch sử</h3>
                                 <p className="text-xs text-muted-foreground mt-0.5">
                                     {giaBanHistoryProduct.TEN_HH} ({giaBanHistoryProduct.MA_HH})
                                 </p>
@@ -1211,27 +1212,33 @@ export default function HangHoaClient({
                                 <p className="text-center text-sm text-muted-foreground py-10">Chưa có giá bán nào.</p>
                             ) : (() => {
                                 // Nhóm theo MA_GOI_GIA → lịch sử
-                                const groupedByGoiGia: Record<string, typeof giaBanHistory> = {};
+                                const groupedByGoiGia: Record<string, { label: string; items: typeof giaBanHistory }> = {};
                                 giaBanHistory.forEach(item => {
-                                    const goiKey = item.GOI_GIA_REL?.GOI_GIA || item.MA_GOI_GIA || 'Khác';
-                                    if (!groupedByGoiGia[goiKey]) groupedByGoiGia[goiKey] = [];
-                                    groupedByGoiGia[goiKey].push(item);
+                                    const goiKey = item.GOI_GIA_NAME;
+                                    if (!groupedByGoiGia[goiKey]) {
+                                        groupedByGoiGia[goiKey] = {
+                                            label: goiKey,
+                                            items: [],
+                                        };
+                                    }
+                                    groupedByGoiGia[goiKey].items.push(item);
                                 });
 
                                 return (
                                     <div className="space-y-3">
-                                        {Object.entries(groupedByGoiGia).map(([goiGia, entries]) => {
+                                        {Object.entries(groupedByGoiGia).map(([goiKey, group]) => {
+                                            const entries = group.items;
                                             const latest = entries[0]; // đã sort desc theo ngày
                                             const older = entries.slice(1);
                                             return (
-                                                <div key={goiGia} className="rounded-xl border border-border overflow-hidden">
+                                                <div key={goiKey} className="rounded-xl border border-border overflow-hidden">
                                                     <div className="px-4 py-3">
                                                         {/* Giá hiện tại */}
                                                         <div className="flex items-center justify-between">
                                                             <div>
                                                                 <div className="flex items-center gap-2">
                                                                     <DollarSign className="w-3.5 h-3.5 text-rose-600" />
-                                                                    <span className="text-sm font-semibold text-foreground">{goiGia}</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{group.label}</span>
                                                                 </div>
                                                                 {latest.GHI_CHU && (
                                                                     <p className="text-[11px] text-muted-foreground italic mt-0.5 ml-5.5">{latest.GHI_CHU}</p>

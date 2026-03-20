@@ -9,7 +9,6 @@ const GIA_NHAP_INCLUDE = {
     NHOM_GN: { select: { TEN_NHOM: true } },
     PHAN_LOAI_GN: { select: { TEN_PHAN_LOAI: true } },
     DONG_HANG_GN: { select: { TEN_DONG_HANG: true } },
-    GOI_GIA_GN: { select: { GOI_GIA: true } },
     NCC_REL: { select: { TEN_NCC: true } },
     HH_REL: { select: { TEN_HH: true, DON_VI_TINH: true } },
 };
@@ -31,7 +30,7 @@ export async function getNhomHHOptions() {
 export async function getPhanLoaiOptions() {
     try {
         return await prisma.pHANLOAI_HH.findMany({
-            select: { ID: true, MA_PHAN_LOAI: true, TEN_PHAN_LOAI: true },
+            select: { ID: true, MA_PHAN_LOAI: true, TEN_PHAN_LOAI: true, NHOM: true },
             orderBy: { CREATED_AT: 'asc' },
         });
     } catch (error) {
@@ -226,7 +225,6 @@ export async function createGiaNhap(data: {
     MA_NHOM_HH: string;
     MA_PHAN_LOAI: string;
     MA_DONG_HANG: string;
-    MA_GOI_GIA: string;
     MA_NCC: string;
     MA_HH: string;
     DON_GIA: number;
@@ -243,7 +241,6 @@ export async function createGiaNhap(data: {
                 MA_NHOM_HH: data.MA_NHOM_HH,
                 MA_PHAN_LOAI: data.MA_PHAN_LOAI,
                 MA_DONG_HANG: data.MA_DONG_HANG,
-                MA_GOI_GIA: data.MA_GOI_GIA,
                 MA_NCC: data.MA_NCC,
                 MA_HH: data.MA_HH,
                 DON_GIA: data.DON_GIA,
@@ -264,7 +261,6 @@ export async function updateGiaNhap(id: string, data: {
     MA_NHOM_HH: string;
     MA_PHAN_LOAI: string;
     MA_DONG_HANG: string;
-    MA_GOI_GIA: string;
     MA_NCC: string;
     MA_HH: string;
     DON_GIA: number;
@@ -277,7 +273,6 @@ export async function updateGiaNhap(id: string, data: {
                 MA_NHOM_HH: data.MA_NHOM_HH,
                 MA_PHAN_LOAI: data.MA_PHAN_LOAI,
                 MA_DONG_HANG: data.MA_DONG_HANG,
-                MA_GOI_GIA: data.MA_GOI_GIA,
                 MA_NCC: data.MA_NCC,
                 MA_HH: data.MA_HH,
                 DON_GIA: data.DON_GIA,
@@ -312,7 +307,6 @@ export async function createBulkGiaNhap(payload: {
         MA_NHOM_HH: string;
         MA_PHAN_LOAI: string;
         MA_DONG_HANG: string;
-        MA_GOI_GIA: string;
         MA_NCC: string;
         MA_HH: string;
         DON_GIA: number;
@@ -333,7 +327,6 @@ export async function createBulkGiaNhap(payload: {
                     MA_NHOM_HH: row.MA_NHOM_HH,
                     MA_PHAN_LOAI: row.MA_PHAN_LOAI,
                     MA_DONG_HANG: row.MA_DONG_HANG,
-                    MA_GOI_GIA: row.MA_GOI_GIA,
                     MA_NCC: row.MA_NCC,
                     MA_HH: row.MA_HH,
                     DON_GIA: row.DON_GIA,

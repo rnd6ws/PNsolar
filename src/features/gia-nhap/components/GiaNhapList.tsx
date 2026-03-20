@@ -17,9 +17,9 @@ import type { ColumnKey } from "./ColumnToggleButton";
 import type { HHOption } from "./GiaNhapPageClient";
 
 interface NhomHHOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
-interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; NHOM: string | null; }
 interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
-interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
+
 interface NccOption { ID: string; MA_NCC: string; TEN_NCC: string; }
 
 interface Props {
@@ -28,7 +28,7 @@ interface Props {
     nhomHHOptions: NhomHHOption[];
     phanLoaiOptions: PhanLoaiOption[];
     dongHangOptions: DongHangOption[];
-    goiGiaOptions: GoiGiaOption[];
+
     nccOptions: NccOption[];
     hhOptions: HHOption[];
 }
@@ -45,7 +45,7 @@ function formatCurrency(val: number) {
 // ─── Cascade Form ────────────────────────────────────────────────────
 function GiaNhapForm({
     defaultValues, loading, onSubmit, onCancel, submitLabel,
-    nhomHHOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, nccOptions, hhOptions
+    nhomHHOptions, phanLoaiOptions, dongHangOptions, nccOptions, hhOptions
 }: {
     defaultValues?: any;
     loading: boolean;
@@ -55,23 +55,26 @@ function GiaNhapForm({
     nhomHHOptions: NhomHHOption[];
     phanLoaiOptions: PhanLoaiOption[];
     dongHangOptions: DongHangOption[];
-    goiGiaOptions: GoiGiaOption[];
     nccOptions: NccOption[];
     hhOptions: HHOption[];
 }) {
     const [maNhomHH, setMaNhomHH] = useState(defaultValues?.MA_NHOM_HH || "");
     const [maPhanLoai, setMaPhanLoai] = useState(defaultValues?.MA_PHAN_LOAI || "");
     const [maDongHang, setMaDongHang] = useState(defaultValues?.MA_DONG_HANG || "");
-    const [maGoiGia, setMaGoiGia] = useState(defaultValues?.MA_GOI_GIA || "");
     const [maNcc, setMaNcc] = useState(defaultValues?.MA_NCC || "");
     const [maHH, setMaHH] = useState(defaultValues?.MA_HH || "");
     const initDonGia = defaultValues?.DON_GIA ?? 0;
     const [donGiaValue, setDonGiaValue] = useState(initDonGia);
     const [donGiaDisplay, setDonGiaDisplay] = useState(initDonGia > 0 ? new Intl.NumberFormat('vi-VN').format(initDonGia) : '');
 
-    // Cascade filter
+    // Cascade filter: Nhóm HH → Phân loại → Dòng hàng → HH
+    const filteredPhanLoai = (() => {
+        if (!maNhomHH) return phanLoaiOptions;
+        const nhom = nhomHHOptions.find(n => n.MA_NHOM === maNhomHH);
+        if (!nhom) return phanLoaiOptions;
+        return phanLoaiOptions.filter(p => p.NHOM === nhom.MA_NHOM || p.NHOM === nhom.TEN_NHOM);
+    })();
     const filteredDongHang = dongHangOptions.filter(d => !maPhanLoai || d.MA_PHAN_LOAI === maPhanLoai);
-    const filteredGoiGia = goiGiaOptions.filter(g => !maDongHang || g.MA_DONG_HANG === maDongHang);
     const filteredHH = hhOptions.filter(h => {
         if (maDongHang && h.MA_DONG_HANG !== maDongHang) return false;
         if (maPhanLoai && h.MA_PHAN_LOAI !== maPhanLoai) return false;
@@ -93,7 +96,6 @@ function GiaNhapForm({
             MA_NHOM_HH: maNhomHH,
             MA_PHAN_LOAI: maPhanLoai,
             MA_DONG_HANG: maDongHang,
-            MA_GOI_GIA: maGoiGia,
             MA_NCC: maNcc,
             MA_HH: maHH,
             DON_GIA: donGiaValue,
@@ -120,7 +122,7 @@ function GiaNhapForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className={labelClass}>Nhóm HH <span className="text-destructive">*</span></label>
-                    <select value={maNhomHH} onChange={e => setMaNhomHH(e.target.value)} required className="input-modern">
+                    <select value={maNhomHH} onChange={e => { setMaNhomHH(e.target.value); setMaPhanLoai(""); setMaDongHang(""); setMaHH(""); }} required className="input-modern">
                         <option value="">-- Chọn nhóm HH --</option>
                         {nhomHHOptions.map(n => (
                             <option key={n.ID} value={n.MA_NHOM}>{n.TEN_NHOM}</option>
@@ -129,32 +131,23 @@ function GiaNhapForm({
                 </div>
                 <div className="space-y-1.5">
                     <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
-                    <select value={maPhanLoai} onChange={e => { setMaPhanLoai(e.target.value); setMaDongHang(""); setMaGoiGia(""); setMaHH(""); }} required className="input-modern">
+                    <select value={maPhanLoai} onChange={e => { setMaPhanLoai(e.target.value); setMaDongHang(""); setMaHH(""); }} required className="input-modern">
                         <option value="">-- Chọn phân loại --</option>
-                        {phanLoaiOptions.map(p => (
+                        {filteredPhanLoai.map(p => (
                             <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>
                         ))}
                     </select>
                 </div>
             </div>
 
-            {/* Dòng hàng + Gói giá */}
+            {/* Dòng hàng */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
-                    <select value={maDongHang} onChange={e => { setMaDongHang(e.target.value); setMaGoiGia(""); setMaHH(""); }} required className="input-modern">
+                    <select value={maDongHang} onChange={e => { setMaDongHang(e.target.value); setMaHH(""); }} required className="input-modern">
                         <option value="">-- Chọn dòng hàng --</option>
                         {filteredDongHang.map(d => (
                             <option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>
-                        ))}
-                    </select>
-                </div>
-                <div className="space-y-1.5">
-                    <label className={labelClass}>Gói giá <span className="text-destructive">*</span></label>
-                    <select value={maGoiGia} onChange={e => setMaGoiGia(e.target.value)} required className="input-modern">
-                        <option value="">-- Chọn gói giá --</option>
-                        {filteredGoiGia.map(g => (
-                            <option key={g.ID} value={g.ID_GOI_GIA}>{g.GOI_GIA}</option>
                         ))}
                     </select>
                 </div>
@@ -210,7 +203,7 @@ function GiaNhapForm({
 // ─── Component chính ──────────────────────────────────────────
 export default function GiaNhapList({
     data, visibleColumns,
-    nhomHHOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, nccOptions, hhOptions
+    nhomHHOptions, phanLoaiOptions, dongHangOptions, nccOptions, hhOptions
 }: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
@@ -284,7 +277,7 @@ export default function GiaNhapList({
                             <th className={thClass}>Nhóm HH</th>
                             <th className={thClass}>Phân loại</th>
                             <th className={thClass}>Dòng hàng</th>
-                            <th className={thClass}>Gói giá</th>
+
                             <th className={thClass}>NCC</th>
                             {show("tenHH") && <th className={thClass}>Hàng hóa</th>}
                             {show("donGia") && (
@@ -304,7 +297,7 @@ export default function GiaNhapList({
                                 <td className="px-4 py-3 align-middle text-xs">{item.NHOM_GN?.TEN_NHOM || item.MA_NHOM_HH}</td>
                                 <td className="px-4 py-3 align-middle text-xs">{item.PHAN_LOAI_GN?.TEN_PHAN_LOAI || item.MA_PHAN_LOAI}</td>
                                 <td className="px-4 py-3 align-middle text-xs">{item.DONG_HANG_GN?.TEN_DONG_HANG || item.MA_DONG_HANG}</td>
-                                <td className="px-4 py-3 align-middle text-xs">{item.GOI_GIA_GN?.GOI_GIA || item.MA_GOI_GIA}</td>
+
                                 <td className="px-4 py-3 align-middle text-xs">{item.NCC_REL?.TEN_NCC || item.MA_NCC}</td>
                                 {show("tenHH") && (
                                     <td className="px-4 py-3 align-middle text-xs max-w-[200px] truncate">
@@ -404,7 +397,6 @@ export default function GiaNhapList({
                         nhomHHOptions={nhomHHOptions}
                         phanLoaiOptions={phanLoaiOptions}
                         dongHangOptions={dongHangOptions}
-                        goiGiaOptions={goiGiaOptions}
                         nccOptions={nccOptions}
                         hhOptions={hhOptions}
                     />

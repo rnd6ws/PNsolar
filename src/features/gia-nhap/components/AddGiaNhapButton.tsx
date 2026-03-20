@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
@@ -9,40 +9,70 @@ import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuar
 import type { HHOption } from "./GiaNhapPageClient";
 
 interface NhomHHOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
-interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; NHOM: string | null; }
 interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
-interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
 interface NccOption { ID: string; MA_NCC: string; TEN_NCC: string; }
 
 interface Props {
     nhomHHOptions: NhomHHOption[];
     phanLoaiOptions: PhanLoaiOption[];
     dongHangOptions: DongHangOption[];
-    goiGiaOptions: GoiGiaOption[];
     nccOptions: NccOption[];
     hhOptions: HHOption[];
 }
 
-export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, nccOptions, hhOptions }: Props) {
+export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongHangOptions, nccOptions, hhOptions }: Props) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [maNhomHH, setMaNhomHH] = useState("");
     const [maPhanLoai, setMaPhanLoai] = useState("");
     const [maDongHang, setMaDongHang] = useState("");
-    const [maGoiGia, setMaGoiGia] = useState("");
     const [maNcc, setMaNcc] = useState("");
     const [maHH, setMaHH] = useState("");
     const [donGiaDisplay, setDonGiaDisplay] = useState("");
     const [donGiaValue, setDonGiaValue] = useState(0);
 
-    // Cascade filter
-    const filteredDongHang = dongHangOptions.filter(d => !maPhanLoai || d.MA_PHAN_LOAI === maPhanLoai);
-    const filteredGoiGia = goiGiaOptions.filter(g => !maDongHang || g.MA_DONG_HANG === maDongHang);
-    const filteredHH = hhOptions.filter(h => {
-        if (maDongHang && h.MA_DONG_HANG !== maDongHang) return false;
-        if (maPhanLoai && h.MA_PHAN_LOAI !== maPhanLoai) return false;
-        return true;
-    });
+    const selectedHH = hhOptions.find(h => h.MA_HH === maHH);
+
+    // ====== Cascade filter logic ======
+    // Nhóm HH → Phân loại
+    const filteredPhanLoai = useMemo(() => {
+        if (!maNhomHH) return phanLoaiOptions;
+        const nhom = nhomHHOptions.find(n => n.MA_NHOM === maNhomHH);
+        if (!nhom) return phanLoaiOptions;
+        return phanLoaiOptions.filter(p => p.NHOM === nhom.MA_NHOM || p.NHOM === nhom.TEN_NHOM);
+    }, [maNhomHH, phanLoaiOptions, nhomHHOptions]);
+
+    // Phân loại → Dòng hàng
+    const filteredDongHang = useMemo(() => {
+        return maPhanLoai ? dongHangOptions.filter(d => d.MA_PHAN_LOAI === maPhanLoai) : dongHangOptions;
+    }, [maPhanLoai, dongHangOptions]);
+
+    // Dòng hàng/Phân loại → Hàng hóa
+    const filteredHH = useMemo(() => {
+        if (maDongHang) return hhOptions.filter(h => h.MA_DONG_HANG === maDongHang);
+        if (maPhanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === maPhanLoai);
+        return hhOptions;
+    }, [maDongHang, maPhanLoai, hhOptions]);
+
+    // ====== Cascade handlers ======
+    const handleNhomHHChange = (val: string) => {
+        setMaNhomHH(val);
+        setMaPhanLoai("");
+        setMaDongHang("");
+        setMaHH("");
+    };
+
+    const handlePhanLoaiChange = (val: string) => {
+        setMaPhanLoai(val);
+        setMaDongHang("");
+        setMaHH("");
+    };
+
+    const handleDongHangChange = (val: string) => {
+        setMaDongHang(val);
+        setMaHH("");
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -53,7 +83,6 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
             MA_NHOM_HH: maNhomHH,
             MA_PHAN_LOAI: maPhanLoai,
             MA_DONG_HANG: maDongHang,
-            MA_GOI_GIA: maGoiGia,
             MA_NCC: maNcc,
             MA_HH: maHH,
             DON_GIA: donGiaValue,
@@ -70,7 +99,7 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
 
     const handleClose = () => {
         setOpen(false);
-        setMaNhomHH(""); setMaPhanLoai(""); setMaDongHang(""); setMaGoiGia("");
+        setMaNhomHH(""); setMaPhanLoai(""); setMaDongHang("");
         setMaNcc(""); setMaHH(""); setDonGiaDisplay(""); setDonGiaValue(0);
     };
 
@@ -103,36 +132,27 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className={labelClass}>Nhóm HH <span className="text-destructive">*</span></label>
-                            <select value={maNhomHH} onChange={e => setMaNhomHH(e.target.value)} required className="input-modern">
+                            <select value={maNhomHH} onChange={e => handleNhomHHChange(e.target.value)} required className="input-modern">
                                 <option value="">-- Chọn nhóm HH --</option>
                                 {nhomHHOptions.map(n => <option key={n.ID} value={n.MA_NHOM}>{n.TEN_NHOM}</option>)}
                             </select>
                         </div>
                         <div className="space-y-1.5">
                             <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
-                            <select value={maPhanLoai} onChange={e => { setMaPhanLoai(e.target.value); setMaDongHang(""); setMaGoiGia(""); setMaHH(""); }} required className="input-modern">
+                            <select value={maPhanLoai} onChange={e => handlePhanLoaiChange(e.target.value)} required className="input-modern">
                                 <option value="">-- Chọn phân loại --</option>
-                                {phanLoaiOptions.map(p => <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>)}
+                                {filteredPhanLoai.map(p => <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>)}
                             </select>
                         </div>
                     </div>
 
-                    {/* Dòng hàng + Gói giá */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
-                            <select value={maDongHang} onChange={e => { setMaDongHang(e.target.value); setMaGoiGia(""); setMaHH(""); }} required className="input-modern">
-                                <option value="">-- Chọn dòng hàng --</option>
-                                {filteredDongHang.map(d => <option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>)}
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className={labelClass}>Gói giá <span className="text-destructive">*</span></label>
-                            <select value={maGoiGia} onChange={e => setMaGoiGia(e.target.value)} required className="input-modern">
-                                <option value="">-- Chọn gói giá --</option>
-                                {filteredGoiGia.map(g => <option key={g.ID} value={g.ID_GOI_GIA}>{g.GOI_GIA}</option>)}
-                            </select>
-                        </div>
+                    {/* Dòng hàng */}
+                    <div className="space-y-1.5">
+                        <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
+                        <select value={maDongHang} onChange={e => handleDongHangChange(e.target.value)} required className="input-modern">
+                            <option value="">-- Chọn dòng hàng --</option>
+                            {filteredDongHang.map(d => <option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>)}
+                        </select>
                     </div>
 
                     {/* NCC + HH */}
@@ -141,17 +161,24 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
                             <label className={labelClass}>Nhà cung cấp <span className="text-destructive">*</span></label>
                             <select value={maNcc} onChange={e => setMaNcc(e.target.value)} required className="input-modern">
                                 <option value="">-- Chọn NCC --</option>
-                                {nccOptions.map(n => <option key={n.ID} value={n.MA_NCC}>{n.MA_NCC} - {n.TEN_NCC}</option>)}
+                                {nccOptions.map(n => <option key={n.ID} value={n.MA_NCC}>{n.TEN_NCC}</option>)}
                             </select>
                         </div>
                         <div className="space-y-1.5">
                             <label className={labelClass}>Hàng hóa <span className="text-destructive">*</span></label>
                             <select value={maHH} onChange={e => setMaHH(e.target.value)} required className="input-modern">
                                 <option value="">-- Chọn hàng hóa --</option>
-                                {filteredHH.map(h => <option key={h.ID} value={h.MA_HH}>{h.MA_HH} - {h.TEN_HH}</option>)}
+                                {filteredHH.map(h => <option key={h.ID} value={h.MA_HH}>{h.TEN_HH}</option>)}
                             </select>
                         </div>
                     </div>
+
+                    {/* Mã HH readonly */}
+                    {selectedHH && (
+                        <div className="text-xs text-muted-foreground">
+                            Mã HH: <span className="font-mono text-primary font-semibold">{selectedHH.MA_HH}</span>
+                        </div>
+                    )}
 
                     {/* Đơn giá */}
                     <div className="space-y-1.5">

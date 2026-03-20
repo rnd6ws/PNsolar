@@ -12,9 +12,9 @@ import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
 
 // ===== TYPES =====
 interface NhomHHOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
-interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; NHOM: string | null; }
 interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
-interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
+
 interface NccOption { ID: string; MA_NCC: string; TEN_NCC: string; }
 export interface HHOption {
     ID: string;
@@ -34,14 +34,14 @@ interface Props {
     nhomHHOptions: NhomHHOption[];
     phanLoaiOptions: PhanLoaiOption[];
     dongHangOptions: DongHangOption[];
-    goiGiaOptions: GoiGiaOption[];
+
     nccOptions: NccOption[];
     hhOptions: HHOption[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
 export default function GiaNhapPageClient({
-    data, nhomHHOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, nccOptions, hhOptions, pagination
+    data, nhomHHOptions, phanLoaiOptions, dongHangOptions, nccOptions, hhOptions, pagination
 }: Props) {
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
@@ -57,7 +57,7 @@ export default function GiaNhapPageClient({
     const nhomHHFilterOpts = nhomHHOptions.map(n => ({ value: n.MA_NHOM, label: n.TEN_NHOM }));
     const phanLoaiFilterOpts = phanLoaiOptions.map(p => ({ value: p.MA_PHAN_LOAI, label: p.TEN_PHAN_LOAI }));
     const dongHangFilterOpts = dongHangOptions.map(d => ({ value: d.MA_DONG_HANG, label: d.TEN_DONG_HANG }));
-    const goiGiaFilterOpts = goiGiaOptions.map(g => ({ value: g.ID_GOI_GIA, label: g.GOI_GIA }));
+
     const nccFilterOpts = nccOptions.map(n => ({ value: n.MA_NCC, label: `${n.MA_NCC} - ${n.TEN_NCC}` }));
 
     const stats = [
@@ -80,7 +80,6 @@ export default function GiaNhapPageClient({
                         nhomHHOptions={nhomHHOptions}
                         phanLoaiOptions={phanLoaiOptions}
                         dongHangOptions={dongHangOptions}
-                        goiGiaOptions={goiGiaOptions}
                         nccOptions={nccOptions}
                         hhOptions={hhOptions}
                     />
@@ -88,7 +87,6 @@ export default function GiaNhapPageClient({
                         nhomHHOptions={nhomHHOptions}
                         phanLoaiOptions={phanLoaiOptions}
                         dongHangOptions={dongHangOptions}
-                        goiGiaOptions={goiGiaOptions}
                         nccOptions={nccOptions}
                         hhOptions={hhOptions}
                     />
@@ -135,7 +133,7 @@ export default function GiaNhapPageClient({
                             <FilterSelect paramKey="MA_NHOM_HH" options={nhomHHFilterOpts} placeholder="Nhóm HH" />
                             <FilterSelect paramKey="MA_PHAN_LOAI" options={phanLoaiFilterOpts} placeholder="Phân loại" />
                             <FilterSelect paramKey="MA_DONG_HANG" options={dongHangFilterOpts} placeholder="Dòng hàng" />
-                            <FilterSelect paramKey="MA_GOI_GIA" options={goiGiaFilterOpts} placeholder="Gói giá" />
+
                             <FilterSelect paramKey="MA_NCC" options={nccFilterOpts} placeholder="NCC" />
                             <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                         </div>
@@ -148,7 +146,7 @@ export default function GiaNhapPageClient({
                                 <FilterSelect paramKey="MA_NHOM_HH" options={nhomHHFilterOpts} placeholder="Nhóm HH" />
                                 <FilterSelect paramKey="MA_PHAN_LOAI" options={phanLoaiFilterOpts} placeholder="Phân loại" />
                                 <FilterSelect paramKey="MA_DONG_HANG" options={dongHangFilterOpts} placeholder="Dòng hàng" />
-                                <FilterSelect paramKey="MA_GOI_GIA" options={goiGiaFilterOpts} placeholder="Gói giá" />
+
                                 <FilterSelect paramKey="MA_NCC" options={nccFilterOpts} placeholder="NCC" />
                             </div>
                             <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-border w-full">
@@ -165,7 +163,6 @@ export default function GiaNhapPageClient({
                     nhomHHOptions={nhomHHOptions}
                     phanLoaiOptions={phanLoaiOptions}
                     dongHangOptions={dongHangOptions}
-                    goiGiaOptions={goiGiaOptions}
                     nccOptions={nccOptions}
                     hhOptions={hhOptions}
                 />

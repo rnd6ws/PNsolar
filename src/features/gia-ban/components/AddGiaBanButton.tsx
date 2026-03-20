@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { createGiaBan } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 
 interface NhomHhOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
-interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; NHOM: string | null; }
 interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
 interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
 interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; MA_PHAN_LOAI: string; MA_DONG_HANG: string; PHAN_LOAI_REL?: { TEN_PHAN_LOAI: string } | null; DONG_HANG_REL?: { TEN_DONG_HANG: string } | null; }
@@ -35,10 +35,53 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
 
     const selectedHH = hhOptions.find(h => h.MA_HH === maHH);
 
-    // Filter cascade
-    const filteredDongHang = phanLoai ? dongHangOptions.filter(d => d.MA_PHAN_LOAI === phanLoai) : dongHangOptions;
-    const filteredGoiGia = dongHang ? goiGiaOptions.filter(g => g.MA_DONG_HANG === dongHang) : goiGiaOptions;
-    const filteredHH = dongHang ? hhOptions.filter(h => h.MA_DONG_HANG === dongHang) : (phanLoai ? hhOptions.filter(h => h.MA_PHAN_LOAI === phanLoai) : hhOptions);
+    // ====== Cascade filter logic ======
+    // Nhóm HH → Phân loại
+    const filteredPhanLoai = useMemo(() => {
+        if (!nhomHh) return phanLoaiOptions;
+        const nhom = nhomHhOptions.find(n => n.MA_NHOM === nhomHh);
+        if (!nhom) return phanLoaiOptions;
+        return phanLoaiOptions.filter(p => p.NHOM === nhom.MA_NHOM || p.NHOM === nhom.TEN_NHOM);
+    }, [nhomHh, phanLoaiOptions, nhomHhOptions]);
+
+    // Phân loại → Dòng hàng
+    const filteredDongHang = useMemo(() => {
+        return phanLoai ? dongHangOptions.filter(d => d.MA_PHAN_LOAI === phanLoai) : dongHangOptions;
+    }, [phanLoai, dongHangOptions]);
+
+    // Dòng hàng → Gói giá
+    const filteredGoiGia = useMemo(() => {
+        return dongHang ? goiGiaOptions.filter(g => g.MA_DONG_HANG === dongHang) : goiGiaOptions;
+    }, [dongHang, goiGiaOptions]);
+
+    // Dòng hàng/Phân loại → Hàng hóa
+    const filteredHH = useMemo(() => {
+        if (dongHang) return hhOptions.filter(h => h.MA_DONG_HANG === dongHang);
+        if (phanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === phanLoai);
+        return hhOptions;
+    }, [dongHang, phanLoai, hhOptions]);
+
+    // ====== Cascade handlers ======
+    const handleNhomHhChange = (val: string) => {
+        setNhomHh(val);
+        setPhanLoai("");
+        setDongHang("");
+        setGoiGia("");
+        setMaHH("");
+    };
+
+    const handlePhanLoaiChange = (val: string) => {
+        setPhanLoai(val);
+        setDongHang("");
+        setGoiGia("");
+        setMaHH("");
+    };
+
+    const handleDongHangChange = (val: string) => {
+        setDongHang(val);
+        setGoiGia("");
+        setMaHH("");
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -77,7 +120,7 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
         setGhiChu("");
     };
 
-    const labelClass = "text-sm font-semibold text-muted-foreground";
+    const labelClass = "text-xs font-bold text-muted-foreground tracking-widest";
 
     const handleDonGiaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/[^0-9]/g, '');
@@ -114,16 +157,16 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                     {/* Nhóm HH + Phân loại */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className={labelClass}>Nhóm hàng hóa <span className="text-destructive">*</span></label>
+                            <label className={labelClass}>Nhóm HH <span className="text-destructive">*</span></label>
                             <select
                                 value={nhomHh}
-                                onChange={e => { setNhomHh(e.target.value); }}
+                                onChange={e => handleNhomHhChange(e.target.value)}
                                 required
                                 className="input-modern"
                             >
                                 <option value="">-- Chọn nhóm HH --</option>
                                 {nhomHhOptions.map(n => (
-                                    <option key={n.ID} value={n.MA_NHOM}>{n.MA_NHOM} - {n.TEN_NHOM}</option>
+                                    <option key={n.ID} value={n.MA_NHOM}>{n.TEN_NHOM}</option>
                                 ))}
                             </select>
                         </div>
@@ -131,13 +174,13 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                             <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
                             <select
                                 value={phanLoai}
-                                onChange={e => { setPhanLoai(e.target.value); setDongHang(""); setGoiGia(""); setMaHH(""); }}
+                                onChange={e => handlePhanLoaiChange(e.target.value)}
                                 required
                                 className="input-modern"
                             >
                                 <option value="">-- Chọn phân loại --</option>
-                                {phanLoaiOptions.map(p => (
-                                    <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.MA_PHAN_LOAI} - {p.TEN_PHAN_LOAI}</option>
+                                {filteredPhanLoai.map(p => (
+                                    <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>
                                 ))}
                             </select>
                         </div>
@@ -149,13 +192,13 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                             <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
                             <select
                                 value={dongHang}
-                                onChange={e => { setDongHang(e.target.value); setGoiGia(""); setMaHH(""); }}
+                                onChange={e => handleDongHangChange(e.target.value)}
                                 required
                                 className="input-modern"
                             >
                                 <option value="">-- Chọn dòng hàng --</option>
                                 {filteredDongHang.map(d => (
-                                    <option key={d.ID} value={d.MA_DONG_HANG}>{d.MA_DONG_HANG} - {d.TEN_DONG_HANG}</option>
+                                    <option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>
                                 ))}
                             </select>
                         </div>
@@ -169,13 +212,13 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                             >
                                 <option value="">-- Chọn gói giá --</option>
                                 {filteredGoiGia.map(g => (
-                                    <option key={g.ID} value={g.ID_GOI_GIA}>{g.ID_GOI_GIA} - {g.GOI_GIA}</option>
+                                    <option key={g.ID} value={g.ID_GOI_GIA}>{g.GOI_GIA}</option>
                                 ))}
                             </select>
                         </div>
                     </div>
 
-                    {/* Mã HH + Tên HH */}
+                    {/* Hàng hóa + Tên HH */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className={labelClass}>Hàng hóa <span className="text-destructive">*</span></label>
@@ -185,15 +228,15 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                                 required
                                 className="input-modern"
                             >
-                                <option value="">-- Chọn HH --</option>
+                                <option value="">-- Chọn hàng hóa --</option>
                                 {filteredHH.map(h => (
-                                    <option key={h.ID} value={h.MA_HH}>{h.MA_HH} - {h.TEN_HH}</option>
+                                    <option key={h.ID} value={h.MA_HH}>{h.TEN_HH}</option>
                                 ))}
                             </select>
                         </div>
                         <div className="space-y-1.5">
-                            <label className={labelClass}>Tên hàng hóa</label>
-                            <input className="input-modern bg-muted/30" readOnly value={selectedHH?.TEN_HH || "Theo mã HH"} />
+                            <label className={labelClass}>Mã hàng hóa</label>
+                            <input className="input-modern bg-muted/30" readOnly value={selectedHH?.MA_HH || "—"} />
                         </div>
                     </div>
 

@@ -356,7 +356,6 @@ model GOI_GIA {
   SL_MAX        Int?
 
   GIA_BANS  GIA_BAN[] // Relation ngược từ GIA_BAN
-  GIA_NHAPS GIA_NHAP[] // Relation ngược từ GIA_NHAP
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -405,9 +404,6 @@ model GIA_NHAP {
   MA_DONG_HANG String
   DONG_HANG_GN DONG_HH @relation(fields: [MA_DONG_HANG], references: [MA_DONG_HANG])
 
-  MA_GOI_GIA String?
-  GOI_GIA_GN GOI_GIA? @relation(fields: [MA_GOI_GIA], references: [ID_GOI_GIA])
-
   MA_NCC  String
   NCC_REL NCC    @relation(fields: [MA_NCC], references: [MA_NCC])
 
@@ -422,7 +418,7 @@ model GIA_NHAP {
 
   @@index([MA_NHOM_HH, MA_PHAN_LOAI, MA_DONG_HANG])
   @@index([MA_NCC, MA_HH])
-  @@fulltext([MA_NCC, MA_HH, MA_NHOM_HH, MA_GOI_GIA])
+  @@fulltext([MA_NCC, MA_HH, MA_NHOM_HH])
   @@map("GIA_NHAP")
 }
 

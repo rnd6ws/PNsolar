@@ -31,7 +31,7 @@ export async function getNhomHhOptions() {
 export async function getPhanLoaiOptions() {
     try {
         const data = await prisma.pHANLOAI_HH.findMany({
-            select: { ID: true, MA_PHAN_LOAI: true, TEN_PHAN_LOAI: true },
+            select: { ID: true, MA_PHAN_LOAI: true, TEN_PHAN_LOAI: true, NHOM: true },
             orderBy: { CREATED_AT: 'asc' },
         });
         return data;
@@ -326,6 +326,13 @@ export async function createBulkGiaBan(payload: {
 // ===== Lấy lịch sử giá bán theo MA_HH =====
 export async function getGiaBanHistoryByHH(maHH: string) {
     try {
+        // Load tất cả GOI_GIA để lookup tên + kiểm tra hiệu lực
+        const allGoiGia = await prisma.gOI_GIA.findMany({
+            select: { ID_GOI_GIA: true, GOI_GIA: true, HIEU_LUC: true },
+        });
+        const goiGiaLookup = new Map(allGoiGia.map(g => [g.ID_GOI_GIA, g.GOI_GIA]));
+        const activeGoiGiaIds = new Set(allGoiGia.filter(g => g.HIEU_LUC).map(g => g.ID_GOI_GIA));
+
         const records = await prisma.gIA_BAN.findMany({
             where: { MA_HH: maHH },
             orderBy: { NGAY_HIEU_LUC: 'desc' },
@@ -337,12 +344,23 @@ export async function getGiaBanHistoryByHH(maHH: string) {
                 DON_GIA: true,
                 GHI_CHU: true,
                 NHOM: { select: { TEN_NHOM: true } },
-                GOI_GIA_REL: { select: { GOI_GIA: true } },
+                GOI_GIA_REL: { select: { GOI_GIA: true, HIEU_LUC: true } },
             },
         });
-        return records.map(r => ({
+
+        // Chỉ giữ records có gói giá còn hiệu lực
+        const filtered = records.filter(r => {
+            // Nếu có relation → check HIEU_LUC trực tiếp
+            if (r.GOI_GIA_REL) return r.GOI_GIA_REL.HIEU_LUC !== false;
+            // Nếu không có relation → check qua activeGoiGiaIds
+            return activeGoiGiaIds.has(r.MA_GOI_GIA);
+        });
+
+        return filtered.map(r => ({
             ...r,
             NGAY_HIEU_LUC: r.NGAY_HIEU_LUC.toISOString(),
+            // Normalize tên gói giá: ưu tiên relation → lookup từ mã → dùng mã raw
+            GOI_GIA_NAME: r.GOI_GIA_REL?.GOI_GIA || goiGiaLookup.get(r.MA_GOI_GIA) || r.MA_GOI_GIA || 'Khác',
         }));
     } catch (error) {
         console.error('[getGiaBanHistoryByHH]', error);
