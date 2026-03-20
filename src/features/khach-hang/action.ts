@@ -22,7 +22,12 @@ export async function getKhachHangs(filters: {
     const andConditions: any[] = [];
 
     if (user?.ROLE === 'STAFF') {
-        andConditions.push({ NV_CS: user.userId });
+        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (staff?.MA_NV) {
+            andConditions.push({ NV_CS: staff.MA_NV });
+        } else {
+            andConditions.push({ NV_CS: "NONE" });
+        }
     }
 
     if (query) {
@@ -119,7 +124,8 @@ export async function getKhachHangStats() {
         const user = await getCurrentUser();
         const where: any = {};
         if (user?.ROLE === 'STAFF') {
-            where.NV_CS = user.userId;
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            where.NV_CS = staff?.MA_NV || "NONE";
         }
 
         const total = await prisma.kHTN.count({ where });
@@ -168,39 +174,77 @@ export async function createKhachHang(data: any) {
         const timestamp = `[${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}]`;
         const initialLichSu = `${timestamp} Tạo mới khách hàng tiềm năng`;
 
-        await prisma.kHTN.create({
-            data: {
-                TEN_KH: data.TEN_KH,
-                TEN_VT: data.TEN_VT || null,
-                HINH_ANH: data.HINH_ANH || null,
-                DIEN_THOAI: data.DIEN_THOAI || null,
-                EMAIL: data.EMAIL || null,
-                MST: data.MST || null,
-                DIA_CHI: data.DIA_CHI || null,
-                NHOM_KH: data.NHOM_KH || null,
-                NGUON: data.NGUON || null,
-                PHAN_LOAI: data.PHAN_LOAI || null,
-                NGUOI_GIOI_THIEU: data.NGUOI_GIOI_THIEU || null,
-                SALES_PT: data.SALES_PT || null,
-                NV_CS: data.NV_CS || null,
-                LICH_SU: initialLichSu,
-                NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
-                NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
-                LAT: data.LAT ? parseFloat(data.LAT) : null,
-                LONG: data.LONG ? parseFloat(data.LONG) : null,
-                ...(data.NGUOI_DD ? {
-                    NGUOI_DAI_DIEN: {
-                        create: {
-                            NGUOI_DD: data.NGUOI_DD,
-                            CHUC_VU: data.CHUC_VU_DD || null,
-                            SDT: data.SDT_DD || null,
-                            EMAIL: data.EMAIL_DD || null,
-                            NGAY_SINH: data.NGAY_SINH_DD ? new Date(data.NGAY_SINH_DD) : null,
-                        }
-                    }
-                } : {})
-            },
+        let maKh = "";
+        const prefix = data.TEN_VT ? `KHTN-${data.TEN_VT.substring(0, 10).toUpperCase()}` : `KHTN-KHAC`;
+        
+        const lastKh = await prisma.kHTN.findFirst({
+            where: { MA_KH: { startsWith: prefix } },
+            orderBy: { MA_KH: 'desc' },
+            select: { MA_KH: true }
         });
+        
+        let nextNum = 1;
+        if (lastKh && lastKh.MA_KH) {
+            const parts = lastKh.MA_KH.split('-');
+            const lastPart = parts[parts.length - 1];
+            const num = parseInt(lastPart, 10);
+            if (!isNaN(num)) nextNum = num + 1;
+        }
+
+        let created = false;
+        let attempts = 0;
+
+        while (!created && attempts < 20) {
+            maKh = `${prefix}-${String(nextNum).padStart(3, '0')}`;
+            try {
+                await prisma.kHTN.create({
+                    data: {
+                        MA_KH: maKh,
+                        TEN_KH: data.TEN_KH,
+                        TEN_VT: data.TEN_VT || null,
+                        HINH_ANH: data.HINH_ANH || null,
+                        DIEN_THOAI: data.DIEN_THOAI || null,
+                        EMAIL: data.EMAIL || null,
+                        MST: data.MST || null,
+                        DIA_CHI: data.DIA_CHI || null,
+                        NHOM_KH: data.NHOM_KH || null,
+                        NGUON: data.NGUON || null,
+                        PHAN_LOAI: data.PHAN_LOAI || null,
+                        MA_NGT: data.NGUOI_GIOI_THIEU || null,
+                        SALES_PT: data.SALES_PT || null,
+                        NV_CS: data.NV_CS || null,
+                        LICH_SU: initialLichSu,
+                        NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
+                        NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
+                        LAT: data.LAT ? parseFloat(data.LAT) : null,
+                        LONG: data.LONG ? parseFloat(data.LONG) : null,
+                        ...(data.NGUOI_DD ? {
+                            NGUOI_DAI_DIEN: {
+                                create: {
+                                    NGUOI_DD: data.NGUOI_DD,
+                                    CHUC_VU: data.CHUC_VU_DD || null,
+                                    SDT: data.SDT_DD || null,
+                                    EMAIL: data.EMAIL_DD || null,
+                                    NGAY_SINH: data.NGAY_SINH_DD ? new Date(data.NGAY_SINH_DD) : null,
+                                }
+                            }
+                        } : {})
+                    },
+                });
+                created = true;
+            } catch (error: any) {
+                if (error.code === 'P2002') {
+                    nextNum++;
+                    attempts++;
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        if (!created) {
+            return { success: false, message: "Hệ thống đang xử lý nhiều lượt tạo cùng lúc, vui lòng thử lại sau." };
+        }
 
         revalidatePath("/khach-hang");
         return { success: true };
@@ -235,7 +279,7 @@ export async function updateKhachHang(id: string, data: any) {
                 NHOM_KH: data.NHOM_KH || null,
                 NGUON: data.NGUON || null,
                 PHAN_LOAI: data.PHAN_LOAI || null,
-                NGUOI_GIOI_THIEU: data.NGUOI_GIOI_THIEU || null,
+                MA_NGT: data.NGUOI_GIOI_THIEU || null,
                 SALES_PT: data.SALES_PT || null,
                 NV_CS: data.NV_CS || null,
                 LICH_SU: updatedLichSu,
@@ -249,12 +293,12 @@ export async function updateKhachHang(id: string, data: any) {
 
         // Update NGUOI_DAI_DIEN separately to ensure clean state
         if (!data.NGUOI_DD) {
-            await prisma.nGUOI_DAI_DIEN.deleteMany({ where: { ID_KH: id } });
+            await prisma.nGUOI_DAI_DIEN.deleteMany({ where: { MA_KH: existing.MA_KH } });
         } else {
-            await prisma.nGUOI_DAI_DIEN.deleteMany({ where: { ID_KH: id } });
+            await prisma.nGUOI_DAI_DIEN.deleteMany({ where: { MA_KH: existing.MA_KH } });
             await prisma.nGUOI_DAI_DIEN.create({
                 data: {
-                    ID_KH: id,
+                    MA_KH: existing.MA_KH,
                     NGUOI_DD: data.NGUOI_DD,
                     CHUC_VU: data.CHUC_VU_DD || null,
                     SDT: data.SDT_DD || null,
@@ -399,10 +443,11 @@ export async function getNVList() {
     try {
         const data = await prisma.dSNV.findMany({
             where: { IS_ACTIVE: true },
-            select: { ID: true, HO_TEN: true },
+            select: { MA_NV: true, HO_TEN: true, ID: true },
             orderBy: { HO_TEN: "asc" }
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ID: d.MA_NV, HO_TEN: d.HO_TEN, USER_ID: d.ID }));
+        return { success: true, data: mapped };
     } catch (error) {
         return { success: false, data: [] };
     }
@@ -415,7 +460,8 @@ export async function getNguoiGioiThieu() {
         const data = await prisma.nGUOI_GIOI_THIEU.findMany({
             orderBy: { TEN_NGT: "asc" },
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ID: d.MA_NGT, TEN_NGT: d.TEN_NGT, SO_DT_NGT: d.SO_DT_NGT }));
+        return { success: true, data: mapped };
     } catch (error) {
         return { success: false, data: [] };
     }
@@ -424,10 +470,54 @@ export async function getNguoiGioiThieu() {
 export async function createNguoiGioiThieu(tenNgt: string, soDtNgt?: string) {
     try {
         if (!tenNgt.trim()) return { success: false, message: "Vui lòng nhập tên người giới thiệu" };
-        const record = await prisma.nGUOI_GIOI_THIEU.create({
-            data: { TEN_NGT: tenNgt.trim(), SO_DT_NGT: soDtNgt?.trim() || null },
+        
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const prefix = `NGT-${yy}${mm}${dd}`;
+
+        const lastNgt = await prisma.nGUOI_GIOI_THIEU.findFirst({
+            where: { MA_NGT: { startsWith: prefix } },
+            orderBy: { MA_NGT: 'desc' },
+            select: { MA_NGT: true }
         });
-        return { success: true, data: record };
+
+        let nextNum = 1;
+        if (lastNgt && lastNgt.MA_NGT) {
+            const parts = lastNgt.MA_NGT.split('-');
+            if (parts.length >= 3) {
+                const num = parseInt(parts[2], 10);
+                if (!isNaN(num)) nextNum = num + 1;
+            }
+        }
+        
+        let created = false;
+        let attempts = 0;
+        let record: any = null;
+
+        while (!created && attempts < 20) {
+            const maNgt = `${prefix}-${String(nextNum).padStart(3, '0')}`;
+            try {
+                record = await prisma.nGUOI_GIOI_THIEU.create({
+                    data: { MA_NGT: maNgt, TEN_NGT: tenNgt.trim(), SO_DT_NGT: soDtNgt?.trim() || null },
+                });
+                created = true;
+            } catch (error: any) {
+                if (error.code === 'P2002') {
+                    nextNum++;
+                    attempts++;
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        if (!created) {
+            return { success: false, message: "Hệ thống đang bận vì nhiều lượt tạo cùng lúc, vui lòng thử lại sau." };
+        }
+
+        return { success: true, data: { ...record, ID: record.MA_NGT } };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi tạo người giới thiệu" };
     }
@@ -437,10 +527,10 @@ export async function updateNguoiGioiThieu(id: string, tenNgt: string, soDtNgt?:
     try {
         if (!tenNgt.trim()) return { success: false, message: "Vui lòng nhập tên người giới thiệu" };
         const record = await prisma.nGUOI_GIOI_THIEU.update({
-            where: { ID: id },
+            where: { MA_NGT: id },
             data: { TEN_NGT: tenNgt.trim(), SO_DT_NGT: soDtNgt?.trim() || null },
         });
-        return { success: true, data: record };
+        return { success: true, data: { ...record, ID: record.MA_NGT } };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi cập nhật người giới thiệu" };
     }
@@ -448,7 +538,7 @@ export async function updateNguoiGioiThieu(id: string, tenNgt: string, soDtNgt?:
 
 export async function deleteNguoiGioiThieu(id: string) {
     try {
-        await prisma.nGUOI_GIOI_THIEU.delete({ where: { ID: id } });
+        await prisma.nGUOI_GIOI_THIEU.delete({ where: { MA_NGT: id } });
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Lỗi xóa người giới thiệu" };

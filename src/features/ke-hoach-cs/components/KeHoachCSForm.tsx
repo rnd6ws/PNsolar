@@ -71,12 +71,13 @@ export default function KeHoachCSForm({
     const [dmDichVu, setDmDichVu] = useState<DichVuItem[]>([]);
 
     // Form fields
+    const currentUserNv = nhanViens.find((nv: any) => nv.USER_ID === currentUserId)?.ID;
     const [idLH, setIdLH] = useState(item?.ID_LH || "");
     const [idCH, setIdCH] = useState(item?.ID_CH || defaultCoHoiId || "");
     const [loaiCS, setLoaiCS] = useState(item?.LOAI_CS || "");
     const [hinhThuc, setHinhThuc] = useState(item?.HINH_THUC || "");
     const [diaDiem, setDiaDiem] = useState(item?.DIA_DIEM || "");
-    const [nguoiCS, setNguoiCS] = useState(item?.NGUOI_CS || currentUserId || "");
+    const [nguoiCS, setNguoiCS] = useState(item?.NGUOI_CS || currentUserNv || currentUserId || "");
     const [ghiChuNC, setGhiChuNC] = useState(item?.GHI_CHU_NC || "");
     const [selectedDV, setSelectedDV] = useState<string[]>(
         Array.isArray(item?.DICH_VU_QT) ? item.DICH_VU_QT : []
@@ -142,7 +143,7 @@ export default function KeHoachCSForm({
                         } else {
                             const openCH = r.data.find((c: any) => c.TINH_TRANG === "Đang mở");
                             if (openCH) {
-                                setIdCH(openCH.ID);
+                                setIdCH(openCH.ID_CH);
                             } else {
                                 setIdCH("");
                             }
@@ -402,7 +403,7 @@ export default function KeHoachCSForm({
                             name="ID_CH"
                             value={idCH}
                             onChange={(val) => setIdCH(val)}
-                            options={coHois.map((ch) => ({ label: `${ch.ID_CH} (${ch.TINH_TRANG})`, value: ch.ID }))}
+                            options={coHois.map((ch) => ({ label: `${ch.ID_CH} (${ch.TINH_TRANG})`, value: ch.ID_CH }))}
                             placeholder="-- Chọn cơ hội --"
                             disabled={!selectedKH || isCoHoiLocked}
                         />
