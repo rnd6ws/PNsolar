@@ -427,21 +427,19 @@ export default function KeHoachCSForm({
                         <button
                             type="button"
                             onClick={() => setHinhThuc(hinhThuc === "Online" ? "Trực tiếp" : "Online")}
-                            className={`w-full flex items-center justify-between px-4 py-[9px] rounded-xl border transition-colors relative overflow-hidden ${
-                                hinhThuc === 'Online' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' : 
-                                hinhThuc === 'Trực tiếp' ? 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
-                                'bg-muted border-border text-muted-foreground'
-                            }`}
+                            className={`w-full flex items-center justify-between px-4 py-[9px] rounded-xl border transition-colors relative overflow-hidden ${hinhThuc === 'Online' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
+                                    hinhThuc === 'Trực tiếp' ? 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
+                                        'bg-muted border-border text-muted-foreground'
+                                }`}
                         >
                             <span className="relative z-10 font-semibold text-sm">
                                 {hinhThuc || "Chọn hình thức"}
                             </span>
                             <div className="relative z-10 flex items-center justify-center w-6 h-6 rounded-full bg-background shadow-sm border border-border/50">
-                                <div className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                                    hinhThuc === 'Online' ? 'bg-blue-500' : 
-                                    hinhThuc === 'Trực tiếp' ? 'bg-purple-500' :
-                                    'bg-transparent'
-                                }`} />
+                                <div className={`w-2.5 h-2.5 rounded-full transition-colors ${hinhThuc === 'Online' ? 'bg-blue-500' :
+                                        hinhThuc === 'Trực tiếp' ? 'bg-purple-500' :
+                                            'bg-transparent'
+                                    }`} />
                             </div>
                         </button>
                     </div>
@@ -531,8 +529,8 @@ export default function KeHoachCSForm({
                                                 title={allSel ? "Bỏ chọn tất cả" : "Chọn tất cả"}
                                             >
                                                 <div className={`w-[15px] h-[15px] rounded border-2 flex items-center justify-center transition-colors ${allSel ? "bg-primary border-primary"
-                                                        : someSel ? "bg-primary/30 border-primary"
-                                                            : "border-border bg-background"
+                                                    : someSel ? "bg-primary/30 border-primary"
+                                                        : "border-border bg-background"
                                                     }`}>
                                                     {allSel && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
                                                     {someSel && !allSel && <span className="text-primary text-[9px] leading-none font-bold">−</span>}
@@ -557,8 +555,9 @@ export default function KeHoachCSForm({
                                                 {items.map(item => {
                                                     const checked = selectedDV.includes(item.ID);
                                                     return (
-                                                        <label
+                                                        <div
                                                             key={item.ID}
+                                                            onClick={() => toggleItem(item.ID)}
                                                             className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${checked ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/30"
                                                                 }`}
                                                         >
@@ -567,7 +566,6 @@ export default function KeHoachCSForm({
                                                                     }`}>
                                                                     {checked && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
                                                                 </div>
-                                                                <input type="checkbox" checked={checked} onChange={() => toggleItem(item.ID)} className="sr-only" />
                                                                 <span className={`text-sm truncate ${checked ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                                                                     {item.DICH_VU}
                                                                 </span>
@@ -575,7 +573,7 @@ export default function KeHoachCSForm({
                                                             <span className={`text-xs whitespace-nowrap ml-2 ${checked ? "text-primary font-medium" : "text-muted-foreground"}`}>
                                                                 {formatCurrency(item.GIA_TRI_TB)}
                                                             </span>
-                                                        </label>
+                                                        </div>
                                                     );
                                                 })}
                                             </div>

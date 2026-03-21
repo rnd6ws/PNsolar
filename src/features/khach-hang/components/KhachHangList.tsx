@@ -421,7 +421,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         </PermissionGuard>
 
                                         {/* Desktop Actions */}
-                                        <div className="hidden md:flex gap-1">
+                                        <div className="hidden 2xl:flex gap-1">
                                             <PermissionGuard moduleKey="khach-hang" level="edit">
                                                 <button
                                                     onClick={() => setEditItem(item)}
@@ -443,7 +443,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         </div>
 
                                         {/* Mobile Actions Dropdown */}
-                                        <div className="md:hidden">
+                                        <div className="2xl:hidden">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors">
