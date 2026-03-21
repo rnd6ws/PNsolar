@@ -20,14 +20,16 @@ export async function getKeHoachCSKH(filters: {
     const andConditions: any[] = [];
 
     if (user && user.ROLE === "STAFF") {
-        andConditions.push({ NGUOI_CS: user.userId });
+        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (staff?.MA_NV) andConditions.push({ NGUOI_CS: staff.MA_NV });
+        else andConditions.push({ NGUOI_CS: "NONE" });
     }
 
     if (query) {
         andConditions.push({
             OR: [
-                { KH: { TEN_KH: { contains: query, mode: "insensitive" } } },
-                { KH: { TEN_VT: { contains: query, mode: "insensitive" } } },
+                { KH_REL: { TEN_KH: { contains: query, mode: "insensitive" } } },
+                { KH_REL: { TEN_VT: { contains: query, mode: "insensitive" } } },
             ],
         });
     }
@@ -51,25 +53,29 @@ export async function getKeHoachCSKH(filters: {
                 take: limit,
                 orderBy: { TG_TU: "desc" },
                 include: {
-                    KH: { select: { ID: true, TEN_KH: true, TEN_VT: true } },
+                    KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true } },
                 },
             }),
             prisma.kEHOACH_CSKH.count({ where }),
         ]);
 
-        const validLhIds = Array.from(new Set(data.map((d) => d.ID_LH).filter(Boolean))) as string[];
+        const validLhIds = Array.from(new Set(data.map((d) => d.MA_NLH).filter(Boolean))) as string[];
         let lhMap: Record<string, any> = {};
         if (validLhIds.length > 0) {
             const nguoiLienHes = await prisma.nGUOI_LIENHE.findMany({
-                where: { ID: { in: validLhIds } },
-                select: { ID: true, TENNGUOI_LIENHE: true, CHUC_VU: true, SDT: true },
+                where: { MA_NLH: { in: validLhIds } },
+                select: { MA_NLH: true, TENNGUOI_LIENHE: true, CHUC_VU: true, SDT: true },
             });
-            lhMap = Object.fromEntries(nguoiLienHes.map((n) => [n.ID, n]));
+            lhMap = Object.fromEntries(nguoiLienHes.map((n) => [n.MA_NLH, n]));
         }
 
         const mappedData = data.map((d) => ({
             ...d,
-            NGUOI_LH: d.ID_LH ? lhMap[d.ID_LH] || null : null,
+            KH: d.KH_REL,
+            ID_KH: d.MA_KH,
+            ID_LH: d.MA_NLH,
+            ID_CH: d.MA_CH,
+            NGUOI_LH: d.MA_NLH ? lhMap[d.MA_NLH] || null : null,
         }));
 
         return {
@@ -94,7 +100,8 @@ export async function getKeHoachCSStats() {
         const baseWhere: any = {};
         
         if (user && user.ROLE === "STAFF") {
-            baseWhere.NGUOI_CS = user.userId;
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            baseWhere.NGUOI_CS = staff?.MA_NV || "NONE";
         }
 
         const [total, choBaoCao, daBaoCao, quaHan] = await Promise.all([
@@ -120,11 +127,17 @@ export async function createKeHoachCS(data: any) {
     try {
         if (!data.ID_KH) return { success: false, message: "Vui lòng chọn khách hàng" };
 
+        let maKh = data.ID_KH;
+        if (/^[0-9a-fA-F]{24}$/.test(data.ID_KH)) {
+            const kh = await prisma.kHTN.findUnique({ where: { ID: data.ID_KH }, select: { MA_KH: true } });
+            if (kh) maKh = kh.MA_KH;
+        }
+
         await prisma.kEHOACH_CSKH.create({
             data: {
-                ID_KH: data.ID_KH,
-                ID_LH: data.ID_LH || null,
-                ID_CH: data.ID_CH || null,
+                MA_KH: maKh,
+                MA_NLH: data.ID_LH || null,
+                MA_CH: data.ID_CH || null,
                 LOAI_CS: data.LOAI_CS || null,
                 TG_TU: data.TG_TU ? new Date(data.TG_TU) : null,
                 TG_DEN: data.TG_DEN ? new Date(data.TG_DEN) : null,
@@ -146,12 +159,18 @@ export async function createKeHoachCS(data: any) {
 
 export async function updateKeHoachCS(id: string, data: any) {
     try {
+        let maKh = data.ID_KH;
+        if (/^[0-9a-fA-F]{24}$/.test(data.ID_KH)) {
+            const kh = await prisma.kHTN.findUnique({ where: { ID: data.ID_KH }, select: { MA_KH: true } });
+            if (kh) maKh = kh.MA_KH;
+        }
+
         await prisma.kEHOACH_CSKH.update({
             where: { ID: id },
             data: {
-                ID_KH: data.ID_KH,
-                ID_LH: data.ID_LH || null,
-                ID_CH: data.ID_CH || null,
+                MA_KH: maKh,
+                MA_NLH: data.ID_LH || null,
+                MA_CH: data.ID_CH || null,
                 LOAI_CS: data.LOAI_CS || null,
                 TG_TU: data.TG_TU ? new Date(data.TG_TU) : null,
                 TG_DEN: data.TG_DEN ? new Date(data.TG_DEN) : null,
@@ -302,11 +321,12 @@ export async function searchKhachHangForCS(query: string) {
                     { TEN_VT: { contains: query, mode: "insensitive" } },
                 ],
             },
-            select: { ID: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true },
+            select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true },
             take: 15,
             orderBy: { TEN_KH: "asc" },
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ID: d.MA_KH, TEN_KH: d.TEN_KH, TEN_VT: d.TEN_VT, HINH_ANH: d.HINH_ANH }));
+        return { success: true, data: mapped };
     } catch {
         return { success: false, data: [] };
     }
@@ -314,12 +334,19 @@ export async function searchKhachHangForCS(query: string) {
 
 export async function getNguoiLienHeByKH(idKh: string) {
     try {
+        let maKh = idKh;
+        if (/^[0-9a-fA-F]{24}$/.test(idKh)) {
+            const kh = await prisma.kHTN.findUnique({ where: { ID: idKh }, select: { MA_KH: true } });
+            if (kh) maKh = kh.MA_KH;
+        }
+
         const data = await prisma.nGUOI_LIENHE.findMany({
-            where: { ID_KH: idKh, HIEU_LUC: "Đang hiệu lực" },
-            select: { ID: true, TENNGUOI_LIENHE: true, CHUC_VU: true, SDT: true },
+            where: { MA_KH: maKh, HIEU_LUC: "Đang hiệu lực" },
+            select: { MA_NLH: true, TENNGUOI_LIENHE: true, CHUC_VU: true, SDT: true },
             orderBy: { CREATED_AT: "desc" },
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ID: d.MA_NLH, TENNGUOI_LIENHE: d.TENNGUOI_LIENHE, CHUC_VU: d.CHUC_VU, SDT: d.SDT }));
+        return { success: true, data: mapped };
     } catch {
         return { success: false, data: [] };
     }
@@ -327,12 +354,19 @@ export async function getNguoiLienHeByKH(idKh: string) {
 
 export async function getCoHoiByKH(idKh: string) {
     try {
+        let maKh = idKh;
+        if (/^[0-9a-fA-F]{24}$/.test(idKh)) {
+            const kh = await prisma.kHTN.findUnique({ where: { ID: idKh }, select: { MA_KH: true } });
+            if (kh) maKh = kh.MA_KH;
+        }
+
         const data = await prisma.cO_HOI.findMany({
-            where: { ID_KH: idKh },
-            select: { ID: true, ID_CH: true, TINH_TRANG: true },
+            where: { MA_KH: maKh },
+            select: { ID: true, MA_CH: true, TINH_TRANG: true },
             orderBy: { NGAY_TAO: "desc" },
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ID: d.MA_CH, ID_CH: d.MA_CH, TINH_TRANG: d.TINH_TRANG }));
+        return { success: true, data: mapped };
     } catch {
         return { success: false, data: [] };
     }
@@ -340,12 +374,18 @@ export async function getCoHoiByKH(idKh: string) {
 
 export async function getKeHoachCSByKH(idKh: string) {
     try {
+        let maKh = idKh;
+        if (/^[0-9a-fA-F]{24}$/.test(idKh)) {
+            const kh = await prisma.kHTN.findUnique({ where: { ID: idKh }, select: { MA_KH: true } });
+            if (kh) maKh = kh.MA_KH;
+        }
+
         const data = await prisma.kEHOACH_CSKH.findMany({
-            where: { ID_KH: idKh },
+            where: { MA_KH: maKh },
             orderBy: { TG_TU: "desc" },
             select: {
                 ID: true,
-                ID_LH: true,
+                MA_NLH: true,
                 LOAI_CS: true,
                 TG_TU: true,
                 TG_DEN: true,
@@ -364,14 +404,14 @@ export async function getKeHoachCSByKH(idKh: string) {
         });
 
         // Resolve người liên hệ
-        const validLhIds = Array.from(new Set(data.map((d) => d.ID_LH).filter(Boolean))) as string[];
+        const validLhIds = Array.from(new Set(data.map((d) => d.MA_NLH).filter(Boolean))) as string[];
         let lhMap: Record<string, any> = {};
         if (validLhIds.length > 0) {
             const nguoiLienHes = await prisma.nGUOI_LIENHE.findMany({
-                where: { ID: { in: validLhIds } },
-                select: { ID: true, TENNGUOI_LIENHE: true, CHUC_VU: true },
+                where: { MA_NLH: { in: validLhIds } },
+                select: { MA_NLH: true, TENNGUOI_LIENHE: true, CHUC_VU: true },
             });
-            lhMap = Object.fromEntries(nguoiLienHes.map((n) => [n.ID, n]));
+            lhMap = Object.fromEntries(nguoiLienHes.map((n) => [n.MA_NLH, n]));
         }
 
         // Resolve tên dịch vụ từ IDs trong DICH_VU_QT
@@ -381,17 +421,18 @@ export async function getKeHoachCSByKH(idKh: string) {
         let dvMap: Record<string, string> = {};
         if (allDvIds.length > 0) {
             const dvList = await prisma.dM_DICH_VU.findMany({
-                where: { ID: { in: allDvIds } },
-                select: { ID: true, DICH_VU: true },
+                where: { MA_DV: { in: allDvIds } },
+                select: { MA_DV: true, DICH_VU: true },
             });
-            dvMap = Object.fromEntries(dvList.map((dv) => [dv.ID, dv.DICH_VU]));
+            dvMap = Object.fromEntries(dvList.map((dv) => [dv.MA_DV, dv.DICH_VU]));
         }
 
         return {
             success: true,
             data: data.map((d) => ({
                 ...d,
-                NGUOI_LH: d.ID_LH ? lhMap[d.ID_LH] || null : null,
+                ID_LH: d.MA_NLH,
+                NGUOI_LH: d.MA_NLH ? lhMap[d.MA_NLH] || null : null,
                 // Map IDs → tên dịch vụ (giữ ID nếu không tìm thấy tên)
                 DICH_VU_NAMES: Array.isArray(d.DICH_VU_QT)
                     ? (d.DICH_VU_QT as string[]).map((id) => dvMap[id] || id)
@@ -407,10 +448,11 @@ export async function getNVListCS() {
     try {
         const data = await prisma.dSNV.findMany({
             where: { IS_ACTIVE: true },
-            select: { ID: true, HO_TEN: true },
+            select: { MA_NV: true, HO_TEN: true, ID: true },
             orderBy: { HO_TEN: "asc" },
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ID: d.MA_NV, HO_TEN: d.HO_TEN, USER_ID: d.ID }));
+        return { success: true, data: mapped };
     } catch {
         return { success: false, data: [] };
     }
@@ -421,7 +463,8 @@ export async function getDMDichVuForCS() {
         const data = await prisma.dM_DICH_VU.findMany({
             orderBy: [{ NHOM_DV: "asc" }, { DICH_VU: "asc" }],
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ...d, ID: d.MA_DV }));
+        return { success: true, data: mapped };
     } catch {
         return { success: false, data: [] as { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[] };
     }

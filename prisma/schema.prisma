@@ -578,8 +578,6 @@ model CD_LOAI_CONG_TRINH {
   ID              String @id @default(auto()) @map("_id") @db.ObjectId
   LOAI_CONG_TRINH String @unique
 
-  HANG_MUC_KSS HANG_MUC_KS[] // Relation ngược
-
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
 
@@ -591,8 +589,6 @@ model CD_NHOM_KS {
   ID      String @id @default(auto()) @map("_id") @db.ObjectId
   NHOM_KS String @unique
 
-  HANG_MUC_KSS HANG_MUC_KS[] // Relation ngược
-
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
 
@@ -601,14 +597,12 @@ model CD_NHOM_KS {
 
 // ===== HẠNG MỤC KHẢO SÁT =====
 model HANG_MUC_KS {
-  ID              String             @id @default(auto()) @map("_id") @db.ObjectId
-  MA_HMKS         String             @unique
+  ID              String  @id @default(auto()) @map("_id") @db.ObjectId
+  MA_HMKS         String  @unique
   LOAI_CONG_TRINH String
-  LCT_REL         CD_LOAI_CONG_TRINH @relation(fields: [LOAI_CONG_TRINH], references: [LOAI_CONG_TRINH])
   NHOM_KS         String
-  NHOM_KS_REL     CD_NHOM_KS         @relation(fields: [NHOM_KS], references: [NHOM_KS])
   HANG_MUC_KS     String
-  HIEU_LUC        Boolean            @default(true)
+  HIEU_LUC        Boolean @default(true)
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
