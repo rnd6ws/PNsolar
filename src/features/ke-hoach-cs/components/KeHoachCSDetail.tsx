@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import {
-    X, CalendarCheck2, Building2, User, Clock, MapPin, Briefcase,
+    CalendarCheck2, Building2, User, Clock, MapPin, Briefcase,
     FileText, Image as ImageIcon, Paperclip, Link2, CheckCircle2,
     TimerOff, MessageSquare, AlertCircle, Phone, ExternalLink, Download
 } from "lucide-react";
+import Modal from "@/components/Modal";
 import { getDMDichVuForCS, getCoHoiByKH } from "../action";
 import { formatFileSize } from "@/hooks/useFileUpload";
 import { getNguoiLienHeById } from "@/features/nguoi-lh/action";
@@ -149,34 +150,38 @@ export default function KeHoachCSDetail({ item, nhanViens, onClose }: Props) {
     const hasReport = item.TRANG_THAI === "Đã báo cáo" || item.KQ_CS;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
-
-                {/* ── Header ── */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                            <CalendarCheck2 className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-bold text-foreground">Chi tiết kế hoạch chăm sóc</h2>
-                            {/* <p className="text-xs text-muted-foreground">{item?.KH?.TEN_KH}</p> */}
-                        </div>
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title="Chi tiết kế hoạch chăm sóc"
+            icon={CalendarCheck2}
+            size="xl"
+            fullHeight
+            headerContent={
+                <div className="flex items-center gap-3 flex-1">
+                    <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                        <CalendarCheck2 className="w-5 h-5 text-primary" />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${TRANG_THAI_COLORS[item.TRANG_THAI] || "bg-muted text-muted-foreground border-border"}`}>
-                            {item.TRANG_THAI === "Đã báo cáo" ? <CheckCircle2 className="w-3 h-3" /> : <TimerOff className="w-3 h-3" />}
-                            {item.TRANG_THAI}
-                        </span>
-                        <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors">
-                            <X className="w-4 h-4" />
-                        </button>
+                    <div>
+                        <h2 className="text-base font-bold text-foreground">Chi tiết kế hoạch chăm sóc</h2>
                     </div>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ml-auto ${TRANG_THAI_COLORS[item.TRANG_THAI] || "bg-muted text-muted-foreground border-border"}`}>
+                        {item.TRANG_THAI === "Đã báo cáo" ? <CheckCircle2 className="w-3 h-3" /> : <TimerOff className="w-3 h-3" />}
+                        {item.TRANG_THAI}
+                    </span>
                 </div>
+            }
+            footer={
+                <>
+                    <span />
+                    <button onClick={onClose} className="btn-premium-secondary px-6">
+                        Đóng
+                    </button>
+                </>
+            }
+        >
 
-                {/* ── Body: 2 cột ── */}
-                <div className="overflow-y-auto flex-1">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
+                <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
 
                         {/* ══ CỘT TRÁI ══ */}
                         <div className="p-6 space-y-5">
@@ -414,16 +419,7 @@ export default function KeHoachCSDetail({ item, nhanViens, onClose }: Props) {
                                 </div>
                             )}
                         </div>
-                    </div>
                 </div>
-
-                {/* ── Footer ── */}
-                <div className="flex justify-end px-6 py-4 border-t border-border shrink-0">
-                    <button onClick={onClose} className="btn-premium-secondary px-6">
-                        Đóng
-                    </button>
-                </div>
-            </div>
-        </div>
+        </Modal>
     );
 }

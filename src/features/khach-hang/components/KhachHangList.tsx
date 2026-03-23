@@ -421,7 +421,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         </PermissionGuard>
 
                                         {/* Desktop Actions */}
-                                        <div className="hidden md:flex gap-1">
+                                        <div className="hidden 2xl:flex gap-1">
                                             <PermissionGuard moduleKey="khach-hang" level="edit">
                                                 <button
                                                     onClick={() => setEditItem(item)}
@@ -443,7 +443,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         </div>
 
                                         {/* Mobile Actions Dropdown */}
-                                        <div className="md:hidden">
+                                        <div className="2xl:hidden">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors">
@@ -489,7 +489,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             </div>
 
             {/* Modal: Thêm */}
-            <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Thêm khách hàng mới" size="lg">
+            <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Thêm khách hàng mới" size="lg" icon={Building2}>
                 <KhachHangForm
                     key={isAddOpen ? "add-open" : "add-closed"}
                     phanLoais={phanLoais}
@@ -505,7 +505,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             </Modal>
 
             {/* Modal: Sửa */}
-            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật khách hàng" size="lg">
+            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật khách hàng" size="lg" icon={Building2}>
                 {editItem && (
                     <KhachHangForm
                         key={editItem?.ID ?? "edit"}
@@ -524,12 +524,33 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             </Modal>
 
             {/* Modal: Xem chi tiết */}
-            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết khách hàng" size="xl">
+            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết khách hàng" size="xl" icon={Building2}>
                 {viewItem && <KhachHangDetail kh={viewItem} nhanViens={nhanViens} nguoiGioiThieus={nguoiGioiThieus} onClose={() => setViewItem(null)} />}
             </Modal>
 
             {/* Modal: Thẩm định Không phù hợp */}
-            <Modal isOpen={!!thamDinhItem} onClose={() => { setThamDinhItem(null); setLyDoTuChoiSelect(""); }} title="Thẩm định khách hàng: Không phù hợp">
+            <Modal isOpen={!!thamDinhItem} onClose={() => { setThamDinhItem(null); setLyDoTuChoiSelect(""); }} title="Thẩm định khách hàng: Không phù hợp" icon={ShieldCheck}
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            className="btn-premium-secondary px-6 h-10 text-sm"
+                            onClick={() => { setThamDinhItem(null); setLyDoTuChoiSelect(""); }}
+                            disabled={loading}
+                        >
+                            Hủy bỏ
+                        </button>
+                        <button
+                            type="button"
+                            className="btn-premium-primary px-6 h-10 text-sm"
+                            onClick={submitThamDinhKhongPhuHop}
+                            disabled={loading || !lyDoTuChoiSelect}
+                        >
+                            {loading ? "Đang lưu..." : "Xác nhận"}
+                        </button>
+                    </>
+                }
+            >
                 {thamDinhItem && (
                     <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">Chọn lý do từ chối cho khách hàng <span className="font-semibold text-foreground">{thamDinhItem.TEN_KH}</span></p>
@@ -544,53 +565,36 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                 placeholder="-- Chọn lý do --"
                             />
                         </div>
-
-                        <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-                            <button
-                                type="button"
-                                className="btn-premium-secondary flex-1"
-                                onClick={() => { setThamDinhItem(null); setLyDoTuChoiSelect(""); }}
-                                disabled={loading}
-                            >
-                                Hủy bỏ
-                            </button>
-                            <button
-                                type="button"
-                                className="btn-premium-primary flex-1"
-                                onClick={submitThamDinhKhongPhuHop}
-                                disabled={loading || !lyDoTuChoiSelect}
-                            >
-                                {loading ? "Đang lưu..." : "Xác nhận"}
-                            </button>
-                        </div>
                     </div>
                 )}
             </Modal>
 
             {/* Modal: Xác nhận Khách tiềm năng */}
-            <Modal isOpen={!!confirmTiemNangItem} onClose={() => setConfirmTiemNangItem(null)} title="Thẩm định khách hàng: Khách tiềm năng">
+            <Modal isOpen={!!confirmTiemNangItem} onClose={() => setConfirmTiemNangItem(null)} title="Thẩm định khách hàng: Khách tiềm năng" icon={ShieldCheck}
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            className="btn-premium-secondary px-6 h-10 text-sm"
+                            onClick={() => setConfirmTiemNangItem(null)}
+                            disabled={loading}
+                        >
+                            Hủy bỏ
+                        </button>
+                        <button
+                            type="button"
+                            className="btn-premium-primary px-6 h-10 text-sm"
+                            onClick={submitThamDinhTiemNang}
+                            disabled={loading}
+                        >
+                            {loading ? "Đang xử lý..." : "Xác nhận"}
+                        </button>
+                    </>
+                }
+            >
                 {confirmTiemNangItem && (
                     <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">Bạn có chắc chắn muốn xác nhận <span className="font-semibold text-foreground">{confirmTiemNangItem.TEN_KH}</span> là khách tiềm năng?</p>
-
-                        <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-                            <button
-                                type="button"
-                                className="btn-premium-secondary flex-1"
-                                onClick={() => setConfirmTiemNangItem(null)}
-                                disabled={loading}
-                            >
-                                Hủy bỏ
-                            </button>
-                            <button
-                                type="button"
-                                className="btn-premium-primary flex-1"
-                                onClick={submitThamDinhTiemNang}
-                                disabled={loading}
-                            >
-                                {loading ? "Đang xử lý..." : "Xác nhận"}
-                            </button>
-                        </div>
                     </div>
                 )}
             </Modal>
@@ -635,7 +639,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             )}
 
             {/* Modal: Tạo cơ hội từ trang khách hàng */}
-            <Modal isOpen={!!taoCoHoiItem} onClose={() => setTaoCoHoiItem(null)} title="Thêm cơ hội mới" size="lg">
+            <Modal isOpen={!!taoCoHoiItem} onClose={() => setTaoCoHoiItem(null)} title="Thêm cơ hội mới" size="lg" icon={Target}>
                 <CoHoiForm
                     key={taoCoHoiItem ? taoCoHoiItem.ID_KH : "add-co-hoi-closed"}
                     defaultValues={taoCoHoiItem}

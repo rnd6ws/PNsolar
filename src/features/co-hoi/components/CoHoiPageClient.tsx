@@ -11,11 +11,12 @@ interface Props {
     data: any[];
     dmDichVu: { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[];
     tinhTrangOptions: { label: string; value: string }[];
+    currentUserId?: string;
 }
 
 const DEFAULT_COLUMNS: ColumnKey[] = ["ngayTao", "nhuCau", "giaTriDK", "dkChot", "tinhTrang"];
 
-export default function CoHoiPageClient({ data, dmDichVu, tinhTrangOptions }: Props) {
+export default function CoHoiPageClient({ data, dmDichVu, tinhTrangOptions, currentUserId }: Props) {
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
     const [groupByKH, setGroupByKH] = useState(false);
@@ -83,9 +84,8 @@ export default function CoHoiPageClient({ data, dmDichVu, tinhTrangOptions }: Pr
                 )}
             </div>
 
-            {/* List */}
             <div className="p-0">
-                <CoHoiList data={data} dmDichVu={dmDichVu} visibleColumns={visibleColumns} groupByKH={groupByKH} />
+                <CoHoiList data={data} dmDichVu={dmDichVu} visibleColumns={visibleColumns} groupByKH={groupByKH} currentUserId={currentUserId} />
             </div>
         </>
     );

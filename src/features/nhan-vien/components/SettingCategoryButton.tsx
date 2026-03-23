@@ -58,7 +58,7 @@ export default function SettingCategoryButton({
                 Cài đặt danh mục
             </button>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Cài đặt Phòng ban & Chức vụ">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Cài đặt Phòng ban & Chức vụ" icon={Settings}>
                 <div className="flex border-b border-border mb-4">
                     <button
                         className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'phong-ban' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}

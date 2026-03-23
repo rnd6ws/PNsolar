@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, UserPlus } from 'lucide-react';
 import Modal from '@/components/Modal';
 import { createNhanVienAction } from '@/features/nhan-vien/action';
 import { toast } from 'sonner';
@@ -60,8 +60,20 @@ export default function AddNhanVienButton({
                 Thêm nhân viên mới
             </button>
 
-            <Modal isOpen={isModalOpen} onClose={handleClose} title="Thêm nhân viên mới">
-                <form onSubmit={handleSubmit} className="space-y-6">
+            <Modal isOpen={isModalOpen} onClose={handleClose} title="Thêm nhân viên mới" icon={UserPlus}
+                footer={
+                    <>
+                        <div />
+                        <div className="flex items-center gap-3">
+                            <button type="button" onClick={handleClose} className="btn-premium-secondary px-6 h-10 text-sm">Hủy bỏ</button>
+                            <button type="submit" form="form-add-nv" disabled={loading} className="btn-premium-primary px-6 h-10 text-sm">
+                                {loading ? 'Đang lưu...' : 'Lưu nhân viên'}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <form id="form-add-nv" onSubmit={handleSubmit} className="space-y-6">
                     {/* Avatar Upload */}
                     <div className="flex justify-center pb-2">
                         <ImageUpload
@@ -134,12 +146,6 @@ export default function AddNhanVienButton({
                         <input name="EMAIL" type="email" className="input-modern" placeholder="email@gmail.com" />
                     </div>
 
-                    <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={handleClose} className="btn-premium-secondary flex-1">Hủy bỏ</button>
-                        <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                            {loading ? 'Đang lưu...' : 'Lưu nhân viên'}
-                        </button>
-                    </div>
                 </form>
             </Modal>
         </>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, ClipboardCheck } from "lucide-react";
 import Modal from "@/components/Modal";
 import { createHangMucKS } from "@/features/hang-muc-ks/action";
 import { toast } from "sonner";
@@ -56,7 +56,7 @@ export default function AddHangMucKSButton({ loaiCongTrinhOptions, nhomKSOptions
                 Thêm hạng mục KS
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Thêm Hạng mục KS">
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Thêm Hạng mục KS" icon={ClipboardCheck}>
                 <form onSubmit={handleSubmit} className="space-y-5 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="space-y-2">

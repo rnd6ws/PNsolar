@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle2, XCircle } from "lucide-react";
+import { Pencil, Trash2, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle2, XCircle, ClipboardCheck } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -97,7 +97,7 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
     const show = (col: HMKSColumnKey) => visibleColumns.includes(col);
 
     const ModalForm = ({ onSubmit, title }: { onSubmit: (e: React.FormEvent) => void; title: string }) => (
-        <Modal isOpen={true} onClose={() => { setEditItem(null); }} title={title}>
+        <Modal isOpen={true} onClose={() => { setEditItem(null); }} title={title} icon={ClipboardCheck}>
             <form onSubmit={onSubmit} className="space-y-5 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-2">

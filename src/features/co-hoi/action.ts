@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 // ─── Sinh ID_CH ────────────────────────────────────────────────
-async function generateIdCh(tenVt: string): Promise<string> {
+async function generateIdCh(tenVt: string, offset: number = 0): Promise<string> {
     const now = new Date();
     const yy = String(now.getFullYear()).slice(2);
     const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -24,10 +24,10 @@ async function generateIdCh(tenVt: string): Promise<string> {
 
     // Đếm số cơ hội trong ngày để sinh số thứ tự
     const count = await prisma.cO_HOI.count({
-        where: { ID_CH: { startsWith: prefix } },
+        where: { MA_CH: { startsWith: prefix } },
     });
 
-    const seq = String(count + 1).padStart(3, "0");
+    const seq = String(count + 1 + offset).padStart(3, "0");
     return `${prefix}${seq}`;
 }
 
@@ -38,7 +38,8 @@ export async function getDmDichVu() {
         const data = await prisma.dM_DICH_VU.findMany({
             orderBy: [{ NHOM_DV: "asc" }, { DICH_VU: "asc" }],
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ...d, ID: d.MA_DV }));
+        return { success: true, data: mapped };
     } catch (error) {
         return { success: false, data: [] };
     }
@@ -49,9 +50,29 @@ export async function createDmDichVu(nhomDv: string, dichVu: string, giaTri: num
         if (!nhomDv.trim() || !dichVu.trim()) {
             return { success: false, message: "Vui lòng nhập đầy đủ thông tin" };
         }
-        await prisma.dM_DICH_VU.create({
-            data: { NHOM_DV: nhomDv.trim(), DICH_VU: dichVu.trim(), GIA_TRI_TB: giaTri },
-        });
+
+        let created = false;
+        let attempts = 0;
+        
+        while (!created && attempts < 20) {
+            const count = await prisma.dM_DICH_VU.count();
+            const maDv = `DV-${String(count + 1 + attempts).padStart(3, '0')}`;
+            
+            try {
+                await prisma.dM_DICH_VU.create({
+                    data: { MA_DV: maDv, NHOM_DV: nhomDv.trim(), DICH_VU: dichVu.trim(), GIA_TRI_TB: giaTri },
+                });
+                created = true;
+            } catch (error: any) {
+                if (error.code === 'P2002') attempts++;
+                else throw error;
+            }
+        }
+
+        if (!created) {
+            return { success: false, message: "Hệ thống bận, không thể tạo danh mục lúc này." };
+        }
+
         revalidatePath("/co-hoi");
         return { success: true };
     } catch (error: any) {
@@ -61,7 +82,7 @@ export async function createDmDichVu(nhomDv: string, dichVu: string, giaTri: num
 
 export async function deleteDmDichVu(id: string) {
     try {
-        await prisma.dM_DICH_VU.delete({ where: { ID: id } });
+        await prisma.dM_DICH_VU.delete({ where: { MA_DV: id } });
         revalidatePath("/co-hoi");
         return { success: true };
     } catch (error: any) {
@@ -85,8 +106,8 @@ export async function getCoHois(filters: {
     if (query) {
         andConditions.push({
             OR: [
-                { ID_CH: { contains: query, mode: "insensitive" } },
-                { KH: { TEN_KH: { contains: query, mode: "insensitive" } } },
+                { MA_CH: { contains: query, mode: "insensitive" } },
+                { KH_REL: { TEN_KH: { contains: query, mode: "insensitive" } } },
             ],
         });
     }
@@ -101,14 +122,16 @@ export async function getCoHois(filters: {
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { NGAY_TAO: "desc" },
-                include: { KH: { select: { ID: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true } } },
+                include: { KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true } } },
             }),
             prisma.cO_HOI.count({ where }),
         ]);
 
+        const mapped = data.map(d => ({ ...d, KH: d.KH_REL, ID_CH: d.MA_CH, ID_KH: d.MA_KH }));
+
         return {
             success: true,
-            data,
+            data: mapped,
             pagination: {
                 page,
                 limit,
@@ -124,12 +147,19 @@ export async function getCoHois(filters: {
 
 export async function getCoHoiByKH(khId: string) {
     try {
+        let maKh = khId;
+        if (/^[0-9a-fA-F]{24}$/.test(khId)) {
+            const kh = await prisma.kHTN.findUnique({ where: { ID: khId }, select: { MA_KH: true } });
+            if (kh) maKh = kh.MA_KH;
+        }
+
         const data = await prisma.cO_HOI.findMany({
-            where: { ID_KH: khId },
+            where: { MA_KH: maKh },
             orderBy: { NGAY_TAO: "desc" },
-            include: { KH: { select: { ID: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true } } },
+            include: { KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true } } },
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ...d, KH: d.KH_REL, ID_CH: d.MA_CH, ID_KH: d.MA_KH }));
+        return { success: true, data: mapped };
     } catch (error) {
         return { success: false, data: [] };
     }
@@ -167,23 +197,48 @@ export async function createCoHoi(data: any) {
     try {
         if (!data.ID_KH) return { success: false, message: "Vui lòng chọn khách hàng" };
 
-        const kh = await prisma.kHTN.findUnique({ where: { ID: data.ID_KH }, select: { TEN_VT: true } });
-        const idCh = await generateIdCh(kh?.TEN_VT || "KH");
+        let maKh = data.ID_KH;
+        let kh = null;
+        if (/^[0-9a-fA-F]{24}$/.test(data.ID_KH)) {
+            const khtn = await prisma.kHTN.findUnique({ where: { ID: data.ID_KH }, select: { MA_KH: true, TEN_VT: true } });
+            if (khtn) {
+                maKh = khtn.MA_KH;
+                kh = khtn;
+            }
+        } else {
+            kh = await prisma.kHTN.findUnique({ where: { MA_KH: maKh }, select: { TEN_VT: true } });
+        }
+        
+        let created = false;
+        let attempts = 0;
 
-        await prisma.cO_HOI.create({
-            data: {
-                ID_CH: idCh,
-                NGAY_TAO: data.NGAY_TAO ? new Date(data.NGAY_TAO) : new Date(),
-                ID_KH: data.ID_KH,
-                NHU_CAU: data.NHU_CAU || [],
-                GHI_CHU_NC: data.GHI_CHU_NC || null,
-                GIA_TRI_DU_KIEN: data.GIA_TRI_DU_KIEN ? parseFloat(data.GIA_TRI_DU_KIEN) : null,
-                NGAY_DK_CHOT: data.NGAY_DK_CHOT ? new Date(data.NGAY_DK_CHOT) : null,
-                TINH_TRANG: data.TINH_TRANG || "Đang mở",
-                NGAY_DONG: data.NGAY_DONG ? new Date(data.NGAY_DONG) : null,
-                LY_DO: data.LY_DO || null,
-            },
-        });
+        while (!created && attempts < 20) {
+            const idCh = await generateIdCh(kh?.TEN_VT || "KH", attempts);
+            try {
+                await prisma.cO_HOI.create({
+                    data: {
+                        MA_CH: idCh,
+                        NGAY_TAO: data.NGAY_TAO ? new Date(data.NGAY_TAO) : new Date(),
+                        MA_KH: maKh,
+                        NHU_CAU: data.NHU_CAU || [],
+                        GHI_CHU_NC: data.GHI_CHU_NC || null,
+                        GIA_TRI_DU_KIEN: data.GIA_TRI_DU_KIEN ? parseFloat(data.GIA_TRI_DU_KIEN) : null,
+                        NGAY_DK_CHOT: data.NGAY_DK_CHOT ? new Date(data.NGAY_DK_CHOT) : null,
+                        TINH_TRANG: data.TINH_TRANG || "Đang mở",
+                        NGAY_DONG: data.NGAY_DONG ? new Date(data.NGAY_DONG) : null,
+                        LY_DO: data.LY_DO || null,
+                    },
+                });
+                created = true;
+            } catch (error: any) {
+                if (error.code === 'P2002') attempts++;
+                else throw error;
+            }
+        }
+
+        if (!created) {
+            return { success: false, message: "Hệ thống bận, không thể tạo cơ hội lúc này. Vui lòng thử lại." };
+        }
 
         revalidatePath("/co-hoi");
         return { success: true };
@@ -236,11 +291,12 @@ export async function searchKhachHang(query?: string) {
             : {};
         const data = await prisma.kHTN.findMany({
             where,
-            select: { ID: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true },
+            select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true },
             take: 20,
             orderBy: { TEN_KH: "asc" },
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ID: d.MA_KH, TEN_KH: d.TEN_KH, TEN_VT: d.TEN_VT, HINH_ANH: d.HINH_ANH }));
+        return { success: true, data: mapped };
     } catch (error) {
         return { success: false, data: [] };
     }

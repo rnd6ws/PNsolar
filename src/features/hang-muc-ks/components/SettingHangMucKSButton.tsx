@@ -81,7 +81,7 @@ export default function SettingHangMucKSButton({ cdLoaiCongTrinhs, cdNhomKSs }: 
                 Cài đặt
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục">
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục" icon={Settings2}>
                 {/* Tabs */}
                 <div className="flex gap-1 p-1 bg-muted/50 rounded-lg mt-2">
                     {tabs.map((t) => (

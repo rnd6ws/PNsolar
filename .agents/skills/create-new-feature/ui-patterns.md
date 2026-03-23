@@ -201,21 +201,114 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
 
 ---
 
-## 6. Modal & Form Styling
+## 6. Modal & Form Styling (Component `Modal` chung — BẮT BUỘC)
 
-### Nguyên tắc
-- Label: `text-sm font-semibold` (KHÔNG dùng `uppercase` cho label trong modal)
-- Input: dùng class `input-modern`
-- Button Submit: `btn-premium-primary`
-- Button Cancel: `btn-premium-secondary`
-- Layout: Grid 1 cột mobile, 2 cột desktop `grid grid-cols-1 md:grid-cols-2 gap-6`
+### Nguyên tắc CỐT LÕI
+- **BẮT BUỘC** dùng component `Modal` chung tại `@/components/Modal`.
+- **CẤM** tự viết `div.fixed.inset-0` hoặc bất kỳ modal overlay custom nào.
+- Nút Hủy + Submit phải ở **`footer` prop** — **CẤM** để trong body/form.
+- Nút trong footer phải **compact, align-right** (không `flex-1`).
+
+### Props của Modal
+
+| Prop | Type | Mô tả |
+|------|------|--------|
+| `isOpen` | `boolean` | Điều khiển hiển thị |
+| `onClose` | `() => void` | Callback khi đóng (X, ESC, click overlay) |
+| `title` | `string` | Tiêu đề chính |
+| `subtitle?` | `string` | Mô tả phụ dưới title |
+| `icon?` | `ElementType` | Icon lucide-react (hiển thị trong khung tròn) |
+| `headerContent?` | `ReactNode` | Thay thế hoàn toàn title/icon mặc định |
+| `children` | `ReactNode` | Nội dung body |
+| `footer?` | `ReactNode` | Footer cố định dưới cùng |
+| `size?` | `'md' \| 'lg' \| 'xl' \| '2xl'` | Chiều rộng (default: `md`) |
+| `fullHeight?` | `boolean` | Header/footer cố định, body scroll |
+
+### Code chuẩn — Modal đơn giản (Thêm/Sửa)
 
 ```tsx
-<div className="space-y-2">
-    <label className="text-sm font-semibold text-muted-foreground">Tên trường</label>
-    <input name="..." className="input-modern" />
-</div>
+import Modal from '@/components/Modal';
+import { Tags } from 'lucide-react';
+
+<Modal
+    isOpen={isOpen}
+    onClose={() => setIsOpen(false)}
+    title="Thêm phân loại mới"
+    icon={Tags}
+    footer={
+        <>
+            <span />
+            <div className="flex gap-3">
+                <button type="button" onClick={() => setIsOpen(false)} className="btn-premium-secondary">Hủy</button>
+                <button type="button" onClick={() => (document.querySelector('#form-add') as HTMLFormElement)?.requestSubmit()} disabled={loading} className="btn-premium-primary">
+                    {loading ? "Đang xử lý..." : "Lưu"}
+                </button>
+            </div>
+        </>
+    }
+>
+    <form id="form-add" onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+            <label className="text-sm font-semibold text-muted-foreground">Tên trường</label>
+            <input name="..." className="input-modern" />
+        </div>
+    </form>
+</Modal>
 ```
+
+### Code chuẩn — Modal fullHeight (nhiều nội dung, bảng dữ liệu)
+
+```tsx
+<Modal
+    isOpen={isOpen}
+    onClose={onClose}
+    title="Chi tiết kế hoạch"
+    icon={CalendarCheck2}
+    size="xl"
+    fullHeight
+    footer={
+        <>
+            <span className="text-xs text-muted-foreground">
+                Tổng: <strong>{items.length}</strong> mục
+            </span>
+            <div className="flex gap-3">
+                <button onClick={onClose} className="btn-premium-secondary">Đóng</button>
+                <button onClick={handleSave} className="btn-premium-primary">Lưu</button>
+            </div>
+        </>
+    }
+>
+    {/* Body sẽ tự scroll */}
+    <div className="space-y-4">...</div>
+</Modal>
+```
+
+### Quy tắc Footer
+
+| ✅ Đúng | ❌ Sai |
+|---------|--------|
+| Nút trong `footer` prop | Nút `flex-1` trong body form |
+| `<span />` để đẩy nút sang phải | `<div className="flex gap-4 pt-4 mt-auto">` trong form |
+| `btn-premium-secondary` + `btn-premium-primary` compact | Nút full-width 2 cột trải đều |
+| `requestSubmit()` qua `document.querySelector('#form-id')` | `type="submit"` trực tiếp (vì nút nằm ngoài form) |
+
+### Quy tắc Form trong Modal
+
+- Form phải có `id="form-xxx"` để footer button `requestSubmit()` được.
+- Class form: `className="space-y-4"` (KHÔNG `flex flex-col` hay `pt-4`).
+- Label: `text-sm font-semibold text-muted-foreground` (KHÔNG `uppercase`).
+- Input: class `input-modern`.
+- Grid layout: `grid grid-cols-1 md:grid-cols-2 gap-4` (hoặc `gap-6` cho form lớn).
+
+### Checklist Modal cho feature mới
+- [ ] Import `Modal` từ `@/components/Modal`
+- [ ] Mỗi modal phải có `icon` (chọn icon lucide-react phù hợp)
+- [ ] Có `subtitle` mô tả ngắn nếu cần
+- [ ] Nút Hủy + Submit nằm trong `footer` prop
+- [ ] Footer nút align-right: `<span />` + `<div className="flex gap-3">...</div>`
+- [ ] Form có `id` unique, nút submit dùng `requestSubmit()`
+- [ ] Modal nhiều nội dung dùng `fullHeight` + `size="lg"` trở lên
+- [ ] **KHÔNG** tạo custom modal div
 
 ---
 

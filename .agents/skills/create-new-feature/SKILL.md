@@ -55,6 +55,18 @@ Tạo thư mục `src/features/[tên-tính-năng]` và chia file:
 - `components/[Tên]List.tsx`: Bảng desktop + mobile cards + sort logic.
 - `components/ColumnToggleButton.tsx`: Nút ẩn/hiện cột.
 
+**Khi model có cột tham chiếu bảng khác (Relation) — PHẢI ĐỌC:**
+> Xem hướng dẫn đầy đủ tại: `.agents/docs/huong-dan-relation.md`
+
+Tóm tắt quy tắc bắt buộc:
+- **Lưu MÃ** (code) trong DB, không lưu text → dùng `@relation` trong schema Prisma.
+- Cột khóa ngoại đặt tên `MA_XXX` (VD: `MA_NHOM_HH`, `MA_PHAN_LOAI`).
+- Khi query phải dùng `include` để lấy tên hiển thị: `include: { NHOM: { select: { TEN_NHOM: true } } }`.
+- Dropdown trong form: `value` của `<option>` phải là **MÃ** (không phải tên).
+- Hiển thị UI: `item.NHOM?.TEN_NHOM || item.MA_NHOM_HH` (fallback về mã nếu null).
+- Chạy `npx prisma generate` sau khi sửa schema (KHÔNG cần `db push` nếu chỉ thêm `@relation` với MongoDB).
+- Checklist đầy đủ: xem cuối file `.agents/docs/huong-dan-relation.md`.
+
 ### Bước 3: Xây dựng UI theo Quy Chuẩn (GHI NHỚ UI-PATTERNS!)
 Khi code `[Tên]PageClient.tsx` và `[Tên]List.tsx`:
 
@@ -75,6 +87,38 @@ Khi code `[Tên]PageClient.tsx` và `[Tên]List.tsx`:
 - Khi thành công: `toast.success("Thêm ... thành công!")`, `toast.success("Cập nhật thành công!")`, `toast.success("Đã xóa ...")`.
 - Khi lỗi: `toast.error(result.message || "Có lỗi xảy ra")`.
 - Áp dụng cho: Thêm, Sửa, Xóa, Thêm hàng loạt — tất cả phải có toast.
+
+**Modal (BẮT BUỘC dùng component `Modal` chung):**
+- Import `import Modal from '@/components/Modal';`
+- **KHÔNG** tự viết `div.fixed.inset-0` hoặc bất kỳ modal overlay custom nào.
+- Nút Hủy + Submit phải ở **`footer` prop** — **CẤM** để `flex-1` trong body/form.
+- Mỗi modal **BẮT BUỘC** có `icon` prop (lucide-react icon).
+- Form bên trong modal phải có `id="form-xxx"`, nút submit dùng `requestSubmit()`.
+- Code mẫu:
+  ```tsx
+  <Modal
+      isOpen={isOpen}
+      onClose={() => setIsOpen(false)}
+      title="Thêm [tên]"
+      icon={IconComponent}
+      footer={
+          <>
+              <span />
+              <div className="flex gap-3">
+                  <button type="button" onClick={() => setIsOpen(false)} className="btn-premium-secondary">Hủy</button>
+                  <button type="button" onClick={() => (document.querySelector('#form-add') as HTMLFormElement)?.requestSubmit()} disabled={loading} className="btn-premium-primary">
+                      {loading ? "Đang xử lý..." : "Lưu"}
+                  </button>
+              </div>
+          </>
+      }
+  >
+      <form id="form-add" onSubmit={handleSubmit} className="space-y-4">
+          ...
+      </form>
+  </Modal>
+  ```
+- Xem chi tiết đầy đủ tại: `.agents/skills/create-new-feature/ui-patterns.md` mục 6.
 
 **Modal xác nhận xóa (BẮT BUỘC dùng component chung):**
 - Import `import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';`
@@ -177,4 +221,7 @@ Khớp tên `moduleKey` và cho `available: true`.
 - CẤM dùng `type="number"` cho trường tiền tệ — phải dùng `type="text"` + format dấu phân cách.
 - CẤM dùng **xóa mềm** (Soft Delete / `DELETED_AT`) — toàn bộ dự án đã chuyển sang **xóa cứng** (`prisma.[model].delete()`). KHÔNG thêm field `DELETED_AT` vào schema, KHÔNG dùng `update({ data: { DELETED_AT: new Date() } })`.
 - CẤM bỏ sót **toast thông báo** — mọi thao tác Thêm/Sửa/Xóa **phải** có `toast.success()` khi thành công và `toast.error()` khi thất bại. Import từ `sonner`.
+- CẤM tự viết **custom modal div** (`div.fixed.inset-0`, `z-50`, `bg-black/60`) — phải dùng component `Modal` chung tại `@/components/Modal`.
+- CẤM để **nút Hủy/Submit** trong body form (`flex-1` hoặc `mt-auto`) — nút phải nằm trong `footer` prop của `Modal`, compact và align-right.
+- CẤM tạo modal **thiếu `icon` prop** — mỗi modal bắt buộc có icon lucide-react phù hợp.
 

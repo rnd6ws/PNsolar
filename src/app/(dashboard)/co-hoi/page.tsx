@@ -6,6 +6,7 @@ import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuar
 import AddCoHoiButton from "@/features/co-hoi/components/AddCoHoiButton";
 import SettingCoHoiButton from "@/features/co-hoi/components/SettingCoHoiButton";
 import CoHoiPageClient from "@/features/co-hoi/components/CoHoiPageClient";
+import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
     title: "Cơ hội | PN Solar",
@@ -31,10 +32,11 @@ export default async function CoHoiPage({
     const query = params.query;
     const TINH_TRANG = params.TINH_TRANG;
 
-    const [{ data = [], pagination }, { data: dmDichVu = [] }, stats] = await Promise.all([
+    const [{ data = [], pagination }, { data: dmDichVu = [] }, stats, user] = await Promise.all([
         getCoHois({ query, page, limit: 10, TINH_TRANG }),
         getDmDichVu(),
         getCoHoiStats(),
+        getCurrentUser()
     ]);
 
     const tinhTrangOptions = [
@@ -113,6 +115,7 @@ export default async function CoHoiPage({
                         data={data as any}
                         dmDichVu={dmDichVu as any}
                         tinhTrangOptions={tinhTrangOptions}
+                        currentUserId={user?.userId}
                     />
 
                     {(pagination as any) && (pagination as any).totalPages > 1 && (

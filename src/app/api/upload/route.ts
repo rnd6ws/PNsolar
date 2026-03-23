@@ -78,23 +78,31 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        const resourceType = RESOURCE_TYPES[type] ?? 'auto';
+        // ═══ Resource type: đơn giản ═══
+        // - Ảnh thật (image/*): resource_type='image' + optimization
+        // - Tất cả file khác (PDF, Word, Excel...): resource_type='raw'
+        // Xem file non-image qua Google Docs Viewer (Cloudinary raw không hỗ trợ xem inline)
+        const isImage = file.type.startsWith('image/');
+        const resourceType: 'image' | 'raw' = isImage ? 'image' : 'raw';
 
-        // Transformation chỉ áp dụng cho ảnh
-        const transformation = resourceType === 'image'
+        // Transformation chỉ cho ảnh
+        const transformation = isImage
             ? [{ quality: 'auto', fetch_format: 'auto' }]
             : undefined;
 
-        // Raw files: tạo public_id có extension để URL giữ đuôi file khi download
-        // Nếu không có extension trong URL → browser không biết loại file → download sai định dạng
+        // Public_id có tên file gốc để dễ nhận biết
+        // Raw: CẦN extension (Cloudinary raw giữ nguyên public_id làm URL)
+        // Image: BỎ extension (Cloudinary tự append)
         let resolvedPublicId = publicId ?? undefined;
-        if (resourceType === 'raw' && !resolvedPublicId) {
+        if (!resolvedPublicId) {
             const nameParts = file.name.split('.');
             const ext = nameParts.length > 1 ? nameParts.pop()!.toLowerCase() : '';
             const baseName = nameParts.join('_')
                 .replace(/[^a-zA-Z0-9_\u00C0-\u024F-]/g, '_')
                 .substring(0, 60);
-            resolvedPublicId = ext ? `${baseName}.${ext}` : baseName;
+            resolvedPublicId = resourceType === 'raw' && ext
+                ? `${baseName}.${ext}`
+                : baseName;
         }
 
         const result = await uploadToCloudinary(buffer, {

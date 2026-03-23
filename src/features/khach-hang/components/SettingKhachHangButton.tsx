@@ -117,7 +117,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                 Cài đặt danh mục
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Thiết lập danh mục Khách hàng">
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Thiết lập danh mục Khách hàng" icon={Settings}>
                 {/* Tabs */}
                 <div className="flex border-b border-border mb-4 overflow-x-auto whitespace-nowrap custom-scrollbar pb-1">
                     {tabs.map((tab) => (
