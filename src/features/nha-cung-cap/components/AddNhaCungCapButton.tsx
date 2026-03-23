@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Truck } from "lucide-react";
 import Modal from "@/components/Modal";
 import ImageUpload from "@/components/ImageUpload";
 import { createNhaCungCap, lookupNccByTaxCode } from "../action";
@@ -69,8 +69,20 @@ export default function AddNhaCungCapButton() {
                 <Plus className="w-4 h-4" />
                 Thêm NCC
             </button>
-            <Modal isOpen={open} onClose={() => setOpen(false)} title="Thêm nhà cung cấp mới">
-                <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 pt-0">
+            <Modal isOpen={open} onClose={() => setOpen(false)} title="Thêm nhà cung cấp mới" icon={Truck}
+                footer={
+                    <>
+                        <div />
+                        <div className="flex items-center gap-3">
+                            <button type="button" onClick={() => setOpen(false)} className="btn-premium-secondary px-6 h-10 text-sm">Hủy bỏ</button>
+                            <button type="submit" form="form-add-ncc" disabled={loading} className="btn-premium-primary px-6 h-10 text-sm">
+                                {loading ? "Đang lưu..." : "Lưu nhà cung cấp"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <form id="form-add-ncc" ref={formRef} onSubmit={handleSubmit} className="space-y-4 pt-0">
                     {/* Avatar */}
                     <div className="flex justify-center space-y-0">
                         <ImageUpload value={hinhAnh} onChange={setHinhAnh} size={88} />
@@ -152,13 +164,6 @@ export default function AddNhaCungCapButton() {
                         </div>
                     </div>
 
-                    {/* Nút submit */}
-                    <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-                        <button type="button" onClick={() => setOpen(false)} className="btn-premium-secondary flex-1">Hủy bỏ</button>
-                        <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                            {loading ? "Đang lưu..." : "Lưu nhà cung cấp"}
-                        </button>
-                    </div>
                 </form>
             </Modal>
         </>

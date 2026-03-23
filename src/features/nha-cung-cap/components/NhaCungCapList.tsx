@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo } from "react";
 import {
-    Edit2, Trash2, Phone, Mail, Building2, Eye, Search,
+    Edit2, Trash2, Phone, Mail, Building2, Eye, Search, Truck,
     ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, UserCircle, MapPin, AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
@@ -536,7 +536,7 @@ export default function NhaCungCapList({ data, visibleColumns }: Props) {
             </div>
 
             {/* Modal: Sửa */}
-            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật nhà cung cấp">
+            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật nhà cung cấp" icon={Truck}>
                 {editItem && (
                     <NhaCungCapForm
                         key={editItem?.ID ?? "edit"}
@@ -550,7 +550,7 @@ export default function NhaCungCapList({ data, visibleColumns }: Props) {
             </Modal>
 
             {/* Modal: Xem chi tiết */}
-            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết nhà cung cấp">
+            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="Chi tiết nhà cung cấp" icon={Truck}>
                 {viewItem && <NhaCungCapDetail ncc={viewItem} onClose={() => setViewItem(null)} />}
             </Modal>
 

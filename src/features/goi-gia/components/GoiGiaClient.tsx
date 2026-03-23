@@ -3,6 +3,7 @@ import { useState, useMemo, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2, DollarSign, Search, AlertTriangle, Package, Hash, ListPlus, X, Settings2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Modal from '@/components/Modal';
 import { createGoiGiaAction, updateGoiGiaAction, deleteGoiGiaAction, createBulkGoiGiaAction } from '@/features/goi-gia/action';
 import { toast } from 'sonner';
 import SearchInput from '@/components/SearchInput';
@@ -129,127 +130,28 @@ function GoiGiaModal({
     const selectClass = "w-full h-9 px-3 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0 transition-all appearance-none cursor-pointer";
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-                {/* Modal Header */}
-                <div className="flex items-center justify-between p-6 border-b">
-                    <div>
-                        <h2 className="text-lg font-bold text-foreground">
-                            {record ? 'Chỉnh sửa gói giá' : 'Thêm gói giá mới'}
-                        </h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            {record ? `Cập nhật thông tin cho "${record.ID_GOI_GIA}"` : 'Mã gói giá sẽ được tự động tạo'}
-                        </p>
-                    </div>
-                    <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
-                        <Plus className="w-5 h-5 rotate-45" />
-                    </button>
-                </div>
-
-                {/* Modal Body */}
-                <form onSubmit={handleSubmit}>
-                    <div className="p-6 space-y-5">
-                        {error && (
-                            <div className="flex items-center gap-3 p-3.5 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
-                                <AlertTriangle className="w-4 h-4 shrink-0" />
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Hiển thị mã khi edit */}
-                        {record && (
-                            <div>
-                                <label className={labelClass}>Mã gói giá</label>
-                                <input
-                                    className={cn(inputClass, 'bg-muted cursor-not-allowed')}
-                                    value={record.ID_GOI_GIA}
-                                    disabled
-                                />
-                            </div>
-                        )}
-
-                        {/* Hiệu lực + Mã dòng hàng */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelClass}>Mã dòng hàng *</label>
-                                <select
-                                    className={selectClass}
-                                    value={form.MA_DONG_HANG}
-                                    onChange={e => handleChange('MA_DONG_HANG', e.target.value)}
-                                    required
-                                >
-                                    <option value="">-- Chọn dòng hàng --</option>
-                                    {dongHangOptions.map(dh => (
-                                        <option key={dh.ID} value={dh.MA_DONG_HANG}>{dh.TEN_DONG_HANG} ({dh.MA_DONG_HANG})</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex items-end">
-                                <label className="flex items-center gap-2 cursor-pointer h-9">
-                                    <input
-                                        type="checkbox"
-                                        checked={form.HIEU_LUC}
-                                        onChange={e => handleChange('HIEU_LUC', e.target.checked as any)}
-                                        className="w-4 h-4 rounded border-input text-primary focus:ring-primary"
-                                    />
-                                    <span className="text-sm font-semibold text-muted-foreground">Còn hiệu lực</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Gói giá */}
-                        <div>
-                            <label className={labelClass}>Gói giá *</label>
-                            <input
-                                type="text"
-                                className={inputClass}
-                                placeholder="VD: Giá niêm yết"
-                                value={form.GOI_GIA}
-                                onChange={e => handleChange('GOI_GIA', e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        {/* SL_MIN + SL_MAX */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelClass}>SL tối thiểu</label>
-                                <input
-                                    type="number"
-                                    className={inputClass}
-                                    placeholder="VD: 1"
-                                    value={form.SL_MIN}
-                                    onChange={e => handleChange('SL_MIN', e.target.value === '' ? '' : Number(e.target.value))}
-                                    min={0}
-                                />
-                            </div>
-                            <div>
-                                <label className={labelClass}>SL tối đa</label>
-                                <input
-                                    type="number"
-                                    className={inputClass}
-                                    placeholder="VD: 100"
-                                    value={form.SL_MAX}
-                                    onChange={e => handleChange('SL_MAX', e.target.value === '' ? '' : Number(e.target.value))}
-                                    min={0}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Modal Footer */}
-                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-muted/5">
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={record ? 'Chỉnh sửa gói giá' : 'Thêm gói giá mới'}
+            subtitle={record ? `Cập nhật thông tin cho "${record.ID_GOI_GIA}"` : 'Mã gói giá sẽ được tự động tạo'}
+            icon={DollarSign}
+            footer={
+                <>
+                    <div />
+                    <div className="flex items-center gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="h-9 px-4 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors"
+                            className="btn-premium-secondary px-6 h-10 text-sm"
                         >
                             Hủy bỏ
                         </button>
                         <button
                             type="submit"
+                            form="form-goi-gia"
                             disabled={loading}
-                            className="h-9 px-5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 shadow-sm disabled:opacity-60 flex items-center gap-2"
+                            className="btn-premium-primary px-6 h-10 text-sm flex items-center gap-2"
                         >
                             {loading ? (
                                 <>
@@ -261,9 +163,98 @@ function GoiGiaModal({
                             )}
                         </button>
                     </div>
-                </form>
-            </div>
-        </div>
+                </>
+            }
+        >
+            <form id="form-goi-gia" onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                    <div className="flex items-center gap-3 p-3.5 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        {error}
+                    </div>
+                )}
+
+                {/* Hiển thị mã khi edit */}
+                {record && (
+                    <div>
+                        <label className={labelClass}>Mã gói giá</label>
+                        <input
+                            className={cn(inputClass, 'bg-muted cursor-not-allowed')}
+                            value={record.ID_GOI_GIA}
+                            disabled
+                        />
+                    </div>
+                )}
+
+                {/* Hiệu lực + Mã dòng hàng */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className={labelClass}>Mã dòng hàng *</label>
+                        <select
+                            className={selectClass}
+                            value={form.MA_DONG_HANG}
+                            onChange={e => handleChange('MA_DONG_HANG', e.target.value)}
+                            required
+                        >
+                            <option value="">-- Chọn dòng hàng --</option>
+                            {dongHangOptions.map(dh => (
+                                <option key={dh.ID} value={dh.MA_DONG_HANG}>{dh.TEN_DONG_HANG} ({dh.MA_DONG_HANG})</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="flex items-end">
+                        <label className="flex items-center gap-2 cursor-pointer h-9">
+                            <input
+                                type="checkbox"
+                                checked={form.HIEU_LUC}
+                                onChange={e => handleChange('HIEU_LUC', e.target.checked as any)}
+                                className="w-4 h-4 rounded border-input text-primary focus:ring-primary"
+                            />
+                            <span className="text-sm font-semibold text-muted-foreground">Còn hiệu lực</span>
+                        </label>
+                    </div>
+                </div>
+
+                {/* Gói giá */}
+                <div>
+                    <label className={labelClass}>Gói giá *</label>
+                    <input
+                        type="text"
+                        className={inputClass}
+                        placeholder="VD: Giá niêm yết"
+                        value={form.GOI_GIA}
+                        onChange={e => handleChange('GOI_GIA', e.target.value)}
+                        required
+                    />
+                </div>
+
+                {/* SL_MIN + SL_MAX */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className={labelClass}>SL tối thiểu</label>
+                        <input
+                            type="number"
+                            className={inputClass}
+                            placeholder="VD: 1"
+                            value={form.SL_MIN}
+                            onChange={e => handleChange('SL_MIN', e.target.value === '' ? '' : Number(e.target.value))}
+                            min={0}
+                        />
+                    </div>
+                    <div>
+                        <label className={labelClass}>SL tối đa</label>
+                        <input
+                            type="number"
+                            className={inputClass}
+                            placeholder="VD: 100"
+                            value={form.SL_MAX}
+                            onChange={e => handleChange('SL_MAX', e.target.value === '' ? '' : Number(e.target.value))}
+                            min={0}
+                        />
+                    </div>
+                </div>
+            </form>
+        </Modal>
     );
 }
 
@@ -360,171 +351,165 @@ function BulkAddModal({
     const selectClass = "w-full h-9 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring transition-all appearance-none cursor-pointer";
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-                {/* Modal Header */}
-                <div className="flex items-center justify-between p-6 border-b">
-                    <div>
-                        <h2 className="text-lg font-bold text-foreground">Thêm hàng loạt gói giá</h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">Thêm nhiều dòng gói giá cùng lúc</p>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Thêm hàng loạt gói giá"
+            subtitle="Thêm nhiều dòng gói giá cùng lúc"
+            icon={ListPlus}
+            size="lg"
+            fullHeight
+            footer={
+                <>
+                    <span className="text-xs text-muted-foreground">
+                        Tổng: <strong className="text-foreground">{rows.length}</strong> dòng
+                    </span>
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="btn-premium-secondary px-6 h-10 text-sm"
+                        >
+                            Hủy bỏ
+                        </button>
+                        <button
+                            type="submit"
+                            form="form-bulk-goi-gia"
+                            disabled={loading}
+                            className="btn-premium-primary px-6 h-10 text-sm flex items-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                                    Đang lưu...
+                                </>
+                            ) : (
+                                <>
+                                    <ListPlus className="w-4 h-4" />
+                                    Thêm {rows.length} gói giá
+                                </>
+                            )}
+                        </button>
                     </div>
-                    <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
-                        <Plus className="w-5 h-5 rotate-45" />
+                </>
+            }
+        >
+            <form id="form-bulk-goi-gia" onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                    <div className="flex items-start gap-3 p-3.5 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span className="whitespace-pre-line">{error}</span>
+                    </div>
+                )}
+
+                {/* Bảng dòng */}
+                <div>
+                    <div className="flex items-center justify-between mb-3">
+                        <label className={labelClass}>Danh sách gói giá ({rows.length} dòng)</label>
+                        <button
+                            type="button"
+                            onClick={addRow}
+                            className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            Thêm dòng
+                        </button>
+                    </div>
+
+                    {/* Table header */}
+                    <div className="hidden md:grid md:grid-cols-[1fr_1fr_80px_80px_40px] gap-2 mb-2 px-1">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dòng hàng *</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gói giá *</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SL Min</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SL Max</span>
+                        <span></span>
+                    </div>
+
+                    {/* Rows */}
+                    <div className="space-y-2">
+                        {rows.map((row, idx) => (
+                            <div
+                                key={idx}
+                                className="grid grid-cols-1 md:grid-cols-[1fr_1fr_80px_80px_40px] gap-2 p-3 md:p-1 bg-muted/20 md:bg-transparent rounded-lg md:rounded-none border md:border-0 border-border"
+                            >
+                                {/* Dòng hàng */}
+                                <div>
+                                    <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dòng hàng *</label>
+                                    <select
+                                        className={selectClass}
+                                        value={row.MA_DONG_HANG}
+                                        onChange={e => updateRow(idx, 'MA_DONG_HANG', e.target.value)}
+                                        required
+                                    >
+                                        <option value="">-- Chọn --</option>
+                                        {dongHangOptions.map(dh => (
+                                            <option key={dh.ID} value={dh.MA_DONG_HANG}>{dh.TEN_DONG_HANG} ({dh.MA_DONG_HANG})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {/* Gói giá */}
+                                <div>
+                                    <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Gói giá *</label>
+                                    <input
+                                        className={inputClass}
+                                        placeholder="VD: Giá niêm yết"
+                                        value={row.GOI_GIA}
+                                        onChange={e => updateRow(idx, 'GOI_GIA', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                {/* SL Min */}
+                                <div>
+                                    <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">SL Min</label>
+                                    <input
+                                        type="number"
+                                        className={inputClass}
+                                        placeholder="Min"
+                                        value={row.SL_MIN}
+                                        onChange={e => updateRow(idx, 'SL_MIN', e.target.value === '' ? '' : Number(e.target.value))}
+                                        min={0}
+                                    />
+                                </div>
+                                {/* SL Max */}
+                                <div>
+                                    <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">SL Max</label>
+                                    <input
+                                        type="number"
+                                        className={inputClass}
+                                        placeholder="Max"
+                                        value={row.SL_MAX}
+                                        onChange={e => updateRow(idx, 'SL_MAX', e.target.value === '' ? '' : Number(e.target.value))}
+                                        min={0}
+                                    />
+                                </div>
+                                {/* Xóa dòng */}
+                                <div className="flex items-center justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => removeRow(idx)}
+                                        disabled={rows.length === 1}
+                                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                        title="Xóa dòng"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Nút thêm dòng phía dưới */}
+                    <button
+                        type="button"
+                        onClick={addRow}
+                        className="mt-3 w-full h-9 border-2 border-dashed border-border hover:border-primary/40 text-muted-foreground hover:text-primary rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1.5"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Thêm dòng mới
                     </button>
                 </div>
-
-                <form onSubmit={handleSubmit}>
-                    <div className="p-6 space-y-5">
-                        {error && (
-                            <div className="flex items-start gap-3 p-3.5 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
-                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                                <span className="whitespace-pre-line">{error}</span>
-                            </div>
-                        )}
-
-                        {/* Bảng dòng */}
-                        <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <label className={labelClass}>Danh sách gói giá ({rows.length} dòng)</label>
-                                <button
-                                    type="button"
-                                    onClick={addRow}
-                                    className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors"
-                                >
-                                    <Plus className="w-3.5 h-3.5" />
-                                    Thêm dòng
-                                </button>
-                            </div>
-
-                            {/* Table header */}
-                            <div className="hidden md:grid md:grid-cols-[1fr_1fr_80px_80px_40px] gap-2 mb-2 px-1">
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dòng hàng *</span>
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gói giá *</span>
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SL Min</span>
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SL Max</span>
-                                <span></span>
-                            </div>
-
-                            {/* Rows */}
-                            <div className="space-y-2">
-                                {rows.map((row, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="grid grid-cols-1 md:grid-cols-[1fr_1fr_80px_80px_40px] gap-2 p-3 md:p-1 bg-muted/20 md:bg-transparent rounded-lg md:rounded-none border md:border-0 border-border"
-                                    >
-                                        {/* Dòng hàng */}
-                                        <div>
-                                            <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dòng hàng *</label>
-                                            <select
-                                                className={selectClass}
-                                                value={row.MA_DONG_HANG}
-                                                onChange={e => updateRow(idx, 'MA_DONG_HANG', e.target.value)}
-                                                required
-                                            >
-                                                <option value="">-- Chọn --</option>
-                                                {dongHangOptions.map(dh => (
-                                                    <option key={dh.ID} value={dh.MA_DONG_HANG}>{dh.TEN_DONG_HANG} ({dh.MA_DONG_HANG})</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        {/* Gói giá */}
-                                        <div>
-                                            <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Gói giá *</label>
-                                            <input
-                                                className={inputClass}
-                                                placeholder="VD: Giá niêm yết"
-                                                value={row.GOI_GIA}
-                                                onChange={e => updateRow(idx, 'GOI_GIA', e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                        {/* SL Min */}
-                                        <div>
-                                            <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">SL Min</label>
-                                            <input
-                                                type="number"
-                                                className={inputClass}
-                                                placeholder="Min"
-                                                value={row.SL_MIN}
-                                                onChange={e => updateRow(idx, 'SL_MIN', e.target.value === '' ? '' : Number(e.target.value))}
-                                                min={0}
-                                            />
-                                        </div>
-                                        {/* SL Max */}
-                                        <div>
-                                            <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">SL Max</label>
-                                            <input
-                                                type="number"
-                                                className={inputClass}
-                                                placeholder="Max"
-                                                value={row.SL_MAX}
-                                                onChange={e => updateRow(idx, 'SL_MAX', e.target.value === '' ? '' : Number(e.target.value))}
-                                                min={0}
-                                            />
-                                        </div>
-                                        {/* Xóa dòng */}
-                                        <div className="flex items-center justify-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => removeRow(idx)}
-                                                disabled={rows.length === 1}
-                                                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                                title="Xóa dòng"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Nút thêm dòng phía dưới */}
-                            <button
-                                type="button"
-                                onClick={addRow}
-                                className="mt-3 w-full h-9 border-2 border-dashed border-border hover:border-primary/40 text-muted-foreground hover:text-primary rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1.5"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Thêm dòng mới
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Modal Footer */}
-                    <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/5">
-                        <span className="text-xs text-muted-foreground">
-                            Tổng: <strong className="text-foreground">{rows.length}</strong> dòng
-                        </span>
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="h-9 px-4 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors"
-                            >
-                                Hủy bỏ
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="h-9 px-5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 shadow-sm disabled:opacity-60 flex items-center gap-2"
-                            >
-                                {loading ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                                        Đang lưu...
-                                    </>
-                                ) : (
-                                    <>
-                                        <ListPlus className="w-4 h-4" />
-                                        Thêm {rows.length} gói giá
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
+            </form>
+        </Modal>
     );
 }
 

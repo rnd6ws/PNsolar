@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Printer, Search, X, Check, ChevronDown, ChevronRight, Package, Tag, CheckSquare, Square } from 'lucide-react';
+import { Printer, Search, Check, ChevronDown, ChevronRight, Package, Tag, CheckSquare, Square } from 'lucide-react';
 import { getAllProductsForSelect } from '@/features/hang-hoa/action-bang-gia';
 import { cn } from '@/lib/utils';
+import Modal from '@/components/Modal';
 
 interface ProductItem {
     ID: string;
@@ -132,29 +133,46 @@ export default function BangGiaSelectModal({ isOpen, onClose }: Props) {
         onClose();
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
-                {/* Header */}
-                <div className="flex items-center justify-between p-5 border-b shrink-0">
-                    <div>
-                        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                            <Printer className="w-5 h-5 text-primary" />
-                            In bảng giá
-                        </h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            Chọn các sản phẩm để tạo bảng giá in
-                        </p>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="In bảng giá"
+            subtitle="Chọn các sản phẩm để tạo bảng giá in"
+            icon={Printer}
+            size="lg"
+            fullHeight
+            footer={
+                <>
+                    <p className="text-xs text-muted-foreground">
+                        {selected.size > 0 ? (
+                            <>Đã chọn <strong className="text-foreground text-sm">{selected.size}</strong> sản phẩm</>
+                        ) : (
+                            'Chưa chọn sản phẩm nào'
+                        )}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={onClose}
+                            className="btn-premium-secondary"
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            onClick={handleGenerate}
+                            disabled={selected.size === 0}
+                            className="btn-premium-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Printer className="w-4 h-4" />
+                            Tạo bảng giá ({selected.size})
+                        </button>
                     </div>
-                    <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
+                </>
+            }
+        >
 
                 {/* Search + Select All */}
-                <div className="p-4 border-b space-y-3 shrink-0">
+                <div className="space-y-3 mb-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
@@ -184,7 +202,7 @@ export default function BangGiaSelectModal({ isOpen, onClose }: Props) {
                 </div>
 
                 {/* Product List */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="space-y-2">
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
                             <div className="flex flex-col items-center gap-3">
@@ -284,34 +302,6 @@ export default function BangGiaSelectModal({ isOpen, onClose }: Props) {
                         })
                     )}
                 </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between p-4 border-t bg-muted/5 shrink-0">
-                    <p className="text-xs text-muted-foreground">
-                        {selected.size > 0 ? (
-                            <>Đã chọn <strong className="text-foreground text-sm">{selected.size}</strong> sản phẩm</>
-                        ) : (
-                            'Chưa chọn sản phẩm nào'
-                        )}
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={onClose}
-                            className="h-9 px-4 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors"
-                        >
-                            Hủy
-                        </button>
-                        <button
-                            onClick={handleGenerate}
-                            disabled={selected.size === 0}
-                            className="h-9 px-5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                            <Printer className="w-4 h-4" />
-                            Tạo bảng giá ({selected.size})
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </Modal>
     );
 }

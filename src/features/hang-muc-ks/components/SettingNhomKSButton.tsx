@@ -45,7 +45,7 @@ export default function SettingNhomKSButton({ cdNhomKSs }: Props) {
                 Nhóm KS
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt Nhóm khảo sát (CD)">
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt Nhóm khảo sát (CD)" icon={Settings}>
                 <div className="space-y-5 pt-4">
                     <form onSubmit={handleAdd} className="flex gap-2 px-1">
                         <input

@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { X, FileText, CheckCircle, Upload, Image as ImageIcon, Paperclip, Link, Loader2, Trash2, Download } from "lucide-react";
+import Modal from "@/components/Modal";
 import { submitBaoCaoCS } from "../action";
 import FormSelect from "@/components/FormSelect";
 import { formatFileSize } from "@/hooks/useFileUpload";
@@ -204,26 +205,48 @@ export default function BaoCaoCSForm({ item, ketQuaList, lyDoList, onSuccess, on
     const totalFiles = savedFiles.length + pendingFiles.length;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
-                            <FileText className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-bold text-foreground">Báo cáo chăm sóc</h2>
-                            <p className="text-xs text-muted-foreground">{item?.KH?.TEN_KH}</p>
-                        </div>
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title="Báo cáo chăm sóc"
+            subtitle={item?.KH?.TEN_KH}
+            icon={FileText}
+            fullHeight
+            footer={
+                <>
+                    <span />
+                    <div className="flex gap-3">
+                        <button type="button" onClick={onClose} disabled={submitting} className="btn-premium-secondary">
+                            Hủy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSubmit as any}
+                            disabled={submitting}
+                            className="btn-premium-primary flex items-center justify-center gap-2"
+                        >
+                            {submitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    {pendingImgs.length + pendingFiles.length > 0 ? "Đang upload & lưu..." : "Đang lưu..."}
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle className="w-4 h-4" />
+                                    Gửi báo cáo
+                                    {(pendingImgs.length + pendingFiles.length) > 0 && (
+                                        <span className="text-xs opacity-75">({pendingImgs.length + pendingFiles.length} file sẽ upload)</span>
+                                    )}
+                                </>
+                            )}
+                        </button>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors">
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
+                </>
+            }
+        >
 
-                {/* Body */}
-                <form onSubmit={handleSubmit} className="overflow-y-auto p-5 space-y-4 flex-1">
+
+                <form onSubmit={handleSubmit} className="space-y-4">
 
                     {/* Ngày CS thực tế */}
                     <div className="space-y-1.5">
@@ -457,35 +480,6 @@ export default function BaoCaoCSForm({ item, ketQuaList, lyDoList, onSuccess, on
                         />
                     </div>
                 </form>
-
-                {/* Footer */}
-                <div className="flex gap-3 px-6 py-4 border-t border-border shrink-0">
-                    <button type="button" onClick={onClose} disabled={submitting} className="btn-premium-secondary flex-1">
-                        Hủy
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleSubmit as any}
-                        disabled={submitting}
-                        className="btn-premium-primary flex-1 flex items-center justify-center gap-2"
-                    >
-                        {submitting ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                {pendingImgs.length + pendingFiles.length > 0 ? "Đang upload & lưu..." : "Đang lưu..."}
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle className="w-4 h-4" />
-                                Gửi báo cáo
-                                {(pendingImgs.length + pendingFiles.length) > 0 && (
-                                    <span className="text-xs opacity-75">({pendingImgs.length + pendingFiles.length} file sẽ upload)</span>
-                                )}
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-        </div>
+        </Modal>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus } from "lucide-react";
+import { Plus, DollarSign } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
 import { createGiaBan } from "../action";
@@ -140,8 +140,20 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                 </button>
             </PermissionGuard>
 
-            <Modal isOpen={open} onClose={handleClose} title="Thêm giá bán mới">
-                <form onSubmit={handleSubmit} className="space-y-4 pt-0">
+            <Modal isOpen={open} onClose={handleClose} title="Thêm giá bán mới" icon={DollarSign}
+                footer={
+                    <>
+                        <div />
+                        <div className="flex items-center gap-3">
+                            <button type="button" onClick={handleClose} className="btn-premium-secondary px-6 h-10 text-sm">Hủy bỏ</button>
+                            <button type="submit" form="form-add-gia-ban" disabled={loading} className="btn-premium-primary px-6 h-10 text-sm">
+                                {loading ? "Đang lưu..." : "Thêm giá bán"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <form id="form-add-gia-ban" onSubmit={handleSubmit} className="space-y-4 pt-0">
                     {/* Ngày hiệu lực */}
                     <div className="space-y-1.5">
                         <label className={labelClass}>Ngày hiệu lực <span className="text-destructive">*</span></label>
@@ -265,13 +277,6 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                         />
                     </div>
 
-                    {/* Submit */}
-                    <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-                        <button type="button" onClick={handleClose} className="btn-premium-secondary flex-1">Hủy bỏ</button>
-                        <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                            {loading ? "Đang lưu..." : "Thêm giá bán"}
-                        </button>
-                    </div>
                 </form>
             </Modal>
         </>

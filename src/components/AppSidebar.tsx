@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
     Command, LayoutDashboard, Users, Package, Settings, HelpCircle,
     LogOut, EllipsisVertical, Shield, UserRound, DollarSign, Truck, Target,
-    CalendarCheck2, ClipboardCheck,
+    CalendarCheck2, ClipboardCheck, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutUser } from "@/features/auth/action";
@@ -47,6 +47,7 @@ const mainNavDef = [
     { name: "Nhà cung cấp", href: "/nha-cung-cap", icon: Truck, moduleKey: "nha-cung-cap" },
     { name: "Giá nhập", href: "/gia-nhap", icon: DollarSign, moduleKey: "gia-nhap" },
     { name: "Giá bán", href: "/gia-ban", icon: DollarSign, moduleKey: "gia-ban" },
+    { name: "Báo giá", href: "/bao-gia", icon: FileText, moduleKey: "bao-gia" },
     { name: "Hạng mục KS", href: "/hang-muc-ks", icon: ClipboardCheck, moduleKey: "hang-muc-ks" },
 ];
 

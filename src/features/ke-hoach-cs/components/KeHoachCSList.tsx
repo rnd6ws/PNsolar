@@ -468,7 +468,14 @@ export default function KeHoachCSList({
             )}
             
             {/* Modal: Xem chi tiết dịch vụ quan tâm */}
-            <Modal isOpen={!!viewDichVuItem} onClose={() => setViewDichVuItem(null)} title={viewDichVuItem ? `Dịch vụ quan tâm · ${viewDichVuItem.KH?.TEN_KH}` : "Dịch vụ quan tâm"} size="md">
+            <Modal isOpen={!!viewDichVuItem} onClose={() => setViewDichVuItem(null)} title={viewDichVuItem ? `Dịch vụ quan tâm · ${viewDichVuItem.KH?.TEN_KH}` : "Dịch vụ quan tâm"} size="md" icon={Eye}
+                footer={
+                    <>
+                        <div />
+                        <button onClick={() => setViewDichVuItem(null)} className="btn-premium-secondary px-6 h-10 text-sm">Đóng</button>
+                    </>
+                }
+            >
                 {viewDichVuItem && (
                     <div className="space-y-3">
                         <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 flex items-center justify-between mb-2">
@@ -484,9 +491,6 @@ export default function KeHoachCSList({
                                     <span className="text-foreground font-medium">{dichVuMap.get(id) || id}</span>
                                 </div>
                             ))}
-                        </div>
-                        <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 z-10 shadow-sm">
-                            <button onClick={() => setViewDichVuItem(null)} className="btn-premium-secondary w-full">Đóng</button>
                         </div>
                     </div>
                 )}

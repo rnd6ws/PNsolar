@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { createNhomHH, updateNhomHH, deleteNhomHH } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -128,8 +128,24 @@ export default function NhomHHClient({ data = [] }: { data: any[] }) {
             </div>
 
             {/* Modal Add */}
-            <Modal isOpen={isAddOpen} onClose={() => { setIsAddOpen(false); setError(null); }} title="Thêm nhóm hàng hóa">
-                <form onSubmit={handleCreate} className="space-y-6 flex flex-col pt-4">
+            <Modal
+                isOpen={isAddOpen}
+                onClose={() => { setIsAddOpen(false); setError(null); }}
+                title="Thêm nhóm hàng hóa"
+                icon={Layers}
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setIsAddOpen(false)} className="btn-premium-secondary">Hủy</button>
+                            <button type="button" onClick={() => (document.querySelector('#form-add-nhom-hh') as HTMLFormElement)?.requestSubmit()} disabled={loading} className="btn-premium-primary">
+                                {loading ? "Đang xử lý..." : "Lưu nhóm"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <form id="form-add-nhom-hh" onSubmit={handleCreate} className="space-y-4">
                     {error && (
                         <div className="p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-semibold">
                             {error}
@@ -143,20 +159,29 @@ export default function NhomHHClient({ data = [] }: { data: any[] }) {
                         <label className="text-sm font-semibold min-w-[120px]">Tên nhóm</label>
                         <input name="TEN_NHOM" required className="input-modern" placeholder="Ví dụ: Năng lượng mặt trời" />
                     </div>
-
-                    <div className="flex gap-4 pt-4 mt-auto">
-                        <button type="button" onClick={() => setIsAddOpen(false)} className="btn-premium-secondary flex-1">Hủy</button>
-                        <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                            {loading ? "Đang xử lý..." : "Lưu nhóm"}
-                        </button>
-                    </div>
                 </form>
             </Modal>
 
             {/* Modal Edit */}
-            <Modal isOpen={!!editMode} onClose={() => { setEditMode(null); setError(null); }} title="Cập nhật nhóm">
+            <Modal
+                isOpen={!!editMode}
+                onClose={() => { setEditMode(null); setError(null); }}
+                title="Cập nhật nhóm"
+                icon={Layers}
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setEditMode(null)} className="btn-premium-secondary">Hủy</button>
+                            <button type="button" onClick={() => (document.querySelector('#form-edit-nhom-hh') as HTMLFormElement)?.requestSubmit()} disabled={loading} className="btn-premium-primary">
+                                {loading ? "Đang xử lý..." : "Cập nhật"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
                 {editMode && (
-                    <form onSubmit={handleEdit} className="space-y-6 flex flex-col pt-4">
+                    <form id="form-edit-nhom-hh" onSubmit={handleEdit} className="space-y-4">
                         {error && (
                             <div className="p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-semibold">
                                 {error}
@@ -169,13 +194,6 @@ export default function NhomHHClient({ data = [] }: { data: any[] }) {
                         <div className="space-y-2">
                             <label className="text-sm font-semibold min-w-[120px]">Tên nhóm</label>
                             <input name="TEN_NHOM" required className="input-modern" defaultValue={editMode.TEN_NHOM} />
-                        </div>
-
-                        <div className="flex gap-4 pt-4 mt-auto">
-                            <button type="button" onClick={() => setEditMode(null)} className="btn-premium-secondary flex-1">Hủy</button>
-                            <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                                {loading ? "Đang xử lý..." : "Cập nhật"}
-                            </button>
                         </div>
                     </form>
                 )}

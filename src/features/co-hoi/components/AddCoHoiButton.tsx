@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Target } from "lucide-react";
 import Modal from "@/components/Modal";
 import { createCoHoi } from "@/features/co-hoi/action";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ export default function AddCoHoiButton({ dmDichVu }: Props) {
                 Thêm cơ hội
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Tạo cơ hội mới" size="lg">
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Tạo cơ hội mới" size="lg" icon={Target}>
                 <CoHoiForm
                     key={isOpen ? "add-open" : "add-closed"}
                     dmDichVu={dmDichVu}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
-import { X, Search, Clock, Building2, User, Briefcase, Check, ChevronDown } from "lucide-react";
+import { X, Search, Clock, Building2, User, Briefcase, Check, ChevronDown, CalendarPlus2 } from "lucide-react";
 import {
     searchKhachHangForCS,
     getNguoiLienHeByKH,
@@ -256,6 +256,7 @@ export default function KeHoachCSForm({
             onClose={onClose}
             title={isEdit ? "Chỉnh sửa kế hoạch chăm sóc" : "Tạo kế hoạch chăm sóc"}
             size="xl"
+            icon={CalendarPlus2}
         >
             <form onSubmit={handleSubmit} className="space-y-3">
                 {/* Khách hàng */}

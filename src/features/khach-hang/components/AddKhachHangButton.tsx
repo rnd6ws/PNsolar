@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Building2 } from "lucide-react";
 import Modal from "@/components/Modal";
 import { createKhachHang } from "@/features/khach-hang/action";
 import { toast } from "sonner";
@@ -48,7 +48,7 @@ export default function AddKhachHangButton({ phanLoais, nguons, nhoms, nhanViens
                 Thêm khách hàng
             </button>
 
-            <Modal isOpen={isOpen} onClose={handleClose} title="Thêm khách hàng mới" size="lg">
+            <Modal isOpen={isOpen} onClose={handleClose} title="Thêm khách hàng mới" size="lg" icon={Building2}>
                 {error && (
                     <div className="p-3 bg-destructive/10 text-destructive rounded-xl text-sm font-semibold mb-4">{error}</div>
                 )}

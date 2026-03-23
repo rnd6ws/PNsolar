@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import {
     Edit2, Trash2, ArrowUpDown, ArrowUp, ArrowDown,
-    MoreHorizontal, Package
+    MoreHorizontal, Package, DollarSign
 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteGiaBan, updateGiaBan } from "../action";
@@ -474,7 +474,7 @@ export default function GiaBanList({ data, visibleColumns, nhomHhOptions, phanLo
             </div>
 
             {/* Modal: Sửa */}
-            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật giá bán">
+            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật giá bán" icon={DollarSign}>
                 {editItem && (
                     <GiaBanForm
                         key={editItem?.ID ?? "edit"}

@@ -66,7 +66,7 @@ export default function SettingKeHoachButton({ loaiCSList, ketQuaList }: Props) 
                 <ChevronDown className="w-3 h-3 hidden lg:inline" />
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục" size="md">
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục" size="md" icon={Settings}>
                 <div className="flex border-b border-border mb-4">
                     <button
                         onClick={() => setTab("loai")}

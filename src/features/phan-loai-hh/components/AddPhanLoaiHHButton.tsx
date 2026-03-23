@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Tags } from 'lucide-react';
 import Modal from '@/components/Modal';
 import { toast } from 'sonner';
 import { createPhanLoaiHH } from '@/features/phan-loai-hh/action';
@@ -43,8 +43,24 @@ export default function AddPhanLoaiHHButton({
                 Thêm phân loại
             </button>
 
-            <Modal isOpen={isAddOpen} onClose={() => { setIsAddOpen(false); setError(null); }} title="Thêm phân loại mới">
-                <form onSubmit={handleCreate} className="space-y-6 flex flex-col">
+            <Modal
+                isOpen={isAddOpen}
+                onClose={() => { setIsAddOpen(false); setError(null); }}
+                title="Thêm phân loại mới"
+                icon={Tags}
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setIsAddOpen(false)} className="btn-premium-secondary">Hủy</button>
+                            <button type="button" onClick={() => (document.querySelector('#form-add-plhh-btn') as HTMLFormElement)?.requestSubmit()} disabled={loading} className="btn-premium-primary">
+                                {loading ? "Đang xử lý..." : "Lưu phân loại"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <form id="form-add-plhh-btn" onSubmit={handleCreate} className="space-y-4">
                     <div className="space-y-2">
                         <label className="text-sm font-semibold min-w-[120px]">Nhóm hàng hóa</label>
                         <select name="NHOM" className="input-modern">
@@ -65,13 +81,6 @@ export default function AddPhanLoaiHHButton({
                     <div className="space-y-2">
                         <label className="text-sm font-semibold min-w-[120px]">DVT Nhóm</label>
                         <input name="DVT_NHOM" required className="input-modern" placeholder="Ví dụ: Tấm" />
-                    </div>
-
-                    <div className="flex gap-4 pt-4 mt-auto">
-                        <button type="button" onClick={() => setIsAddOpen(false)} className="btn-premium-secondary flex-1">Hủy</button>
-                        <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                            {loading ? "Đang xử lý..." : "Lưu phân loại"}
-                        </button>
                     </div>
                 </form>
             </Modal>

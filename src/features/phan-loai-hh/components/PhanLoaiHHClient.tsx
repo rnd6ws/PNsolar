@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Tags } from "lucide-react";
 import { toast } from "sonner";
 import { createPhanLoaiHH, updatePhanLoaiHH, deletePhanLoaiHH } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -131,8 +131,24 @@ export default function PhanLoaiHHClient({ data = [] }: { data: any[] }) {
             </div>
 
             {/* Modal Add */}
-            <Modal isOpen={isAddOpen} onClose={() => { setIsAddOpen(false); setError(null); }} title="Thêm phân loại mới">
-                <form onSubmit={handleCreate} className="space-y-6 flex flex-col pt-4">
+            <Modal
+                isOpen={isAddOpen}
+                onClose={() => { setIsAddOpen(false); setError(null); }}
+                title="Thêm phân loại mới"
+                icon={Tags}
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setIsAddOpen(false)} className="btn-premium-secondary">Hủy</button>
+                            <button type="button" onClick={() => (document.querySelector('#form-add-phan-loai') as HTMLFormElement)?.requestSubmit()} disabled={loading} className="btn-premium-primary">
+                                {loading ? "Đang xử lý..." : "Lưu phân loại"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <form id="form-add-phan-loai" onSubmit={handleCreate} className="space-y-4">
                     {error && (
                         <div className="p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-semibold">
                             {error}
@@ -150,20 +166,29 @@ export default function PhanLoaiHHClient({ data = [] }: { data: any[] }) {
                         <label className="text-sm font-semibold min-w-[120px]">DVT Nhóm</label>
                         <input name="DVT_NHOM" required className="input-modern" placeholder="Ví dụ: Tấm" />
                     </div>
-
-                    <div className="flex gap-4 pt-4 mt-auto">
-                        <button type="button" onClick={() => setIsAddOpen(false)} className="btn-premium-secondary flex-1">Hủy</button>
-                        <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                            {loading ? "Đang xử lý..." : "Lưu phân loại"}
-                        </button>
-                    </div>
                 </form>
             </Modal>
 
             {/* Modal Edit */}
-            <Modal isOpen={!!editMode} onClose={() => { setEditMode(null); setError(null); }} title="Cập nhật phân loại">
+            <Modal
+                isOpen={!!editMode}
+                onClose={() => { setEditMode(null); setError(null); }}
+                title="Cập nhật phân loại"
+                icon={Tags}
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setEditMode(null)} className="btn-premium-secondary">Hủy</button>
+                            <button type="button" onClick={() => (document.querySelector('#form-edit-phan-loai') as HTMLFormElement)?.requestSubmit()} disabled={loading} className="btn-premium-primary">
+                                {loading ? "Đang xử lý..." : "Cập nhật"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
                 {editMode && (
-                    <form onSubmit={handleEdit} className="space-y-6 flex flex-col pt-4">
+                    <form id="form-edit-phan-loai" onSubmit={handleEdit} className="space-y-4">
                         {error && (
                             <div className="p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-semibold">
                                 {error}
@@ -180,13 +205,6 @@ export default function PhanLoaiHHClient({ data = [] }: { data: any[] }) {
                         <div className="space-y-2">
                             <label className="text-sm font-semibold min-w-[120px]">DVT Nhóm</label>
                             <input name="DVT_NHOM" required className="input-modern" defaultValue={editMode.DVT_NHOM} />
-                        </div>
-
-                        <div className="flex gap-4 pt-4 mt-auto">
-                            <button type="button" onClick={() => setEditMode(null)} className="btn-premium-secondary flex-1">Hủy</button>
-                            <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                                {loading ? "Đang xử lý..." : "Cập nhật"}
-                            </button>
                         </div>
                     </form>
                 )}

@@ -13,10 +13,15 @@ Dự án này tuân thủ cấu trúc **Feature-Based Architecture**. Bất cứ
 
 ## 1. Cập nhật Database & Prisma Schema
 - Mở `prisma/schema.prisma` và thêm Model (`SNAKE_CASE_UPPER` đối với tên bảng, enum và tên trường. Ví dụ `KHACH_HANG`, `MA_KH`).
+- **Nếu model có cột tham chiếu bảng khác (Foreign Key):** Phải khai báo `@relation` đúng chuẩn. Xem hướng dẫn đầy đủ tại `.agents/docs/huong-dan-relation.md`.
+  - Lưu **MÃ** (code) trong DB, không lưu text trực tiếp.
+  - Đặt tên cột khóa ngoại: `MA_XXX` (VD: `MA_NHOM_HH`).
+  - Khai báo `@relation(fields: [MA_XXX], references: [MA_XXX])` + relation ngược ở bảng cha.
+  - Thêm `@@index([MA_XXX])` cho cột khóa ngoại.
 - Chạy command để đồng bộ Prisma Type (hoặc chờ user đồng bộ):
   ```bash
   npx prisma generate
-  # npx prisma db push (nếu cần sync DB)
+  # npx prisma db push (chỉ cần nếu đổi tên cột thực trong DB — KHÔNG cần khi chỉ thêm @relation với MongoDB)
   ```
 
 ## 2. Tạo Thư mục Tính năng (Feature Folder)
@@ -72,6 +77,16 @@ Bên trong `src/features/[tên-tính-năng]/components/`:
 - [ ] **Sửa**: `toast.success("Cập nhật thành công!")` / `toast.error(result.message)`
 - [ ] **Xóa**: `toast.success("Đã xóa ...!")` / `toast.error(result.message)`
 - [ ] **Thêm hàng loạt** (nếu có): `toast.success(result.message)` / `toast.error(result.message)`
+
+### Checklist Modal (BẮT BUỘC dùng `Modal` chung):
+- [ ] Import `Modal` từ `@/components/Modal` — **KHÔNG** tạo custom div modal
+- [ ] Mỗi modal phải có `icon` prop (lucide-react icon phù hợp)
+- [ ] Nút Hủy + Submit nằm trong `footer` prop — **KHÔNG** trong body form
+- [ ] Footer pattern: `<span />` + `<div className="flex gap-3">Hủy + Submit</div>`
+- [ ] Form bên trong modal có `id="form-xxx"`, nút submit dùng `requestSubmit()`
+- [ ] Modal nhiều nội dung: dùng `fullHeight` + `size="lg"` trở lên
+- [ ] Dùng `DeleteConfirmDialog` chung cho modal xóa — **KHÔNG** viết riêng
+- [ ] Xem code mẫu chi tiết tại: `.agents/skills/create-new-feature/ui-patterns.md` mục 6
 
 ## 6. Lắp ghép vào Giao diện (App Route)
 Tạo trang ở `src/app/(dashboard)/[tên-tính-năng]/page.tsx`:

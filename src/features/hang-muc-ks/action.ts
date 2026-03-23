@@ -84,7 +84,50 @@ export async function createHangMucKS(formData: FormData) {
         if (!LOAI_CONG_TRINH || !NHOM_KS || !HANG_MUC_KS)
             return { success: false, message: "Vui lòng điền đầy đủ loại công trình, nhóm KS và tên hạng mục" };
 
-        await prisma.hANG_MUC_KS.create({ data: { LOAI_CONG_TRINH, NHOM_KS, HANG_MUC_KS, HIEU_LUC } });
+        // Sinh MA_HMKS tự động: HMKS-YYMMDD-XXX
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const prefix = `HMKS-${yy}${mm}${dd}-`;
+
+        const last = await prisma.hANG_MUC_KS.findFirst({
+            where: { MA_HMKS: { startsWith: prefix } },
+            orderBy: { MA_HMKS: 'desc' },
+            select: { MA_HMKS: true },
+        });
+
+        let nextNum = 1;
+        if (last?.MA_HMKS) {
+            const parts = last.MA_HMKS.split('-');
+            const num = parseInt(parts[parts.length - 1], 10);
+            if (!isNaN(num)) nextNum = num + 1;
+        }
+
+        let created = false;
+        let attempts = 0;
+
+        while (!created && attempts < 20) {
+            const maHmks = `${prefix}${String(nextNum).padStart(3, '0')}`;
+            try {
+                await prisma.hANG_MUC_KS.create({
+                    data: { MA_HMKS: maHmks, LOAI_CONG_TRINH, NHOM_KS, HANG_MUC_KS, HIEU_LUC },
+                });
+                created = true;
+            } catch (error: any) {
+                if (error.code === 'P2002') {
+                    nextNum++;
+                    attempts++;
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        if (!created) {
+            return { success: false, message: "Hệ thống bận, vui lòng thử lại sau." };
+        }
+
         revalidatePath("/hang-muc-ks");
         return { success: true };
     } catch (e: any) { return { success: false, message: e.message || "Lỗi không xác định" }; }

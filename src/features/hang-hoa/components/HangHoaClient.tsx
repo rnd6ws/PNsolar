@@ -14,6 +14,7 @@ import ColumnToggleButton, { type ColumnKey } from './ColumnToggleButton';
 import ProductImageUpload from './ProductImageUpload';
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
+import Modal from '@/components/Modal';
 import BangGiaSelectModal from './BangGiaSelectModal';
 
 // ===== TYPES =====
@@ -255,26 +256,44 @@ function ProductModal({
     const currentMaDongHang = form.MA_DONG_HANG || '';
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-                {/* Modal Header */}
-                <div className="flex items-center justify-between p-6 border-b">
-                    <div>
-                        <h2 className="text-lg font-bold text-foreground">
-                            {product ? 'Chỉnh sửa hàng hóa' : 'Thêm hàng hóa mới'}
-                        </h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            {product ? `Cập nhật thông tin cho "${product.TEN_HH}"` : 'Điền thông tin để thêm hàng hóa vào danh mục'}
-                        </p>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={product ? 'Chỉnh sửa hàng hóa' : 'Thêm hàng hóa mới'}
+            subtitle={product ? `Cập nhật thông tin cho "${product.TEN_HH}"` : 'Điền thông tin để thêm hàng hóa vào danh mục'}
+            icon={Package}
+            footer={
+                <>
+                    <span />
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="btn-premium-secondary"
+                        >
+                            Hủy bỏ
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSubmit as any}
+                            disabled={loading}
+                            className="btn-premium-primary flex items-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                                    Đang lưu...
+                                </>
+                            ) : (
+                                product ? 'Cập nhật' : 'Thêm hàng hóa'
+                            )}
+                        </button>
                     </div>
-                    <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
-                        <Plus className="w-5 h-5 rotate-45" />
-                    </button>
-                </div>
-
-                {/* Modal Body */}
+                </>
+            }
+        >
                 <form onSubmit={handleSubmit}>
-                    <div className="p-6 space-y-5">
+                    <div className="space-y-5">
                         {error && (
                             <div className="flex items-center gap-3 p-3.5 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
                                 <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -382,7 +401,7 @@ function ProductModal({
                             </div>
                         </div>
 
-                        {/* Row 4: ĐVT + Xuất xứ (auto-fill from Dòng hàng) */}
+                        {/* Row 4: ĐVT + Xuất xứ */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className={labelClass}>Đơn vị tính *</label>
@@ -463,34 +482,8 @@ function ProductModal({
                             />
                         </div>
                     </div>
-
-                    {/* Modal Footer */}
-                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-muted/5">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="h-9 px-4 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors"
-                        >
-                            Hủy bỏ
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="h-9 px-5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 shadow-sm disabled:opacity-60 flex items-center gap-2"
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                                    Đang lưu...
-                                </>
-                            ) : (
-                                product ? 'Cập nhật' : 'Thêm hàng hóa'
-                            )}
-                        </button>
-                    </div>
                 </form>
-            </div>
-        </div>
+        </Modal>
     );
 }
 
@@ -1113,292 +1106,162 @@ export default function HangHoaClient({
             />
 
             {/* Modal Lịch sử Giá nhập */}
-            {giaNhapHistoryProduct && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-between p-5 border-b">
-                            <div>
-                                <h3 className="text-base font-bold text-foreground">Lịch sử giá nhập</h3>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                    {giaNhapHistoryProduct.TEN_HH} ({giaNhapHistoryProduct.MA_HH})
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => { setGiaNhapHistoryProduct(null); setGiaNhapHistory([]); }}
-                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="overflow-y-auto max-h-[60vh] p-5">
-                            {loadingHistory ? (
-                                <div className="flex items-center justify-center py-10">
-                                    <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                </div>
-                            ) : giaNhapHistory.length === 0 ? (
-                                <p className="text-center text-sm text-muted-foreground py-10">Chưa có lịch sử giá nhập.</p>
-                            ) : (
-                                <div className="relative">
-                                    <div className="absolute left-4 top-3 bottom-3 w-0.5 bg-border" />
-                                    <div className="space-y-4">
-                                        {giaNhapHistory.map((item, idx) => {
-                                            const isLatest = idx === 0;
-                                            const date = new Date(item.NGAY_HIEU_LUC);
-                                            const now = new Date();
-                                            const isCurrent = date <= now && (idx === 0 || new Date(giaNhapHistory[idx - 1].NGAY_HIEU_LUC) > now || idx === 0);
-                                            return (
-                                                <div key={item.ID} className="flex items-start gap-4 relative">
-                                                    <div className={cn(
-                                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 border-2",
-                                                        isLatest ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border"
-                                                    )}>
-                                                        <DollarSign className="w-3.5 h-3.5" />
-                                                    </div>
-                                                    <div className={cn(
-                                                        "flex-1 rounded-lg p-3 border",
-                                                        isLatest ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"
-                                                    )}>
-                                                        <div className="flex items-center justify-between">
-                                                            <span className={cn(
-                                                                "text-base font-bold",
-                                                                isLatest ? "text-primary" : "text-foreground"
-                                                            )}>
-                                                                {new Intl.NumberFormat('vi-VN').format(item.DON_GIA)} ₫
-                                                            </span>
-                                                            {isLatest && (
-                                                                <span className="text-[10px] font-bold uppercase bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Mới nhất</span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                                                            <div>Ngày HL: <span className="text-foreground font-medium">{date.toLocaleDateString('vi-VN')}</span></div>
-                                                            <div>NCC: <span className="text-foreground">{item.MA_NCC} - {item.TEN_NCC}</span></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+            <Modal
+                isOpen={!!giaNhapHistoryProduct}
+                onClose={() => { setGiaNhapHistoryProduct(null); setGiaNhapHistory([]); }}
+                title="Lịch sử giá nhập"
+                subtitle={giaNhapHistoryProduct ? `${giaNhapHistoryProduct.TEN_HH} (${giaNhapHistoryProduct.MA_HH})` : ''}
+                icon={History}
+            >
+                {loadingHistory ? (
+                    <div className="flex items-center justify-center py-10">
+                        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                     </div>
-                </div>
-            )}
-
-            {/* Modal Giá bán theo Nhóm KH & Gói giá */}
-            {giaBanHistoryProduct && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-between p-5 border-b">
-                            <div>
-                                <h3 className="text-base font-bold text-foreground">Giá bán & Lịch sử</h3>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                    {giaBanHistoryProduct.TEN_HH} ({giaBanHistoryProduct.MA_HH})
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => { setGiaBanHistoryProduct(null); setGiaBanHistory([]); }}
-                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="overflow-y-auto max-h-[60vh] p-5">
-                            {loadingGiaBanHistory ? (
-                                <div className="flex items-center justify-center py-10">
-                                    <div className="w-6 h-6 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin" />
-                                </div>
-                            ) : giaBanHistory.length === 0 ? (
-                                <p className="text-center text-sm text-muted-foreground py-10">Chưa có giá bán nào.</p>
-                            ) : (() => {
-                                // Nhóm theo MA_GOI_GIA → lịch sử
-                                const groupedByGoiGia: Record<string, { label: string; items: typeof giaBanHistory }> = {};
-                                giaBanHistory.forEach(item => {
-                                    const goiKey = item.GOI_GIA_NAME;
-                                    if (!groupedByGoiGia[goiKey]) {
-                                        groupedByGoiGia[goiKey] = {
-                                            label: goiKey,
-                                            items: [],
-                                        };
-                                    }
-                                    groupedByGoiGia[goiKey].items.push(item);
-                                });
-
+                ) : giaNhapHistory.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-10">Chưa có lịch sử giá nhập.</p>
+                ) : (
+                    <div className="relative">
+                        <div className="absolute left-4 top-3 bottom-3 w-0.5 bg-border" />
+                        <div className="space-y-4">
+                            {giaNhapHistory.map((item, idx) => {
+                                const isLatest = idx === 0;
+                                const date = new Date(item.NGAY_HIEU_LUC);
+                                const now = new Date();
+                                const isCurrent = date <= now && (idx === 0 || new Date(giaNhapHistory[idx - 1].NGAY_HIEU_LUC) > now || idx === 0);
                                 return (
-                                    <div className="space-y-3">
-                                        {Object.entries(groupedByGoiGia).map(([goiKey, group]) => {
-                                            const entries = group.items;
-                                            const latest = entries[0]; // đã sort desc theo ngày
-                                            const older = entries.slice(1);
-                                            return (
-                                                <div key={goiKey} className="rounded-xl border border-border overflow-hidden">
-                                                    <div className="px-4 py-3">
-                                                        {/* Giá hiện tại */}
-                                                        <div className="flex items-center justify-between">
-                                                            <div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <DollarSign className="w-3.5 h-3.5 text-rose-600" />
-                                                                    <span className="text-sm font-semibold text-foreground">{group.label}</span>
-                                                                </div>
-                                                                {latest.GHI_CHU && (
-                                                                    <p className="text-[11px] text-muted-foreground italic mt-0.5 ml-5.5">{latest.GHI_CHU}</p>
-                                                                )}
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <span className="text-base font-bold text-rose-600">
-                                                                    {new Intl.NumberFormat('vi-VN').format(latest.DON_GIA)} ₫
-                                                                </span>
-                                                                <p className="text-[11px] text-muted-foreground mt-0.5">
-                                                                    {new Date(latest.NGAY_HIEU_LUC).toLocaleDateString('vi-VN')}
-                                                                    {entries.length === 1 && <span className="ml-1.5 text-[10px] font-bold uppercase bg-rose-500 text-white px-1.5 py-0.5 rounded-full">Hiện tại</span>}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        {/* Lịch sử giá cũ */}
-                                                        {older.length > 0 && (
-                                                            <div className="mt-2 ml-3 pl-3 border-l-2 border-rose-500/15 space-y-1.5">
-                                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Lịch sử</p>
-                                                                {older.map(old => (
-                                                                    <div key={old.ID} className="flex items-center justify-between text-xs">
-                                                                        <span className="text-muted-foreground">
-                                                                            {new Date(old.NGAY_HIEU_LUC).toLocaleDateString('vi-VN')}
-                                                                        </span>
-                                                                        <span className="font-semibold text-muted-foreground line-through decoration-rose-300">
-                                                                            {new Intl.NumberFormat('vi-VN').format(old.DON_GIA)} ₫
-                                                                        </span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                    <div key={item.ID} className="flex items-start gap-4 relative">
+                                        <div className={cn(
+                                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 border-2",
+                                            isLatest ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border"
+                                        )}>
+                                            <DollarSign className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div className={cn(
+                                            "flex-1 rounded-lg p-3 border",
+                                            isLatest ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"
+                                        )}>
+                                            <div className="flex items-center justify-between">
+                                                <span className={cn(
+                                                    "text-base font-bold",
+                                                    isLatest ? "text-primary" : "text-foreground"
+                                                )}>
+                                                    {new Intl.NumberFormat('vi-VN').format(item.DON_GIA)} ₫
+                                                </span>
+                                                {isLatest && (
+                                                    <span className="text-[10px] font-bold uppercase bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Mới nhất</span>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                                                <div>Ngày HL: <span className="text-foreground font-medium">{date.toLocaleDateString('vi-VN')}</span></div>
+                                                <div>NCC: <span className="text-foreground">{item.MA_NCC} - {item.TEN_NCC}</span></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 );
-                            })()}
+                            })}
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </Modal>
+
+            {/* Modal Giá bán theo Nhóm KH & Gói giá */}
+            <Modal
+                isOpen={!!giaBanHistoryProduct}
+                onClose={() => { setGiaBanHistoryProduct(null); setGiaBanHistory([]); }}
+                title="Giá bán & Lịch sử"
+                subtitle={giaBanHistoryProduct ? `${giaBanHistoryProduct.TEN_HH} (${giaBanHistoryProduct.MA_HH})` : ''}
+                icon={DollarSign}
+            >
+                {loadingGiaBanHistory ? (
+                    <div className="flex items-center justify-center py-10">
+                        <div className="w-6 h-6 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin" />
+                    </div>
+                ) : giaBanHistory.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-10">Chưa có giá bán nào.</p>
+                ) : (() => {
+                    // Nhóm theo MA_GOI_GIA → lịch sử
+                    const groupedByGoiGia: Record<string, { label: string; items: typeof giaBanHistory }> = {};
+                    giaBanHistory.forEach(item => {
+                        const goiKey = item.GOI_GIA_NAME;
+                        if (!groupedByGoiGia[goiKey]) {
+                            groupedByGoiGia[goiKey] = {
+                                label: goiKey,
+                                items: [],
+                            };
+                        }
+                        groupedByGoiGia[goiKey].items.push(item);
+                    });
+
+                    return (
+                        <div className="space-y-3">
+                            {Object.entries(groupedByGoiGia).map(([goiKey, group]) => {
+                                const entries = group.items;
+                                const latest = entries[0]; // đã sort desc theo ngày
+                                const older = entries.slice(1);
+                                return (
+                                    <div key={goiKey} className="rounded-xl border border-border overflow-hidden">
+                                        <div className="px-4 py-3">
+                                            {/* Giá hiện tại */}
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <DollarSign className="w-3.5 h-3.5 text-rose-600" />
+                                                        <span className="text-sm font-semibold text-foreground">{group.label}</span>
+                                                    </div>
+                                                    {latest.GHI_CHU && (
+                                                        <p className="text-[11px] text-muted-foreground italic mt-0.5 ml-5.5">{latest.GHI_CHU}</p>
+                                                    )}
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-base font-bold text-rose-600">
+                                                        {new Intl.NumberFormat('vi-VN').format(latest.DON_GIA)} ₫
+                                                    </span>
+                                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                        {new Date(latest.NGAY_HIEU_LUC).toLocaleDateString('vi-VN')}
+                                                        {entries.length === 1 && <span className="ml-1.5 text-[10px] font-bold uppercase bg-rose-500 text-white px-1.5 py-0.5 rounded-full">Hiện tại</span>}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {/* Lịch sử giá cũ */}
+                                            {older.length > 0 && (
+                                                <div className="mt-2 ml-3 pl-3 border-l-2 border-rose-500/15 space-y-1.5">
+                                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Lịch sử</p>
+                                                    {older.map(old => (
+                                                        <div key={old.ID} className="flex items-center justify-between text-xs">
+                                                            <span className="text-muted-foreground">
+                                                                {new Date(old.NGAY_HIEU_LUC).toLocaleDateString('vi-VN')}
+                                                            </span>
+                                                            <span className="font-semibold text-muted-foreground line-through decoration-rose-300">
+                                                                {new Intl.NumberFormat('vi-VN').format(old.DON_GIA)} ₫
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
+            </Modal>
 
             {/* Modal Xem chi tiết sản phẩm */}
-            {viewProduct && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
-                        {/* Header */}
-                        <div className="flex items-center justify-between p-5 border-b">
-                            <div>
-                                <h3 className="text-base font-bold text-foreground">Chi tiết hàng hóa</h3>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                    {viewProduct.MA_HH}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setViewProduct(null)}
-                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Body */}
-                        <div className="overflow-y-auto max-h-[75vh] p-5 space-y-5">
-                            {/* Hình ảnh */}
-                            {viewProduct.HINH_ANH ? (
-                                <div className="w-full h-56 bg-muted/30 rounded-xl border border-border overflow-hidden flex items-center justify-center">
-                                    <img
-                                        src={viewProduct.HINH_ANH}
-                                        alt={viewProduct.TEN_HH}
-                                        className="max-w-full max-h-full object-contain"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="w-full h-40 bg-muted/20 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground/40">
-                                    <Box className="w-10 h-10" />
-                                    <span className="text-xs">Chưa có hình ảnh</span>
-                                </div>
-                            )}
-
-                            {/* Tên + Model */}
-                            <div>
-                                <h4 className="text-lg font-bold text-foreground leading-tight">{viewProduct.TEN_HH}</h4>
-                                <p className="text-sm text-muted-foreground mt-1">Model: <span className="font-mono text-foreground">{viewProduct.MODEL}</span></p>
-                            </div>
-
-                            {/* Grid thông tin */}
-                            <div className="grid grid-cols-2 gap-3">
-                                {[
-                                    { label: 'Mã hàng hóa', value: viewProduct.MA_HH },
-                                    { label: 'Nhóm HH', value: viewProduct.NHOM_HH || '—' },
-                                    { label: 'Phân loại', value: viewProduct.PHAN_LOAI_REL?.TEN_PHAN_LOAI || viewProduct.MA_PHAN_LOAI },
-                                    { label: 'Dòng hàng', value: viewProduct.DONG_HANG_REL?.TEN_DONG_HANG || viewProduct.MA_DONG_HANG },
-                                    { label: 'Đơn vị tính', value: viewProduct.DON_VI_TINH },
-                                    { label: 'Xuất xứ', value: viewProduct.XUAT_XU || '—' },
-                                    { label: 'Bảo hành', value: viewProduct.BAO_HANH || '—' },
-                                    {
-                                        label: 'Hiệu lực',
-                                        value: viewProduct.HIEU_LUC !== false ? '✅ Còn hiệu lực' : '❌ Hết hiệu lực'
-                                    },
-                                ].map(item => (
-                                    <div key={item.label} className="p-3 bg-muted/20 rounded-lg border border-border">
-                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{item.label}</p>
-                                        <p className="text-sm font-medium text-foreground mt-1">{item.value}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Giá nhập hiện tại */}
-                            {giaNhapMap[viewProduct.MA_HH] && (
-                                <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
-                                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Giá nhập hiện tại</p>
-                                    <p className="text-xl font-bold text-primary">
-                                        {new Intl.NumberFormat('vi-VN').format(giaNhapMap[viewProduct.MA_HH].DON_GIA)} ₫
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        NCC: {giaNhapMap[viewProduct.MA_HH].MA_NCC} — {giaNhapMap[viewProduct.MA_HH].TEN_NCC}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Ngày HL: {new Date(giaNhapMap[viewProduct.MA_HH].NGAY_HIEU_LUC).toLocaleDateString('vi-VN')}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Giá bán theo gói giá */}
-                            {giaBanMap[viewProduct.MA_HH] && giaBanMap[viewProduct.MA_HH].length > 0 && (
-                                <div className="rounded-xl border border-rose-500/20 overflow-hidden">
-                                    <div className="bg-rose-500/5 border-b border-rose-500/15 px-3 py-2 flex items-center gap-2">
-                                        <DollarSign className="w-3 h-3 text-rose-600" />
-                                        <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Giá bán</span>
-                                    </div>
-                                    <div className="divide-y divide-border">
-                                        {giaBanMap[viewProduct.MA_HH].map((gb, idx) => (
-                                            <div key={idx} className="flex items-center justify-between px-3 py-2">
-                                                <span className="text-sm font-medium text-foreground">{gb.GOI_GIA}</span>
-                                                <span className="text-sm font-bold text-rose-600">
-                                                    {new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Mô tả */}
-                            {viewProduct.MO_TA && (
-                                <div>
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Mô tả</p>
-                                    <p className="text-sm text-foreground whitespace-pre-line">{viewProduct.MO_TA}</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Footer */}
-                        <div className="flex items-center justify-end gap-3 px-5 py-3 border-t bg-muted/5">
+            <Modal
+                isOpen={!!viewProduct}
+                onClose={() => setViewProduct(null)}
+                title="Chi tiết hàng hóa"
+                subtitle={viewProduct?.MA_HH}
+                icon={Eye}
+                footer={
+                    <>
+                        <span />
+                        <div className="flex items-center gap-3">
                             <button
                                 type="button"
                                 onClick={() => setViewProduct(null)}
-                                className="h-9 px-4 text-sm font-medium border border-input bg-background hover:bg-muted rounded-md transition-colors"
+                                className="btn-premium-secondary"
                             >
                                 Đóng
                             </button>
@@ -1406,16 +1269,108 @@ export default function HangHoaClient({
                                 <button
                                     type="button"
                                     onClick={() => { setEditProduct(viewProduct); setViewProduct(null); }}
-                                    className="h-9 px-4 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 shadow-sm flex items-center gap-2"
+                                    className="btn-premium-primary flex items-center gap-2"
                                 >
                                     <Pencil className="w-3.5 h-3.5" />
                                     Chỉnh sửa
                                 </button>
                             </PermissionGuard>
                         </div>
+                    </>
+                }
+            >
+                {viewProduct && (
+                    <div className="space-y-5">
+                        {/* Hình ảnh */}
+                        {viewProduct.HINH_ANH ? (
+                            <div className="w-full h-56 bg-muted/30 rounded-xl border border-border overflow-hidden flex items-center justify-center">
+                                <img
+                                    src={viewProduct.HINH_ANH}
+                                    alt={viewProduct.TEN_HH}
+                                    className="max-w-full max-h-full object-contain"
+                                />
+                            </div>
+                        ) : (
+                            <div className="w-full h-40 bg-muted/20 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground/40">
+                                <Box className="w-10 h-10" />
+                                <span className="text-xs">Chưa có hình ảnh</span>
+                            </div>
+                        )}
+
+                        {/* Tên + Model */}
+                        <div>
+                            <h4 className="text-lg font-bold text-foreground leading-tight">{viewProduct.TEN_HH}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">Model: <span className="font-mono text-foreground">{viewProduct.MODEL}</span></p>
+                        </div>
+
+                        {/* Grid thông tin */}
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { label: 'Mã hàng hóa', value: viewProduct.MA_HH },
+                                { label: 'Nhóm HH', value: viewProduct.NHOM_HH || '—' },
+                                { label: 'Phân loại', value: viewProduct.PHAN_LOAI_REL?.TEN_PHAN_LOAI || viewProduct.MA_PHAN_LOAI },
+                                { label: 'Dòng hàng', value: viewProduct.DONG_HANG_REL?.TEN_DONG_HANG || viewProduct.MA_DONG_HANG },
+                                { label: 'Đơn vị tính', value: viewProduct.DON_VI_TINH },
+                                { label: 'Xuất xứ', value: viewProduct.XUAT_XU || '—' },
+                                { label: 'Bảo hành', value: viewProduct.BAO_HANH || '—' },
+                                {
+                                    label: 'Hiệu lực',
+                                    value: viewProduct.HIEU_LUC !== false ? '✅ Còn hiệu lực' : '❌ Hết hiệu lực'
+                                },
+                            ].map(item => (
+                                <div key={item.label} className="p-3 bg-muted/20 rounded-lg border border-border">
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{item.label}</p>
+                                    <p className="text-sm font-medium text-foreground mt-1">{item.value}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Giá nhập hiện tại */}
+                        {giaNhapMap[viewProduct.MA_HH] && (
+                            <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                                <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Giá nhập hiện tại</p>
+                                <p className="text-xl font-bold text-primary">
+                                    {new Intl.NumberFormat('vi-VN').format(giaNhapMap[viewProduct.MA_HH].DON_GIA)} ₫
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    NCC: {giaNhapMap[viewProduct.MA_HH].MA_NCC} — {giaNhapMap[viewProduct.MA_HH].TEN_NCC}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Ngày HL: {new Date(giaNhapMap[viewProduct.MA_HH].NGAY_HIEU_LUC).toLocaleDateString('vi-VN')}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Giá bán theo gói giá */}
+                        {giaBanMap[viewProduct.MA_HH] && giaBanMap[viewProduct.MA_HH].length > 0 && (
+                            <div className="rounded-xl border border-rose-500/20 overflow-hidden">
+                                <div className="bg-rose-500/5 border-b border-rose-500/15 px-3 py-2 flex items-center gap-2">
+                                    <DollarSign className="w-3 h-3 text-rose-600" />
+                                    <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Giá bán</span>
+                                </div>
+                                <div className="divide-y divide-border">
+                                    {giaBanMap[viewProduct.MA_HH].map((gb, idx) => (
+                                        <div key={idx} className="flex items-center justify-between px-3 py-2">
+                                            <span className="text-sm font-medium text-foreground">{gb.GOI_GIA}</span>
+                                            <span className="text-sm font-bold text-rose-600">
+                                                {new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Mô tả */}
+                        {viewProduct.MO_TA && (
+                            <div>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Mô tả</p>
+                                <p className="text-sm text-foreground whitespace-pre-line">{viewProduct.MO_TA}</p>
+                            </div>
+                        )}
                     </div>
-                </div>
-            )}
+                )}
+            </Modal>
 
             {/* Modal chọn sản phẩm in bảng giá */}
             <BangGiaSelectModal isOpen={isBangGiaOpen} onClose={() => setIsBangGiaOpen(false)} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus } from "lucide-react";
+import { Plus, DollarSign } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
 import { createGiaNhap } from "../action";
@@ -120,8 +120,20 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
                 </button>
             </PermissionGuard>
 
-            <Modal isOpen={open} onClose={handleClose} title="Thêm giá nhập mới">
-                <form onSubmit={handleSubmit} className="space-y-4 pt-0">
+            <Modal isOpen={open} onClose={handleClose} title="Thêm giá nhập mới" icon={DollarSign}
+                footer={
+                    <>
+                        <div />
+                        <div className="flex items-center gap-3">
+                            <button type="button" onClick={handleClose} className="btn-premium-secondary px-6 h-10 text-sm">Hủy bỏ</button>
+                            <button type="submit" form="form-add-gia-nhap" disabled={loading} className="btn-premium-primary px-6 h-10 text-sm">
+                                {loading ? "Đang lưu..." : "Thêm giá nhập"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <form id="form-add-gia-nhap" onSubmit={handleSubmit} className="space-y-4 pt-0">
                     {/* Ngày hiệu lực */}
                     <div className="space-y-1.5">
                         <label className={labelClass}>Ngày hiệu lực <span className="text-destructive">*</span></label>
@@ -186,13 +198,6 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
                         <input type="text" inputMode="numeric" required className="input-modern" placeholder="VD: 1,234,500" value={donGiaDisplay} onChange={handleDonGiaChange} />
                     </div>
 
-                    {/* Submit */}
-                    <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 flex gap-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-                        <button type="button" onClick={handleClose} className="btn-premium-secondary flex-1">Hủy bỏ</button>
-                        <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                            {loading ? "Đang lưu..." : "Thêm giá nhập"}
-                        </button>
-                    </div>
                 </form>
             </Modal>
         </>

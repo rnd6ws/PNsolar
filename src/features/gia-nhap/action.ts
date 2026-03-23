@@ -163,9 +163,8 @@ export async function getGiaNhapList(filters: {
     MA_NHOM_HH?: string;
     MA_PHAN_LOAI?: string;
     MA_DONG_HANG?: string;
-    MA_GOI_GIA?: string;
 } = {}): Promise<ActionResponse> {
-    const { page = 1, limit = 15, query, MA_NCC, MA_HH, MA_NHOM_HH, MA_PHAN_LOAI, MA_DONG_HANG, MA_GOI_GIA } = filters;
+    const { page = 1, limit = 15, query, MA_NCC, MA_HH, MA_NHOM_HH, MA_PHAN_LOAI, MA_DONG_HANG } = filters;
 
     const where: any = {};
     const andConditions: any[] = [];
@@ -183,7 +182,6 @@ export async function getGiaNhapList(filters: {
     if (MA_NHOM_HH && MA_NHOM_HH !== 'all') andConditions.push({ MA_NHOM_HH });
     if (MA_PHAN_LOAI && MA_PHAN_LOAI !== 'all') andConditions.push({ MA_PHAN_LOAI });
     if (MA_DONG_HANG && MA_DONG_HANG !== 'all') andConditions.push({ MA_DONG_HANG });
-    if (MA_GOI_GIA && MA_GOI_GIA !== 'all') andConditions.push({ MA_GOI_GIA });
     if (MA_NCC && MA_NCC !== 'all') andConditions.push({ MA_NCC });
     if (MA_HH && MA_HH !== 'all') andConditions.push({ MA_HH });
 

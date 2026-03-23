@@ -109,7 +109,14 @@ export default function SettingCoHoiButton({ dmDichVu }: Props) {
                 <span className="hidden sm:inline text-sm font-medium transition-all">Danh mục</span>
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục dịch vụ" size="lg">
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục dịch vụ" size="lg" icon={Settings}
+                footer={
+                    <>
+                        <div />
+                        <button onClick={() => setIsOpen(false)} className="btn-premium-secondary px-6 h-10 text-sm">Đóng</button>
+                    </>
+                }
+            >
                 <div className="space-y-5">
                     {/* Form thêm mới */}
                     <div className="bg-muted/30 rounded-xl border border-border p-4 space-y-3">
@@ -241,9 +248,6 @@ export default function SettingCoHoiButton({ dmDichVu }: Props) {
                         </div>
                     </div>
 
-                    <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 bg-card border-t py-3 px-5 md:px-6 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-                        <button onClick={() => setIsOpen(false)} className="btn-premium-secondary w-full">Đóng</button>
-                    </div>
                 </div>
             </Modal>
         </>

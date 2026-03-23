@@ -11,7 +11,7 @@ export async function createNguoiDaiDien(data: any) {
 
         const result = await prisma.nGUOI_DAI_DIEN.create({
             data: {
-                ID_KH: data.ID_KH,
+                MA_KH: data.ID_KH,
                 NGUOI_DD: data.NGUOI_DD,
                 CHUC_VU: data.CHUC_VU || null,
                 SDT: data.SDT || null,
@@ -88,7 +88,7 @@ export async function processNguoiDaiDienForKhachHang(id_kh: string, data: any) 
         });
     } else {
         return await createNguoiDaiDien({
-            ID_KH: id_kh,
+            ID_KH: id_kh, // sẽ được map sang MA_KH trong createNguoiDaiDien
             NGUOI_DD: data.NGUOI_DD,
             CHUC_VU: data.CHUC_VU_DD,
             SDT: data.SDT_DD,

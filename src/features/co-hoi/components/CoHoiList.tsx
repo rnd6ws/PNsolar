@@ -3,7 +3,7 @@
 import React from "react";
 
 import { useState, useMemo, useEffect } from "react";
-import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users, CalendarPlus2 } from "lucide-react";
+import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users, CalendarPlus2, Target } from "lucide-react";
 import { toast } from "sonner";
 import { deleteCoHoi, updateCoHoi, createCoHoi } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -140,11 +140,6 @@ function CoHoiDetail({ item, dmDichVu, onClose }: { item: any; dmDichVu: any[]; 
                     </div>
                 )}
             </div>
-
-            {/* ── Đóng ── */}
-            <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-2 bg-card border-t py-3 px-5 md:px-6 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-                <button onClick={onClose} className="btn-premium-secondary w-full">Đóng</button>
-            </div>
         </div>
     );
 }
@@ -190,10 +185,6 @@ function NhuCauDetail({ item, dmDichVu, onClose }: { item: any; dmDichVu: any[];
                         </div>
                     </div>
                 ))}
-            </div>
-
-            <div className="sticky -bottom-5 md:-bottom-6 -mx-5 md:-mx-6 -mb-5 md:-mb-6 mt-4 bg-card border-t py-3 px-5 md:px-6 z-10 shadow-sm">
-                <button onClick={onClose} className="btn-premium-secondary w-full">Đóng</button>
             </div>
         </div>
     );
@@ -571,7 +562,14 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
             </div>
 
             {/* Modal: Xem chi tiết */}
-            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title={viewItem ? `Chi tiết · ${viewItem.ID_CH}` : "Chi tiết cơ hội"} size="lg">
+            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title={viewItem ? `Chi tiết · ${viewItem.ID_CH}` : "Chi tiết cơ hội"} size="lg" icon={Target}
+                footer={
+                    <>
+                        <div />
+                        <button onClick={() => setViewItem(null)} className="btn-premium-secondary px-6 h-10 text-sm">Đóng</button>
+                    </>
+                }
+            >
                 {viewItem && (
                     <>
                         <div className="flex items-center justify-between -mt-2 mb-3">
@@ -583,14 +581,21 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
             </Modal>
 
             {/* Modal: Xem chi tiết nhu cầu */}
-            <Modal isOpen={!!viewNhuCauItem} onClose={() => setViewNhuCauItem(null)} title={viewNhuCauItem ? `Nhu cầu · ${viewNhuCauItem.KH?.TEN_KH || viewNhuCauItem.ID_CH}` : "Chi tiết nhu cầu"} size="md">
+            <Modal isOpen={!!viewNhuCauItem} onClose={() => setViewNhuCauItem(null)} title={viewNhuCauItem ? `Nhu cầu · ${viewNhuCauItem.KH?.TEN_KH || viewNhuCauItem.ID_CH}` : "Chi tiết nhu cầu"} size="md" icon={Target}
+                footer={
+                    <>
+                        <div />
+                        <button onClick={() => setViewNhuCauItem(null)} className="btn-premium-secondary px-6 h-10 text-sm">Đóng</button>
+                    </>
+                }
+            >
                 {viewNhuCauItem && (
                     <NhuCauDetail item={viewNhuCauItem} dmDichVu={dmDichVu} onClose={() => setViewNhuCauItem(null)} />
                 )}
             </Modal>
 
             {/* Modal: Sửa */}
-            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật cơ hội" size="lg">
+            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật cơ hội" size="lg" icon={Target}>
                 {editItem && (
                     <CoHoiForm
                         key={editItem.ID}

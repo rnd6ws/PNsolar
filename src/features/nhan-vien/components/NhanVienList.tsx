@@ -1,6 +1,6 @@
 "use client"
 import { useState, useMemo } from 'react';
-import { Trash2, Key, Lock, Edit2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Trash2, Key, Lock, Edit2, ArrowUpDown, ArrowUp, ArrowDown, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { deleteNhanVienAction, updateNhanVienAction, changePasswordAction } from '@/features/nhan-vien/action';
 import Modal from '@/components/Modal';
@@ -209,7 +209,7 @@ export default function NhanVienList({
                                     <td className="p-5 align-middle">
                                         <div className="flex flex-col gap-0.5">
                                             <div className="flex items-center gap-1.5">
-                                                <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", emp.IS_ACTIVE ? "bg-emerald-500" : "bg-slate-400")} />
+                                                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", emp.IS_ACTIVE ? "bg-emerald-500" : "bg-slate-400")} />
                                                 <span className={cn(
                                                     "text-[12px] font-semibold whitespace-nowrap",
                                                     emp.IS_ACTIVE ? "text-emerald-700 dark:text-emerald-500" : "text-muted-foreground"
@@ -301,8 +301,24 @@ export default function NhanVienList({
             </div>
 
             {/* Modal Đổi mật khẩu */}
-            <Modal isOpen={!!changingPasswordEmp} onClose={() => { setChangingPasswordEmp(null); setError(null); }} title="Đổi mật khẩu">
-                <form onSubmit={handleChangePassword} className="space-y-6">
+            <Modal
+                isOpen={!!changingPasswordEmp}
+                onClose={() => { setChangingPasswordEmp(null); setError(null); }}
+                title="Đổi mật khẩu"
+                icon={Lock}
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setChangingPasswordEmp(null)} className="btn-premium-secondary">Hủy bỏ</button>
+                            <button type="button" onClick={() => (document.querySelector('#form-change-password') as HTMLFormElement)?.requestSubmit()} disabled={loading} className="btn-premium-primary">
+                                {loading ? 'Đang lưu...' : 'Lưu mật khẩu'}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <form id="form-change-password" onSubmit={handleChangePassword} className="space-y-4">
                     {error && (
                         <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs font-bold animate-in fade-in zoom-in-95">
                             {error}
@@ -312,19 +328,30 @@ export default function NhanVienList({
                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mật khẩu mới</label>
                         <input name="PASSWORD" type="password" required className="input-modern" placeholder="Nhập mật khẩu mới..." />
                     </div>
-                    <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={() => setChangingPasswordEmp(null)} className="btn-premium-secondary flex-1">Hủy bỏ</button>
-                        <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                            {loading ? 'Đang lưu...' : 'Lưu mật khẩu'}
-                        </button>
-                    </div>
                 </form>
             </Modal>
 
             {/* Modal Sửa Nhân Viên */}
-            <Modal isOpen={!!editingEmp} onClose={() => { setEditingEmp(null); setError(null); }} title="Sửa thông tin nhân sự">
+            <Modal
+                isOpen={!!editingEmp}
+                onClose={() => { setEditingEmp(null); setError(null); }}
+                title="Sửa thông tin nhân sự"
+                icon={UserPlus}
+                fullHeight
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setEditingEmp(null)} className="btn-premium-secondary">Hủy bỏ</button>
+                            <button type="button" onClick={() => (document.querySelector('#form-edit-nhan-vien') as HTMLFormElement)?.requestSubmit()} disabled={loading} className="btn-premium-primary">
+                                {loading ? 'Đang lưu...' : 'Cập nhật'}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
                 {editingEmp && (
-                    <form onSubmit={handleEditSubmission} className="space-y-6">
+                    <form id="form-edit-nhan-vien" onSubmit={handleEditSubmission} className="space-y-5">
                         {error && (
                             <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs font-bold animate-in fade-in zoom-in-95">
                                 {error}
@@ -405,13 +432,6 @@ export default function NhanVienList({
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Email</label>
                             <input name="EMAIL" type="email" className="input-modern" defaultValue={editingEmp.EMAIL || ''} />
-                        </div>
-
-                        <div className="flex gap-4 pt-4">
-                            <button type="button" onClick={() => setEditingEmp(null)} className="btn-premium-secondary flex-1">Hủy bỏ</button>
-                            <button type="submit" disabled={loading} className="btn-premium-primary flex-1">
-                                {loading ? 'Đang lưu...' : 'Cập nhật'}
-                            </button>
                         </div>
                     </form>
                 )}

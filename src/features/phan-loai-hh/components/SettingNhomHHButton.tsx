@@ -56,7 +56,7 @@ export default function SettingNhomHHButton({
                 Cài đặt danh mục
             </button>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Cài đặt Nhóm hàng hóa">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Cài đặt Nhóm hàng hóa" icon={Settings}>
                 <div className="space-y-6 pt-4">
                     <form onSubmit={handleAdd} className="flex gap-2">
                         <div className="flex w-full gap-2 px-1">

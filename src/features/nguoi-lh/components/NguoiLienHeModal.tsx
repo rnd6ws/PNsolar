@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { UserPlus, Edit2, Trash2, Phone, Mail, Briefcase, CheckCircle2, XCircle, Plus, X, Save, Loader2 } from "lucide-react";
+import { UserPlus, Edit2, Trash2, Phone, Mail, Briefcase, CheckCircle2, XCircle, Plus, X, Save, Loader2, Contact } from "lucide-react";
 import FormSelect from "@/components/FormSelect";
 import { toast } from "sonner";
 import Modal from "@/components/Modal";
@@ -117,6 +117,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
             isOpen={isOpen}
             onClose={() => { cancelForm(); onClose(); }}
             title={`Người liên hệ`}
+            icon={Contact}
         >
             <div className="space-y-2">
                 {/* Nút thêm mới và Tên công ty */}
@@ -140,6 +141,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                     isOpen={showForm}
                     onClose={cancelForm}
                     title={editItem ? "Cập nhật người liên hệ" : "Thêm người liên hệ mới"}
+                    icon={UserPlus}
                 >
                     <form onSubmit={handleSubmit} className="px-1 py-1 space-y-4">
                         {/* Tên */}

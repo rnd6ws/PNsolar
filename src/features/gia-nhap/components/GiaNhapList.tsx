@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import {
     Edit2, Trash2, ArrowUpDown, ArrowUp, ArrowDown,
-    MoreHorizontal, Package
+    MoreHorizontal, Package, DollarSign
 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteGiaNhap, updateGiaNhap } from "../action";
@@ -385,7 +385,7 @@ export default function GiaNhapList({
             </div>
 
             {/* Modal: Sửa */}
-            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật giá nhập">
+            <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật giá nhập" icon={DollarSign}>
                 {editItem && (
                     <GiaNhapForm
                         key={editItem?.ID ?? "edit"}
