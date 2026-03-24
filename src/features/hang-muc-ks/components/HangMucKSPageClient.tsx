@@ -14,6 +14,7 @@ type HangMucKS = {
     LOAI_CONG_TRINH: string;
     NHOM_KS: string;
     HANG_MUC_KS: string;
+    STT: number | null;
     HIEU_LUC: boolean;
     CREATED_AT: Date;
 };
