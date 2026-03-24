@@ -1,14 +1,8 @@
 "use client";
 
 import { useState, useMemo, useTransition } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, MoreHorizontal, Eye } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { deleteBaoGia, getBaoGiaById } from "../action";
@@ -206,7 +200,7 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
                                         <td className={tdClass}>{item.THOI_GIAN_LAP_DAT || "—"}</td>
                                     )}
                                     <td className={`${tdClass} text-right`}>
-                                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center justify-end gap-1">
                                             <button
                                                 onClick={() => handleView(item)}
                                                 disabled={loadingView}
@@ -273,29 +267,34 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
                             </div>
 
                             {/* Mobile Actions */}
-                            <div className="flex justify-end pt-2 border-t">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="p-2 hover:bg-muted rounded-lg">
-                                            <MoreHorizontal className="w-4 h-4" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-36 rounded-xl">
-                                        <DropdownMenuItem onClick={() => handleView(item)}>
-                                            <Eye className="w-4 h-4 mr-2" /> Xem
-                                        </DropdownMenuItem>
-                                        <PermissionGuard moduleKey="bao-gia" level="edit">
-                                            <DropdownMenuItem onClick={() => handleEdit(item)}>
-                                                <Pencil className="w-4 h-4 mr-2" /> Sửa
-                                            </DropdownMenuItem>
-                                        </PermissionGuard>
-                                        <PermissionGuard moduleKey="bao-gia" level="delete">
-                                            <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive focus:text-destructive">
-                                                <Trash2 className="w-4 h-4 mr-2" /> Xóa
-                                            </DropdownMenuItem>
-                                        </PermissionGuard>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                            <div className="flex justify-end gap-1 pt-2 border-t">
+                                <button
+                                    onClick={() => handleView(item)}
+                                    disabled={loadingView}
+                                    className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground hover:text-primary"
+                                    title="Xem"
+                                >
+                                    <Eye className="w-4 h-4" />
+                                </button>
+                                <PermissionGuard moduleKey="bao-gia" level="edit">
+                                    <button
+                                        onClick={() => handleEdit(item)}
+                                        disabled={loadingEdit}
+                                        className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                                        title="Sửa"
+                                    >
+                                        <Pencil className="w-4 h-4" />
+                                    </button>
+                                </PermissionGuard>
+                                <PermissionGuard moduleKey="bao-gia" level="delete">
+                                    <button
+                                        onClick={() => setDeleteItem(item)}
+                                        className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground hover:text-destructive"
+                                        title="Xóa"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </PermissionGuard>
                             </div>
                         </div>
                     ))

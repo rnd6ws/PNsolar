@@ -14,11 +14,13 @@ export default function PhanLoaiHHList({
     nhomHHs,
     visibleColumns,
     goiGiaMap = {},
+    phanLoaiList = [],
 }: {
     data: any[],
     nhomHHs: { ID: string; MA_NHOM: string; TEN_NHOM: string; }[],
     visibleColumns?: ColumnKey[],
     goiGiaMap?: Record<string, { count: number; latestDate: string | null; items: any[] }>,
+    phanLoaiList?: { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string }[],
 }) {
     const [editMode, setEditMode] = useState<any>(null);
     const [dongHHModal, setDongHHModal] = useState<{ mode: 'ADD' | 'EDIT', phanLoaiId: string, phanLoaiMa: string, itemData?: any, dvtNhom?: string } | null>(null);
@@ -28,6 +30,7 @@ export default function PhanLoaiHHList({
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
     const [deletePL, setDeletePL] = useState<any>(null);
     const [deleteDH, setDeleteDH] = useState<any>(null);
+    const [selectedBulkPhanLoai, setSelectedBulkPhanLoai] = useState<string>('');
 
     // Quick add gói giá
     const [showAddGoiGia, setShowAddGoiGia] = useState(false);
@@ -95,7 +98,8 @@ export default function PhanLoaiHHList({
         if (!dongHHModal) return;
         setBulkLoading(true);
         setBulkError(null);
-        const res = await createBulkDongHH(dongHHModal.phanLoaiMa, bulkRows);
+        const phanLoaiMa = selectedBulkPhanLoai || dongHHModal.phanLoaiMa;
+        const res = await createBulkDongHH(phanLoaiMa, bulkRows);
         if (res.success) {
             toast.success(res.message);
             setDongHHModal(null);
@@ -175,7 +179,10 @@ export default function PhanLoaiHHList({
         setLoading(true);
 
         const formData = new FormData(e.currentTarget);
-        formData.append("MA_PHAN_LOAI", dongHHModal.phanLoaiMa);
+        // Nếu form không có field MA_PHAN_LOAI (mode ADD), dùng mặc định từ dongHHModal
+        if (!formData.get("MA_PHAN_LOAI")) {
+            formData.append("MA_PHAN_LOAI", dongHHModal.phanLoaiMa);
+        }
 
         let res;
         if (dongHHModal.mode === 'ADD') {
@@ -184,6 +191,7 @@ export default function PhanLoaiHHList({
             const updateProps = {
                 MA_DONG_HANG: formData.get("MA_DONG_HANG")?.toString(),
                 TEN_DONG_HANG: formData.get("TEN_DONG_HANG")?.toString(),
+                MA_PHAN_LOAI: formData.get("MA_PHAN_LOAI")?.toString(),
                 TIEN_TO: formData.get("TIEN_TO")?.toString(),
                 HANG: formData.get("HANG")?.toString(),
                 XUAT_XU: formData.get("XUAT_XU")?.toString(),
@@ -551,9 +559,8 @@ export default function PhanLoaiHHList({
             {/* Modal Dòng hàng */}
             <Modal
                 isOpen={!!dongHHModal}
-                onClose={() => { setDongHHModal(null); setBulkRows([getEmptyBulkRow()]); setBulkError(null); }}
+                onClose={() => { setDongHHModal(null); setBulkRows([getEmptyBulkRow()]); setBulkError(null); setSelectedBulkPhanLoai(''); }}
                 title={dongHHModal?.mode === 'ADD' ? "Thêm dòng hàng" : "Cập nhật dòng hàng"}
-                subtitle={dongHHModal?.phanLoaiMa ? `Phân loại: ${dongHHModal.phanLoaiMa}` : undefined}
                 icon={Layers}
                 size={dongHHModal?.mode === 'ADD' ? 'xl' : undefined}
                 fullHeight={dongHHModal?.mode === 'ADD'}
@@ -563,7 +570,7 @@ export default function PhanLoaiHHList({
                         <div className="flex gap-3">
                             <button
                                 type="button"
-                                onClick={() => { setDongHHModal(null); setBulkRows([getEmptyBulkRow()]); }}
+                                onClick={() => { setDongHHModal(null); setBulkRows([getEmptyBulkRow()]); setSelectedBulkPhanLoai(''); }}
                                 className="btn-premium-secondary"
                             >
                                 Hủy
@@ -585,6 +592,17 @@ export default function PhanLoaiHHList({
             >
                 {dongHHModal && dongHHModal.mode === 'EDIT' && (
                     <form id="form-edit-dong-hang" onSubmit={handleDongHHSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-muted-foreground">Phân loại</label>
+                            <div className="relative">
+                                <select name="MA_PHAN_LOAI" className="input-modern appearance-none cursor-pointer pr-8" defaultValue={dongHHModal.phanLoaiMa}>
+                                    {phanLoaiList.map(pl => (
+                                        <option key={pl.ID} value={pl.MA_PHAN_LOAI}>{pl.TEN_PHAN_LOAI} ({pl.MA_PHAN_LOAI})</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-muted-foreground">Mã dòng hàng</label>
@@ -620,6 +638,21 @@ export default function PhanLoaiHHList({
 
                 {dongHHModal && dongHHModal.mode === 'ADD' && (
                     <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-muted-foreground">Phân loại</label>
+                            <div className="relative">
+                                <select
+                                    className="input-modern appearance-none cursor-pointer pr-8"
+                                    value={selectedBulkPhanLoai || dongHHModal.phanLoaiMa}
+                                    onChange={e => setSelectedBulkPhanLoai(e.target.value)}
+                                >
+                                    {phanLoaiList.map(pl => (
+                                        <option key={pl.ID} value={pl.MA_PHAN_LOAI}>{pl.TEN_PHAN_LOAI} ({pl.MA_PHAN_LOAI})</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
                         <p className="text-xs text-muted-foreground">Thêm nhiều dòng hàng cùng lúc. Mỗi dòng yêu cầu mã và tên.</p>
 
                         {bulkError && (

@@ -90,6 +90,7 @@ export default function PhanLoaiHHPageClient({ data, nhomHHs, goiGiaMap }: Props
                     nhomHHs={nhomHHs}
                     visibleColumns={visibleColumns}
                     goiGiaMap={goiGiaMap}
+                    phanLoaiList={data.map(d => ({ ID: d.ID, MA_PHAN_LOAI: d.MA_PHAN_LOAI, TEN_PHAN_LOAI: d.TEN_PHAN_LOAI }))}
                 />
             </div>
         </>
