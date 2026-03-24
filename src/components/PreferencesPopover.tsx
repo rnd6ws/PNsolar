@@ -8,8 +8,8 @@ export function PreferencesPopover() {
     const [isOpen, setIsOpen] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
     const {
-        theme, font, fontSize, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse,
-        setTheme, setFont, setFontSize, setPreset, setPageLayout, setNavbarBehavior, setSidebarStyle, setSidebarCollapse,
+        theme, font, fontSize, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse, rowsPerPage,
+        setTheme, setFont, setFontSize, setPreset, setPageLayout, setNavbarBehavior, setSidebarStyle, setSidebarCollapse, setRowsPerPage,
         resetDefaults
     } = useTheme();
 
@@ -234,6 +234,25 @@ export function PreferencesPopover() {
                                         )}
                                     >
                                         {c.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Số dòng mỗi trang */}
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Số dòng mỗi trang</label>
+                            <div className="grid grid-cols-4 gap-1 bg-muted/30 p-1 rounded-lg border border-border/50">
+                                {([10, 20, 50, 100] as const).map(n => (
+                                    <button
+                                        key={n}
+                                        onClick={() => setRowsPerPage(n)}
+                                        className={cn(
+                                            "py-1.5 rounded-md text-[10px] font-bold tracking-tight transition-all",
+                                            rowsPerPage === n ? "bg-card text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        {n}
                                     </button>
                                 ))}
                             </div>

@@ -9,6 +9,7 @@ type PageLayout = 'centered' | 'full';
 type NavbarBehavior = 'sticky' | 'scroll';
 type SidebarStyle = 'inset' | 'sidebar' | 'floating';
 type SidebarCollapse = 'icon' | 'off-canvas';
+type RowsPerPage = 10 | 20 | 50 | 100;
 
 interface ThemeContextType {
     theme: Theme;
@@ -19,6 +20,7 @@ interface ThemeContextType {
     navbarBehavior: NavbarBehavior;
     sidebarStyle: SidebarStyle;
     sidebarCollapse: SidebarCollapse;
+    rowsPerPage: RowsPerPage;
     setTheme: (t: Theme) => void;
     setFont: (f: Font) => void;
     setFontSize: (s: FontSize) => void;
@@ -27,6 +29,7 @@ interface ThemeContextType {
     setNavbarBehavior: (b: NavbarBehavior) => void;
     setSidebarStyle: (s: SidebarStyle) => void;
     setSidebarCollapse: (c: SidebarCollapse) => void;
+    setRowsPerPage: (r: RowsPerPage) => void;
     resetDefaults: () => void;
 }
 
@@ -41,6 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [navbarBehavior, setNavbarBehavior] = useState<NavbarBehavior>('sticky');
     const [sidebarStyle, setSidebarStyle] = useState<SidebarStyle>('inset');
     const [sidebarCollapse, setSidebarCollapse] = useState<SidebarCollapse>('icon');
+    const [rowsPerPage, setRowsPerPage] = useState<RowsPerPage>(10);
 
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -53,6 +57,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const savedNavbar = localStorage.getItem('pnsolar-navbar') as NavbarBehavior || 'sticky';
         const savedSidebar = localStorage.getItem('pnsolar-sidebar-style') as SidebarStyle || 'inset';
         const savedCollapse = localStorage.getItem('pnsolar-sidebar-collapse') as SidebarCollapse || 'icon';
+        const savedRows = Number(localStorage.getItem('pnsolar-rows-per-page')) as RowsPerPage || 10;
 
         setTheme(savedTheme);
         setFont(savedFont);
@@ -62,6 +67,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setNavbarBehavior(savedNavbar);
         setSidebarStyle(savedSidebar);
         setSidebarCollapse(savedCollapse);
+        setRowsPerPage([10, 20, 50, 100].includes(savedRows) ? savedRows : 10);
         setIsLoaded(true);
     }, []);
 
@@ -111,7 +117,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.setAttribute('data-sidebar-collapse', sidebarCollapse);
         localStorage.setItem('pnsolar-sidebar-collapse', sidebarCollapse);
 
-    }, [theme, font, fontSize, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse, isLoaded]);
+        // Handle Rows Per Page  
+        localStorage.setItem('pnsolar-rows-per-page', String(rowsPerPage));
+        // Also set cookie so server pages can read it
+        document.cookie = `pnsolar-rows-per-page=${rowsPerPage};path=/;max-age=31536000`;
+
+    }, [theme, font, fontSize, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse, rowsPerPage, isLoaded]);
 
     const resetDefaults = () => {
         setTheme('light');
@@ -122,12 +133,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setNavbarBehavior('sticky');
         setSidebarStyle('inset');
         setSidebarCollapse('icon');
+        setRowsPerPage(10);
     };
 
     return (
         <ThemeContext.Provider value={{
-            theme, font, fontSize, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse,
-            setTheme, setFont, setFontSize, setPreset, setPageLayout, setNavbarBehavior, setSidebarStyle, setSidebarCollapse,
+            theme, font, fontSize, preset, pageLayout, navbarBehavior, sidebarStyle, sidebarCollapse, rowsPerPage,
+            setTheme, setFont, setFontSize, setPreset, setPageLayout, setNavbarBehavior, setSidebarStyle, setSidebarCollapse, setRowsPerPage,
             resetDefaults
         }}>
             {children}

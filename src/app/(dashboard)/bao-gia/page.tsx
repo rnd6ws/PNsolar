@@ -5,6 +5,7 @@ import BaoGiaStatCards from "@/features/bao-gia/components/StatCards";
 import BaoGiaPageClient from "@/features/bao-gia/components/BaoGiaPageClient";
 import AddBaoGiaButton from "@/features/bao-gia/components/AddBaoGiaButton";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
+import { getRowsPerPage } from '@/lib/getRowsPerPage';
 
 export const metadata: Metadata = {
     title: "Báo giá | PN Solar",
@@ -16,15 +17,16 @@ export const revalidate = 0;
 export default async function BaoGiaPage({
     searchParams,
 }: {
-    searchParams: Promise<{ query?: string; page?: string; LOAI_BAO_GIA?: string }>;
+    searchParams: Promise<{ query?: string; page?: string; pageSize?: string; LOAI_BAO_GIA?: string }>;
 }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
+    const pageSize = await getRowsPerPage(params.pageSize);
     const query = params.query;
     const LOAI_BAO_GIA = params.LOAI_BAO_GIA;
 
     const [{ data = [], pagination }, stats] = await Promise.all([
-        getBaoGiaList({ query, page, limit: 10, LOAI_BAO_GIA }),
+        getBaoGiaList({ query, page, limit: pageSize, LOAI_BAO_GIA }),
         getBaoGiaStats(),
     ]);
 
@@ -55,15 +57,13 @@ export default async function BaoGiaPage({
                 <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col mt-2 relative">
                     <BaoGiaPageClient data={data as any} />
 
-                    {(pagination as any) && (pagination as any).totalPages > 1 && (
-                        <div className="p-4 border-t flex justify-between items-center bg-transparent">
-                            <p className="text-sm text-muted-foreground">
-                                Hiển thị <span className="font-semibold text-foreground">{data.length}</span> của {totalBG} báo giá
-                            </p>
+                    {(pagination as any) && (
+                        <div className="p-4 border-t flex justify-center items-center bg-transparent">
                             <Pagination
                                 totalPages={(pagination as any).totalPages}
                                 currentPage={page}
                                 total={(pagination as any).total}
+                                pageSize={pageSize}
                             />
                         </div>
                     )}

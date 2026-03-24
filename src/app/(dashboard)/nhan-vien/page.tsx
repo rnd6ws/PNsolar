@@ -5,6 +5,7 @@ import { Users2, TrendingUp, UserPlus } from 'lucide-react';
 import SettingCategoryButton from '@/features/nhan-vien/components/SettingCategoryButton';
 import AddNhanVienButton from '@/features/nhan-vien/components/AddNhanVienButton';
 import NhanVienPageClient from '@/features/nhan-vien/components/NhanVienPageClient';
+import { getRowsPerPage } from '@/lib/getRowsPerPage';
 
 export const metadata: Metadata = {
     title: "Nhân viên | PN Solar",
@@ -14,16 +15,17 @@ import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuar
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function NhanVienPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; ROLE?: string; status?: string; PHONG_BAN?: string; CHUC_VU?: string }> }) {
+export default async function NhanVienPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; pageSize?: string; ROLE?: string; status?: string; PHONG_BAN?: string; CHUC_VU?: string }> }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
+    const pageSize = await getRowsPerPage(params.pageSize);
     const query = params.query;
     const ROLE = params.ROLE;
     const status = params.status;
     const PHONG_BAN = params.PHONG_BAN;
     const CHUC_VU = params.CHUC_VU;
 
-    const { data: employees = [], pagination } = await getEmployees({ query, page, limit: 10, ROLE, status, PHONG_BAN, CHUC_VU });
+    const { data: employees = [], pagination } = await getEmployees({ query, page, limit: pageSize, ROLE, status, PHONG_BAN, CHUC_VU });
     const { data: chucVus = [] } = await getChucVus();
     const { data: phongBans = [] } = await getPhongBans();
 
@@ -125,10 +127,9 @@ export default async function NhanVienPage({ searchParams }: { searchParams: Pro
                         roleOptions={roleOptions}
                     />
 
-                    {pagination && pagination.totalPages > 1 && (
-                        <div className="p-4 border-t flex justify-between items-center bg-transparent">
-                            <p className="text-sm text-muted-foreground">Hiển thị <span className="font-semibold text-foreground">1-10</span> của {pagination?.total || 0} nhân viên</p>
-                            <Pagination totalPages={pagination.totalPages} currentPage={page} total={pagination.total} />
+                    {pagination && (
+                        <div className="p-4 border-t flex justify-center items-center bg-transparent">
+                            <Pagination totalPages={pagination.totalPages} currentPage={page} total={pagination.total} pageSize={pageSize} />
                         </div>
                     )}
                 </div>

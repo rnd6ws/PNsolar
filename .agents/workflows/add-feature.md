@@ -88,11 +88,22 @@ Bên trong `src/features/[tên-tính-năng]/components/`:
 - [ ] Dùng `DeleteConfirmDialog` chung cho modal xóa — **KHÔNG** viết riêng
 - [ ] Xem code mẫu chi tiết tại: `.agents/skills/create-new-feature/ui-patterns.md` mục 6
 
+### Checklist Pagination (BẮT BUỘC):
+- [ ] Import `Pagination` từ `@/components/Pagination`
+- [ ] Luôn hiển thị Pagination (KHÔNG check `totalPages > 1`)
+- [ ] Truyền `pageSize` prop vào `<Pagination>` component
+- [ ] Client component nhận `pageSize` prop từ server page
+
 ## 6. Lắp ghép vào Giao diện (App Route)
 Tạo trang ở `src/app/(dashboard)/[tên-tính-năng]/page.tsx`:
 - Đây là một **Server Component** (Tuyệt đối không có `"use client"`).
 - Fetch data trực tiếp qua hàm `get...` được lấy từ `action.ts`.
 - Đọc `searchParams` để xác định filter người dùng muốn. Truyền data vào Client Component dọn sẵn ở Bước 5.
+- **Pagination + Global PageSize**: 
+  - Import `import { getRowsPerPage } from '@/lib/getRowsPerPage';`
+  - Đọc: `const pageSize = await getRowsPerPage(params.pageSize);`
+  - Truyền `limit: pageSize` vào hàm fetch + `pageSize={pageSize}` vào Client Component.
+  - **KHÔNG** hardcode `limit: 10` hay `limit: 15`.
 
 ## 7. Khai báo & Phân Quyền Tính năng mới (BẮT BUỘC)
 Sau khi tạo xong giao diện và logic, bạn **phải** cho tính năng này vào mạng lưới quản trị phân quyền:

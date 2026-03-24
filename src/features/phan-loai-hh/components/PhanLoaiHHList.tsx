@@ -145,7 +145,7 @@ export default function PhanLoaiHHList({
     };
 
     // Default: show all columns
-    const visible = visibleColumns ?? ['nhom', 'maPhanLoai', 'phanLoai', 'dvtNhom'];
+    const visible = visibleColumns ?? ['nhom', 'maPhanLoai', 'phanLoai', 'dvtNhom', 'dongHang'];
     const show = (col: ColumnKey) => visible.includes(col);
 
     const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -235,6 +235,9 @@ export default function PhanLoaiHHList({
                             {show('dvtNhom') && (
                                 <th className="h-11 px-4 text-left align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">DVT Nhóm</th>
                             )}
+                            {show('dongHang') && (
+                                <th className="h-11 px-4 text-center align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Dòng hàng</th>
+                            )}
                             <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">Hành động</th>
                         </tr>
                     </thead>
@@ -263,6 +266,19 @@ export default function PhanLoaiHHList({
                                     )}
                                     {show('dvtNhom') && (
                                         <td className="p-5 align-middle text-[13px] text-muted-foreground">{item.DVT_NHOM}</td>
+                                    )}
+                                    {show('dongHang') && (
+                                        <td className="p-5 align-middle text-center">
+                                            <span
+                                                onClick={() => toggleExpand(item.ID)}
+                                                className={`inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[12px] font-bold cursor-pointer transition-colors hover:ring-2 hover:ring-primary/30 ${
+                                                (item.DONG_HHS?.length || 0) > 0
+                                                    ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                            }`}>
+                                                {item.DONG_HHS?.length || 0}
+                                            </span>
+                                        </td>
                                     )}
                                     <td className="p-5 align-middle text-right">
                                         <div className="flex justify-end gap-1">
@@ -298,7 +314,7 @@ export default function PhanLoaiHHList({
                                 </tr>
                                 {expandedSubRows.includes(item.ID) && (
                                     <tr className="bg-muted/5 border-b border-border shadow-inner">
-                                        <td colSpan={([show('nhom'), show('maPhanLoai'), show('phanLoai'), show('dvtNhom')].filter(Boolean).length + 2)} className="p-0">
+                                        <td colSpan={([show('nhom'), show('maPhanLoai'), show('phanLoai'), show('dvtNhom'), show('dongHang')].filter(Boolean).length + 2)} className="p-0">
                                             <div className="pl-16 pr-5 py-4">
                                                 <table className="w-full text-left text-[12px] border-l-2 border-primary/20">
                                                     <thead>
@@ -419,6 +435,13 @@ export default function PhanLoaiHHList({
                         </div>
                         <div className="flex items-center gap-2 pt-1 border-t">
                             <span className="flex-1 text-xs text-muted-foreground font-medium">DVT: {item.DVT_NHOM}</span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                (item.DONG_HHS?.length || 0) > 0
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'bg-muted text-muted-foreground'
+                            }`}>
+                                {item.DONG_HHS?.length || 0} dòng hàng
+                            </span>
                             <PermissionGuard moduleKey="phan-loai-hh" level="add">
                                 <button onClick={() => { setDongHHModal({ mode: 'ADD', phanLoaiId: item.ID, phanLoaiMa: item.MA_PHAN_LOAI, dvtNhom: item.DVT_NHOM }); setBulkRows([getEmptyBulkRow(item.DVT_NHOM)]); }} className="p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Thêm dòng hàng">
                                     <Plus className="w-4 h-4" />

@@ -604,3 +604,95 @@ export default function Loading() {
 - **Khách hàng**: `src/app/(dashboard)/khach-hang/loading.tsx`
 - **Kế hoạch CSKH**: `src/app/(dashboard)/ke-hoach-cs/loading.tsx`
 
+---
+
+## 13. Pagination + Global PageSize (BẮT BUỘC)
+
+### Nguyên tắc
+- Mỗi trang danh sách **PHẢI** có component `Pagination` đi kèm dropdown chọn số dòng/trang (10/20/50/100).
+- **LUÔN hiển thị** Pagination — KHÔNG check `totalPages > 1` vì user cần thấy dropdown chọn số dòng.
+- Số dòng/trang được quản lý **global** qua `PreferencesPopover` → lưu cookie `pnsolar-rows-per-page`.
+- Server pages đọc giá trị global qua helper `getRowsPerPage()`.
+
+### Thứ tự ưu tiên đọc pageSize
+1. `?pageSize=X` trên URL (cao nhất — khi user đổi ở dropdown Pagination)
+2. Cookie `pnsolar-rows-per-page` (từ PreferencesPopover — global)
+3. Default value (param thứ 2 của `getRowsPerPage()`, mặc định = 10)
+
+### Code chuẩn — Server Page (`page.tsx`)
+
+```tsx
+import Pagination from '@/components/Pagination';
+import { getRowsPerPage } from '@/lib/getRowsPerPage';
+
+export default async function Page({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; pageSize?: string }> }) {
+    const params = await searchParams;
+    const page = Number(params.page) || 1;
+    const pageSize = await getRowsPerPage(params.pageSize); // Đọc global
+
+    const { data = [], pagination } = await getItems({ page, limit: pageSize, query: params.query });
+
+    return (
+        <PermissionGuard moduleKey="..." level="view" showNoAccess>
+            <ItemPageClient data={data} pageSize={pageSize} />
+
+            {pagination && (
+                <div className="p-4 border-t flex justify-center items-center bg-transparent">
+                    <Pagination
+                        totalPages={pagination.totalPages}
+                        currentPage={page}
+                        total={pagination.total}
+                        pageSize={pageSize}
+                    />
+                </div>
+            )}
+        </PermissionGuard>
+    );
+}
+```
+
+### Code chuẩn — Client Component nhận pageSize
+
+```tsx
+// Nếu Pagination nằm trong Client Component
+interface Props {
+    data: Item[];
+    pageSize: number; // Nhận từ server page
+    pagination: any;
+    currentPage: number;
+}
+
+export default function ItemClient({ data, pageSize, pagination, currentPage }: Props) {
+    return (
+        <div>
+            {/* ... table/card ... */}
+
+            {/* Pagination - LUÔN hiển thị */}
+            {pagination && (
+                <div className="px-5 py-4 border-t">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={pagination.totalPages}
+                        total={pagination.total}
+                        pageSize={pageSize}
+                    />
+                </div>
+            )}
+        </div>
+    );
+}
+```
+
+### Ghi chú kỹ thuật
+- `getRowsPerPage()` nằm tại `src/lib/getRowsPerPage.ts`, dùng `cookies()` từ `next/headers`.
+- Khi user đổi pageSize ở dropdown Pagination, tự động sync vào cookie + localStorage.
+- PreferencesPopover cũng đọc/ghi `rowsPerPage` qua ThemeProvider context.
+- **KHÔNG** tạo component `LimitSelect`/`PageSizeSelect` riêng — Pagination đã tích hợp sẵn.
+
+### Checklist
+- [ ] Import `getRowsPerPage` trong server page
+- [ ] `const pageSize = await getRowsPerPage(params.pageSize);`
+- [ ] Truyền `limit: pageSize` vào hàm fetch data
+- [ ] Truyền `pageSize={pageSize}` vào `<Pagination>`
+- [ ] **LUÔN** hiển thị Pagination (KHÔNG `totalPages > 1`)
+- [ ] searchParams type có `pageSize?: string`

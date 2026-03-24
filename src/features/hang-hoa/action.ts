@@ -29,7 +29,7 @@ export async function getNhomHHOptions() {
 export async function getPhanLoaiOptions() {
     try {
         const data = await prisma.pHANLOAI_HH.findMany({
-            select: { ID: true, MA_PHAN_LOAI: true, TEN_PHAN_LOAI: true },
+            select: { ID: true, MA_PHAN_LOAI: true, TEN_PHAN_LOAI: true, NHOM: true },
             orderBy: { CREATED_AT: 'asc' },
         });
         return data;
@@ -90,6 +90,7 @@ export async function createProductAction(data: any) {
                 HINH_ANH: parsed.data.HINH_ANH || null,
                 XUAT_XU: parsed.data.XUAT_XU || null,
                 BAO_HANH: parsed.data.BAO_HANH || null,
+                GHI_CHU: parsed.data.GHI_CHU || null,
                 HIEU_LUC: parsed.data.HIEU_LUC ?? true,
             }
         });
@@ -123,6 +124,7 @@ export async function updateProductAction(id: string, data: any) {
                 HINH_ANH: parsed.data.HINH_ANH || null,
                 XUAT_XU: parsed.data.XUAT_XU || null,
                 BAO_HANH: parsed.data.BAO_HANH || null,
+                GHI_CHU: parsed.data.GHI_CHU || null,
                 HIEU_LUC: parsed.data.HIEU_LUC ?? true,
             }
         });

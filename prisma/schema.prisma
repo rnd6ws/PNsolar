@@ -67,6 +67,7 @@ model DMHH {
   HINH_ANH    String?
   XUAT_XU     String?
   BAO_HANH    String?
+  GHI_CHU     String?
   HIEU_LUC    Boolean @default(true)
 
   GIA_BANS    GIA_BAN[] // Relation ngược từ GIA_BAN

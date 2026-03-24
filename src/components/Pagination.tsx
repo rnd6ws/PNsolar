@@ -1,15 +1,18 @@
 "use client"
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 interface Props {
     totalPages: number;
     currentPage: number;
     total: number;
+    pageSize?: number;
 }
 
-export default function Pagination({ totalPages, currentPage, total }: Props) {
+export default function Pagination({ totalPages, currentPage, total, pageSize = 10 }: Props) {
     const searchParams = useSearchParams();
     const { replace } = useRouter();
     const pathname = usePathname();
@@ -17,6 +20,16 @@ export default function Pagination({ totalPages, currentPage, total }: Props) {
     const goToPage = (page: number) => {
         const params = new URLSearchParams(searchParams.toString());
         params.set('page', page.toString());
+        replace(`${pathname}?${params.toString()}`);
+    };
+
+    const changePageSize = (size: number) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('pageSize', size.toString());
+        params.set('page', '1'); // Reset về trang 1 khi đổi pageSize
+        // Sync cookie + localStorage cho global preference
+        document.cookie = `pnsolar-rows-per-page=${size};path=/;max-age=31536000`;
+        localStorage.setItem('pnsolar-rows-per-page', String(size));
         replace(`${pathname}?${params.toString()}`);
     };
 
@@ -36,7 +49,7 @@ export default function Pagination({ totalPages, currentPage, total }: Props) {
         return pages;
     };
 
-    if (totalPages <= 1) {
+    if (totalPages <= 1 && total <= PAGE_SIZE_OPTIONS[0]) {
         return (
             <span className="text-xs text-muted-foreground">
                 Tổng cộng: <span className="font-semibold text-foreground">{total}</span> bản ghi
@@ -46,12 +59,26 @@ export default function Pagination({ totalPages, currentPage, total }: Props) {
 
     return (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full">
-            <span className="text-xs text-muted-foreground">
-                Trang{' '}
-                <span className="font-semibold text-foreground">{currentPage}</span>
-                {' '}/ <span className="font-semibold text-foreground">{totalPages}</span>
-                <span className="ml-1">({total} bản ghi)</span>
-            </span>
+            <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">
+                    Trang{' '}
+                    <span className="font-semibold text-foreground">{currentPage}</span>
+                    {' '}/ <span className="font-semibold text-foreground">{totalPages}</span>
+                    <span className="ml-1">({total} bản ghi)</span>
+                </span>
+                <div className="relative">
+                    <select
+                        value={pageSize}
+                        onChange={(e) => changePageSize(Number(e.target.value))}
+                        className="appearance-none h-7 pl-2 pr-6 text-xs font-medium rounded-md border border-border bg-background hover:bg-muted text-foreground cursor-pointer transition-colors focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    >
+                        {PAGE_SIZE_OPTIONS.map(size => (
+                            <option key={size} value={size}>{size} / trang</option>
+                        ))}
+                    </select>
+                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+                </div>
+            </div>
             <div className="flex items-center gap-1">
                 <button
                     onClick={() => goToPage(currentPage - 1)}

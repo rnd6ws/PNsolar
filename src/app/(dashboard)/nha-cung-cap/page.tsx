@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import AddNhaCungCapButton from "@/features/nha-cung-cap/components/AddNhaCungCapButton";
 import NhaCungCapPageClient from "@/features/nha-cung-cap/components/NhaCungCapPageClient";
+import { getRowsPerPage } from '@/lib/getRowsPerPage';
 
 export const metadata: Metadata = {
     title: "Nhà cung cấp | PN Solar",
@@ -17,13 +18,14 @@ export const revalidate = 0;
 export default async function NhaCungCapPage({
     searchParams,
 }: {
-    searchParams: Promise<{ query?: string; page?: string }>;
+    searchParams: Promise<{ query?: string; page?: string; pageSize?: string }>;
 }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
+    const pageSize = await getRowsPerPage(params.pageSize);
     const query = params.query;
 
-    const result = await getNhaCungCaps({ query, page, limit: 10 });
+    const result = await getNhaCungCaps({ query, page, limit: pageSize });
     const data = result.data ?? [];
     const pagination = result.pagination;
     const totalNCC = pagination?.total ?? data.length;
@@ -80,15 +82,13 @@ export default async function NhaCungCapPage({
                 <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col mt-2 relative">
                     <NhaCungCapPageClient data={data as any} />
 
-                    {pagination && pagination.totalPages > 1 && (
-                        <div className="p-4 border-t flex justify-between items-center bg-transparent">
-                            <p className="text-sm text-muted-foreground">
-                                Hiển thị <span className="font-semibold text-foreground">{data.length}</span> của {totalNCC} nhà cung cấp
-                            </p>
+                    {pagination && (
+                        <div className="p-4 border-t flex justify-center items-center bg-transparent">
                             <Pagination
                                 totalPages={pagination.totalPages}
                                 currentPage={page}
                                 total={pagination.total}
+                                pageSize={pageSize}
                             />
                         </div>
                     )}

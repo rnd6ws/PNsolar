@@ -33,6 +33,7 @@ File này chứa TẤT CẢ các quy chuẩn UI/UX đã được chuẩn hóa tr
 - ✅ **Loading Skeleton** (`loading.tsx` bắt buộc cho mỗi trang)
 - ✅ **Label viết hoa chữ đầu** (Ngày hiệu lực, KHÔNG ngày hiệu lực)
 - ✅ **Format tiền tệ** (dấu phân cách hàng nghìn, type="text" + inputMode="numeric")
+- ✅ **Pagination + Global PageSize** (dùng `getRowsPerPage()` + cookie, dropdown chọn 10/20/50/100)
 
 **Nếu bỏ qua bước này, giao diện sẽ KHÔNG đạt chuẩn.**
 
@@ -156,6 +157,25 @@ Khi code `[Tên]PageClient.tsx` và `[Tên]List.tsx`:
 
 **Xem chi tiết code mẫu tại:** `.agents/skills/create-new-feature/ui-patterns.md`
 
+**Pagination (BẮT BUỘC dùng component `Pagination` chung + Global PageSize):**
+- Import `import Pagination from '@/components/Pagination';`
+- Import `import { getRowsPerPage } from '@/lib/getRowsPerPage';` trong server page.
+- Trong `page.tsx` (server), đọc pageSize: `const pageSize = await getRowsPerPage(params.pageSize);`
+  - `getRowsPerPage()` ưu tiên: URL `?pageSize=X` → Cookie `pnsolar-rows-per-page` → default value.
+  - Truyền `limit: pageSize` vào hàm fetch data.
+- Trong Client Component, truyền `pageSize` prop vào `<Pagination>`:
+  ```tsx
+  <Pagination
+      totalPages={pagination.totalPages}
+      currentPage={page}
+      total={pagination.total}
+      pageSize={pageSize}
+  />
+  ```
+- **LUÔN hiển thị** Pagination (không check `totalPages > 1`) để user luôn thấy dropdown chọn số dòng.
+- Pagination tích hợp sẵn dropdown chọn 10/20/50/100 dòng/trang.
+- Khi đổi pageSize, tự động sync vào cookie + localStorage (cho PreferencesPopover).
+
 ### Bước 4: Áp dụng khiên bảo vệ (Guard) ở Client Component
 Trong giao diện Client (`/components/`), bạn cần sử dụng Guard:
 - **Bọc nút Thao Tác (Button):**
@@ -224,4 +244,7 @@ Khớp tên `moduleKey` và cho `available: true`.
 - CẤM tự viết **custom modal div** (`div.fixed.inset-0`, `z-50`, `bg-black/60`) — phải dùng component `Modal` chung tại `@/components/Modal`.
 - CẤM để **nút Hủy/Submit** trong body form (`flex-1` hoặc `mt-auto`) — nút phải nằm trong `footer` prop của `Modal`, compact và align-right.
 - CẤM tạo modal **thiếu `icon` prop** — mỗi modal bắt buộc có icon lucide-react phù hợp.
+- CẤM dùng `totalPages > 1` làm điều kiện hiển thị Pagination — phải **luôn hiển thị** Pagination để user chọn số dòng/trang.
+- CẤM hardcode `limit` trong server page — PHẢI dùng `getRowsPerPage()` từ `@/lib/getRowsPerPage` để đọc giá trị global từ cookie.
+- CẤM tạo component LimitSelect/PageSizeSelect riêng — Pagination đã tích hợp sẵn dropdown chọn số dòng.
 

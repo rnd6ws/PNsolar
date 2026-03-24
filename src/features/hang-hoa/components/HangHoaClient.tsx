@@ -1,7 +1,14 @@
 'use client';
-import { useState, useEffect, useMemo, startTransition } from 'react';
+import { useState, useEffect, useMemo, startTransition, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Box, Tag, Package, Search, AlertTriangle, CheckCircle2, XCircle, ChevronDown, Download, Settings2, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, History, X, Eye, Printer } from 'lucide-react';
+import { Plus, Pencil, Trash2, Box, Tag, Package, Search, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronRight, Download, Settings2, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, History, X, Eye, Printer, Grid, Layers } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { createProductAction, updateProductAction, deleteProductAction } from '@/features/hang-hoa/action';
 import { toast } from 'sonner';
@@ -40,6 +47,7 @@ interface PhanLoaiOption {
     ID: string;
     MA_PHAN_LOAI: string;
     TEN_PHAN_LOAI: string;
+    NHOM?: string | null;
 }
 
 interface DongHangOption {
@@ -71,13 +79,14 @@ interface FormData {
     HINH_ANH: string;
     XUAT_XU: string;
     BAO_HANH: string;
+    GHI_CHU: string;
     HIEU_LUC: boolean;
 }
 
 const emptyForm: FormData = {
     MA_HH: '', NHOM_HH: '', MA_PHAN_LOAI: '', MA_DONG_HANG: '',
     TEN_HH: '', MODEL: '', MO_TA: '', DON_VI_TINH: '',
-    HINH_ANH: '', XUAT_XU: '', BAO_HANH: '', HIEU_LUC: true,
+    HINH_ANH: '', XUAT_XU: '', BAO_HANH: '', GHI_CHU: '', HIEU_LUC: true,
 };
 
 const DEFAULT_COLUMNS: ColumnKey[] = ['nhomHH', 'phanLoai', 'dongHang', 'model', 'dvt', 'xuatXu', 'baoHanh', 'hieuLuc', 'giaNhap', 'giaBan'];
@@ -133,19 +142,31 @@ function ProductModal({
     const [error, setError] = useState<string | null>(null);
     const [selectedPhanLoaiId, setSelectedPhanLoaiId] = useState<string>('');
 
+    // Lọc phân loại theo nhóm đã chọn
+    const filteredPhanLoai = useMemo(() => {
+        if (!form.NHOM_HH) return phanLoaiOptions;
+        return phanLoaiOptions.filter(pl => pl.NHOM === form.NHOM_HH);
+    }, [form.NHOM_HH, phanLoaiOptions]);
+
     // Lọc dòng hàng theo phân loại đã chọn
     const filteredDongHang = useMemo(() => {
-        if (!selectedPhanLoaiId) return dongHangOptions;
+        if (!selectedPhanLoaiId) {
+            // Nếu chưa chọn phân loại nhưng đã chọn nhóm → lọc theo nhóm
+            if (form.NHOM_HH) {
+                const plMaCodes = filteredPhanLoai.map(pl => pl.MA_PHAN_LOAI);
+                return dongHangOptions.filter(dh => plMaCodes.includes(dh.MA_PHAN_LOAI));
+            }
+            return dongHangOptions;
+        }
         const selectedPL = phanLoaiOptions.find(pl => pl.ID === selectedPhanLoaiId);
         if (!selectedPL) return dongHangOptions;
         return dongHangOptions.filter(dh => dh.MA_PHAN_LOAI === selectedPL.MA_PHAN_LOAI);
-    }, [selectedPhanLoaiId, dongHangOptions, phanLoaiOptions]);
+    }, [selectedPhanLoaiId, form.NHOM_HH, dongHangOptions, phanLoaiOptions, filteredPhanLoai]);
 
     // Sync form state when modal opens or product changes
     useEffect(() => {
         if (isOpen) {
             if (product) {
-                // product giờ có MA_PHAN_LOAI field
                 const maPhanLoai = (product as any).MA_PHAN_LOAI || '';
                 const matchedPL = phanLoaiOptions.find(pl => pl.MA_PHAN_LOAI === maPhanLoai);
                 setSelectedPhanLoaiId(matchedPL?.ID || '');
@@ -162,6 +183,7 @@ function ProductModal({
                     HINH_ANH: product.HINH_ANH || '',
                     XUAT_XU: product.XUAT_XU || '',
                     BAO_HANH: product.BAO_HANH || '',
+                    GHI_CHU: (product as any).GHI_CHU || '',
                     HIEU_LUC: product.HIEU_LUC ?? true,
                 });
             } else {
@@ -177,11 +199,27 @@ function ProductModal({
         setForm(prev => ({ ...prev, [key]: value }));
     };
 
+    // Khi chọn Nhóm HH → reset PL + DH
+    const handleNhomChange = (nhomValue: string) => {
+        handleChange('NHOM_HH', nhomValue);
+        // Reset phân loại + dòng hàng
+        handleChange('MA_PHAN_LOAI', '');
+        setSelectedPhanLoaiId('');
+        handleChange('MA_DONG_HANG', '');
+        handleChange('TEN_HH', '');
+        handleChange('DON_VI_TINH', '');
+        handleChange('XUAT_XU', '');
+    };
+
     // Khi chọn Phân loại
     const handlePhanLoaiChange = (maPhanLoai: string) => {
         const selected = phanLoaiOptions.find(pl => pl.MA_PHAN_LOAI === maPhanLoai);
         setSelectedPhanLoaiId(selected?.ID || '');
         handleChange('MA_PHAN_LOAI', maPhanLoai);
+        // Auto-fill Nhóm nếu chưa chọn
+        if (selected?.NHOM && !form.NHOM_HH) {
+            handleChange('NHOM_HH', selected.NHOM);
+        }
         // Reset dòng hàng khi đổi phân loại
         handleChange('MA_DONG_HANG', '');
         handleChange('TEN_HH', '');
@@ -189,30 +227,50 @@ function ProductModal({
         handleChange('XUAT_XU', '');
     };
 
-    // Khi chọn Dòng hàng
+    // Khi chọn Dòng hàng → auto-fill ngược lên Phân loại + Nhóm
     const handleDongHangChange = (maDongHang: string) => {
-        handleChange('MA_DONG_HANG', maDongHang); // lưu mã
+        handleChange('MA_DONG_HANG', maDongHang);
         const selected = dongHangOptions.find(dh => dh.MA_DONG_HANG === maDongHang);
         if (selected) {
+            // Auto-fill Phân loại ngược lên
+            if (selected.MA_PHAN_LOAI) {
+                handleChange('MA_PHAN_LOAI', selected.MA_PHAN_LOAI);
+                const matchedPL = phanLoaiOptions.find(pl => pl.MA_PHAN_LOAI === selected.MA_PHAN_LOAI);
+                if (matchedPL) {
+                    setSelectedPhanLoaiId(matchedPL.ID);
+                    // Auto-fill Nhóm ngược lên
+                    if (matchedPL.NHOM) {
+                        handleChange('NHOM_HH', matchedPL.NHOM);
+                    }
+                }
+            }
             // Auto-fill ĐVT
             if (selected.DVT) handleChange('DON_VI_TINH', selected.DVT);
             // Auto-fill Xuất xứ
             if (selected.XUAT_XU) handleChange('XUAT_XU', selected.XUAT_XU);
-            // Auto-fill Tên hàng = Tiền tố + MODEL
+            // Auto-fill Tên hàng = Tiền tố + " " + MODEL
             const tienTo = selected.TIEN_TO || '';
             const model = form.MODEL || '';
-            handleChange('TEN_HH', tienTo + model);
+            handleChange('TEN_HH', [tienTo, model].filter(Boolean).join(' '));
+            // Auto-fill Mã HH từ MODEL (có thể sửa)
+            if (model && !form.MA_HH) {
+                handleChange('MA_HH', model);
+            }
         }
     };
 
-    // Khi thay đổi MODEL -> auto update TEN_HH
+    // Khi thay đổi MODEL -> auto update TEN_HH + MA_HH
     const handleModelChange = (modelValue: string) => {
         handleChange('MODEL', modelValue);
+        // Auto-fill Mã HH từ MODEL (có thể sửa)
+        if (!product) {
+            handleChange('MA_HH', modelValue);
+        }
         // Tìm dòng hàng đang chọn -> cập nhật TÊN
         const selectedDH = dongHangOptions.find(dh => dh.MA_DONG_HANG === form.MA_DONG_HANG);
         if (selectedDH) {
             const tienTo = selectedDH.TIEN_TO || '';
-            handleChange('TEN_HH', tienTo + modelValue);
+            handleChange('TEN_HH', [tienTo, modelValue].filter(Boolean).join(' '));
         }
     };
 
@@ -253,6 +311,7 @@ function ProductModal({
 
     return (
         <Modal
+            size="lg"
             isOpen={isOpen}
             onClose={onClose}
             title={product ? 'Chỉnh sửa hàng hóa' : 'Thêm hàng hóa mới'}
@@ -288,38 +347,26 @@ function ProductModal({
                 </>
             }
         >
-                <form onSubmit={handleSubmit}>
-                    <div className="space-y-5">
-                        {error && (
-                            <div className="flex items-center gap-3 p-3.5 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
-                                <AlertTriangle className="w-4 h-4 shrink-0" />
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Row 1: MA_HH */}
-                        <div>
-                            <label className={labelClass}>Mã hàng hóa <span className="text-destructive">*</span></label>
-                            <input
-                                className={inputClass}
-                                placeholder="VD: HH-001"
-                                value={form.MA_HH}
-                                onChange={e => handleChange('MA_HH', e.target.value)}
-                                required
-                                disabled={!!product}
-                            />
+            <form onSubmit={handleSubmit}>
+                <div className="space-y-5">
+                    {error && (
+                        <div className="flex items-center gap-3 p-3.5 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
+                            {error}
                         </div>
+                    )}
 
-                        {/* Row 2: Nhóm HH */}
+                    {/* Row 1: Nhóm HH + Phân loại + Dòng hàng (cascade 3 cột) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label className={labelClass}>Nhóm hàng hóa</label>
                             <div className="relative">
                                 <select
                                     className={selectClass}
                                     value={form.NHOM_HH}
-                                    onChange={e => handleChange('NHOM_HH', e.target.value)}
+                                    onChange={e => handleNhomChange(e.target.value)}
                                 >
-                                    <option value="">-- Chọn nhóm hàng hóa --</option>
+                                    <option value="">-- Chọn nhóm --</option>
                                     {nhomHHOptions.map(nhom => (
                                         <option key={nhom.ID} value={nhom.TEN_NHOM}>{nhom.TEN_NHOM}</option>
                                     ))}
@@ -327,152 +374,166 @@ function ProductModal({
                                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             </div>
                         </div>
-
-                        {/* Row 3: Phân loại + Dòng hàng */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelClass}>Phân loại</label>
-                                <div className="relative">
-                                    <select
-                                        className={selectClass}
-                                        value={form.MA_PHAN_LOAI}
-                                        onChange={e => handlePhanLoaiChange(e.target.value)}
-                                    >
-                                        <option value="">-- Chọn phân loại --</option>
-                                        {phanLoaiOptions.map(pl => (
-                                            <option key={pl.ID} value={pl.MA_PHAN_LOAI}>{pl.TEN_PHAN_LOAI}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                                </div>
-                            </div>
-                            <div>
-                                <label className={labelClass}>Dòng hàng</label>
-                                <div className="relative">
-                                    <select
-                                        className={selectClass}
-                                        value={currentMaDongHang}
-                                        onChange={e => handleDongHangChange(e.target.value)}
-                                    >
-                                        <option value="">-- Chọn dòng hàng --</option>
-                                        {filteredDongHang.map(dh => (
-                                            <option key={dh.ID} value={dh.MA_DONG_HANG}>{dh.TEN_DONG_HANG}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                                </div>
-
-                            </div>
-                        </div>
-
-                        {/* Row 3: Model + Tên hàng */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelClass}>Model</label>
-                                <input
-                                    className={inputClass}
-                                    placeholder="VD: JKM-450M"
-                                    value={form.MODEL}
-                                    onChange={e => handleModelChange(e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label className={labelClass}>Tên hàng <span className="text-destructive">*</span></label>
-                                <input
-                                    className={inputClass}
-                                    placeholder="Tự động tạo từ Tiền tố + Model"
-                                    value={form.TEN_HH}
-                                    onChange={e => handleChange('TEN_HH', e.target.value)}
-                                    required
-                                />
-                                <p className="text-[11px] text-muted-foreground mt-1">
-                                    Tự động = Tiền tố dòng hàng + Model, có thể sửa
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Row 4: ĐVT + Xuất xứ */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelClass}>Đơn vị tính <span className="text-destructive">*</span></label>
-                                <input
-                                    className={inputClass}
-                                    placeholder="Tự động theo dòng hàng"
-                                    value={form.DON_VI_TINH}
-                                    onChange={e => handleChange('DON_VI_TINH', e.target.value)}
-                                    required
-                                />
-                                <p className="text-[11px] text-muted-foreground mt-1">
-                                    Tự động theo dòng hàng, có thể sửa
-                                </p>
-                            </div>
-                            <div>
-                                <label className={labelClass}>Xuất xứ</label>
-                                <input
-                                    className={inputClass}
-                                    placeholder="Tự động theo dòng hàng"
-                                    value={form.XUAT_XU}
-                                    onChange={e => handleChange('XUAT_XU', e.target.value)}
-                                />
-                                <p className="text-[11px] text-muted-foreground mt-1">
-                                    Tự động theo dòng hàng, có thể sửa
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Row 5: Bảo hành + Hiệu lực */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelClass}>Bảo hành</label>
-                                <input
-                                    className={inputClass}
-                                    placeholder="VD: 12 tháng, 25 năm hiệu suất..."
-                                    value={form.BAO_HANH}
-                                    onChange={e => handleChange('BAO_HANH', e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label className={labelClass}>Hiệu lực</label>
-                                <button
-                                    type="button"
-                                    onClick={() => handleChange('HIEU_LUC', !form.HIEU_LUC)}
-                                    className={cn(
-                                        "w-full h-9 px-3 rounded-md border text-sm font-medium flex items-center gap-2 transition-all",
-                                        form.HIEU_LUC
-                                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/20"
-                                            : "bg-red-500/10 border-red-500/30 text-red-600 hover:bg-red-500/20"
-                                    )}
-                                >
-                                    {form.HIEU_LUC ? (
-                                        <><CheckCircle2 className="w-4 h-4" /> Còn hiệu lực</>
-                                    ) : (
-                                        <><XCircle className="w-4 h-4" /> Hết hiệu lực</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Mô tả */}
                         <div>
-                            <label className={labelClass}>Mô tả</label>
-                            <textarea
-                                className={cn(inputClass, "h-20 resize-none py-2")}
-                                placeholder="Mô tả chi tiết về hàng hóa..."
-                                value={form.MO_TA}
-                                onChange={e => handleChange('MO_TA', e.target.value)}
+                            <label className={labelClass}>Phân loại</label>
+                            <div className="relative">
+                                <select
+                                    className={selectClass}
+                                    value={form.MA_PHAN_LOAI}
+                                    onChange={e => handlePhanLoaiChange(e.target.value)}
+                                >
+                                    <option value="">-- Chọn phân loại --</option>
+                                    {filteredPhanLoai.map(pl => (
+                                        <option key={pl.ID} value={pl.MA_PHAN_LOAI}>{pl.TEN_PHAN_LOAI}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className={labelClass}>Dòng hàng</label>
+                            <div className="relative">
+                                <select
+                                    className={selectClass}
+                                    value={currentMaDongHang}
+                                    onChange={e => handleDongHangChange(e.target.value)}
+                                >
+                                    <option value="">-- Chọn dòng hàng --</option>
+                                    {filteredDongHang.map(dh => (
+                                        <option key={dh.ID} value={dh.MA_DONG_HANG}>{dh.TEN_DONG_HANG}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Row 2: Mã HH + Model */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelClass}>Mã hàng hóa <span className="text-destructive">*</span></label>
+                            <input
+                                className={inputClass}
+                                placeholder="Tự động từ Model"
+                                value={form.MA_HH}
+                                onChange={e => handleChange('MA_HH', e.target.value)}
+                                required
+                                disabled={!!product}
                             />
                         </div>
-
-                        {/* Hình ảnh sản phẩm */}
                         <div>
-                            <label className={labelClass}>Hình ảnh sản phẩm</label>
-                            <ProductImageUpload
-                                value={form.HINH_ANH}
-                                onChange={(url) => handleChange('HINH_ANH', url)}
+                            <label className={labelClass}>Model</label>
+                            <input
+                                className={inputClass}
+                                placeholder="VD: JKM-450M"
+                                value={form.MODEL}
+                                onChange={e => handleModelChange(e.target.value)}
                             />
                         </div>
                     </div>
-                </form>
+
+                    {/* Row 3: Tên hàng + ĐVT */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelClass}>Tên hàng <span className="text-destructive">*</span></label>
+                            <input
+                                className={inputClass}
+                                placeholder="Tự động: Tiền tố + Model"
+                                value={form.TEN_HH}
+                                onChange={e => handleChange('TEN_HH', e.target.value)}
+                                required
+                            />
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                                Tự động = Tiền tố + Model, có thể sửa
+                            </p>
+                        </div>
+                        <div>
+                            <label className={labelClass}>Đơn vị tính <span className="text-destructive">*</span></label>
+                            <input
+                                className={inputClass}
+                                placeholder="Tự động theo dòng hàng"
+                                value={form.DON_VI_TINH}
+                                onChange={e => handleChange('DON_VI_TINH', e.target.value)}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {/* Row 4: Xuất xứ + Hiệu lực */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelClass}>Xuất xứ</label>
+                            <input
+                                className={inputClass}
+                                placeholder="Tự động theo dòng hàng"
+                                value={form.XUAT_XU}
+                                onChange={e => handleChange('XUAT_XU', e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className={labelClass}>Hiệu lực</label>
+                            <button
+                                type="button"
+                                onClick={() => handleChange('HIEU_LUC', !form.HIEU_LUC)}
+                                className={cn(
+                                    "w-full h-9 px-3 rounded-md border text-sm font-medium flex items-center gap-2 transition-all sm:w-auto",
+                                    form.HIEU_LUC
+                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/20"
+                                        : "bg-red-500/10 border-red-500/30 text-red-600 hover:bg-red-500/20"
+                                )}
+                            >
+                                {form.HIEU_LUC ? (
+                                    <><CheckCircle2 className="w-4 h-4" /> Còn hiệu lực</>
+                                ) : (
+                                    <><XCircle className="w-4 h-4" /> Hết hiệu lực</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Row 5: Bảo hành (textarea) */}
+                    <div>
+                        <label className={labelClass}>Bảo hành</label>
+                        <textarea
+                            className={cn(inputClass, "h-16 resize-none py-2")}
+                            placeholder="VD: 12 tháng sản phẩm, 25 năm hiệu suất..."
+                            value={form.BAO_HANH}
+                            onChange={e => handleChange('BAO_HANH', e.target.value)}
+                        />
+                    </div>
+
+                    {/* Ghi chú */}
+                    <div>
+                        <label className={labelClass}>Ghi chú</label>
+                        <textarea
+                            className={cn(inputClass, "h-16 resize-none py-2")}
+                            placeholder="Ghi chú thêm về hàng hóa..."
+                            value={form.GHI_CHU}
+                            onChange={e => handleChange('GHI_CHU', e.target.value)}
+                        />
+                    </div>
+
+                    {/* Mô tả */}
+                    <div>
+                        <label className={labelClass}>Mô tả</label>
+                        <textarea
+                            className={cn(inputClass, "h-20 resize-none py-2")}
+                            placeholder="Mô tả chi tiết về hàng hóa..."
+                            value={form.MO_TA}
+                            onChange={e => handleChange('MO_TA', e.target.value)}
+                        />
+                    </div>
+
+                    {/* Hình ảnh sản phẩm */}
+                    <div>
+                        <label className={labelClass}>Hình ảnh sản phẩm</label>
+                        <ProductImageUpload
+                            value={form.HINH_ANH}
+                            onChange={(url) => handleChange('HINH_ANH', url)}
+                        />
+                    </div>
+                </div>
+            </form>
         </Modal>
     );
 }
@@ -481,12 +542,13 @@ function ProductModal({
 
 // ===== MAIN CLIENT COMPONENT =====
 export default function HangHoaClient({
-    initialProducts, initialPagination, currentPage, uniqueCategories,
+    initialProducts, initialPagination, currentPage, pageSize = 10, uniqueCategories,
     nhomHHOptions, phanLoaiOptions, dongHangOptions, giaNhapMap = {}, giaBanMap = {}
 }: {
     initialProducts: Product[];
     initialPagination: any;
     currentPage: number;
+    pageSize?: number;
     uniqueCategories: { nhomHH: string[]; phanLoai: { value: string; label: string }[]; dongHang: { value: string; label: string }[] };
     nhomHHOptions: NhomHHOption[];
     phanLoaiOptions: PhanLoaiOption[];
@@ -501,6 +563,8 @@ export default function HangHoaClient({
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+    const [groupBy, setGroupBy] = useState<string>('none');
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [giaNhapHistory, setGiaNhapHistory] = useState<GiaNhapHistoryItem[]>([]);
     const [giaNhapHistoryProduct, setGiaNhapHistoryProduct] = useState<Product | null>(null);
     const [loadingHistory, setLoadingHistory] = useState(false);
@@ -509,6 +573,16 @@ export default function HangHoaClient({
     const [loadingGiaBanHistory, setLoadingGiaBanHistory] = useState(false);
     const [viewProduct, setViewProduct] = useState<Product | null>(null);
     const [isBangGiaOpen, setIsBangGiaOpen] = useState(false);
+
+    const GROUP_LABELS: Record<string, string> = {
+        'NHOM_HH': 'Nhóm HH',
+        'PHAN_LOAI': 'Phân loại',
+        'DONG_HANG': 'Dòng hàng',
+    };
+
+    const toggleGroup = (key: string) => {
+        setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+    };
 
     const handleShowHistory = async (prod: Product) => {
         setGiaNhapHistoryProduct(prod);
@@ -546,6 +620,33 @@ export default function HangHoaClient({
             return 0;
         });
     }, [initialProducts, sortConfig]);
+
+    const groupedProducts = useMemo(() => {
+        if (!groupBy || groupBy === 'none') {
+            return [{ label: '', items: sortedProducts, total: sortedProducts.length }];
+        }
+        const groups: { label: string; items: Product[] }[] = [];
+        const labelMap = new Map<string, number>();
+
+        sortedProducts.forEach(item => {
+            let label = 'Chưa phân loại';
+            if (groupBy === 'NHOM_HH') {
+                label = item.NHOM_HH || 'Chưa có nhóm';
+            } else if (groupBy === 'PHAN_LOAI') {
+                label = item.PHAN_LOAI_REL?.TEN_PHAN_LOAI || item.MA_PHAN_LOAI || 'Chưa phân loại';
+            } else if (groupBy === 'DONG_HANG') {
+                label = item.DONG_HANG_REL?.TEN_DONG_HANG || item.MA_DONG_HANG || 'Chưa có dòng hàng';
+            }
+            if (labelMap.has(label)) {
+                groups[labelMap.get(label)!].items.push(item);
+            } else {
+                labelMap.set(label, groups.length);
+                groups.push({ label, items: [item] });
+            }
+        });
+
+        return groups.map(g => ({ ...g, total: g.items.length }));
+    }, [sortedProducts, groupBy]);
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -658,16 +759,42 @@ export default function HangHoaClient({
                                     options={uniqueCategories.dongHang}
                                     placeholder="Dòng hàng"
                                 />
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            className={cn(
+                                                "px-3 py-2 border rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2",
+                                                groupBy !== 'none' ? "bg-primary/5 text-primary border-primary/30 hover:bg-primary/10" : "bg-background hover:bg-muted text-foreground border-border"
+                                            )}
+                                        >
+                                            <Grid className="w-4 h-4" />
+                                            <span>{GROUP_LABELS[groupBy] || 'Nhóm'}</span>
+                                            <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48 rounded-xl font-medium">
+                                        <DropdownMenuItem onClick={() => setGroupBy('NHOM_HH')} className={cn('py-2.5', groupBy === 'NHOM_HH' && 'bg-primary/10 text-primary')}>
+                                            <Tag className="w-4 h-4 mr-2" /> Nhóm HH
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGroupBy('PHAN_LOAI')} className={cn('py-2.5', groupBy === 'PHAN_LOAI' && 'bg-primary/10 text-primary')}>
+                                            <Layers className="w-4 h-4 mr-2" /> Phân loại
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGroupBy('DONG_HANG')} className={cn('py-2.5', groupBy === 'DONG_HANG' && 'bg-primary/10 text-primary')}>
+                                            <Box className="w-4 h-4 mr-2" /> Dòng hàng
+                                        </DropdownMenuItem>
+                                        {groupBy !== 'none' && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => setGroupBy('none')} className="py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                    <X className="w-4 h-4 mr-2" /> Không nhóm
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                                 <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0" title="Xuất Excel">
                                     <Download className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => setIsBangGiaOpen(true)}
-                                    className="p-2 border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary rounded-lg transition-colors shadow-sm flex shrink-0"
-                                    title="In bảng giá"
-                                >
-                                    <Printer className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
@@ -693,21 +820,50 @@ export default function HangHoaClient({
                                     />
                                 </div>
 
-                                <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-border w-full">
-                                    <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
-                                    <button
-                                        className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex"
-                                        title="Xuất Excel"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => setIsBangGiaOpen(true)}
-                                        className="p-2 border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary rounded-lg transition-colors shadow-sm flex"
-                                        title="In bảng giá"
-                                    >
-                                        <Printer className="w-4 h-4" />
-                                    </button>
+                                <div className="flex items-center justify-between gap-3 mt-1 pt-3 border-t border-border w-full">
+                                    <div className="flex items-center gap-2">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button
+                                                    className={cn(
+                                                        "px-3 py-2 border rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2",
+                                                        groupBy !== 'none' ? "bg-primary/5 text-primary border-primary/30 hover:bg-primary/10" : "bg-background hover:bg-muted text-foreground border-border"
+                                                    )}
+                                                >
+                                                    <Grid className="w-4 h-4" />
+                                                    <span>{GROUP_LABELS[groupBy] || 'Nhóm'}</span>
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="start" className="w-48 rounded-xl font-medium">
+                                                <DropdownMenuItem onClick={() => setGroupBy('NHOM_HH')} className={cn('py-2.5', groupBy === 'NHOM_HH' && 'bg-primary/10 text-primary')}>
+                                                    <Tag className="w-4 h-4 mr-2" /> Nhóm HH
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => setGroupBy('PHAN_LOAI')} className={cn('py-2.5', groupBy === 'PHAN_LOAI' && 'bg-primary/10 text-primary')}>
+                                                    <Layers className="w-4 h-4 mr-2" /> Phân loại
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => setGroupBy('DONG_HANG')} className={cn('py-2.5', groupBy === 'DONG_HANG' && 'bg-primary/10 text-primary')}>
+                                                    <Box className="w-4 h-4 mr-2" /> Dòng hàng
+                                                </DropdownMenuItem>
+                                                {groupBy !== 'none' && (
+                                                    <>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => setGroupBy('none')} className="py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                            <X className="w-4 h-4 mr-2" /> Không nhóm
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex"
+                                            title="Xuất Excel"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -753,176 +909,199 @@ export default function HangHoaClient({
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {sortedProducts.map((prod: Product) => (
-                                    <tr
-                                        key={prod.ID}
-                                        className="border-b border-border hover:bg-muted/30 transition-all group"
-                                    >
-                                        {/* Tên hàng + MA_HH + hình ảnh (luôn hiện) */}
-                                        <td className="p-4 align-middle">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center shadow-sm shrink-0">
-                                                    {prod.HINH_ANH ? (
-                                                        <img src={prod.HINH_ANH} alt={prod.TEN_HH} className="w-full h-full object-cover rounded-lg" />
-                                                    ) : (
-                                                        <Box className="w-4 h-4 text-muted-foreground opacity-50" />
-                                                    )}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="font-medium text-foreground text-[14px] leading-tight mb-0.5 truncate max-w-[200px]">{prod.TEN_HH}</p>
-                                                    <p className="text-[12px] text-primary font-medium font-mono uppercase">{prod.MA_HH}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        {/* Nhóm HH */}
-                                        {show('nhomHH') && (
-                                            <td className="p-4 align-middle">
-                                                {prod.NHOM_HH ? (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-500/10 text-violet-600 border border-violet-500/20">
-                                                        {prod.NHOM_HH}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[13px] text-muted-foreground">—</span>
-                                                )}
-                                            </td>
-                                        )}
-
-                                        {/* Phân loại */}
-                                        {show('phanLoai') && (
-                                            <td className="p-4 align-middle">
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-600 border-blue-500/20">
-                                                    <Tag className="w-3 h-3" />
-                                                    {prod.PHAN_LOAI_REL?.TEN_PHAN_LOAI || prod.MA_PHAN_LOAI}
-                                                </span>
-                                            </td>
-                                        )}
-
-                                        {/* Dòng hàng */}
-                                        {show('dongHang') && (
-                                            <td className="p-4 align-middle">
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-secondary text-secondary-foreground border border-border">
-                                                    {prod.DONG_HANG_REL?.TEN_DONG_HANG || prod.MA_DONG_HANG}
-                                                </span>
-                                            </td>
-                                        )}
-
-                                        {/* Model */}
-                                        {show('model') && (
-                                            <td className="p-4 align-middle">
-                                                <span className="text-sm font-mono text-foreground">{prod.MODEL}</span>
-                                            </td>
-                                        )}
-
-                                        {/* ĐVT */}
-                                        {show('dvt') && (
-                                            <td className="p-4 align-middle">
-                                                <span className="text-[13px] text-muted-foreground">{prod.DON_VI_TINH}</span>
-                                            </td>
-                                        )}
-
-                                        {/* Xuất xứ */}
-                                        {show('xuatXu') && (
-                                            <td className="p-4 align-middle">
-                                                <span className="text-[13px] text-muted-foreground">{prod.XUAT_XU || '—'}</span>
-                                            </td>
-                                        )}
-
-                                        {/* Bảo hành */}
-                                        {show('baoHanh') && (
-                                            <td className="p-4 align-middle">
-                                                <span className="text-[13px] text-primary font-medium">{prod.BAO_HANH || '—'}</span>
-                                            </td>
-                                        )}
-
-                                        {/* Hiệu lực */}
-                                        {show('hieuLuc') && (
-                                            <td className="p-4 align-middle text-center">
-                                                {prod.HIEU_LUC !== false ? (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                                                        <CheckCircle2 className="w-3 h-3" />
-                                                        Có
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-600 border border-red-500/20">
-                                                        <XCircle className="w-3 h-3" />
-                                                        Không
-                                                    </span>
-                                                )}
-                                            </td>
-                                        )}
-
-                                        {/* Giá nhập */}
-                                        {show('giaNhap') && (
-                                            <td className="p-4 align-middle text-right">
-                                                {giaNhapMap[prod.MA_HH] ? (
-                                                    <button
-                                                        onClick={() => handleShowHistory(prod)}
-                                                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-sm font-semibold text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-                                                        title="Xem lịch sử giá nhập"
-                                                    >
-                                                        {new Intl.NumberFormat('vi-VN').format(giaNhapMap[prod.MA_HH].DON_GIA)} ₫
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-[13px] text-muted-foreground">—</span>
-                                                )}
-                                            </td>
-                                        )}
-
-                                        {/* Giá bán */}
-                                        {show('giaBan') && (
-                                            <td className="p-4 align-middle text-right">
-                                                {giaBanMap[prod.MA_HH] && giaBanMap[prod.MA_HH].length > 0 ? (
-                                                    <button
-                                                        onClick={() => handleShowGiaBanHistory(prod)}
-                                                        className="flex flex-col gap-1 items-end cursor-pointer hover:opacity-80 transition-opacity"
-                                                        title="Xem lịch sử giá bán"
-                                                    >
-                                                        {giaBanMap[prod.MA_HH].map((gb, idx) => (
-                                                            <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] bg-rose-500/10 text-rose-600 border border-rose-500/15 hover:bg-rose-500/20 transition-colors">
-                                                                <span className="font-medium truncate max-w-[80px]" title={gb.GOI_GIA}>{gb.GOI_GIA}</span>
-                                                                <span className="font-bold">{new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫</span>
-                                                            </div>
-                                                        ))}
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-[13px] text-muted-foreground">—</span>
-                                                )}
-                                            </td>
-                                        )}
-
-                                        {/* Hành động */}
-                                        <td className="p-4 align-middle text-right">
-                                            <div className="flex justify-end gap-1 transition-opacity">
-                                                <button
-                                                    onClick={() => setViewProduct(prod)}
-                                                    className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors"
-                                                    title="Xem chi tiết"
+                                {groupedProducts.map((group, gIdx) => {
+                                    const isExpanded = expandedGroups[group.label] !== false; // mặc định mở
+                                    return (
+                                        <Fragment key={gIdx}>
+                                            {group.label && (
+                                                <tr
+                                                    className="bg-primary/5 border-b border-border cursor-pointer hover:bg-primary/10 transition-colors"
+                                                    onClick={() => toggleGroup(group.label)}
                                                 >
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
-                                                <PermissionGuard moduleKey="hang-hoa" level="edit">
-                                                    <button
-                                                        onClick={() => setEditProduct(prod)}
-                                                        className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors"
-                                                        title="Chỉnh sửa"
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </button>
-                                                </PermissionGuard>
-                                                <PermissionGuard moduleKey="hang-hoa" level="delete">
-                                                    <button
-                                                        onClick={() => setDeleteProduct(prod)}
-                                                        className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
-                                                        title="Xóa"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </PermissionGuard>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                    <td colSpan={100} className="px-4 py-2.5">
+                                                        <div className="flex items-center justify-between w-full">
+                                                            <div className="flex items-center gap-2">
+                                                                {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                                                <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                                                <span className="text-xs font-normal text-muted-foreground tracking-wide">({group.total} sản phẩm)</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            {(!group.label || isExpanded) && group.items.map((prod: Product) => (
+                                                <tr
+                                                    key={prod.ID}
+                                                    className="border-b border-border hover:bg-muted/30 transition-all group"
+                                                >
+                                                    {/* Tên hàng + MA_HH + hình ảnh (luôn hiện) */}
+                                                    <td className="p-4 align-middle">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center shadow-sm shrink-0">
+                                                                {prod.HINH_ANH ? (
+                                                                    <img src={prod.HINH_ANH} alt={prod.TEN_HH} className="w-full h-full object-cover rounded-lg" />
+                                                                ) : (
+                                                                    <Box className="w-4 h-4 text-muted-foreground opacity-50" />
+                                                                )}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="font-medium text-foreground text-[14px] leading-tight mb-0.5">{prod.TEN_HH}</p>
+                                                                {/* <p className="text-[12px] text-primary font-medium font-mono uppercase">{prod.MA_HH}</p> */}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Nhóm HH */}
+                                                    {show('nhomHH') && (
+                                                        <td className="p-4 align-middle">
+                                                            {prod.NHOM_HH ? (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-500/10 text-violet-600 border border-violet-500/20">
+                                                                    {prod.NHOM_HH}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[13px] text-muted-foreground">—</span>
+                                                            )}
+                                                        </td>
+                                                    )}
+
+                                                    {/* Phân loại */}
+                                                    {show('phanLoai') && (
+                                                        <td className="p-4 align-middle">
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-600 border-blue-500/20">
+                                                                <Tag className="w-3 h-3" />
+                                                                {prod.PHAN_LOAI_REL?.TEN_PHAN_LOAI || prod.MA_PHAN_LOAI}
+                                                            </span>
+                                                        </td>
+                                                    )}
+
+                                                    {/* Dòng hàng */}
+                                                    {show('dongHang') && (
+                                                        <td className="p-4 align-middle">
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-secondary text-secondary-foreground border border-border">
+                                                                {prod.DONG_HANG_REL?.TEN_DONG_HANG || prod.MA_DONG_HANG}
+                                                            </span>
+                                                        </td>
+                                                    )}
+
+                                                    {/* Model */}
+                                                    {show('model') && (
+                                                        <td className="p-4 align-middle">
+                                                            <span className="text-primary font-medium">{prod.MODEL}</span>
+                                                        </td>
+                                                    )}
+
+                                                    {/* ĐVT */}
+                                                    {show('dvt') && (
+                                                        <td className="p-4 align-middle">
+                                                            <span className="text-[13px] text-muted-foreground">{prod.DON_VI_TINH}</span>
+                                                        </td>
+                                                    )}
+
+                                                    {/* Xuất xứ */}
+                                                    {show('xuatXu') && (
+                                                        <td className="p-4 align-middle">
+                                                            <span className="text-[13px] text-muted-foreground">{prod.XUAT_XU || '—'}</span>
+                                                        </td>
+                                                    )}
+
+                                                    {/* Bảo hành */}
+                                                    {show('baoHanh') && (
+                                                        <td className="p-4 align-middle">
+                                                            <span className="text-[13px] text-primary font-medium">{prod.BAO_HANH || '—'}</span>
+                                                        </td>
+                                                    )}
+
+                                                    {/* Hiệu lực */}
+                                                    {show('hieuLuc') && (
+                                                        <td className="p-4 align-middle text-center">
+                                                            {prod.HIEU_LUC !== false ? (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                                                    <CheckCircle2 className="w-3 h-3" />
+                                                                    Có
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-600 border border-red-500/20">
+                                                                    <XCircle className="w-3 h-3" />
+                                                                    Không
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    )}
+
+                                                    {/* Giá nhập */}
+                                                    {show('giaNhap') && (
+                                                        <td className="p-4 align-middle text-right">
+                                                            {giaNhapMap[prod.MA_HH] ? (
+                                                                <button
+                                                                    onClick={() => handleShowHistory(prod)}
+                                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-sm font-semibold text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                                                                    title="Xem lịch sử giá nhập"
+                                                                >
+                                                                    {new Intl.NumberFormat('vi-VN').format(giaNhapMap[prod.MA_HH].DON_GIA)} ₫
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-[13px] text-muted-foreground">—</span>
+                                                            )}
+                                                        </td>
+                                                    )}
+
+                                                    {/* Giá bán */}
+                                                    {show('giaBan') && (
+                                                        <td className="p-4 align-middle text-right">
+                                                            {giaBanMap[prod.MA_HH] && giaBanMap[prod.MA_HH].length > 0 ? (
+                                                                <button
+                                                                    onClick={() => handleShowGiaBanHistory(prod)}
+                                                                    className="flex flex-col gap-1 items-end cursor-pointer hover:opacity-80 transition-opacity"
+                                                                    title="Xem lịch sử giá bán"
+                                                                >
+                                                                    {giaBanMap[prod.MA_HH].map((gb, idx) => (
+                                                                        <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] bg-rose-500/10 text-rose-600 border border-rose-500/15 hover:bg-rose-500/20 transition-colors">
+                                                                            <span className="font-medium truncate max-w-[80px]" title={gb.GOI_GIA}>{gb.GOI_GIA}</span>
+                                                                            <span className="font-bold">{new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-[13px] text-muted-foreground">—</span>
+                                                            )}
+                                                        </td>
+                                                    )}
+
+                                                    {/* Hành động */}
+                                                    <td className="p-4 align-middle text-right">
+                                                        <div className="flex justify-end gap-1 transition-opacity">
+                                                            <button
+                                                                onClick={() => setViewProduct(prod)}
+                                                                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors"
+                                                                title="Xem chi tiết"
+                                                            >
+                                                                <Eye className="w-4 h-4" />
+                                                            </button>
+                                                            <PermissionGuard moduleKey="hang-hoa" level="edit">
+                                                                <button
+                                                                    onClick={() => setEditProduct(prod)}
+                                                                    className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors"
+                                                                    title="Chỉnh sửa"
+                                                                >
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </button>
+                                                            </PermissionGuard>
+                                                            <PermissionGuard moduleKey="hang-hoa" level="delete">
+                                                                <button
+                                                                    onClick={() => setDeleteProduct(prod)}
+                                                                    className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
+                                                                    title="Xóa"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </PermissionGuard>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </Fragment>
+                                    );
+                                })}
                                 {initialProducts.length === 0 && (
                                     <tr>
                                         <td colSpan={10} className="py-20 text-center text-muted-foreground">
@@ -966,7 +1145,7 @@ export default function HangHoaClient({
                                         </div>
                                         <div className="min-w-0">
                                             <p className="font-medium text-foreground text-base leading-tight">{prod.TEN_HH}</p>
-                                            <p className="text-xs text-primary font-medium font-mono uppercase mt-0.5">{prod.MA_HH}</p>
+                                            {/* <p className="text-xs text-primary font-medium font-mono uppercase mt-0.5">{prod.MA_HH}</p> */}
                                         </div>
                                     </div>
                                     {prod.HIEU_LUC !== false ? (
@@ -993,7 +1172,7 @@ export default function HangHoaClient({
                                     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-secondary text-secondary-foreground border border-border">
                                         {prod.DONG_HANG_REL?.TEN_DONG_HANG || prod.MA_DONG_HANG}
                                     </span>
-                                    <span className="text-[11px] text-muted-foreground px-2 py-0.5 bg-muted rounded-md">{prod.MODEL}</span>
+                                    <span className="text-[11px] text-primary font-medium px-2 py-0.5 bg-muted rounded-md">{prod.MODEL}</span>
                                 </div>
                                 <div className="text-xs text-muted-foreground space-y-0.5">
                                     <div>ĐVT: <span className="text-foreground">{prod.DON_VI_TINH}</span></div>
@@ -1053,12 +1232,13 @@ export default function HangHoaClient({
                     </div>
 
                     {/* Pagination */}
-                    {initialPagination && initialPagination.totalPages > 1 && (
+                    {initialPagination && (
                         <div className="p-4 flex justify-center border-t border-border">
                             <Pagination
                                 totalPages={initialPagination.totalPages}
                                 currentPage={currentPage}
                                 total={initialPagination.total}
+                                pageSize={pageSize}
                             />
                         </div>
                     )}
