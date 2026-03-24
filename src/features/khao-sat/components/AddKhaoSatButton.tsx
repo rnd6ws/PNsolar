@@ -23,6 +23,7 @@ interface Props {
         NHOM_KS: string;
         HANG_MUC_KS: string;
         STT: number | null;
+        HIEU_LUC: boolean;
     }[];
 }
 
@@ -53,13 +54,26 @@ export default function AddKhaoSatButton({
     const [khSearchValue, setKhSearchValue] = useState("");
     const [nlhOptions, setNlhOptions] = useState<StringOption[]>([]);
 
-    // Step 2: Chi tiết hạng mục - { [nhom]: { [hangMuc]: [chiTiet1, ...] } }
+    // Step 2: Chi tiết hạng mục - { [nhom]: { [hangMuc]: [chiTiet] } }
     const [chiTietData, setChiTietData] = useState<Record<string, Record<string, string[]>>>({});
     const [expandedNhom, setExpandedNhom] = useState<Record<string, boolean>>({});
-    const [expandedHangMuc, setExpandedHangMuc] = useState<Record<string, boolean>>({});
+    // Hạng mục bị ẩn khỏi form tạm thời (theo nhóm)
+    const [excludedHangMuc, setExcludedHangMuc] = useState<Record<string, Set<string>>>({});
+
+    const removeHM = (nhom: string, hm: string) =>
+        setExcludedHangMuc((prev) => ({
+            ...prev,
+            [nhom]: new Set([...(prev[nhom] ?? []), hm]),
+        }));
+    const restoreHM = (nhom: string, hm: string) =>
+        setExcludedHangMuc((prev) => {
+            const s = new Set([...(prev[nhom] ?? [])]);
+            s.delete(hm);
+            return { ...prev, [nhom]: s };
+        });
 
     const filteredHangMuc = hangMucData.filter(
-        (h) => h.LOAI_CONG_TRINH === form.LOAI_CONG_TRINH
+        (h) => h.LOAI_CONG_TRINH === form.LOAI_CONG_TRINH && h.HIEU_LUC === true
     );
 
     const nhomList = [...new Set(filteredHangMuc.map((h) => h.NHOM_KS))].sort((a, b) => {
@@ -82,7 +96,7 @@ export default function AddKhaoSatButton({
         setNlhOptions([]);
         setChiTietData({});
         setExpandedNhom({});
-        setExpandedHangMuc({});
+        setExcludedHangMuc({});
         setCreatedId(null);
         setCreatedMa(null);
         setStep("info");
@@ -218,27 +232,7 @@ export default function AddKhaoSatButton({
         });
     };
 
-    const addChiTiet = (nhom: string, hangMuc: string) => {
-        setChiTietData((prev) => {
-            const newData = { ...prev };
-            if (!newData[nhom]) newData[nhom] = {};
-            const list = [...(newData[nhom][hangMuc] || [""])];
-            list.push("");
-            newData[nhom] = { ...newData[nhom], [hangMuc]: list };
-            return newData;
-        });
-    };
 
-    const removeChiTiet = (nhom: string, hangMuc: string, idx: number) => {
-        setChiTietData((prev) => {
-            const newData = { ...prev };
-            const list = [...(newData[nhom]?.[hangMuc] || [""])];
-            if (list.length <= 1) return prev;
-            list.splice(idx, 1);
-            newData[nhom] = { ...newData[nhom], [hangMuc]: list };
-            return newData;
-        });
-    };
 
     const countChiTiet = (nhom: string, hangMuc: string) =>
         (chiTietData[nhom]?.[hangMuc] || []).filter((ct) => ct.trim() !== "").length;
@@ -281,7 +275,8 @@ export default function AddKhaoSatButton({
                                 )} mục chi tiết
                             </span>
                             <div className="flex gap-3">
-                                <button type="button" onClick={() => setIsOpen(false)} className="btn-premium-secondary">Đóng</button>
+                                <button type="button" onClick={() => setStep("info")} disabled={submitting} className="btn-premium-secondary hover:bg-muted">← Quay lại</button>
+                                <button type="button" onClick={() => setIsOpen(false)} disabled={submitting} className="btn-premium-secondary">Đóng</button>
                                 <button
                                     type="button"
                                     disabled={submitting}
@@ -378,10 +373,10 @@ export default function AddKhaoSatButton({
                                     {/* Nhóm Header */}
                                     <button
                                         type="button"
-                                        className="w-full flex items-center justify-between px-4 py-3 bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
+                                        className="w-full flex items-center justify-between px-4 py-3 bg-primary/10 hover:bg-primary/15 transition-colors"
                                         onClick={() => setExpandedNhom((prev) => ({ ...prev, [nhom]: !isNhomExpanded }))}
                                     >
-                                        <span className="font-semibold text-sm text-purple-700 dark:text-purple-300">
+                                        <span className="font-semibold text-sm text-primary">
                                             {isNhomExpanded ? <ChevronDown className="w-4 h-4 inline mr-1.5" /> : <ChevronRight className="w-4 h-4 inline mr-1.5" />}
                                             {nhom}
                                         </span>
@@ -392,68 +387,52 @@ export default function AddKhaoSatButton({
 
                                     {/* Hạng mục list */}
                                     {isNhomExpanded && (
-                                        <div className="divide-y divide-border">
+                                        <div className="divide-y divide-border bg-background">
                                             {hangMucsInNhom.map((hm) => {
-                                                const key = `${nhom}-${hm.HANG_MUC_KS}`;
-                                                const isHmExpanded = expandedHangMuc[key] !== false;
+                                                const isExcluded = excludedHangMuc[nhom]?.has(hm.HANG_MUC_KS);
+                                                if (isExcluded) return null;
                                                 const list = chiTietData[nhom]?.[hm.HANG_MUC_KS] || [""];
-                                                const count = countChiTiet(nhom, hm.HANG_MUC_KS);
-
                                                 return (
-                                                    <div key={hm.HANG_MUC_KS} className="bg-background">
-                                                        {/* Hạng mục header */}
+                                                    <div key={hm.HANG_MUC_KS} className="px-4 py-3 flex flex-col md:flex-row md:items-center gap-3 hover:bg-muted/30 transition-colors">
+                                                        <label className="text-sm font-medium text-foreground md:w-[35%] lg:w-[30%] shrink-0">
+                                                            {hm.HANG_MUC_KS}
+                                                        </label>
+                                                        <input
+                                                            className="input-modern flex-1 text-sm py-2"
+                                                            value={list[0] || ""}
+                                                            onChange={(e) => updateChiTiet(nhom, hm.HANG_MUC_KS, 0, e.target.value)}
+                                                            placeholder="Nhập chi tiết..."
+                                                        />
                                                         <button
                                                             type="button"
-                                                            className="w-full flex items-center justify-between px-4 py-2.5 bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50/80 transition-colors"
-                                                            onClick={() => setExpandedHangMuc((prev) => ({ ...prev, [key]: !isHmExpanded }))}
+                                                            title="Xóa hạng mục này khỏi form"
+                                                            onClick={() => removeHM(nhom, hm.HANG_MUC_KS)}
+                                                            className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors shrink-0"
                                                         >
-                                                            <span className="font-medium text-sm text-blue-700 dark:text-blue-300 text-left">
-                                                                {isHmExpanded ? <ChevronDown className="w-3.5 h-3.5 inline mr-1.5" /> : <ChevronRight className="w-3.5 h-3.5 inline mr-1.5" />}
-                                                                {hm.HANG_MUC_KS}
-                                                            </span>
-                                                            {count > 0 && (
-                                                                <span className="shrink-0 bg-blue-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
-                                                                    {count}
-                                                                </span>
-                                                            )}
+                                                            <X className="w-4 h-4" />
                                                         </button>
-
-                                                        {/* Chi tiết inputs */}
-                                                        {isHmExpanded && (
-                                                            <div className="px-4 py-3 space-y-2">
-                                                                {list.map((ct, idx) => (
-                                                                    <div key={idx} className="flex items-center gap-2 group">
-                                                                        <span className="w-5 text-center text-xs text-muted-foreground font-mono shrink-0">{idx + 1}.</span>
-                                                                        <input
-                                                                            className="input-modern flex-1 text-sm py-1.5"
-                                                                            value={ct}
-                                                                            onChange={(e) => updateChiTiet(nhom, hm.HANG_MUC_KS, idx, e.target.value)}
-                                                                            placeholder="Nhập nội dung chi tiết khảo sát..."
-                                                                        />
-                                                                        {list.length > 1 && (
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => removeChiTiet(nhom, hm.HANG_MUC_KS, idx)}
-                                                                                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors shrink-0 opacity-50 group-hover:opacity-100"
-                                                                            >
-                                                                                <X className="w-3.5 h-3.5" />
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => addChiTiet(nhom, hm.HANG_MUC_KS)}
-                                                                    className="text-xs text-primary hover:bg-primary/10 flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ml-7"
-                                                                >
-                                                                    <PlusCircle className="w-3.5 h-3.5" />
-                                                                    Thêm dòng
-                                                                </button>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 );
                                             })}
+
+                                            {/* Hạng mục bị xóa - nút thêm lại */}
+                                            {[...(excludedHangMuc[nhom] || [])].length > 0 && (
+                                                <div className="px-4 py-2 flex flex-wrap gap-2 bg-muted/20 border-t border-dashed border-border">
+                                                    <span className="text-xs text-muted-foreground self-center">Đã ẩn:</span>
+                                                    {[...(excludedHangMuc[nhom] || [])].map((hmName) => (
+                                                        <button
+                                                            key={hmName}
+                                                            type="button"
+                                                            onClick={() => restoreHM(nhom, hmName)}
+                                                            title="Thêm lại hạng mục này"
+                                                            className="flex items-center gap-1 text-xs bg-background border border-border hover:border-primary hover:text-primary px-2 py-1 rounded-full transition-colors"
+                                                        >
+                                                            <PlusCircle className="w-3 h-3" />
+                                                            {hmName}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

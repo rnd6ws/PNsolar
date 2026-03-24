@@ -41,6 +41,7 @@ export default async function KhaoSatPage() {
             NHOM_KS: h.NHOM_KS,
             HANG_MUC_KS: h.HANG_MUC_KS,
             STT: h.STT,
+            HIEU_LUC: h.HIEU_LUC,
         }))
         : [];
 
