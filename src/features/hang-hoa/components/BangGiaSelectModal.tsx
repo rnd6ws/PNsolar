@@ -11,7 +11,7 @@ interface ProductItem {
     ID: string;
     MA_HH: string;
     TEN_HH: string;
-    MODEL: string;
+    MODEL: string | null;
     NHOM_HH: string | null;
     PHAN_LOAI: string;
     DONG_HANG: string;
@@ -60,7 +60,7 @@ export default function BangGiaSelectModal({ isOpen, onClose }: Props) {
         return products.filter(p =>
             p.TEN_HH.toLowerCase().includes(q) ||
             p.MA_HH.toLowerCase().includes(q) ||
-            p.MODEL.toLowerCase().includes(q) ||
+            p.MODEL?.toLowerCase().includes(q) ||
             p.PHAN_LOAI.toLowerCase().includes(q) ||
             p.DONG_HANG.toLowerCase().includes(q)
         );
