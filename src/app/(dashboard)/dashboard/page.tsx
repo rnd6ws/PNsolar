@@ -6,11 +6,10 @@ import { useSearchParams } from "next/navigation";
 import {
     Users, Package, Settings, LayoutDashboard,
     Star, Info, ChevronRight, Search,
-    ClipboardList, FileText, BarChart2, Briefcase,
-    Truck, ShoppingCart, Wrench,
-    CreditCard, Wallet, PieChart, Bell,
+    ClipboardList, FileText, BarChart2,
+    Truck, ShoppingCart, CreditCard, Bell,
     UserCheck, Calendar, Shield, HelpCircle,
-    Layers, Archive, Map, DollarSign, Target,
+    Archive, DollarSign, Target,
     CalendarCheck2, ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,18 +34,8 @@ type ModuleGroup = {
 
 const moduleGroups: ModuleGroup[] = [
     {
-        label: "Nhân sự",
+        label: "CRM",
         modules: [
-            {
-                name: "Nhân viên",
-                description: "Quản lý hồ sơ, thông tin nhân viên.",
-                href: "/nhan-vien",
-                icon: Users,
-                color: "text-blue-600",
-                bgColor: "bg-blue-50 dark:bg-blue-950/50",
-                available: true,
-                moduleKey: "nhan-vien",
-            },
             {
                 name: "Khách hàng",
                 description: "Quản lý thông tin và hồ sơ khách hàng tự nhiên.",
@@ -77,37 +66,10 @@ const moduleGroups: ModuleGroup[] = [
                 available: true,
                 moduleKey: "ke-hoach-cs",
             },
-            {
-                name: "Chấm công",
-                description: "Quản lý chấm công, ca làm việc.",
-                href: "/cham-cong",
-                icon: UserCheck,
-                color: "text-indigo-600",
-                bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
-                available: false,
-            },
-            {
-                name: "Tổng hợp chấm công",
-                description: "Tổng hợp và báo cáo chấm công theo nhân viên.",
-                href: "/tong-hop-cham-cong",
-                icon: ClipboardList,
-                color: "text-orange-600",
-                bgColor: "bg-orange-50 dark:bg-orange-950/50",
-                available: false,
-            },
-            {
-                name: "Lịch làm việc",
-                description: "Quản lý lịch, ca làm việc theo phòng ban.",
-                href: "/lich-lam-viec",
-                icon: Calendar,
-                color: "text-teal-600",
-                bgColor: "bg-teal-50 dark:bg-teal-950/50",
-                available: false,
-            },
         ],
     },
     {
-        label: "Hàng hóa & Kho",
+        label: "Hàng hóa & Giá",
         modules: [
             {
                 name: "Phân loại hàng hóa",
@@ -140,24 +102,6 @@ const moduleGroups: ModuleGroup[] = [
                 moduleKey: "goi-gia",
             },
             {
-                name: "Kho hàng",
-                description: "Theo dõi tồn kho, nhập xuất kho.",
-                href: "/kho-hang",
-                icon: Archive,
-                color: "text-cyan-600",
-                bgColor: "bg-cyan-50 dark:bg-cyan-950/50",
-                available: false,
-            },
-            {
-                name: "Đặt hàng",
-                description: "Tạo và quản lý đơn đặt hàng nhà cung cấp.",
-                href: "/dat-hang",
-                icon: ShoppingCart,
-                color: "text-violet-600",
-                bgColor: "bg-violet-50 dark:bg-violet-950/50",
-                available: false,
-            },
-            {
                 name: "Nhà cung cấp",
                 description: "Quản lý thông tin nhà cung cấp.",
                 href: "/nha-cung-cap",
@@ -187,6 +131,11 @@ const moduleGroups: ModuleGroup[] = [
                 available: true,
                 moduleKey: "gia-ban",
             },
+        ],
+    },
+    {
+        label: "Kinh doanh",
+        modules: [
             {
                 name: "Báo giá",
                 description: "Tạo và quản lý báo giá cho khách hàng.",
@@ -196,15 +145,6 @@ const moduleGroups: ModuleGroup[] = [
                 bgColor: "bg-amber-50 dark:bg-amber-950/50",
                 available: true,
                 moduleKey: "bao-gia",
-            },
-            {
-                name: "Vận chuyển",
-                description: "Theo dõi vận chuyển, giao hàng.",
-                href: "/van-chuyen",
-                icon: Truck,
-                color: "text-sky-600",
-                bgColor: "bg-sky-50 dark:bg-sky-950/50",
-                available: false,
             },
             {
                 name: "Hạng mục KS",
@@ -218,79 +158,7 @@ const moduleGroups: ModuleGroup[] = [
             },
         ],
     },
-    {
-        label: "Dự án & Công việc",
-        modules: [
-            {
-                name: "Dự án",
-                description: "Quản lý dự án, phòng ban, thời gian, mục tiêu.",
-                href: "/du-an",
-                icon: Briefcase,
-                color: "text-amber-600",
-                bgColor: "bg-amber-50 dark:bg-amber-950/50",
-                available: false,
-            },
-            {
-                name: "Công việc của tôi",
-                description: "Công việc được giao cho tôi, theo dõi và báo cáo.",
-                href: "/cong-viec-cua-toi",
-                icon: Layers,
-                color: "text-lime-600",
-                bgColor: "bg-lime-50 dark:bg-lime-950/50",
-                available: false,
-            },
-            {
-                name: "Thi công",
-                description: "Quản lý tiến độ thi công lắp đặt solar.",
-                href: "/thi-cong",
-                icon: Wrench,
-                color: "text-rose-600",
-                bgColor: "bg-rose-50 dark:bg-rose-950/50",
-                available: false,
-            },
-            {
-                name: "Bản đồ dự án",
-                description: "Theo dõi vị trí và tiến độ dự án trực quan.",
-                href: "/ban-do",
-                icon: Map,
-                color: "text-green-600",
-                bgColor: "bg-green-50 dark:bg-green-950/50",
-                available: false,
-            },
-        ],
-    },
-    {
-        label: "Tài chính",
-        modules: [
-            {
-                name: "Bảng lương",
-                description: "Tính lương, phiếu lương, báo cáo.",
-                href: "/bang-luong",
-                icon: CreditCard,
-                color: "text-blue-600",
-                bgColor: "bg-blue-50 dark:bg-blue-950/50",
-                available: false,
-            },
-            {
-                name: "Thu chi",
-                description: "Quản lý thu chi, công nợ, dòng tiền.",
-                href: "/thu-chi",
-                icon: Wallet,
-                color: "text-emerald-600",
-                bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
-                available: false,
-            },
-            {
-                name: "Báo cáo tài chính",
-                description: "Phân tích và báo cáo doanh thu, chi phí.",
-                href: "/bao-cao-tai-chinh",
-                icon: PieChart,
-                color: "text-violet-600",
-                bgColor: "bg-violet-50 dark:bg-violet-950/50",
-                available: false,
-            },
-        ],
-    },
+
     {
         label: "Báo cáo & Phân tích",
         modules: [
@@ -328,6 +196,16 @@ const moduleGroups: ModuleGroup[] = [
         label: "Hệ thống",
         modules: [
             {
+                name: "Nhân viên",
+                description: "Quản lý hồ sơ, thông tin nhân viên.",
+                href: "/nhan-vien",
+                icon: Users,
+                color: "text-blue-600",
+                bgColor: "bg-blue-50 dark:bg-blue-950/50",
+                available: true,
+                moduleKey: "nhan-vien",
+            },
+            {
                 name: "Cài đặt",
                 description: "Cấu hình hệ thống, phân quyền người dùng.",
                 href: "/settings",
@@ -344,26 +222,8 @@ const moduleGroups: ModuleGroup[] = [
                 icon: Shield,
                 color: "text-red-600",
                 bgColor: "bg-red-50 dark:bg-red-950/50",
-                available: false,
+                available: true,
                 moduleKey: "phan-quyen",
-            },
-            {
-                name: "Thông báo",
-                description: "Quản lý thông báo hệ thống, nhắc nhở.",
-                href: "/thong-bao",
-                icon: Bell,
-                color: "text-yellow-600",
-                bgColor: "bg-yellow-50 dark:bg-yellow-950/50",
-                available: false,
-            },
-            {
-                name: "Trợ giúp",
-                description: "Hướng dẫn sử dụng, hỗ trợ kỹ thuật.",
-                href: "/tro-giup",
-                icon: HelpCircle,
-                color: "text-teal-600",
-                bgColor: "bg-teal-50 dark:bg-teal-950/50",
-                available: false,
             },
         ],
     },
