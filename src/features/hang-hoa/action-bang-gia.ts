@@ -6,7 +6,7 @@ export interface BangGiaProduct {
     ID: string;
     MA_HH: string;
     TEN_HH: string;
-    MODEL: string;
+    MODEL: string | null;
     NHOM_HH: string | null;
     PHAN_LOAI: string;
     DONG_HANG: string;

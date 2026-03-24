@@ -2,8 +2,8 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { baoGiaSchema, baoGiaChiTietSchema } from './schema';
-import type { BaoGiaChiTietInput } from './schema';
+import { baoGiaSchema, baoGiaChiTietSchema, dkttBgSchema } from './schema';
+import type { BaoGiaChiTietInput, DkttBgInput } from './schema';
 
 // ===== Include chuẩn cho BAO_GIA =====
 const BAO_GIA_INCLUDE = {
@@ -13,6 +13,9 @@ const BAO_GIA_INCLUDE = {
         include: {
             HH_REL: { select: { TEN_HH: true, MA_HH: true, DON_VI_TINH: true } },
         },
+        orderBy: { CREATED_AT: 'asc' as const },
+    },
+    DKTT_BG: {
         orderBy: { CREATED_AT: 'asc' as const },
     },
 };
@@ -25,11 +28,22 @@ async function generateMaBaoGia(): Promise<string> {
     const dd = String(now.getDate()).padStart(2, '0');
     const prefix = `BG-${yy}${mm}${dd}-`;
 
-    const count = await prisma.bAO_GIA.count({
-        where: { MA_BAO_GIA: { startsWith: prefix } },
+    // Lấy mã cuối cùng để tăng số thứ tự liên tục (không reset theo ngày)
+    const last = await prisma.bAO_GIA.findFirst({
+        orderBy: { CREATED_AT: 'desc' },
+        select: { MA_BAO_GIA: true },
     });
 
-    const seq = String(count + 1).padStart(3, '0');
+    let nextSeq = 1;
+    if (last?.MA_BAO_GIA) {
+        const parts = last.MA_BAO_GIA.split('-');
+        const lastSeq = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(lastSeq)) {
+            nextSeq = lastSeq + 1;
+        }
+    }
+
+    const seq = String(nextSeq).padStart(3, '0');
     return `${prefix}${seq}`;
 }
 
@@ -191,7 +205,8 @@ export async function getBaoGiaById(id: string) {
 // ─── Tạo báo giá mới ───────────────────────────────────────
 export async function createBaoGia(
     header: any,
-    chiTiets: BaoGiaChiTietInput[]
+    chiTiets: BaoGiaChiTietInput[],
+    dkttList: DkttBgInput[] = []
 ) {
     try {
         // Validate header
@@ -212,6 +227,16 @@ export async function createBaoGia(
                 return { success: false, message: `Dòng ${i + 1}: ${ctParsed.error.issues[0].message}` };
             }
             calculatedDetails.push(calculateChiTiet(ctParsed.data));
+        }
+
+        // Validate DKTT
+        const validDktt: DkttBgInput[] = [];
+        for (let i = 0; i < dkttList.length; i++) {
+            const dkttParsed = dkttBgSchema.safeParse(dkttList[i]);
+            if (!dkttParsed.success) {
+                return { success: false, message: `ĐKTT đợt ${i + 1}: ${dkttParsed.error.issues[0].message}` };
+            }
+            validDktt.push(dkttParsed.data);
         }
 
         // Tổng hợp header
@@ -243,7 +268,7 @@ export async function createBaoGia(
             }
         }
 
-        // Tạo báo giá + chi tiết trong transaction
+        // Tạo báo giá + chi tiết + ĐKTT
         await prisma.bAO_GIA.create({
             data: {
                 MA_BAO_GIA: maBaoGia,
@@ -273,6 +298,13 @@ export async function createBaoGia(
                         GHI_CHU: ct.GHI_CHU || null,
                     })),
                 },
+                DKTT_BG: validDktt.length > 0 ? {
+                    create: validDktt.map(d => ({
+                        DOT_THANH_TOAN: d.DOT_THANH_TOAN,
+                        PT_THANH_TOAN: d.PT_THANH_TOAN,
+                        NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || null,
+                    })),
+                } : undefined,
             },
         });
 
@@ -288,7 +320,8 @@ export async function createBaoGia(
 export async function updateBaoGia(
     id: string,
     header: any,
-    chiTiets: BaoGiaChiTietInput[]
+    chiTiets: BaoGiaChiTietInput[],
+    dkttList: DkttBgInput[] = []
 ) {
     try {
         // Validate header
@@ -311,16 +344,27 @@ export async function updateBaoGia(
             calculatedDetails.push(calculateChiTiet(ctParsed.data));
         }
 
+        // Validate DKTT
+        const validDktt: DkttBgInput[] = [];
+        for (let i = 0; i < dkttList.length; i++) {
+            const dkttParsed = dkttBgSchema.safeParse(dkttList[i]);
+            if (!dkttParsed.success) {
+                return { success: false, message: `ĐKTT đợt ${i + 1}: ${dkttParsed.error.issues[0].message}` };
+            }
+            validDktt.push(dkttParsed.data);
+        }
+
         const totals = calculateHeaderTotals(calculatedDetails);
 
         // Tìm báo giá cũ
         const existing = await prisma.bAO_GIA.findUnique({ where: { ID: id }, select: { MA_BAO_GIA: true } });
         if (!existing) return { success: false, message: 'Không tìm thấy báo giá.' };
 
-        // Xóa chi tiết cũ rồi tạo lại (simplest approach)
+        // Xóa chi tiết cũ + ĐKTT cũ rồi tạo lại
         await prisma.bAO_GIA_CT.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
+        await prisma.dKTT_BG.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
 
-        // Cập nhật header + tạo chi tiết mới
+        // Cập nhật header + tạo chi tiết + ĐKTT mới
         await prisma.bAO_GIA.update({
             where: { ID: id },
             data: {
@@ -350,6 +394,13 @@ export async function updateBaoGia(
                         GHI_CHU: ct.GHI_CHU || null,
                     })),
                 },
+                DKTT_BG: validDktt.length > 0 ? {
+                    create: validDktt.map(d => ({
+                        DOT_THANH_TOAN: d.DOT_THANH_TOAN,
+                        PT_THANH_TOAN: d.PT_THANH_TOAN,
+                        NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || null,
+                    })),
+                } : undefined,
             },
         });
 
@@ -367,8 +418,9 @@ export async function deleteBaoGia(id: string) {
         const existing = await prisma.bAO_GIA.findUnique({ where: { ID: id }, select: { MA_BAO_GIA: true } });
         if (!existing) return { success: false, message: 'Không tìm thấy báo giá.' };
 
-        // Xóa chi tiết trước (dù có onDelete: Cascade, vẫn xóa thủ công cho chắc)
+        // Xóa chi tiết + ĐKTT trước
         await prisma.bAO_GIA_CT.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
+        await prisma.dKTT_BG.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
         await prisma.bAO_GIA.delete({ where: { ID: id } });
 
         revalidatePath('/bao-gia');
@@ -471,6 +523,20 @@ export async function getGiaBanForProduct(maHH: string, soLuong: number) {
             select: { MA_DONG_HANG: true },
         });
         if (!hh) return { success: false, giaBan: 0 };
+
+        // Nếu hàng hóa không có dòng hàng → fallback lấy giá bán trực tiếp
+        if (!hh.MA_DONG_HANG) {
+            const fallback = await prisma.gIA_BAN.findFirst({
+                where: { MA_HH: maHH },
+                orderBy: { NGAY_HIEU_LUC: 'desc' },
+                select: { DON_GIA: true, GOI_GIA_REL: { select: { GOI_GIA: true } } },
+            });
+            return {
+                success: true,
+                giaBan: fallback?.DON_GIA || 0,
+                goiGia: fallback?.GOI_GIA_REL?.GOI_GIA || null,
+            };
+        }
 
         // Tìm GOI_GIA hiệu lực, phù hợp số lượng
         const goiGias = await prisma.gOI_GIA.findMany({

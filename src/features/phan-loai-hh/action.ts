@@ -166,6 +166,7 @@ export async function updateDongHH(id: string, updateData: any) {
     try {
         const MA_DONG_HANG = updateData.MA_DONG_HANG?.trim();
         const TEN_DONG_HANG = updateData.TEN_DONG_HANG?.trim();
+        const MA_PHAN_LOAI = updateData.MA_PHAN_LOAI?.trim();
         const TIEN_TO = updateData.TIEN_TO?.trim() || null;
         const HANG = updateData.HANG?.trim() || null;
         const XUAT_XU = updateData.XUAT_XU?.trim() || null;
@@ -188,6 +189,7 @@ export async function updateDongHH(id: string, updateData: any) {
             data: {
                 MA_DONG_HANG,
                 TEN_DONG_HANG,
+                MA_PHAN_LOAI: MA_PHAN_LOAI || undefined,
                 TIEN_TO,
                 HANG,
                 XUAT_XU,

@@ -178,14 +178,10 @@ function ProductModal({
     };
 
     // Khi chọn Phân loại
-    const handlePhanLoaiChange = (phanLoaiId: string) => {
-        setSelectedPhanLoaiId(phanLoaiId);
-        const selected = phanLoaiOptions.find(pl => pl.ID === phanLoaiId);
-        if (selected) {
-            handleChange('MA_PHAN_LOAI', selected.MA_PHAN_LOAI); // lưu mã
-        } else {
-            handleChange('MA_PHAN_LOAI', '');
-        }
+    const handlePhanLoaiChange = (maPhanLoai: string) => {
+        const selected = phanLoaiOptions.find(pl => pl.MA_PHAN_LOAI === maPhanLoai);
+        setSelectedPhanLoaiId(selected?.ID || '');
+        handleChange('MA_PHAN_LOAI', maPhanLoai);
         // Reset dòng hàng khi đổi phân loại
         handleChange('MA_DONG_HANG', '');
         handleChange('TEN_HH', '');
@@ -335,13 +331,12 @@ function ProductModal({
                         {/* Row 3: Phân loại + Dòng hàng */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className={labelClass}>Phân loại *</label>
+                                <label className={labelClass}>Phân loại</label>
                                 <div className="relative">
                                     <select
                                         className={selectClass}
                                         value={form.MA_PHAN_LOAI}
                                         onChange={e => handlePhanLoaiChange(e.target.value)}
-                                        required
                                     >
                                         <option value="">-- Chọn phân loại --</option>
                                         {phanLoaiOptions.map(pl => (
@@ -352,14 +347,12 @@ function ProductModal({
                                 </div>
                             </div>
                             <div>
-                                <label className={labelClass}>Dòng hàng *</label>
+                                <label className={labelClass}>Dòng hàng</label>
                                 <div className="relative">
                                     <select
                                         className={selectClass}
                                         value={currentMaDongHang}
                                         onChange={e => handleDongHangChange(e.target.value)}
-                                        required
-                                        disabled={!form.MA_PHAN_LOAI}
                                     >
                                         <option value="">-- Chọn dòng hàng --</option>
                                         {filteredDongHang.map(dh => (
@@ -368,22 +361,19 @@ function ProductModal({
                                     </select>
                                     <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                                 </div>
-                                {!form.MA_PHAN_LOAI && (
-                                    <p className="text-[11px] text-muted-foreground mt-1">Vui lòng chọn phân loại trước</p>
-                                )}
+
                             </div>
                         </div>
 
                         {/* Row 3: Model + Tên hàng */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className={labelClass}>Model *</label>
+                                <label className={labelClass}>Model</label>
                                 <input
                                     className={inputClass}
                                     placeholder="VD: JKM-450M"
                                     value={form.MODEL}
                                     onChange={e => handleModelChange(e.target.value)}
-                                    required
                                 />
                             </div>
                             <div>
