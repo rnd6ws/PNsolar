@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 
 // ─── KEHOACH_CSKH ──────────────────────────────────────────────
@@ -256,6 +257,7 @@ export async function createLoaiCS(loaiCs: string) {
         if (exists) return { success: false, message: `Loại "${loaiCs.trim()}" đã tồn tại` };
         await prisma.lOAI_CHAM_SOC.create({ data: { LOAI_CS: loaiCs.trim() } });
         revalidatePath("/ke-hoach-cs");
+        updateTag("loai-cs");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Lỗi tạo loại chăm sóc" };
@@ -266,6 +268,7 @@ export async function deleteLoaiCS(id: string) {
     try {
         await prisma.lOAI_CHAM_SOC.delete({ where: { ID: id } });
         revalidatePath("/ke-hoach-cs");
+        updateTag("loai-cs");
         return { success: true };
     } catch {
         return { success: false, message: "Lỗi xóa loại chăm sóc" };
@@ -294,6 +297,7 @@ export async function createKetQuaCS(kqCs: string, xlCs?: string) {
             data: { KQ_CS: kqCs.trim(), XL_CS: xlCs?.trim() || null },
         });
         revalidatePath("/ke-hoach-cs");
+        updateTag("ket-qua-cs");
         return { success: true };
     } catch {
         return { success: false, message: "Lỗi tạo kết quả" };
@@ -304,6 +308,7 @@ export async function deleteKetQuaCS(id: string) {
     try {
         await prisma.kET_QUA_CS.delete({ where: { ID: id } });
         revalidatePath("/ke-hoach-cs");
+        updateTag("ket-qua-cs");
         return { success: true };
     } catch {
         return { success: false, message: "Lỗi xóa kết quả" };

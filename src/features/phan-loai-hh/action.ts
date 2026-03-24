@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 
 export async function getPhanLoaiHHTable() {
     try {
@@ -48,6 +49,8 @@ export async function createPhanLoaiHH(formData: FormData) {
         });
 
         revalidatePath("/phan-loai-hh");
+        updateTag("phan-loai-hh");
+        updateTag("dong-hang-options");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi không xác định" };
@@ -85,6 +88,8 @@ export async function updatePhanLoaiHH(id: string, updateData: any) {
         });
 
         revalidatePath("/phan-loai-hh");
+        updateTag("phan-loai-hh");
+        updateTag("dong-hang-options");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi không xác định" };

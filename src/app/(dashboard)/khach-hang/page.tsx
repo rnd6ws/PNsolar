@@ -1,6 +1,5 @@
 import { Metadata } from "next";
-import { getKhachHangs, getPhanLoaiKH, getNguonKH, getKhachHangStats, getNVList, getNguoiGioiThieu, getLyDoTuChoi } from "@/features/khach-hang/action";
-import { getNhomKH } from "@/features/nhom-kh/action";
+import { getKhachHangs, getKhachHangStats } from "@/features/khach-hang/action";
 import Pagination from "@/components/Pagination";
 import KhachHangStatCards from "@/features/khach-hang/components/KhachHangStatCards";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -9,6 +8,7 @@ import AddKhachHangButton from "@/features/khach-hang/components/AddKhachHangBut
 import KhachHangPageClient from "@/features/khach-hang/components/KhachHangPageClient";
 import LimitSelect from "@/components/LimitSelect";
 import { getCurrentUser } from "@/lib/auth";
+import { getCachedPhanLoaiKH, getCachedNguonKH, getCachedNhomKH, getCachedNVList, getCachedNguoiGioiThieu, getCachedLyDoTuChoi } from "@/lib/cache";
 
 export const metadata: Metadata = {
     title: "Khách hàng | PN Solar",
@@ -33,13 +33,13 @@ export default async function KhachHangPage({
     const [{ data = [], pagination }, { data: phanLoais = [] }, { data: nguons = [] }, { data: nhoms = [] }, stats, { data: nhanViens = [] }, { data: nguoiGioiThieus = [] }, { data: lyDoTuChois = [] }, user] =
         await Promise.all([
             getKhachHangs({ query, page, limit, NHOM_KH, PHAN_LOAI, NGUON }),
-            getPhanLoaiKH(),
-            getNguonKH(),
-            getNhomKH(),
+            getCachedPhanLoaiKH(),
+            getCachedNguonKH(),
+            getCachedNhomKH(),
             getKhachHangStats(),
-            getNVList(),
-            getNguoiGioiThieu(),
-            getLyDoTuChoi(),
+            getCachedNVList(),
+            getCachedNguoiGioiThieu(),
+            getCachedLyDoTuChoi(),
             getCurrentUser()
         ]);
 
