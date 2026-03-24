@@ -653,10 +653,10 @@ model BAO_GIA {
   TEP_DINH_KEM      String[] // Mảng URL tệp đính kèm (ảnh, PDF, Word...)
 
   CHI_TIETS BAO_GIA_CT[] // 1-N relation
+  DKTT_BG   DKTT_BG[] // 1-N relation: điều kiện thanh toán
 
-  CREATED_AT DateTime  @default(now())
-  UPDATED_AT DateTime  @updatedAt
-  dkttBgs    DKTT_BG[]
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
 
   @@index([MA_KH])
   @@index([MA_CH])
