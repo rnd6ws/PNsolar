@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 
 // ─── Danh mục: NHOM_KH ─────────────────────────────────────────
 
@@ -27,6 +28,7 @@ export async function createNhomKH(nhom: string) {
 
         await prisma.nHOM_KH.create({ data: { NHOM: nhom.trim() } });
         revalidatePath("/khach-hang");
+        updateTag("nhom-kh");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Nhóm đã tồn tại hoặc có lỗi" };
@@ -37,6 +39,7 @@ export async function deleteNhomKH(id: string) {
     try {
         await prisma.nHOM_KH.delete({ where: { ID: id } });
         revalidatePath("/khach-hang");
+        updateTag("nhom-kh");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Lỗi xóa nhóm" };

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 
 // ─── KHTN (Khách hàng) ────────────────────────────────────────
@@ -381,6 +382,7 @@ export async function createPhanLoaiKH(pl_kh: string) {
 
         await prisma.pHANLOAI_KH.create({ data: { PL_KH: pl_kh.trim() } });
         revalidatePath("/khach-hang");
+        updateTag("phan-loai-kh");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Phân loại đã tồn tại hoặc có lỗi" };
@@ -391,6 +393,7 @@ export async function deletePhanLoaiKH(id: string) {
     try {
         await prisma.pHANLOAI_KH.delete({ where: { ID: id } });
         revalidatePath("/khach-hang");
+        updateTag("phan-loai-kh");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Lỗi xóa phân loại" };
@@ -421,6 +424,7 @@ export async function createNguonKH(nguon: string) {
 
         await prisma.nGUON_KH.create({ data: { NGUON: nguon.trim() } });
         revalidatePath("/khach-hang");
+        updateTag("nguon-kh");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Nguồn đã tồn tại hoặc có lỗi" };
@@ -431,6 +435,7 @@ export async function deleteNguonKH(id: string) {
     try {
         await prisma.nGUON_KH.delete({ where: { ID: id } });
         revalidatePath("/khach-hang");
+        updateTag("nguon-kh");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Lỗi xóa nguồn" };
