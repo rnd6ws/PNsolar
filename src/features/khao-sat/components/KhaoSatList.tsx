@@ -15,9 +15,12 @@ import {
 import Modal from "@/components/Modal";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
-import { updateKhaoSat, deleteKhaoSat } from "@/features/khao-sat/action";
+import { updateKhaoSat, deleteKhaoSat, getKhachHangChiTiet } from "@/features/khao-sat/action";
 import { toast } from "sonner";
 import type { KhaoSatColumnKey } from "./KhaoSatColumnToggle";
+import FormSelect from "@/components/FormSelect";
+import FormMultiSelect from "@/components/FormMultiSelect";
+import KhachHangSearch from "@/components/KhachHangSearch";
 import KhaoSatDetailModal from "./KhaoSatDetailModal";
 
 type KhaoSatItem = {
@@ -83,7 +86,7 @@ export default function KhaoSatList({
 
     const [form, setForm] = useState({
         LOAI_CONG_TRINH: "",
-        NGUOI_KHAO_SAT: "",
+        NGUOI_KHAO_SAT: [] as string[],
         MA_KH: "",
         MA_CH: "",
         DIA_CHI: "",
@@ -91,6 +94,16 @@ export default function KhaoSatList({
         DIA_CHI_CONG_TRINH: "",
         NGAY_KHAO_SAT: "",
     });
+    const [khSearchValue, setKhSearchValue] = useState("");
+    const [khDefaultValue, setKhDefaultValue] = useState<any>(null);
+    const [nlhOptions, setNlhOptions] = useState<StringOption[]>([]);
+
+    const renderNguoiKS = (nguoiKS: string | null) => {
+        if (!nguoiKS) return "—";
+        const arr = nguoiKS.split(",").map((s) => s.trim()).filter(Boolean);
+        if (arr.length === 0) return "—";
+        return arr.map((ma) => nhanVienOptions.find((o) => o.value === ma)?.label || ma).join(", ");
+    };
 
     const handleSort = (key: string) => {
         if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -106,13 +119,13 @@ export default function KhaoSatList({
         });
     }, [data, sortKey, sortDir]);
 
-    const openEdit = (item: KhaoSatItem) => {
+    const openEdit = async (item: KhaoSatItem) => {
         const ngay = item.NGAY_KHAO_SAT
             ? new Date(item.NGAY_KHAO_SAT).toISOString().split("T")[0]
             : "";
         setForm({
             LOAI_CONG_TRINH: item.LOAI_CONG_TRINH || "",
-            NGUOI_KHAO_SAT: item.NGUOI_KHAO_SAT || "",
+            NGUOI_KHAO_SAT: item.NGUOI_KHAO_SAT ? item.NGUOI_KHAO_SAT.split(",").map((x) => x.trim()).filter(Boolean) : [],
             MA_KH: item.MA_KH || "",
             MA_CH: item.MA_CH || "",
             DIA_CHI: item.DIA_CHI || "",
@@ -120,14 +133,66 @@ export default function KhaoSatList({
             DIA_CHI_CONG_TRINH: item.DIA_CHI_CONG_TRINH || "",
             NGAY_KHAO_SAT: ngay,
         });
+        
+        setKhSearchValue(item.MA_KH || "");
+        let initialNlh: StringOption[] = [];
+        if (item.MA_KH) {
+            setKhDefaultValue(item.KHTN_REL ? {
+                ID: item.KHTN_REL.MA_KH,
+                TEN_KH: item.KHTN_REL.TEN_KH,
+            } : null);
+            // Fetch default Khach Hang details to populate nguoiLienHeOptions
+            const res = await getKhachHangChiTiet(item.MA_KH);
+            if (res.success && res.data && res.data.NGUOI_LIENHE) {
+                initialNlh = res.data.NGUOI_LIENHE.map((n: any) => ({
+                    value: n.MA_NLH,
+                    label: n.SDT ? `${n.TENNGUOI_LIENHE} - ${n.SDT}` : n.TENNGUOI_LIENHE
+                }));
+            }
+        } else {
+            setKhDefaultValue(null);
+        }
+        setNlhOptions(initialNlh);
         setEditItem(item);
+    };
+
+    const handleKhachHangChange = async (maKh: string, kh: any) => {
+        setKhSearchValue(maKh);
+        setForm((f) => ({ ...f, MA_KH: maKh, DIA_CHI_CONG_TRINH: "", DIA_CHI: "", NGUOI_LIEN_HE: "" }));
+        setNlhOptions([]);
+        
+        if (!maKh) return;
+        
+        const res = await getKhachHangChiTiet(maKh);
+        if (res.success && res.data) {
+            setForm((f) => ({ 
+                ...f, 
+                DIA_CHI_CONG_TRINH: res.data?.DIA_CHI || "", 
+                DIA_CHI: res.data?.DIA_CHI || "" 
+            }));
+            
+            if (res.data?.NGUOI_LIENHE && res.data.NGUOI_LIENHE.length > 0) {
+                const options = res.data.NGUOI_LIENHE.map((n: any) => ({
+                    value: n.MA_NLH,
+                    label: n.SDT ? `${n.TENNGUOI_LIENHE} - ${n.SDT}` : n.TENNGUOI_LIENHE
+                }));
+                setNlhOptions(options);
+                setForm((f) => ({ ...f, NGUOI_LIEN_HE: options[0].value }));
+            }
+        }
     };
 
     const handleSubmitEdit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editItem) return;
         setSubmitting(true);
-        const res = await updateKhaoSat(editItem.ID, form);
+        const submitData = {
+            ...form,
+            NGUOI_KHAO_SAT: form.NGUOI_KHAO_SAT.length > 0 ? form.NGUOI_KHAO_SAT.join(",") : undefined,
+            MA_KH: form.MA_KH || undefined,
+            NGUOI_LIEN_HE: form.NGUOI_LIEN_HE || undefined,
+        };
+        const res = await updateKhaoSat(editItem.ID, submitData);
         if (res.success) {
             toast.success("Cập nhật thành công!");
             setEditItem(null);
@@ -209,7 +274,7 @@ export default function KhaoSatList({
                                 )}
                                 {show("nguoi") && (
                                     <td className="px-4 py-3 text-sm">
-                                        {item.NGUOI_KHAO_SAT_REL?.HO_TEN || item.NGUOI_KHAO_SAT || "—"}
+                                        {renderNguoiKS(item.NGUOI_KHAO_SAT)}
                                     </td>
                                 )}
                                 {show("khachHang") && (
@@ -310,8 +375,8 @@ export default function KhaoSatList({
                         </div>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                             <span>📅 {formatDate(item.NGAY_KHAO_SAT)}</span>
-                            {item.NGUOI_KHAO_SAT_REL?.HO_TEN && (
-                                <span>👤 {item.NGUOI_KHAO_SAT_REL.HO_TEN}</span>
+                            {item.NGUOI_KHAO_SAT && (
+                                <span>👤 {renderNguoiKS(item.NGUOI_KHAO_SAT)}</span>
                             )}
                             {item.KHTN_REL?.TEN_KH && (
                                 <span>🏢 {item.KHTN_REL.TEN_KH}</span>
@@ -358,17 +423,12 @@ export default function KhaoSatList({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-muted-foreground">Loại công trình <span className="text-destructive">*</span></label>
-                                <select
-                                    className="input-modern"
+                                <FormSelect
+                                    name="LOAI_CONG_TRINH"
                                     value={form.LOAI_CONG_TRINH}
-                                    onChange={(e) => setForm((f) => ({ ...f, LOAI_CONG_TRINH: e.target.value }))}
-                                    required
-                                >
-                                    <option value="">— Chọn loại —</option>
-                                    {loaiCongTrinhOptions.map((o) => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
+                                    onChange={(v) => setForm((f) => ({ ...f, LOAI_CONG_TRINH: v }))}
+                                    options={loaiCongTrinhOptions}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-muted-foreground">Ngày khảo sát</label>
@@ -380,32 +440,32 @@ export default function KhaoSatList({
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Người khảo sát</label>
-                                <select
-                                    className="input-modern"
-                                    value={form.NGUOI_KHAO_SAT}
-                                    onChange={(e) => setForm((f) => ({ ...f, NGUOI_KHAO_SAT: e.target.value }))}
-                                >
-                                    <option value="">— Chọn nhân viên —</option>
-                                    {nhanVienOptions.map((o) => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
+                                <label className="text-sm font-semibold text-muted-foreground">Khách hàng</label>
+                                <KhachHangSearch
+                                    value={khSearchValue}
+                                    onChange={handleKhachHangChange}
+                                    defaultValue={khDefaultValue}
+                                />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Khách hàng</label>
-                                <select
-                                    className="input-modern"
-                                    value={form.MA_KH}
-                                    onChange={(e) => setForm((f) => ({ ...f, MA_KH: e.target.value }))}
-                                >
-                                    <option value="">— Chọn khách hàng —</option>
-                                    {khachHangOptions.map((o) => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
+                                <label className="text-sm font-semibold text-muted-foreground">Người khảo sát</label>
+                                <FormMultiSelect
+                                    value={form.NGUOI_KHAO_SAT}
+                                    onChange={(v) => setForm((f) => ({ ...f, NGUOI_KHAO_SAT: v }))}
+                                    options={nhanVienOptions}
+                                />
                             </div>
-                            <div className="space-y-2 md:col-span-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Người liên hệ</label>
+                                <FormSelect
+                                    name="NGUOI_LIEN_HE"
+                                    value={form.NGUOI_LIEN_HE}
+                                    onChange={(v) => setForm((f) => ({ ...f, NGUOI_LIEN_HE: v }))}
+                                    options={nlhOptions}
+                                    placeholder="— Chọn NLH —"
+                                />
+                            </div>
+                            <div className="space-y-2">
                                 <label className="text-sm font-semibold text-muted-foreground">Địa chỉ công trình</label>
                                 <input
                                     className="input-modern"
@@ -414,13 +474,13 @@ export default function KhaoSatList({
                                     placeholder="Số nhà, đường, quận/huyện..."
                                 />
                             </div>
-                            <div className="space-y-2 md:col-span-2">
+                            <div className="space-y-2 md:col-span-1">
                                 <label className="text-sm font-semibold text-muted-foreground">Địa chỉ liên hệ</label>
                                 <input
                                     className="input-modern"
                                     value={form.DIA_CHI}
                                     onChange={(e) => setForm((f) => ({ ...f, DIA_CHI: e.target.value }))}
-                                    placeholder="Địa chỉ liên hệ nếu khác địa chỉ công trình"
+                                    placeholder="Địa chỉ liên hệ"
                                 />
                             </div>
                         </div>

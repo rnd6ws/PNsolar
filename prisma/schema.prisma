@@ -765,13 +765,13 @@ model KHAO_SAT_CT {
   NHOM_KS      String
   HANG_MUC_KS  String
   CHI_TIET     String
+  STT_NHOM_KS  Int    @default(0)
   STT_HANG_MUC Int    @default(0)
-  STT_CHI_TIET Int    @default(0)
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
 
   @@index([MA_KHAO_SAT])
-  @@index([NHOM_KS, HANG_MUC_KS, STT_HANG_MUC, STT_CHI_TIET])
+  @@index([NHOM_KS, HANG_MUC_KS, STT_NHOM_KS, STT_HANG_MUC])
   @@map("KHAO_SAT_CT")
 }

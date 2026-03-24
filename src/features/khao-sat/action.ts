@@ -75,7 +75,7 @@ export async function getKhaoSatById(id: string) {
                 CO_HOI_REL: { select: { MA_CH: true } },
                 NGUOI_LIEN_HE_REL: { select: { TENNGUOI_LIENHE: true, SDT: true } },
                 KHAO_SAT_CT: {
-                    orderBy: [{ NHOM_KS: "asc" }, { STT_HANG_MUC: "asc" }, { STT_CHI_TIET: "asc" }]
+                    orderBy: [{ STT_NHOM_KS: "asc" }, { STT_HANG_MUC: "asc" }]
                 },
             },
         });
@@ -113,6 +113,20 @@ export async function getKhaoSatStats() {
         };
     } catch (e: any) {
         return { success: false, data: { total: 0, thisMonth: 0, phoBienLoai: "—" } };
+    }
+}
+
+export async function getKhachHangChiTiet(maKh: string) {
+    try {
+        const data = await prisma.kHTN.findUnique({
+            where: { MA_KH: maKh },
+            include: {
+                NGUOI_LIENHE: { select: { MA_NLH: true, TENNGUOI_LIENHE: true, SDT: true } }
+            }
+        });
+        return { success: true, data };
+    } catch (e: any) {
+        return { success: false, data: null, message: e.message };
     }
 }
 
@@ -203,8 +217,8 @@ export async function upsertKhaoSatChiTiet(data: {
         NHOM_KS: string;
         HANG_MUC_KS: string;
         CHI_TIET: string;
+        STT_NHOM_KS: number;
         STT_HANG_MUC: number;
-        STT_CHI_TIET: number;
     }[];
 }) {
     try {
@@ -229,8 +243,8 @@ export async function upsertKhaoSatChiTiet(data: {
                             NHOM_KS: item.NHOM_KS,
                             HANG_MUC_KS: item.HANG_MUC_KS,
                             CHI_TIET: item.CHI_TIET,
+                            STT_NHOM_KS: item.STT_NHOM_KS,
                             STT_HANG_MUC: item.STT_HANG_MUC,
-                            STT_CHI_TIET: item.STT_CHI_TIET,
                         },
                     })
                     : prisma.kHAO_SAT_CT.create({
@@ -239,8 +253,8 @@ export async function upsertKhaoSatChiTiet(data: {
                             NHOM_KS: item.NHOM_KS,
                             HANG_MUC_KS: item.HANG_MUC_KS,
                             CHI_TIET: item.CHI_TIET,
+                            STT_NHOM_KS: item.STT_NHOM_KS,
                             STT_HANG_MUC: item.STT_HANG_MUC,
-                            STT_CHI_TIET: item.STT_CHI_TIET,
                         },
                     })
             ),

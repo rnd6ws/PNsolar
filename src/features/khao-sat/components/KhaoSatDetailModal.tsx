@@ -22,7 +22,7 @@ interface Props {
             HANG_MUC_KS: string;
             CHI_TIET: string;
             STT_HANG_MUC: number;
-            STT_CHI_TIET: number;
+            STT_NHOM_KS: number;
         }[];
     };
     onClose: () => void;
@@ -36,7 +36,7 @@ export default function KhaoSatDetailModal({ item, onClose }: Props) {
     // Group chi tiết theo nhom → hang muc
     const grouped: Record<string, Record<string, string[]>> = {};
     [...item.KHAO_SAT_CT]
-        .sort((a, b) => a.STT_HANG_MUC - b.STT_HANG_MUC || a.STT_CHI_TIET - b.STT_CHI_TIET)
+        .sort((a, b) => a.STT_NHOM_KS - b.STT_NHOM_KS || a.STT_HANG_MUC - b.STT_HANG_MUC)
         .forEach((ct) => {
             if (!grouped[ct.NHOM_KS]) grouped[ct.NHOM_KS] = {};
             if (!grouped[ct.NHOM_KS][ct.HANG_MUC_KS]) grouped[ct.NHOM_KS][ct.HANG_MUC_KS] = [];

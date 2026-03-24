@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { getKhaoSatList, getKhaoSatStats } from "@/features/khao-sat/action";
 import { getCdLoaiCongTrinh } from "@/features/hang-muc-ks/action";
-import { getHangMucKS } from "@/features/hang-muc-ks/action";
+import { getHangMucKS, getCdNhomKS } from "@/features/hang-muc-ks/action";
 import { prisma } from "@/lib/prisma";
 import KhaoSatPageClient from "@/features/khao-sat/components/KhaoSatPageClient";
 import KhaoSatStatCards from "@/features/khao-sat/components/KhaoSatStatCards";
@@ -18,11 +18,12 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function KhaoSatPage() {
-    const [listRes, statsRes, loaiRes, hangMucRes, nhanVienList, khachHangList] = await Promise.all([
+    const [listRes, statsRes, loaiRes, hangMucRes, nhomKSRes, nhanVienList, khachHangList] = await Promise.all([
         getKhaoSatList(),
         getKhaoSatStats(),
         getCdLoaiCongTrinh(),
         getHangMucKS(),
+        getCdNhomKS(),
         prisma.dSNV.findMany({ select: { MA_NV: true, HO_TEN: true }, where: { IS_ACTIVE: true }, orderBy: { HO_TEN: "asc" } }),
         prisma.kHTN.findMany({ select: { MA_KH: true, TEN_KH: true }, orderBy: { TEN_KH: "asc" } }),
     ]);
@@ -41,6 +42,10 @@ export default async function KhaoSatPage() {
             HANG_MUC_KS: h.HANG_MUC_KS,
             STT: h.STT,
         }))
+        : [];
+
+    const nhomKSList = nhomKSRes.success && nhomKSRes.data
+        ? nhomKSRes.data.map((n: any) => ({ NHOM_KS: n.NHOM_KS, STT: n.STT }))
         : [];
 
     const nhanVienOptions = nhanVienList.map((nv) => ({ value: nv.MA_NV, label: nv.HO_TEN }));
@@ -62,6 +67,7 @@ export default async function KhaoSatPage() {
                                 nhanVienOptions={nhanVienOptions}
                                 khachHangOptions={khachHangOptions}
                                 hangMucData={hangMucList}
+                                nhomKSData={nhomKSList}
                             />
                         </PermissionGuard>
                     </div>

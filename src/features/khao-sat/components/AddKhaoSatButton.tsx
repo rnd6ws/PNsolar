@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardList, Plus, X, PlusCircle, ChevronDown, ChevronRight } from "lucide-react";
 import Modal from "@/components/Modal";
-import { createKhaoSat, upsertKhaoSatChiTiet } from "@/features/khao-sat/action";
+import FormSelect from "@/components/FormSelect";
+import FormMultiSelect from "@/components/FormMultiSelect";
+import KhachHangSearch from "@/components/KhachHangSearch";
+import { createKhaoSat, upsertKhaoSatChiTiet, getKhachHangChiTiet } from "@/features/khao-sat/action";
 import { getHangMucKS } from "@/features/hang-muc-ks/action";
 import { toast } from "sonner";
 
@@ -14,6 +17,7 @@ interface Props {
     loaiCongTrinhOptions: StringOption[];
     nhanVienOptions: StringOption[];
     khachHangOptions: StringOption[];
+    nhomKSData: { NHOM_KS: string; STT: number | null }[];
     hangMucData: {
         LOAI_CONG_TRINH: string;
         NHOM_KS: string;
@@ -27,6 +31,7 @@ export default function AddKhaoSatButton({
     nhanVienOptions,
     khachHangOptions,
     hangMucData,
+    nhomKSData,
 }: Props) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
@@ -38,12 +43,15 @@ export default function AddKhaoSatButton({
     // Step 1: Thông tin chung
     const [form, setForm] = useState({
         LOAI_CONG_TRINH: loaiCongTrinhOptions[0]?.value || "",
-        NGUOI_KHAO_SAT: "",
+        NGUOI_KHAO_SAT: [] as string[],
         MA_KH: "",
         DIA_CHI: "",
         DIA_CHI_CONG_TRINH: "",
+        NGUOI_LIEN_HE: "",
         NGAY_KHAO_SAT: new Date().toISOString().split("T")[0],
     });
+    const [khSearchValue, setKhSearchValue] = useState("");
+    const [nlhOptions, setNlhOptions] = useState<StringOption[]>([]);
 
     // Step 2: Chi tiết hạng mục - { [nhom]: { [hangMuc]: [chiTiet1, ...] } }
     const [chiTietData, setChiTietData] = useState<Record<string, Record<string, string[]>>>({});
@@ -53,17 +61,25 @@ export default function AddKhaoSatButton({
     const filteredHangMuc = hangMucData.filter(
         (h) => h.LOAI_CONG_TRINH === form.LOAI_CONG_TRINH
     );
-    const nhomList = [...new Set(filteredHangMuc.map((h) => h.NHOM_KS))];
+
+    const nhomList = [...new Set(filteredHangMuc.map((h) => h.NHOM_KS))].sort((a, b) => {
+        const sttA = nhomKSData.find((n) => n.NHOM_KS === a)?.STT || 0;
+        const sttB = nhomKSData.find((n) => n.NHOM_KS === b)?.STT || 0;
+        return sttA - sttB || a.localeCompare(b);
+    });
 
     const openAdd = () => {
         setForm({
             LOAI_CONG_TRINH: loaiCongTrinhOptions[0]?.value || "",
-            NGUOI_KHAO_SAT: "",
+            NGUOI_KHAO_SAT: [],
             MA_KH: "",
             DIA_CHI: "",
             DIA_CHI_CONG_TRINH: "",
+            NGUOI_LIEN_HE: "",
             NGAY_KHAO_SAT: new Date().toISOString().split("T")[0],
         });
+        setKhSearchValue("");
+        setNlhOptions([]);
         setChiTietData({});
         setExpandedNhom({});
         setExpandedHangMuc({});
@@ -73,85 +89,121 @@ export default function AddKhaoSatButton({
         setIsOpen(true);
     };
 
+    const handleKhachHangChange = async (maKh: string, kh: any) => {
+        setKhSearchValue(maKh);
+        setForm((f) => ({ ...f, MA_KH: maKh, DIA_CHI_CONG_TRINH: "", DIA_CHI: "", NGUOI_LIEN_HE: "" }));
+        setNlhOptions([]);
+        
+        if (!maKh) return;
+        
+        const res = await getKhachHangChiTiet(maKh);
+        if (res.success && res.data) {
+            setForm((f) => ({ 
+                ...f, 
+                DIA_CHI_CONG_TRINH: res.data?.DIA_CHI || "", 
+                DIA_CHI: res.data?.DIA_CHI || "" 
+            }));
+            
+            if (res.data?.NGUOI_LIENHE && res.data.NGUOI_LIENHE.length > 0) {
+                const options = res.data.NGUOI_LIENHE.map((n: any) => ({
+                    value: n.MA_NLH,
+                    label: n.SDT ? `${n.TENNGUOI_LIENHE} - ${n.SDT}` : n.TENNGUOI_LIENHE
+                }));
+                setNlhOptions(options);
+                setForm((f) => ({ ...f, NGUOI_LIEN_HE: options[0].value }));
+            }
+        }
+    };
+
     const handleStep1Submit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.LOAI_CONG_TRINH) {
             toast.error("Vui lòng chọn loại công trình");
             return;
         }
-        setSubmitting(true);
-        const res = await createKhaoSat(form);
-        if (res.success && res.id) {
-            setCreatedId(res.id);
-            setCreatedMa(res.ma || null);
+        
+        // Khởi tạo chi tiết data mặc định (1 dòng trống cho mỗi hạng mục)
+        const initData: Record<string, Record<string, string[]>> = {};
+        filteredHangMuc.forEach((h) => {
+            if (!initData[h.NHOM_KS]) initData[h.NHOM_KS] = {};
+            if (!initData[h.NHOM_KS][h.HANG_MUC_KS]) {
+                initData[h.NHOM_KS][h.HANG_MUC_KS] = [""];
+            }
+        });
+        setChiTietData(initData);
 
-            // Khởi tạo chi tiết data mặc định (1 dòng trống cho mỗi hạng mục)
-            const initData: Record<string, Record<string, string[]>> = {};
-            filteredHangMuc.forEach((h) => {
-                if (!initData[h.NHOM_KS]) initData[h.NHOM_KS] = {};
-                if (!initData[h.NHOM_KS][h.HANG_MUC_KS]) {
-                    initData[h.NHOM_KS][h.HANG_MUC_KS] = [""];
-                }
-            });
-            setChiTietData(initData);
+        // Mở tất cả nhóm
+        const expanded: Record<string, boolean> = {};
+        nhomList.forEach((n) => { expanded[n] = true; });
+        setExpandedNhom(expanded);
 
-            // Mở tất cả nhóm
-            const expanded: Record<string, boolean> = {};
-            nhomList.forEach((n) => { expanded[n] = true; });
-            setExpandedNhom(expanded);
-
-            setStep("chitiet");
-            toast.success(`Đã tạo phiếu ${res.ma}! Bây giờ nhập chi tiết khảo sát.`);
-        } else {
-            toast.error(res.message || "Có lỗi xảy ra");
-        }
-        setSubmitting(false);
+        setStep("chitiet");
     };
 
     const handleSaveChiTiet = async () => {
-        if (!createdId) return;
         setSubmitting(true);
 
         const items: {
             NHOM_KS: string;
             HANG_MUC_KS: string;
             CHI_TIET: string;
+            STT_NHOM_KS: number;
             STT_HANG_MUC: number;
-            STT_CHI_TIET: number;
         }[] = [];
 
-        let sttNhom = 0;
         nhomList.forEach((nhom) => {
-            sttNhom++;
+            const nhomStt = nhomKSData.find(n => n.NHOM_KS === nhom)?.STT || 0;
             const hangMucs = filteredHangMuc.filter((h) => h.NHOM_KS === nhom);
-            hangMucs.forEach((hm, hmIdx) => {
+            
+            hangMucs.forEach((hm) => {
+                const hmStt = hm.STT || 0;
                 const chiTiets = chiTietData[nhom]?.[hm.HANG_MUC_KS] || [];
                 chiTiets
                     .filter((ct) => ct.trim() !== "")
-                    .forEach((ct, ctIdx) => {
+                    .forEach((ct) => {
                         items.push({
                             NHOM_KS: nhom,
                             HANG_MUC_KS: hm.HANG_MUC_KS,
                             CHI_TIET: ct.trim(),
-                            STT_HANG_MUC: hmIdx + 1,
-                            STT_CHI_TIET: ctIdx + 1,
+                            STT_NHOM_KS: nhomStt,
+                            STT_HANG_MUC: hmStt,
                         });
                     });
             });
         });
 
-        const res = await upsertKhaoSatChiTiet({
-            MA_KHAO_SAT: createdMa!,
-            items,
-        });
-
-        if (res.success) {
-            toast.success("Đã lưu phiếu khảo sát hoàn chỉnh!");
-            setIsOpen(false);
-            router.refresh();
-        } else {
-            toast.error(res.message || "Lỗi khi lưu chi tiết");
+        // 1. Tạo Phiếu Khảo Sát
+        const submitData = {
+            ...form,
+            NGUOI_KHAO_SAT: form.NGUOI_KHAO_SAT.length > 0 ? form.NGUOI_KHAO_SAT.join(",") : undefined,
+            MA_KH: form.MA_KH || undefined,
+            NGUOI_LIEN_HE: form.NGUOI_LIEN_HE || undefined,
+        };
+        
+        const ksRes = await createKhaoSat(submitData);
+        if (!ksRes.success || !ksRes.ma) {
+            toast.error(ksRes.message || "Lỗi tạo phiếu khảo sát");
+            setSubmitting(false);
+            return;
         }
+
+        // 2. Lưu chi tiết phiếu khảo sát nếu có
+        if (items.length > 0) {
+            const ctRes = await upsertKhaoSatChiTiet({
+                MA_KHAO_SAT: ksRes.ma,
+                items,
+            });
+
+            if (!ctRes.success) {
+                toast.error(ctRes.message || "Lỗi khi lưu chi tiết");
+                setSubmitting(false);
+                return;
+            }
+        }
+
+        toast.success("Đã lưu toàn bộ dữ liệu phiếu khảo sát!");
+        setIsOpen(false);
+        router.refresh();
         setSubmitting(false);
     };
 
@@ -201,7 +253,7 @@ export default function AddKhaoSatButton({
             <Modal
                 isOpen={isOpen}
                 onClose={() => setIsOpen(false)}
-                title={step === "info" ? "Thêm phiếu khảo sát mới" : `Chi tiết khảo sát — ${createdMa}`}
+                title={step === "info" ? "Thêm phiếu khảo sát mới" : `Chi tiết khảo sát mới (Bước 2)`}
                 icon={ClipboardList}
                 size="xl"
                 fullHeight
@@ -217,7 +269,7 @@ export default function AddKhaoSatButton({
                                     className="btn-premium-primary"
                                     onClick={() => (document.querySelector("#form-add-ks") as HTMLFormElement)?.requestSubmit()}
                                 >
-                                    {submitting ? "Đang tạo..." : "Tạo phiếu & Nhập chi tiết →"}
+                                    {submitting ? "Đang xử lý..." : "Tiếp theo →"}
                                 </button>
                             </div>
                         </>
@@ -248,17 +300,12 @@ export default function AddKhaoSatButton({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-muted-foreground">Loại công trình <span className="text-destructive">*</span></label>
-                                <select
-                                    className="input-modern"
+                                <FormSelect
+                                    name="LOAI_CONG_TRINH"
                                     value={form.LOAI_CONG_TRINH}
-                                    onChange={(e) => setForm((f) => ({ ...f, LOAI_CONG_TRINH: e.target.value }))}
-                                    required
-                                >
-                                    <option value="">— Chọn loại —</option>
-                                    {loaiCongTrinhOptions.map((o) => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
+                                    onChange={(v) => setForm((f) => ({ ...f, LOAI_CONG_TRINH: v }))}
+                                    options={loaiCongTrinhOptions}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-muted-foreground">Ngày khảo sát</label>
@@ -269,31 +316,30 @@ export default function AddKhaoSatButton({
                                     onChange={(e) => setForm((f) => ({ ...f, NGAY_KHAO_SAT: e.target.value }))}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Người khảo sát</label>
-                                <select
-                                    className="input-modern"
-                                    value={form.NGUOI_KHAO_SAT}
-                                    onChange={(e) => setForm((f) => ({ ...f, NGUOI_KHAO_SAT: e.target.value }))}
-                                >
-                                    <option value="">— Chọn nhân viên —</option>
-                                    {nhanVienOptions.map((o) => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Khách hàng</label>
+                                <KhachHangSearch
+                                    value={khSearchValue}
+                                    onChange={handleKhachHangChange}
+                                />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Khách hàng</label>
-                                <select
-                                    className="input-modern"
-                                    value={form.MA_KH}
-                                    onChange={(e) => setForm((f) => ({ ...f, MA_KH: e.target.value }))}
-                                >
-                                    <option value="">— Chọn khách hàng —</option>
-                                    {khachHangOptions.map((o) => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
+                                <label className="text-sm font-semibold text-muted-foreground">Người liên hệ</label>
+                                <FormSelect
+                                    name="NGUOI_LIEN_HE"
+                                    value={form.NGUOI_LIEN_HE}
+                                    onChange={(v) => setForm((f) => ({ ...f, NGUOI_LIEN_HE: v }))}
+                                    options={nlhOptions}
+                                    placeholder="— Chọn NLH —"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Người khảo sát</label>
+                                <FormMultiSelect
+                                    value={form.NGUOI_KHAO_SAT}
+                                    onChange={(v) => setForm((f) => ({ ...f, NGUOI_KHAO_SAT: v }))}
+                                    options={nhanVienOptions}
+                                />
                             </div>
                             <div className="space-y-2 md:col-span-2">
                                 <label className="text-sm font-semibold text-muted-foreground">Địa chỉ công trình</label>
@@ -323,7 +369,9 @@ export default function AddKhaoSatButton({
                             </div>
                         )}
                         {nhomList.map((nhom) => {
-                            const hangMucsInNhom = filteredHangMuc.filter((h) => h.NHOM_KS === nhom);
+                            const hangMucsInNhom = filteredHangMuc
+                                .filter((h) => h.NHOM_KS === nhom)
+                                .sort((a, b) => (a.STT || 0) - (b.STT || 0) || a.HANG_MUC_KS.localeCompare(b.HANG_MUC_KS));
                             const isNhomExpanded = expandedNhom[nhom] !== false;
                             return (
                                 <div key={nhom} className="border border-border rounded-xl overflow-hidden">
