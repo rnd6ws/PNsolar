@@ -186,9 +186,9 @@ export async function getUniqueFiltersInGiaBan() {
 export async function createGiaBan(data: {
     NGAY_HIEU_LUC: string;
     MA_NHOM_HH: string;
-    MA_PHAN_LOAI: string;
-    MA_DONG_HANG: string;
-    MA_GOI_GIA: string;
+    MA_PHAN_LOAI?: string;
+    MA_DONG_HANG?: string;
+    MA_GOI_GIA?: string;
     MA_HH: string;
     DON_GIA: number;
     GHI_CHU?: string;
@@ -202,9 +202,9 @@ export async function createGiaBan(data: {
             data: {
                 NGAY_HIEU_LUC: new Date(data.NGAY_HIEU_LUC),
                 MA_NHOM_HH: data.MA_NHOM_HH,
-                MA_PHAN_LOAI: data.MA_PHAN_LOAI,
-                MA_DONG_HANG: data.MA_DONG_HANG,
-                MA_GOI_GIA: data.MA_GOI_GIA,
+                MA_PHAN_LOAI: data.MA_PHAN_LOAI || null,
+                MA_DONG_HANG: data.MA_DONG_HANG || null,
+                MA_GOI_GIA: data.MA_GOI_GIA || null,
                 MA_HH: data.MA_HH,
                 DON_GIA: data.DON_GIA,
                 GHI_CHU: data.GHI_CHU || null,
@@ -223,9 +223,9 @@ export async function createGiaBan(data: {
 export async function updateGiaBan(id: string, data: {
     NGAY_HIEU_LUC: string;
     MA_NHOM_HH: string;
-    MA_PHAN_LOAI: string;
-    MA_DONG_HANG: string;
-    MA_GOI_GIA: string;
+    MA_PHAN_LOAI?: string;
+    MA_DONG_HANG?: string;
+    MA_GOI_GIA?: string;
     MA_HH: string;
     DON_GIA: number;
     GHI_CHU?: string;
@@ -236,9 +236,9 @@ export async function updateGiaBan(id: string, data: {
             data: {
                 NGAY_HIEU_LUC: new Date(data.NGAY_HIEU_LUC),
                 MA_NHOM_HH: data.MA_NHOM_HH,
-                MA_PHAN_LOAI: data.MA_PHAN_LOAI,
-                MA_DONG_HANG: data.MA_DONG_HANG,
-                MA_GOI_GIA: data.MA_GOI_GIA,
+                MA_PHAN_LOAI: data.MA_PHAN_LOAI || null,
+                MA_DONG_HANG: data.MA_DONG_HANG || null,
+                MA_GOI_GIA: data.MA_GOI_GIA || null,
                 MA_HH: data.MA_HH,
                 DON_GIA: data.DON_GIA,
                 GHI_CHU: data.GHI_CHU || null,
@@ -271,9 +271,9 @@ export async function createBulkGiaBan(payload: {
     NGAY_HIEU_LUC: string;
     rows: {
         MA_NHOM_HH: string;
-        MA_PHAN_LOAI: string;
-        MA_DONG_HANG: string;
-        MA_GOI_GIA: string;
+        MA_PHAN_LOAI?: string;
+        MA_DONG_HANG?: string;
+        MA_GOI_GIA?: string;
         MA_HH: string;
         DON_GIA: number;
         GHI_CHU?: string;
@@ -305,9 +305,9 @@ export async function createBulkGiaBan(payload: {
                 data: {
                     NGAY_HIEU_LUC: ngayHieuLuc,
                     MA_NHOM_HH: r.MA_NHOM_HH,
-                    MA_PHAN_LOAI: r.MA_PHAN_LOAI,
-                    MA_DONG_HANG: r.MA_DONG_HANG,
-                    MA_GOI_GIA: r.MA_GOI_GIA,
+                    MA_PHAN_LOAI: r.MA_PHAN_LOAI || null,
+                    MA_DONG_HANG: r.MA_DONG_HANG || null,
+                    MA_GOI_GIA: r.MA_GOI_GIA || null,
                     MA_HH: r.MA_HH,
                     DON_GIA: r.DON_GIA,
                     GHI_CHU: r.GHI_CHU || null,
@@ -348,8 +348,10 @@ export async function getGiaBanHistoryByHH(maHH: string) {
             },
         });
 
-        // Chỉ giữ records có gói giá còn hiệu lực
+        // Chỉ giữ records có gói giá còn hiệu lực hoặc không có gói giá
         const filtered = records.filter(r => {
+            // Không có gói giá → luôn hiển thị
+            if (!r.MA_GOI_GIA) return true;
             // Nếu có relation → check HIEU_LUC trực tiếp
             if (r.GOI_GIA_REL) return r.GOI_GIA_REL.HIEU_LUC !== false;
             // Nếu không có relation → check qua activeGoiGiaIds
@@ -360,7 +362,7 @@ export async function getGiaBanHistoryByHH(maHH: string) {
             ...r,
             NGAY_HIEU_LUC: r.NGAY_HIEU_LUC.toISOString(),
             // Normalize tên gói giá: ưu tiên relation → lookup từ mã → dùng mã raw
-            GOI_GIA_NAME: r.GOI_GIA_REL?.GOI_GIA || goiGiaLookup.get(r.MA_GOI_GIA) || r.MA_GOI_GIA || 'Khác',
+            GOI_GIA_NAME: r.GOI_GIA_REL?.GOI_GIA || (r.MA_GOI_GIA ? goiGiaLookup.get(r.MA_GOI_GIA) : null) || r.MA_GOI_GIA || 'Khác',
         }));
     } catch (error) {
         console.error('[getGiaBanHistoryByHH]', error);
@@ -391,10 +393,10 @@ export async function getGiaBanMapByHangHoa(): Promise<Record<string, { GOI_GIA:
 
         const map: Record<string, { GOI_GIA: string; DON_GIA: number; NGAY_HIEU_LUC: string }[]> = {};
         records.forEach(r => {
-            // Bỏ qua giá bán thuộc gói giá đã hết hiệu lực
-            if (!activeGoiGiaMap.has(r.MA_GOI_GIA)) return;
+            // Bỏ qua giá bán thuộc gói giá đã hết hiệu lực (chỉ check nếu có gói giá)
+            if (r.MA_GOI_GIA && !activeGoiGiaMap.has(r.MA_GOI_GIA)) return;
 
-            const goiGiaName = r.GOI_GIA_REL?.GOI_GIA || r.MA_GOI_GIA;
+            const goiGiaName = r.GOI_GIA_REL?.GOI_GIA || r.MA_GOI_GIA || 'Khác';
 
             if (!map[r.MA_HH]) map[r.MA_HH] = [];
             // Tránh trùng gói giá (chỉ lấy giá mới nhất cho mỗi gói giá)

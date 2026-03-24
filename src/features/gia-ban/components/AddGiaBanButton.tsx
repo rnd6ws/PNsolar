@@ -54,12 +54,18 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
         return dongHang ? goiGiaOptions.filter(g => g.MA_DONG_HANG === dongHang) : goiGiaOptions;
     }, [dongHang, goiGiaOptions]);
 
-    // Dòng hàng/Phân loại → Hàng hóa
+    // Dòng hàng/Phân loại/Nhóm HH → Hàng hóa
     const filteredHH = useMemo(() => {
         if (dongHang) return hhOptions.filter(h => h.MA_DONG_HANG === dongHang);
         if (phanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === phanLoai);
+        if (nhomHh) {
+            // NHOM_HH trong DMHH lưu TEN_NHOM, nhưng dropdown value là MA_NHOM
+            const nhom = nhomHhOptions.find(n => n.MA_NHOM === nhomHh);
+            const tenNhom = nhom?.TEN_NHOM;
+            return hhOptions.filter(h => h.NHOM_HH === nhomHh || h.NHOM_HH === tenNhom);
+        }
         return hhOptions;
-    }, [dongHang, phanLoai, hhOptions]);
+    }, [dongHang, phanLoai, nhomHh, hhOptions, nhomHhOptions]);
 
     // ====== Cascade handlers ======
     const handleNhomHhChange = (val: string) => {
@@ -183,14 +189,13 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                             </select>
                         </div>
                         <div className="space-y-1.5">
-                            <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
+                            <label className={labelClass}>Phân loại</label>
                             <select
                                 value={phanLoai}
                                 onChange={e => handlePhanLoaiChange(e.target.value)}
-                                required
                                 className="input-modern"
                             >
-                                <option value="">-- Chọn phân loại --</option>
+                                <option value="">-- Phân loại --</option>
                                 {filteredPhanLoai.map(p => (
                                     <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>
                                 ))}
@@ -201,28 +206,26 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                     {/* Dòng hàng + Gói giá */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
+                            <label className={labelClass}>Dòng hàng</label>
                             <select
                                 value={dongHang}
                                 onChange={e => handleDongHangChange(e.target.value)}
-                                required
                                 className="input-modern"
                             >
-                                <option value="">-- Chọn dòng hàng --</option>
+                                <option value="">-- Dòng hàng --</option>
                                 {filteredDongHang.map(d => (
                                     <option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>
                                 ))}
                             </select>
                         </div>
                         <div className="space-y-1.5">
-                            <label className={labelClass}>Gói giá <span className="text-destructive">*</span></label>
+                            <label className={labelClass}>Gói giá</label>
                             <select
                                 value={goiGia}
                                 onChange={e => setGoiGia(e.target.value)}
-                                required
                                 className="input-modern"
                             >
-                                <option value="">-- Chọn gói giá --</option>
+                                <option value="">-- Gói giá --</option>
                                 {filteredGoiGia.map(g => (
                                     <option key={g.ID} value={g.ID_GOI_GIA}>{g.GOI_GIA}</option>
                                 ))}

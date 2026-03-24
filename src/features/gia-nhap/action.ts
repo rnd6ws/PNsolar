@@ -85,6 +85,7 @@ export async function getHangHoaOptionsForGiaNhap() {
                 MA_HH: true,
                 TEN_HH: true,
                 DON_VI_TINH: true,
+                NHOM_HH: true,
                 MA_PHAN_LOAI: true,
                 MA_DONG_HANG: true,
                 PHAN_LOAI_REL: { select: { TEN_PHAN_LOAI: true } },

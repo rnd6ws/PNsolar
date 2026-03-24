@@ -66,8 +66,13 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
     const filteredHH = useMemo(() => {
         if (selDongHang) return hhOptions.filter(h => h.MA_DONG_HANG === selDongHang);
         if (selPhanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === selPhanLoai);
+        if (selNhomHH) {
+            const nhom = nhomHHOptions.find(n => n.MA_NHOM === selNhomHH);
+            const tenNhom = nhom?.TEN_NHOM;
+            return hhOptions.filter(h => h.NHOM_HH === selNhomHH || h.NHOM_HH === tenNhom);
+        }
         return hhOptions;
-    }, [selDongHang, selPhanLoai, hhOptions]);
+    }, [selDongHang, selPhanLoai, selNhomHH, hhOptions, nhomHHOptions]);
 
     // Tổng dòng sẽ tạo
     const previewCount = selHangHoas.length;
@@ -302,7 +307,7 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
 
                     {/* Ngày hiệu lực */}
                     <div className="max-w-xs">
-                        <label className={labelClass}>Ngày hiệu lực (chung) *</label>
+                        <label className={labelClass}>Ngày hiệu lực (chung) <span className="text-destructive">*</span></label>
                         <input type="date" className={inputClass} value={ngayHieuLuc} onChange={e => setNgayHieuLuc(e.target.value)} required />
                     </div>
 
@@ -334,7 +339,7 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
                                 </select>
                             </div>
                             <div>
-                                <label className={labelClass}>Nhà cung cấp *</label>
+                                <label className={labelClass}>Nhà cung cấp <span className="text-destructive">*</span></label>
                                 <select className={selectClass} value={selNCC} onChange={e => setSelNCC(e.target.value)}>
                                     <option value="">-- Chọn NCC --</option>
                                     {nccOptions.map(n => (<option key={n.ID} value={n.MA_NCC}>{n.TEN_NCC}</option>))}
@@ -345,7 +350,7 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
                         {/* Multi-select Hàng hóa */}
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
-                                <label className={labelClass + " mb-0"}>Hàng hóa * <span className="text-primary font-bold">({selHangHoas.length}/{filteredHH.length})</span></label>
+                                <label className={labelClass + " mb-0"}>Hàng hóa <span className="text-destructive">*</span> <span className="text-primary font-bold">({selHangHoas.length}/{filteredHH.length})</span></label>
                                 {filteredHH.length > 0 && (
                                     <button type="button" onClick={toggleAllHH} className="text-[10px] font-medium text-primary hover:underline">
                                         {selHangHoas.length === filteredHH.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
@@ -414,7 +419,7 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
                                                 <th className="px-3 py-2 text-[11px] font-bold text-muted-foreground uppercase w-8">#</th>
                                                 <th className="px-3 py-2 text-[11px] font-bold text-muted-foreground uppercase">Hàng hóa</th>
                                                 <th className="px-3 py-2 text-[11px] font-bold text-muted-foreground uppercase">NCC</th>
-                                                <th className="px-3 py-2 text-[11px] font-bold text-muted-foreground uppercase w-44">Đơn giá *</th>
+                                                <th className="px-3 py-2 text-[11px] font-bold text-muted-foreground uppercase w-44">Đơn giá <span className="text-destructive">*</span></th>
                                                 <th className="px-3 py-2 w-8"></th>
                                             </tr>
                                         </thead>

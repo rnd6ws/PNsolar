@@ -108,7 +108,7 @@ interface GiaBanHistoryItem {
     ID: string;
     NGAY_HIEU_LUC: string;
     MA_NHOM_HH: string;
-    MA_GOI_GIA: string;
+    MA_GOI_GIA: string | null;
     DON_GIA: number;
     GHI_CHU: string | null;
     GOI_GIA_NAME: string;
@@ -299,7 +299,7 @@ function ProductModal({
 
                         {/* Row 1: MA_HH */}
                         <div>
-                            <label className={labelClass}>Mã hàng hóa *</label>
+                            <label className={labelClass}>Mã hàng hóa <span className="text-destructive">*</span></label>
                             <input
                                 className={inputClass}
                                 placeholder="VD: HH-001"
@@ -377,7 +377,7 @@ function ProductModal({
                                 />
                             </div>
                             <div>
-                                <label className={labelClass}>Tên hàng *</label>
+                                <label className={labelClass}>Tên hàng <span className="text-destructive">*</span></label>
                                 <input
                                     className={inputClass}
                                     placeholder="Tự động tạo từ Tiền tố + Model"
@@ -394,7 +394,7 @@ function ProductModal({
                         {/* Row 4: ĐVT + Xuất xứ */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className={labelClass}>Đơn vị tính *</label>
+                                <label className={labelClass}>Đơn vị tính <span className="text-destructive">*</span></label>
                                 <input
                                     className={inputClass}
                                     placeholder="Tự động theo dòng hàng"
