@@ -1,0 +1,419 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ClipboardList, Plus, X, PlusCircle, ChevronDown, ChevronRight } from "lucide-react";
+import Modal from "@/components/Modal";
+import { createKhaoSat, upsertKhaoSatChiTiet } from "@/features/khao-sat/action";
+import { getHangMucKS } from "@/features/hang-muc-ks/action";
+import { toast } from "sonner";
+
+type StringOption = { value: string; label: string };
+
+interface Props {
+    loaiCongTrinhOptions: StringOption[];
+    nhanVienOptions: StringOption[];
+    khachHangOptions: StringOption[];
+    hangMucData: {
+        LOAI_CONG_TRINH: string;
+        NHOM_KS: string;
+        HANG_MUC_KS: string;
+        STT: number | null;
+    }[];
+}
+
+export default function AddKhaoSatButton({
+    loaiCongTrinhOptions,
+    nhanVienOptions,
+    khachHangOptions,
+    hangMucData,
+}: Props) {
+    const router = useRouter();
+    const [isOpen, setIsOpen] = useState(false);
+    const [step, setStep] = useState<"info" | "chitiet">("info");
+    const [submitting, setSubmitting] = useState(false);
+    const [createdId, setCreatedId] = useState<string | null>(null);
+    const [createdMa, setCreatedMa] = useState<string | null>(null);
+
+    // Step 1: Thông tin chung
+    const [form, setForm] = useState({
+        LOAI_CONG_TRINH: loaiCongTrinhOptions[0]?.value || "",
+        NGUOI_KHAO_SAT: "",
+        MA_KH: "",
+        DIA_CHI: "",
+        DIA_CHI_CONG_TRINH: "",
+        NGAY_KHAO_SAT: new Date().toISOString().split("T")[0],
+    });
+
+    // Step 2: Chi tiết hạng mục - { [nhom]: { [hangMuc]: [chiTiet1, ...] } }
+    const [chiTietData, setChiTietData] = useState<Record<string, Record<string, string[]>>>({});
+    const [expandedNhom, setExpandedNhom] = useState<Record<string, boolean>>({});
+    const [expandedHangMuc, setExpandedHangMuc] = useState<Record<string, boolean>>({});
+
+    const filteredHangMuc = hangMucData.filter(
+        (h) => h.LOAI_CONG_TRINH === form.LOAI_CONG_TRINH
+    );
+    const nhomList = [...new Set(filteredHangMuc.map((h) => h.NHOM_KS))];
+
+    const openAdd = () => {
+        setForm({
+            LOAI_CONG_TRINH: loaiCongTrinhOptions[0]?.value || "",
+            NGUOI_KHAO_SAT: "",
+            MA_KH: "",
+            DIA_CHI: "",
+            DIA_CHI_CONG_TRINH: "",
+            NGAY_KHAO_SAT: new Date().toISOString().split("T")[0],
+        });
+        setChiTietData({});
+        setExpandedNhom({});
+        setExpandedHangMuc({});
+        setCreatedId(null);
+        setCreatedMa(null);
+        setStep("info");
+        setIsOpen(true);
+    };
+
+    const handleStep1Submit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!form.LOAI_CONG_TRINH) {
+            toast.error("Vui lòng chọn loại công trình");
+            return;
+        }
+        setSubmitting(true);
+        const res = await createKhaoSat(form);
+        if (res.success && res.id) {
+            setCreatedId(res.id);
+            setCreatedMa(res.ma || null);
+
+            // Khởi tạo chi tiết data mặc định (1 dòng trống cho mỗi hạng mục)
+            const initData: Record<string, Record<string, string[]>> = {};
+            filteredHangMuc.forEach((h) => {
+                if (!initData[h.NHOM_KS]) initData[h.NHOM_KS] = {};
+                if (!initData[h.NHOM_KS][h.HANG_MUC_KS]) {
+                    initData[h.NHOM_KS][h.HANG_MUC_KS] = [""];
+                }
+            });
+            setChiTietData(initData);
+
+            // Mở tất cả nhóm
+            const expanded: Record<string, boolean> = {};
+            nhomList.forEach((n) => { expanded[n] = true; });
+            setExpandedNhom(expanded);
+
+            setStep("chitiet");
+            toast.success(`Đã tạo phiếu ${res.ma}! Bây giờ nhập chi tiết khảo sát.`);
+        } else {
+            toast.error(res.message || "Có lỗi xảy ra");
+        }
+        setSubmitting(false);
+    };
+
+    const handleSaveChiTiet = async () => {
+        if (!createdId) return;
+        setSubmitting(true);
+
+        const items: {
+            NHOM_KS: string;
+            HANG_MUC_KS: string;
+            CHI_TIET: string;
+            STT_HANG_MUC: number;
+            STT_CHI_TIET: number;
+        }[] = [];
+
+        let sttNhom = 0;
+        nhomList.forEach((nhom) => {
+            sttNhom++;
+            const hangMucs = filteredHangMuc.filter((h) => h.NHOM_KS === nhom);
+            hangMucs.forEach((hm, hmIdx) => {
+                const chiTiets = chiTietData[nhom]?.[hm.HANG_MUC_KS] || [];
+                chiTiets
+                    .filter((ct) => ct.trim() !== "")
+                    .forEach((ct, ctIdx) => {
+                        items.push({
+                            NHOM_KS: nhom,
+                            HANG_MUC_KS: hm.HANG_MUC_KS,
+                            CHI_TIET: ct.trim(),
+                            STT_HANG_MUC: hmIdx + 1,
+                            STT_CHI_TIET: ctIdx + 1,
+                        });
+                    });
+            });
+        });
+
+        const res = await upsertKhaoSatChiTiet({
+            MA_KHAO_SAT: createdMa!,
+            items,
+        });
+
+        if (res.success) {
+            toast.success("Đã lưu phiếu khảo sát hoàn chỉnh!");
+            setIsOpen(false);
+            router.refresh();
+        } else {
+            toast.error(res.message || "Lỗi khi lưu chi tiết");
+        }
+        setSubmitting(false);
+    };
+
+    const updateChiTiet = (nhom: string, hangMuc: string, idx: number, val: string) => {
+        setChiTietData((prev) => {
+            const newData = { ...prev };
+            if (!newData[nhom]) newData[nhom] = {};
+            const list = [...(newData[nhom][hangMuc] || [""])];
+            list[idx] = val;
+            newData[nhom] = { ...newData[nhom], [hangMuc]: list };
+            return newData;
+        });
+    };
+
+    const addChiTiet = (nhom: string, hangMuc: string) => {
+        setChiTietData((prev) => {
+            const newData = { ...prev };
+            if (!newData[nhom]) newData[nhom] = {};
+            const list = [...(newData[nhom][hangMuc] || [""])];
+            list.push("");
+            newData[nhom] = { ...newData[nhom], [hangMuc]: list };
+            return newData;
+        });
+    };
+
+    const removeChiTiet = (nhom: string, hangMuc: string, idx: number) => {
+        setChiTietData((prev) => {
+            const newData = { ...prev };
+            const list = [...(newData[nhom]?.[hangMuc] || [""])];
+            if (list.length <= 1) return prev;
+            list.splice(idx, 1);
+            newData[nhom] = { ...newData[nhom], [hangMuc]: list };
+            return newData;
+        });
+    };
+
+    const countChiTiet = (nhom: string, hangMuc: string) =>
+        (chiTietData[nhom]?.[hangMuc] || []).filter((ct) => ct.trim() !== "").length;
+
+    return (
+        <>
+            <button onClick={openAdd} className="btn-premium-primary text-sm font-medium shadow-sm" title="Thêm phiếu khảo sát mới">
+                <Plus className="w-4 h-4" />
+                Thêm phiếu KS
+            </button>
+
+            <Modal
+                isOpen={isOpen}
+                onClose={() => setIsOpen(false)}
+                title={step === "info" ? "Thêm phiếu khảo sát mới" : `Chi tiết khảo sát — ${createdMa}`}
+                icon={ClipboardList}
+                size="xl"
+                fullHeight
+                footer={
+                    step === "info" ? (
+                        <>
+                            <span />
+                            <div className="flex gap-3">
+                                <button type="button" onClick={() => setIsOpen(false)} className="btn-premium-secondary">Hủy</button>
+                                <button
+                                    type="button"
+                                    disabled={submitting}
+                                    className="btn-premium-primary"
+                                    onClick={() => (document.querySelector("#form-add-ks") as HTMLFormElement)?.requestSubmit()}
+                                >
+                                    {submitting ? "Đang tạo..." : "Tạo phiếu & Nhập chi tiết →"}
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <span className="text-xs text-muted-foreground">
+                                {Object.values(chiTietData).reduce((acc, nhom) =>
+                                    acc + Object.values(nhom).reduce((a, list) => a + list.filter((c) => c.trim()).length, 0), 0
+                                )} mục chi tiết
+                            </span>
+                            <div className="flex gap-3">
+                                <button type="button" onClick={() => setIsOpen(false)} className="btn-premium-secondary">Đóng</button>
+                                <button
+                                    type="button"
+                                    disabled={submitting}
+                                    className="btn-premium-primary"
+                                    onClick={handleSaveChiTiet}
+                                >
+                                    {submitting ? "Đang lưu..." : "Lưu phiếu khảo sát"}
+                                </button>
+                            </div>
+                        </>
+                    )
+                }
+            >
+                {step === "info" ? (
+                    <form id="form-add-ks" onSubmit={handleStep1Submit} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Loại công trình <span className="text-destructive">*</span></label>
+                                <select
+                                    className="input-modern"
+                                    value={form.LOAI_CONG_TRINH}
+                                    onChange={(e) => setForm((f) => ({ ...f, LOAI_CONG_TRINH: e.target.value }))}
+                                    required
+                                >
+                                    <option value="">— Chọn loại —</option>
+                                    {loaiCongTrinhOptions.map((o) => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Ngày khảo sát</label>
+                                <input
+                                    type="date"
+                                    className="input-modern"
+                                    value={form.NGAY_KHAO_SAT}
+                                    onChange={(e) => setForm((f) => ({ ...f, NGAY_KHAO_SAT: e.target.value }))}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Người khảo sát</label>
+                                <select
+                                    className="input-modern"
+                                    value={form.NGUOI_KHAO_SAT}
+                                    onChange={(e) => setForm((f) => ({ ...f, NGUOI_KHAO_SAT: e.target.value }))}
+                                >
+                                    <option value="">— Chọn nhân viên —</option>
+                                    {nhanVienOptions.map((o) => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Khách hàng</label>
+                                <select
+                                    className="input-modern"
+                                    value={form.MA_KH}
+                                    onChange={(e) => setForm((f) => ({ ...f, MA_KH: e.target.value }))}
+                                >
+                                    <option value="">— Chọn khách hàng —</option>
+                                    {khachHangOptions.map((o) => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Địa chỉ công trình</label>
+                                <input
+                                    className="input-modern"
+                                    value={form.DIA_CHI_CONG_TRINH}
+                                    onChange={(e) => setForm((f) => ({ ...f, DIA_CHI_CONG_TRINH: e.target.value }))}
+                                    placeholder="Số nhà, đường, quận/huyện, tỉnh/thành..."
+                                />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Địa chỉ liên hệ</label>
+                                <input
+                                    className="input-modern"
+                                    value={form.DIA_CHI}
+                                    onChange={(e) => setForm((f) => ({ ...f, DIA_CHI: e.target.value }))}
+                                    placeholder="Nếu khác địa chỉ công trình"
+                                />
+                            </div>
+                        </div>
+                    </form>
+                ) : (
+                    <div className="space-y-3">
+                        {nhomList.length === 0 && (
+                            <div className="text-center py-10 text-muted-foreground text-sm italic bg-muted/20 rounded-xl border border-dashed border-border">
+                                Chưa có hạng mục KS nào cho loại công trình này. Bạn có thể thêm từ trang Hạng mục KS.
+                            </div>
+                        )}
+                        {nhomList.map((nhom) => {
+                            const hangMucsInNhom = filteredHangMuc.filter((h) => h.NHOM_KS === nhom);
+                            const isNhomExpanded = expandedNhom[nhom] !== false;
+                            return (
+                                <div key={nhom} className="border border-border rounded-xl overflow-hidden">
+                                    {/* Nhóm Header */}
+                                    <button
+                                        type="button"
+                                        className="w-full flex items-center justify-between px-4 py-3 bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
+                                        onClick={() => setExpandedNhom((prev) => ({ ...prev, [nhom]: !isNhomExpanded }))}
+                                    >
+                                        <span className="font-semibold text-sm text-purple-700 dark:text-purple-300">
+                                            {isNhomExpanded ? <ChevronDown className="w-4 h-4 inline mr-1.5" /> : <ChevronRight className="w-4 h-4 inline mr-1.5" />}
+                                            {nhom}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {hangMucsInNhom.length} hạng mục
+                                        </span>
+                                    </button>
+
+                                    {/* Hạng mục list */}
+                                    {isNhomExpanded && (
+                                        <div className="divide-y divide-border">
+                                            {hangMucsInNhom.map((hm) => {
+                                                const key = `${nhom}-${hm.HANG_MUC_KS}`;
+                                                const isHmExpanded = expandedHangMuc[key] !== false;
+                                                const list = chiTietData[nhom]?.[hm.HANG_MUC_KS] || [""];
+                                                const count = countChiTiet(nhom, hm.HANG_MUC_KS);
+
+                                                return (
+                                                    <div key={hm.HANG_MUC_KS} className="bg-background">
+                                                        {/* Hạng mục header */}
+                                                        <button
+                                                            type="button"
+                                                            className="w-full flex items-center justify-between px-4 py-2.5 bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50/80 transition-colors"
+                                                            onClick={() => setExpandedHangMuc((prev) => ({ ...prev, [key]: !isHmExpanded }))}
+                                                        >
+                                                            <span className="font-medium text-sm text-blue-700 dark:text-blue-300 text-left">
+                                                                {isHmExpanded ? <ChevronDown className="w-3.5 h-3.5 inline mr-1.5" /> : <ChevronRight className="w-3.5 h-3.5 inline mr-1.5" />}
+                                                                {hm.HANG_MUC_KS}
+                                                            </span>
+                                                            {count > 0 && (
+                                                                <span className="shrink-0 bg-blue-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                                                                    {count}
+                                                                </span>
+                                                            )}
+                                                        </button>
+
+                                                        {/* Chi tiết inputs */}
+                                                        {isHmExpanded && (
+                                                            <div className="px-4 py-3 space-y-2">
+                                                                {list.map((ct, idx) => (
+                                                                    <div key={idx} className="flex items-center gap-2 group">
+                                                                        <span className="w-5 text-center text-xs text-muted-foreground font-mono shrink-0">{idx + 1}.</span>
+                                                                        <input
+                                                                            className="input-modern flex-1 text-sm py-1.5"
+                                                                            value={ct}
+                                                                            onChange={(e) => updateChiTiet(nhom, hm.HANG_MUC_KS, idx, e.target.value)}
+                                                                            placeholder="Nhập nội dung chi tiết khảo sát..."
+                                                                        />
+                                                                        {list.length > 1 && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeChiTiet(nhom, hm.HANG_MUC_KS, idx)}
+                                                                                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors shrink-0 opacity-50 group-hover:opacity-100"
+                                                                            >
+                                                                                <X className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addChiTiet(nhom, hm.HANG_MUC_KS)}
+                                                                    className="text-xs text-primary hover:bg-primary/10 flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ml-7"
+                                                                >
+                                                                    <PlusCircle className="w-3.5 h-3.5" />
+                                                                    Thêm dòng
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </Modal>
+        </>
+    );
+}

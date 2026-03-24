@@ -35,6 +35,7 @@ model DSNV {
   KHTN_SALES_PT KHTN[]         @relation("SALES_PT")
   KHTN_NV_CS    KHTN[]         @relation("NV_CS")
   KEHOACH_CSKH  KEHOACH_CSKH[] @relation("NGUOI_CS")
+  KHAO_SAT      KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
 
   @@index([IS_ACTIVE, ROLE])
   @@fulltext([HO_TEN, USER_NAME, MA_NV])
@@ -278,6 +279,7 @@ model KHTN {
   CO_HOI         CO_HOI[]
   KEHOACH_CSKH   KEHOACH_CSKH[]
   BAO_GIAS       BAO_GIA[]
+  KHAO_SAT       KHAO_SAT[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -338,6 +340,7 @@ model NGUOI_LIENHE {
   HIEU_LUC        String  @default("Đang hiệu lực")
 
   KEHOACH_CSKH KEHOACH_CSKH[]
+  KHAO_SAT     KHAO_SAT[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -472,6 +475,7 @@ model CO_HOI {
 
   KEHOACH_CSKH KEHOACH_CSKH[]
   BAO_GIAS     BAO_GIA[]
+  KHAO_SAT     KHAO_SAT[]
 
   @@index([MA_KH])
   @@index([TINH_TRANG])
@@ -691,4 +695,64 @@ model BAO_GIA_CT {
   @@index([MA_BAO_GIA])
   @@index([MA_HH])
   @@map("BAO_GIA_CT")
+}
+
+// ===== HÌNH ẢNH KHẢO SÁT =====
+type HINH_ANH_KS {
+  TEN_HINH String
+  URL_HINH String
+}
+
+// ===== KHẢO SÁT CÔNG TRÌNH =====
+model KHAO_SAT {
+  ID            String   @id @default(auto()) @map("_id") @db.ObjectId
+  MA_KHAO_SAT   String   @unique
+  NGAY_KHAO_SAT DateTime @default(now())
+
+  NGUOI_KHAO_SAT     String?
+  NGUOI_KHAO_SAT_REL DSNV?   @relation("NGUOI_KHAO_SAT", fields: [NGUOI_KHAO_SAT], references: [MA_NV])
+
+  MA_KH    String?
+  KHTN_REL KHTN?   @relation(fields: [MA_KH], references: [MA_KH])
+
+  MA_CH      String?
+  CO_HOI_REL CO_HOI? @relation(fields: [MA_CH], references: [MA_CH])
+
+  DIA_CHI           String?
+  NGUOI_LIEN_HE     String?
+  NGUOI_LIEN_HE_REL NGUOI_LIENHE? @relation(fields: [NGUOI_LIEN_HE], references: [MA_NLH])
+
+  DIA_CHI_CONG_TRINH String?
+  LOAI_CONG_TRINH    String
+  HINH_ANH           HINH_ANH_KS[]
+
+  KHAO_SAT_CT KHAO_SAT_CT[]
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([MA_KH, MA_CH])
+  @@fulltext([MA_KHAO_SAT, MA_KH, MA_CH, DIA_CHI, DIA_CHI_CONG_TRINH, LOAI_CONG_TRINH])
+  @@map("KHAO_SAT")
+}
+
+// ===== KHẢO SÁT CHI TIẾT =====
+model KHAO_SAT_CT {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  MA_KHAO_SAT  String
+  KHAO_SAT_REL KHAO_SAT @relation(fields: [MA_KHAO_SAT], references: [MA_KHAO_SAT], onDelete: Cascade)
+
+  NHOM_KS      String
+  HANG_MUC_KS  String
+  CHI_TIET     String
+  STT_HANG_MUC Int    @default(0)
+  STT_CHI_TIET Int    @default(0)
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([MA_KHAO_SAT])
+  @@index([NHOM_KS, HANG_MUC_KS, STT_HANG_MUC, STT_CHI_TIET])
+  @@map("KHAO_SAT_CT")
 }
