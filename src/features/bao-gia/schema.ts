@@ -63,4 +63,20 @@ export interface BaoGiaFull {
     KH_REL?: { TEN_KH: string; MA_KH: string };
     CO_HOI_REL?: { MA_CH: string; NGAY_TAO: string; GIA_TRI_DU_KIEN: number | null } | null;
     CHI_TIETS?: any[];
+    DKTT_BG?: any[];
+}
+
+// ===== Zod Schema cho DKTT_BG (điều kiện thanh toán) =====
+export const dkttBgSchema = z.object({
+    DOT_THANH_TOAN: z.string().min(1, 'Đợt thanh toán không được trống'),
+    PT_THANH_TOAN: z.number().min(0).max(100).default(0),
+    NOI_DUNG_YEU_CAU: z.string().optional().nullable(),
+});
+
+export type DkttBgInput = z.infer<typeof dkttBgSchema>;
+
+// Điều kiện thanh toán dùng trên client (có thêm trường UI)
+export interface DkttBgRow extends DkttBgInput {
+    _id?: string;       // ID tạm cho client
+    _dbId?: string;     // ID từ database (khi edit)
 }

@@ -21,8 +21,8 @@ export interface HHOption {
     MA_HH: string;
     TEN_HH: string;
     DON_VI_TINH: string;
-    MA_PHAN_LOAI: string;
-    MA_DONG_HANG: string;
+    MA_PHAN_LOAI: string | null;
+    MA_DONG_HANG: string | null;
     PHAN_LOAI_REL?: { TEN_PHAN_LOAI: string } | null;
     DONG_HANG_REL?: { TEN_DONG_HANG: string } | null;
 }

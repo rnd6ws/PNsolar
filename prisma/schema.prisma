@@ -53,14 +53,14 @@ model DMHH {
   MA_HH   String  @unique
   NHOM_HH String? // Nhóm hàng (text, không bắt buộc)
 
-  MA_PHAN_LOAI  String
-  PHAN_LOAI_REL PHANLOAI_HH @relation(fields: [MA_PHAN_LOAI], references: [MA_PHAN_LOAI])
+  MA_PHAN_LOAI  String?
+  PHAN_LOAI_REL PHANLOAI_HH? @relation(fields: [MA_PHAN_LOAI], references: [MA_PHAN_LOAI])
 
-  MA_DONG_HANG  String
-  DONG_HANG_REL DONG_HH @relation(fields: [MA_DONG_HANG], references: [MA_DONG_HANG])
+  MA_DONG_HANG  String?
+  DONG_HANG_REL DONG_HH? @relation(fields: [MA_DONG_HANG], references: [MA_DONG_HANG])
 
   TEN_HH      String
-  MODEL       String
+  MODEL       String?
   MO_TA       String?
   DON_VI_TINH String
   HINH_ANH    String?
@@ -398,19 +398,19 @@ model GIA_NHAP {
 
   // --- Các cột liên kết (giống GIA_BAN) ---
   MA_NHOM_HH String
-  NHOM_GN    NHOM_HH @relation(fields: [MA_NHOM_HH], references: [MA_NHOM])
+  NHOM_GN    NHOM_HH? @relation(fields: [MA_NHOM_HH], references: [MA_NHOM])
 
   MA_PHAN_LOAI String
-  PHAN_LOAI_GN PHANLOAI_HH @relation(fields: [MA_PHAN_LOAI], references: [MA_PHAN_LOAI])
+  PHAN_LOAI_GN PHANLOAI_HH? @relation(fields: [MA_PHAN_LOAI], references: [MA_PHAN_LOAI])
 
   MA_DONG_HANG String
-  DONG_HANG_GN DONG_HH @relation(fields: [MA_DONG_HANG], references: [MA_DONG_HANG])
+  DONG_HANG_GN DONG_HH? @relation(fields: [MA_DONG_HANG], references: [MA_DONG_HANG])
 
   MA_NCC  String
-  NCC_REL NCC    @relation(fields: [MA_NCC], references: [MA_NCC])
+  NCC_REL NCC?   @relation(fields: [MA_NCC], references: [MA_NCC])
 
   MA_HH  String
-  HH_REL DMHH   @relation(fields: [MA_HH], references: [MA_HH])
+  HH_REL DMHH?  @relation(fields: [MA_HH], references: [MA_HH])
 
   // --- Các cột dữ liệu ---
   DON_GIA Float
@@ -485,19 +485,19 @@ model GIA_BAN {
 
   // --- Các cột liên kết (lưu mã, dùng @relation để lấy tên) ---
   MA_NHOM_HH String
-  NHOM       NHOM_HH @relation(fields: [MA_NHOM_HH], references: [MA_NHOM])
+  NHOM       NHOM_HH? @relation(fields: [MA_NHOM_HH], references: [MA_NHOM])
 
   MA_PHAN_LOAI  String
-  PHAN_LOAI_REL PHANLOAI_HH @relation(fields: [MA_PHAN_LOAI], references: [MA_PHAN_LOAI])
+  PHAN_LOAI_REL PHANLOAI_HH? @relation(fields: [MA_PHAN_LOAI], references: [MA_PHAN_LOAI])
 
   MA_DONG_HANG  String
-  DONG_HANG_REL DONG_HH @relation(fields: [MA_DONG_HANG], references: [MA_DONG_HANG])
+  DONG_HANG_REL DONG_HH? @relation(fields: [MA_DONG_HANG], references: [MA_DONG_HANG])
 
   MA_GOI_GIA  String
-  GOI_GIA_REL GOI_GIA @relation(fields: [MA_GOI_GIA], references: [ID_GOI_GIA])
+  GOI_GIA_REL GOI_GIA? @relation(fields: [MA_GOI_GIA], references: [ID_GOI_GIA])
 
   MA_HH    String
-  HANG_HOA DMHH   @relation(fields: [MA_HH], references: [MA_HH])
+  HANG_HOA DMHH?  @relation(fields: [MA_HH], references: [MA_HH])
 
   // --- Các cột dữ liệu ---
   DON_GIA Float
@@ -646,6 +646,7 @@ model BAO_GIA {
   TEP_DINH_KEM    String[]  // Mảng URL tệp đính kèm (ảnh, PDF, Word...)
 
   CHI_TIETS       BAO_GIA_CT[] // 1-N relation
+  DKTT_BG         DKTT_BG[]    // 1-N relation: điều kiện thanh toán
 
   CREATED_AT      DateTime @default(now())
   UPDATED_AT      DateTime @updatedAt
@@ -654,6 +655,24 @@ model BAO_GIA {
   @@index([MA_CH])
   @@fulltext([MA_BAO_GIA, MA_KH])
   @@map("BAO_GIA")
+}
+
+// ===== ĐIỀU KIỆN THANH TOÁN BÁO GIÁ =====
+model DKTT_BG {
+  ID              String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  MA_BAO_GIA      String
+  BAO_GIA_REL     BAO_GIA  @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA], onDelete: Cascade)
+
+  DOT_THANH_TOAN  String   // Đợt 1, Đợt 2...
+  PT_THANH_TOAN   Float    @default(0) // % thanh toán
+  NOI_DUNG_YEU_CAU String? // Nội dung yêu cầu
+
+  CREATED_AT      DateTime @default(now())
+  UPDATED_AT      DateTime @updatedAt
+
+  @@index([MA_BAO_GIA])
+  @@map("DKTT_BG")
 }
 
 // ===== BÁO GIÁ CHI TIẾT (Quotation Detail) =====

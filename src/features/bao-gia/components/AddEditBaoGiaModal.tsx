@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useTransition, useRef } from "react";
-import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, ExternalLink, X } from "lucide-react";
+import React, { useState, useEffect, useCallback, useTransition, useRef } from "react";
+import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, ExternalLink, X, CreditCard } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
 import { useFileUpload, formatFileSize, getFileTypeIcon } from "@/hooks/useFileUpload";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import {
     createBaoGia,
     updateBaoGia,
@@ -14,7 +15,7 @@ import {
     searchHangHoaForBaoGia,
     getGiaBanForProduct,
 } from "../action";
-import type { BaoGiaChiTietRow } from "../schema";
+import type { BaoGiaChiTietRow, DkttBgRow } from "../schema";
 
 // ─── Types ──────────────────────────────────────────────────
 interface KHOption { ID: string; MA_KH: string; TEN_KH: string; TEN_VT?: string | null; HINH_ANH?: string | null; DIEN_THOAI?: string | null }
@@ -35,7 +36,7 @@ const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v)
 let _counter = 0;
 const tempId = () => `_tmp_${++_counter}_${Date.now()}`;
 
-type TabKey = "general" | "details";
+type TabKey = "general" | "details" | "payment";
 
 export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editData }: Props) {
     const isEdit = !!editData;
@@ -73,6 +74,9 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     // ═══ Chi tiết state ═════════════════════════════════════
     const [chiTiets, setChiTiets] = useState<BaoGiaChiTietRow[]>([]);
 
+    // ═══ ĐKTT state ═══════════════════════════════════
+    const [dkttRows, setDkttRows] = useState<DkttBgRow[]>([]);
+
     // ═══ Search states ══════════════════════════════════════
     const [khQuery, setKhQuery] = useState("");
     const [khResults, setKhResults] = useState<KHOption[]>([]);
@@ -88,6 +92,9 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     const [hhResults, setHhResults] = useState<HHOption[]>([]);
     const [hhLoading, setHhLoading] = useState(false);
     const hhDropdownRef = useRef<HTMLDivElement>(null);
+    const hhTriggerRef = useRef<HTMLElement | null>(null);
+    const [hhDropdownStyle, setHhDropdownStyle] = useState<React.CSSProperties>({});
+    const hhCacheRef = useRef<HHOption[]>([]);
 
     // ═══ Init from editData ═════════════════════════════════
     useEffect(() => {
@@ -125,6 +132,16 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             }));
             setChiTiets(rows);
 
+            // Init ĐKTT
+            const dkttData: DkttBgRow[] = (editData.DKTT_BG || []).map((d: any) => ({
+                _id: tempId(),
+                _dbId: d.ID,
+                DOT_THANH_TOAN: d.DOT_THANH_TOAN,
+                PT_THANH_TOAN: d.PT_THANH_TOAN,
+                NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || "",
+            }));
+            setDkttRows(dkttData);
+
             if (editData.MA_KH) {
                 getCoHoiByKhachHang(editData.MA_KH).then(setCoHois);
             }
@@ -142,6 +159,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             setThoiGianLapDat("");
             setTepDinhKems([]);
             setChiTiets([]);
+            setDkttRows([]);
             setCoHois([]);
         }
         setKhQuery("");
@@ -161,13 +179,45 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             if (khRef.current && !khRef.current.contains(e.target as Node)) setKhOpen(false);
             if (chRef.current && !chRef.current.contains(e.target as Node)) setChOpen(false);
             if (hhDropdownRef.current && !hhDropdownRef.current.contains(e.target as Node)) {
-                setHhRowId(null);
-                setHhQuery("");
+                if (!hhTriggerRef.current || !hhTriggerRef.current.contains(e.target as Node)) {
+                    setHhRowId(null);
+                    setHhQuery("");
+                }
             }
         };
         if (isOpen) document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
     }, [isOpen]);
+
+    // ═══ HH dropdown positioning (portal) ═══════════════════
+    useEffect(() => {
+        if (!hhRowId) return;
+        const td = document.querySelector(`td[data-hh-row-id="${hhRowId}"]`) as HTMLElement;
+        if (!td) return;
+        hhTriggerRef.current = td;
+        const calc = () => {
+            const rect = td.getBoundingClientRect();
+            const dropdownH = 280;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const top = spaceBelow >= dropdownH ? rect.bottom + 4 : rect.top - dropdownH - 4;
+            setHhDropdownStyle({
+                position: 'fixed',
+                top,
+                left: rect.left,
+                width: Math.max(rect.width, 420),
+                zIndex: 9999,
+            });
+        };
+        calc();
+        const modalBody = td.closest('[class*="overflow-y-auto"]');
+        const handleScroll = () => { setHhRowId(null); setHhQuery(""); };
+        modalBody?.addEventListener('scroll', handleScroll);
+        window.addEventListener('resize', calc);
+        return () => {
+            modalBody?.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('resize', calc);
+        };
+    }, [hhRowId]);
 
     // ═══ Search KH ══════════════════════════════════════════
     useEffect(() => {
@@ -209,10 +259,17 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     // ═══ Search HH per-row ══════════════════════════════════
     useEffect(() => {
         if (!hhRowId) return;
+        // Nếu query rỗng và đã có cache → hiển ngay, không cần gọi API
+        if (!hhQuery && hhCacheRef.current.length > 0) {
+            setHhResults(hhCacheRef.current);
+            setHhLoading(false);
+            return;
+        }
         const timer = setTimeout(async () => {
             setHhLoading(true);
             const data = await searchHangHoaForBaoGia(hhQuery);
             setHhResults(data as HHOption[]);
+            if (!hhQuery) hhCacheRef.current = data as HHOption[]; // cache kết quả mặc định
             setHhLoading(false);
         }, 300);
         return () => clearTimeout(timer);
@@ -333,6 +390,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
 
     // Đếm dòng có data vs chưa
     const validRows = chiTiets.filter(r => r.MA_HH);
+    const activeHhRow = hhRowId ? chiTiets.find(r => r._id === hhRowId) : null;
 
     // ═══ Submit ═════════════════════════════════════════════
     const handleSubmit = () => {
@@ -369,8 +427,8 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
 
         startTransition(async () => {
             const result = isEdit
-                ? await updateBaoGia(editData.ID, header, details)
-                : await createBaoGia(header, details);
+                ? await updateBaoGia(editData.ID, header, details, dkttRows.filter(d => d.DOT_THANH_TOAN))
+                : await createBaoGia(header, details, dkttRows.filter(d => d.DOT_THANH_TOAN));
 
             if (result.success) {
                 toast.success(result.message || (isEdit ? "Cập nhật thành công!" : "Tạo báo giá thành công!"));
@@ -386,6 +444,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     const tabs: { key: TabKey; label: string; icon: any; badge?: number }[] = [
         { key: "general", label: "Thông tin chung", icon: FileText },
         { key: "details", label: "Chi tiết hàng hóa", icon: Package, badge: validRows.length },
+        { key: "payment", label: "Điều kiện thanh toán", icon: CreditCard, badge: dkttRows.filter(d => d.DOT_THANH_TOAN).length },
     ];
 
     return (
@@ -740,11 +799,11 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                                     <tr key={row._id} className={`border-b transition-colors ${row.MA_HH ? "hover:bg-muted/30" : "bg-yellow-50/50 dark:bg-yellow-900/5"}`}>
                                                         <td className="px-2 py-1.5 text-muted-foreground">{idx + 1}</td>
                                                         {/* Cột HH: nếu chưa chọn → hiện search, nếu đã chọn → hiện tên */}
-                                                        <td className="px-2 py-1.5 relative">
+                                                        <td className="px-2 py-1.5 relative" data-hh-row-id={row._id}>
                                                             {row.MA_HH ? (
                                                                 <div className="flex items-center gap-1.5">
                                                                     <div className="min-w-0 flex-1">
-                                                                        <p className="font-medium text-foreground truncate max-w-[160px]" title={row._tenHH}>{row._tenHH || row.MA_HH}</p>
+                                                                        <p className="font-medium text-foreground" title={row._tenHH}>{row._tenHH || row.MA_HH}</p>
                                                                         <p className="text-[10px] text-muted-foreground">{row.MA_HH}</p>
                                                                     </div>
                                                                     <button
@@ -773,53 +832,6 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                                                 </div>
                                                             )}
 
-                                                            {/* Dropdown HH cho dòng này */}
-                                                            {hhRowId === row._id && (
-                                                                <div
-                                                                    ref={hhDropdownRef}
-                                                                    className="absolute z-50 left-0 top-full mt-1 w-72 bg-card border border-border rounded-xl shadow-lg"
-                                                                >
-                                                                    {row.MA_HH && (
-                                                                        <div className="p-2 border-b">
-                                                                            <div className="relative">
-                                                                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                                                                                <input
-                                                                                    type="text"
-                                                                                    value={hhQuery}
-                                                                                    onChange={e => setHhQuery(e.target.value)}
-                                                                                    placeholder="Tìm hàng hóa..."
-                                                                                    className="w-full pl-8 pr-2 py-1.5 border border-border rounded-lg text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30"
-                                                                                    autoFocus
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="max-h-48 overflow-y-auto">
-                                                                        {hhLoading ? (
-                                                                            <div className="p-3 text-center text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin inline" /></div>
-                                                                        ) : hhResults.length === 0 ? (
-                                                                            <div className="p-3 text-center text-sm text-muted-foreground">Không tìm thấy</div>
-                                                                        ) : (
-                                                                            hhResults.map(hh => (
-                                                                                <button
-                                                                                    key={hh.MA_HH}
-                                                                                    type="button"
-                                                                                    onClick={() => handleSelectHHForRow(row._id!, hh)}
-                                                                                    className="w-full text-left px-3 py-2 hover:bg-muted transition-colors"
-                                                                                >
-                                                                                    <p className="text-sm font-medium truncate">{hh.TEN_HH}</p>
-                                                                                    <p className="text-xs text-muted-foreground">{hh.MA_HH} • {hh.DON_VI_TINH}</p>
-                                                                                </button>
-                                                                            ))
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="p-1.5 border-t">
-                                                                        <button type="button" onClick={() => { setHhRowId(null); setHhQuery(""); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">
-                                                                            Đóng
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            )}
                                                         </td>
                                                         <td className="px-2 py-1.5 text-muted-foreground">{row.DON_VI_TINH || "—"}</td>
                                                         <td className="px-2 py-1.5">
@@ -904,6 +916,161 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                             )}
                         </div>
                     )}
+
+                    {/* ══════════════════════════════════════════
+                        TAB 3: ĐIỀU KIỆN THANH TOÁN
+                    ══════════════════════════════════════════ */}
+                    {activeTab === "payment" && (
+                        <div className="space-y-4 animate-in fade-in duration-200">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-sm font-bold text-foreground">Điều kiện thanh toán</h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        {dkttRows.filter(d => d.DOT_THANH_TOAN).length} đợt thanh toán
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setDkttRows(prev => [...prev, {
+                                        _id: tempId(),
+                                        DOT_THANH_TOAN: `Đợt ${prev.length + 1}`,
+                                        PT_THANH_TOAN: 0,
+                                        NOI_DUNG_YEU_CAU: "",
+                                    }])}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                                >
+                                    <Plus className="w-4 h-4" /> Thêm đợt
+                                </button>
+                            </div>
+
+                            {dkttRows.length === 0 ? (
+                                <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
+                                    <CreditCard className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+                                    <p className="text-sm">Chưa có điều kiện thanh toán.</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Nhấn &quot;Thêm đợt&quot; để thêm đợt thanh toán mới.</p>
+                                </div>
+                            ) : (
+                                <div className="border border-border rounded-xl overflow-hidden">
+                                    <table className="w-full text-left text-[13px]">
+                                        <thead>
+                                            <tr className="bg-primary/10 border-b">
+                                                <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8">#</th>
+                                                <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[140px]">Đợt thanh toán</th>
+                                                <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-28">% Thanh toán</th>
+                                                <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Nội dung yêu cầu</th>
+                                                <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-10"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {dkttRows.map((row, idx) => (
+                                                <tr key={row._id} className="border-b hover:bg-muted/30 transition-colors">
+                                                    <td className="px-3 py-2 text-muted-foreground">{idx + 1}</td>
+                                                    <td className="px-3 py-2">
+                                                        <input
+                                                            type="text"
+                                                            value={row.DOT_THANH_TOAN}
+                                                            onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, DOT_THANH_TOAN: e.target.value } : r))}
+                                                            className="w-full px-2 py-1.5 border border-border rounded text-[13px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                                            placeholder="VD: Đợt 1"
+                                                        />
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <div className="relative">
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max="100"
+                                                                step="0.1"
+                                                                value={row.PT_THANH_TOAN || ""}
+                                                                onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, PT_THANH_TOAN: parseFloat(e.target.value) || 0 } : r))}
+                                                                className="w-full px-2 py-1.5 pr-7 border border-border rounded text-[13px] text-right bg-background focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                                                placeholder="0"
+                                                            />
+                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <input
+                                                            type="text"
+                                                            value={row.NOI_DUNG_YEU_CAU || ""}
+                                                            onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG_YEU_CAU: e.target.value } : r))}
+                                                            className="w-full px-2 py-1.5 border border-border rounded text-[13px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                                            placeholder="Nội dung yêu cầu thanh toán..."
+                                                        />
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setDkttRows(prev => prev.filter(r => r._id !== row._id))}
+                                                            className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    {/* Tổng % */}
+                                    <div className="bg-muted/30 border-t px-4 py-3 flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground font-medium">Tổng % thanh toán</span>
+                                        <span className={`font-bold text-lg ${
+                                            Math.abs(dkttRows.reduce((s, r) => s + (r.PT_THANH_TOAN || 0), 0) - 100) < 0.01
+                                                ? "text-green-600"
+                                                : "text-orange-600"
+                                        }`}>
+                                            {dkttRows.reduce((s, r) => s + (r.PT_THANH_TOAN || 0), 0).toFixed(1)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+            {/* ═══ HH Dropdown Portal ═══ */}
+            {hhRowId && typeof window !== 'undefined' && createPortal(
+                <div ref={hhDropdownRef} style={hhDropdownStyle} className="bg-card border border-border rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                    {activeHhRow?.MA_HH && (
+                        <div className="p-2 border-b">
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                                <input
+                                    type="text"
+                                    value={hhQuery}
+                                    onChange={e => setHhQuery(e.target.value)}
+                                    placeholder="Tìm hàng hóa..."
+                                    className="w-full pl-8 pr-2 py-1.5 border border-border rounded-lg text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <div className="max-h-48 overflow-y-auto">
+                        {hhLoading ? (
+                            <div className="p-3 text-center text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin inline" /></div>
+                        ) : hhResults.length === 0 ? (
+                            <div className="p-3 text-center text-sm text-muted-foreground">Không tìm thấy</div>
+                        ) : (
+                            hhResults.map(hh => (
+                                <button
+                                    key={hh.MA_HH}
+                                    type="button"
+                                    onClick={() => handleSelectHHForRow(hhRowId!, hh)}
+                                    className="w-full text-left px-3 py-2 hover:bg-muted transition-colors"
+                                >
+                                    <p className="text-sm font-medium">{hh.TEN_HH}</p>
+                                    <p className="text-xs text-muted-foreground">{hh.MA_HH} • {hh.DON_VI_TINH}</p>
+                                </button>
+                            ))
+                        )}
+                    </div>
+                    <div className="p-1.5 border-t">
+                        <button type="button" onClick={() => { setHhRowId(null); setHhQuery(""); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">
+                            Đóng
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
         </Modal>
     );
 }

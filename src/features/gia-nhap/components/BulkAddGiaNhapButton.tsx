@@ -11,7 +11,7 @@ interface NhomHHOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
 interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; NHOM: string | null; }
 interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
 interface NccOption { ID: string; MA_NCC: string; TEN_NCC: string; }
-interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH?: string | null; MA_PHAN_LOAI: string; MA_DONG_HANG: string; DON_VI_TINH?: string; }
+interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH?: string | null; MA_PHAN_LOAI: string | null; MA_DONG_HANG: string | null; DON_VI_TINH?: string; }
 
 // Dòng chi tiết đã sinh
 interface DetailRow {
