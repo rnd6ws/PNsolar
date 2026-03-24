@@ -13,7 +13,7 @@ interface Props {
     goiGiaMap: Record<string, { count: number; latestDate: string | null; items: any[] }>;
 }
 
-const DEFAULT_COLUMNS: ColumnKey[] = ['nhom', 'maPhanLoai', 'phanLoai', 'dvtNhom'];
+const DEFAULT_COLUMNS: ColumnKey[] = ['nhom', 'maPhanLoai', 'phanLoai', 'dvtNhom', 'dongHang'];
 
 export default function PhanLoaiHHPageClient({ data, nhomHHs, goiGiaMap }: Props) {
     const searchParams = useSearchParams();

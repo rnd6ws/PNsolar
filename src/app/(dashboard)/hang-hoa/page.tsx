@@ -3,6 +3,7 @@ import { getProducts, getUniqueCategories, getPhanLoaiOptions, getDongHangOption
 import { getGiaNhapMapByHangHoa } from '@/features/gia-nhap/action';
 import { getGiaBanMapByHangHoa } from '@/features/gia-ban/action';
 import HangHoaClient from '@/features/hang-hoa/components/HangHoaClient';
+import { getRowsPerPage } from '@/lib/getRowsPerPage';
 
 export const metadata: Metadata = {
     title: "Danh mục hàng hóa | PN Solar",
@@ -11,14 +12,16 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function HangHoaPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; NHOM_HH?: string; MA_PHAN_LOAI?: string; MA_DONG_HANG?: string }> }) {
+export default async function HangHoaPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; pageSize?: string; NHOM_HH?: string; MA_PHAN_LOAI?: string; MA_DONG_HANG?: string }> }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
+    const pageSize = await getRowsPerPage(params.pageSize);
 
     // Fetch products based on filters
     const { data: products = [], pagination } = await getProducts({
         query: params.query,
         page,
+        limit: pageSize,
         NHOM_HH: params.NHOM_HH,
         MA_PHAN_LOAI: params.MA_PHAN_LOAI,
         MA_DONG_HANG: params.MA_DONG_HANG,
@@ -39,6 +42,7 @@ export default async function HangHoaPage({ searchParams }: { searchParams: Prom
             initialProducts={products}
             initialPagination={pagination}
             currentPage={page}
+            pageSize={pageSize}
             uniqueCategories={uniqueCategories}
             nhomHHOptions={nhomHHOptions}
             phanLoaiOptions={phanLoaiOptions}

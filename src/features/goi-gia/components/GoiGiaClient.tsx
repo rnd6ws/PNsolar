@@ -515,11 +515,12 @@ function BulkAddModal({
 
 // ===== MAIN CLIENT COMPONENT =====
 export default function GoiGiaClient({
-    initialData, initialPagination, currentPage, uniqueDongHang, dongHangOptions
+    initialData, initialPagination, currentPage, pageSize = 10, uniqueDongHang, dongHangOptions
 }: {
     initialData: GoiGia[];
     initialPagination: any;
     currentPage: number;
+    pageSize?: number;
     uniqueDongHang: { value: string; label: string }[];
     dongHangOptions: DongHangOption[];
 }) {
@@ -820,12 +821,13 @@ export default function GoiGiaClient({
                     </div>
 
                     {/* Pagination */}
-                    {initialPagination && initialPagination.totalPages > 1 && (
+                    {initialPagination && (
                         <div className="px-5 py-4 border-t">
                             <Pagination
                                 currentPage={currentPage}
                                 totalPages={initialPagination.totalPages}
                                 total={initialPagination.total}
+                                pageSize={pageSize}
                             />
                         </div>
                     )}

@@ -12,6 +12,7 @@ export const productSchema = z.object({
     HINH_ANH: z.string().optional(),
     XUAT_XU: z.string().optional(),
     BAO_HANH: z.string().optional(),
+    GHI_CHU: z.string().optional(),
     HIEU_LUC: z.boolean().default(true),
 });
 

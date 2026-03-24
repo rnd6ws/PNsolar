@@ -8,6 +8,7 @@ import AddCoHoiButton from "@/features/co-hoi/components/AddCoHoiButton";
 import SettingCoHoiButton from "@/features/co-hoi/components/SettingCoHoiButton";
 import CoHoiPageClient from "@/features/co-hoi/components/CoHoiPageClient";
 import { getCurrentUser } from "@/lib/auth";
+import { getRowsPerPage } from '@/lib/getRowsPerPage';
 
 export const metadata: Metadata = {
     title: "Cơ hội | PN Solar",
@@ -26,15 +27,16 @@ function formatCurrency(val: number) {
 export default async function CoHoiPage({
     searchParams,
 }: {
-    searchParams: Promise<{ query?: string; page?: string; TINH_TRANG?: string }>;
+    searchParams: Promise<{ query?: string; page?: string; pageSize?: string; TINH_TRANG?: string }>;
 }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
+    const pageSize = await getRowsPerPage(params.pageSize);
     const query = params.query;
     const TINH_TRANG = params.TINH_TRANG;
 
     const [{ data = [], pagination }, { data: dmDichVu = [] }, stats, user] = await Promise.all([
-        getCoHois({ query, page, limit: 10, TINH_TRANG }),
+        getCoHois({ query, page, limit: pageSize, TINH_TRANG }),
         getCachedDmDichVu(),
         getCoHoiStats(),
         getCurrentUser()
@@ -119,15 +121,13 @@ export default async function CoHoiPage({
                         currentUserId={user?.userId}
                     />
 
-                    {(pagination as any) && (pagination as any).totalPages > 1 && (
-                        <div className="p-4 border-t flex justify-between items-center bg-transparent">
-                            <p className="text-sm text-muted-foreground">
-                                Hiển thị <span className="font-semibold text-foreground">{data.length}</span> của {(pagination as any).total} cơ hội
-                            </p>
+                    {(pagination as any) && (
+                        <div className="p-4 border-t flex justify-center items-center bg-transparent">
                             <Pagination
                                 totalPages={(pagination as any).totalPages}
                                 currentPage={page}
                                 total={(pagination as any).total}
+                                pageSize={pageSize}
                             />
                         </div>
                     )}
