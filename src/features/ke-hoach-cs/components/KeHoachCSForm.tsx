@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
-import { X, Search, Clock, Building2, User, Briefcase, Check, ChevronDown, CalendarPlus2 } from "lucide-react";
+import { X, Search, Clock, Building2, User, Briefcase, Check, ChevronDown, CalendarPlus2, Plus } from "lucide-react";
 import {
     searchKhachHangForCS,
     getNguoiLienHeByKH,
@@ -13,6 +13,7 @@ import {
 } from "../action";
 import Modal from "@/components/Modal";
 import FormSelect from "@/components/FormSelect";
+import NguoiLienHeModal from "@/features/nguoi-lh/components/NguoiLienHeModal";
 
 type DichVuItem = { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number };
 
@@ -68,6 +69,15 @@ export default function KeHoachCSForm({
     // Related data
     const [nguoiLienHes, setNguoiLienHes] = useState<any[]>([]);
     const [coHois, setCoHois] = useState<any[]>([]);
+    const [showNLHModal, setShowNLHModal] = useState(false);
+
+    const refreshNguoiLienHe = async () => {
+        if (!selectedKH?.ID) return;
+        const r = await getNguoiLienHeByKH(selectedKH.ID);
+        if (r.success) {
+            setNguoiLienHes(r.data);
+        }
+    };
     const [dmDichVu, setDmDichVu] = useState<DichVuItem[]>([]);
 
     // Form fields
@@ -388,7 +398,20 @@ export default function KeHoachCSForm({
                 {/* Người liên hệ & Cơ hội */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-muted-foreground">Người liên hệ</label>
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-semibold text-muted-foreground">Người liên hệ</label>
+                            {selectedKH && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNLHModal(true)}
+                                    className="text-[11px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                                    title="Thêm người liên hệ mới"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Thêm người liên hệ
+                                </button>
+                            )}
+                        </div>
                         <FormSelect
                             name="ID_LH"
                             value={idLH}
@@ -429,8 +452,8 @@ export default function KeHoachCSForm({
                             type="button"
                             onClick={() => setHinhThuc(hinhThuc === "Online" ? "Trực tiếp" : "Online")}
                             className={`w-full flex items-center justify-between px-4 py-[9px] rounded-xl border transition-colors relative overflow-hidden ${hinhThuc === 'Online' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
-                                    hinhThuc === 'Trực tiếp' ? 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
-                                        'bg-muted border-border text-muted-foreground'
+                                hinhThuc === 'Trực tiếp' ? 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
+                                    'bg-muted border-border text-muted-foreground'
                                 }`}
                         >
                             <span className="relative z-10 font-semibold text-sm">
@@ -438,8 +461,8 @@ export default function KeHoachCSForm({
                             </span>
                             <div className="relative z-10 flex items-center justify-center w-6 h-6 rounded-full bg-background shadow-sm border border-border/50">
                                 <div className={`w-2.5 h-2.5 rounded-full transition-colors ${hinhThuc === 'Online' ? 'bg-blue-500' :
-                                        hinhThuc === 'Trực tiếp' ? 'bg-purple-500' :
-                                            'bg-transparent'
+                                    hinhThuc === 'Trực tiếp' ? 'bg-purple-500' :
+                                        'bg-transparent'
                                     }`} />
                             </div>
                         </button>
@@ -612,6 +635,17 @@ export default function KeHoachCSForm({
                     </button>
                 </div>
             </form>
+
+            {showNLHModal && selectedKH && (
+                <NguoiLienHeModal
+                    isOpen={showNLHModal}
+                    onClose={() => {
+                        setShowNLHModal(false);
+                        refreshNguoiLienHe();
+                    }}
+                    khachHang={{ ID: selectedKH.ID, TEN_KH: selectedKH.TEN_KH }}
+                />
+            )}
         </Modal>
     );
 }

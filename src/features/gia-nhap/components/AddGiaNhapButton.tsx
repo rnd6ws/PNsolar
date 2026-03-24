@@ -48,12 +48,18 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
         return maPhanLoai ? dongHangOptions.filter(d => d.MA_PHAN_LOAI === maPhanLoai) : dongHangOptions;
     }, [maPhanLoai, dongHangOptions]);
 
-    // Dòng hàng/Phân loại → Hàng hóa
+    // Dòng hàng/Phân loại/Nhóm HH → Hàng hóa
     const filteredHH = useMemo(() => {
         if (maDongHang) return hhOptions.filter(h => h.MA_DONG_HANG === maDongHang);
         if (maPhanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === maPhanLoai);
+        if (maNhomHH) {
+            // NHOM_HH trong DMHH lưu TEN_NHOM, nhưng dropdown value là MA_NHOM
+            const nhom = nhomHHOptions.find(n => n.MA_NHOM === maNhomHH);
+            const tenNhom = nhom?.TEN_NHOM;
+            return hhOptions.filter(h => h.NHOM_HH === maNhomHH || h.NHOM_HH === tenNhom);
+        }
         return hhOptions;
-    }, [maDongHang, maPhanLoai, hhOptions]);
+    }, [maDongHang, maPhanLoai, maNhomHH, hhOptions, nhomHHOptions]);
 
     // ====== Cascade handlers ======
     const handleNhomHHChange = (val: string) => {
@@ -150,9 +156,9 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
                             </select>
                         </div>
                         <div className="space-y-1.5">
-                            <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
-                            <select value={maPhanLoai} onChange={e => handlePhanLoaiChange(e.target.value)} required className="input-modern">
-                                <option value="">-- Chọn phân loại --</option>
+                            <label className={labelClass}>Phân loại</label>
+                            <select value={maPhanLoai} onChange={e => handlePhanLoaiChange(e.target.value)} className="input-modern">
+                                <option value="">-- Phân loại --</option>
                                 {filteredPhanLoai.map(p => <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>)}
                             </select>
                         </div>
@@ -160,9 +166,9 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
 
                     {/* Dòng hàng */}
                     <div className="space-y-1.5">
-                        <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
-                        <select value={maDongHang} onChange={e => handleDongHangChange(e.target.value)} required className="input-modern">
-                            <option value="">-- Chọn dòng hàng --</option>
+                        <label className={labelClass}>Dòng hàng</label>
+                        <select value={maDongHang} onChange={e => handleDongHangChange(e.target.value)} className="input-modern">
+                            <option value="">-- Dòng hàng --</option>
                             {filteredDongHang.map(d => <option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>)}
                         </select>
                     </div>

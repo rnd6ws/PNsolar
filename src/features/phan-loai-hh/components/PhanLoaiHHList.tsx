@@ -663,8 +663,8 @@ export default function PhanLoaiHHList({
 
                         {/* Header */}
                         <div className="hidden md:grid md:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_40px] gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
-                            <span>Mã dòng hàng *</span>
-                            <span>Dòng hàng *</span>
+                            <span>Mã dòng hàng <span className="text-destructive">*</span></span>
+                            <span>Dòng hàng <span className="text-destructive">*</span></span>
                             <span>Tiền tố</span>
                             <span>Hãng</span>
                             <span>Xuất xứ</span>
@@ -818,7 +818,7 @@ export default function PhanLoaiHHList({
                                     <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Thêm gói giá mới — {goiGiaDetail.maDongHang}</p>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                         <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-muted-foreground uppercase">Gói giá *</label>
+                                            <label className="text-[10px] font-bold text-muted-foreground uppercase">Gói giá <span className="text-destructive">*</span></label>
                                             <input
                                                 type="text"
                                                 className="input-modern text-sm"

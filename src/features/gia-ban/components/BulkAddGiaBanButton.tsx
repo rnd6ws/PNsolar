@@ -72,11 +72,17 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
     const filteredHH = useMemo(() => {
         if (selDongHang) return hhOptions.filter(h => h.MA_DONG_HANG === selDongHang);
         if (selPhanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === selPhanLoai);
+        if (selNhomHH) {
+            // NHOM_HH trong DMHH lưu TEN_NHOM, nhưng dropdown value là MA_NHOM
+            const nhom = nhomHhOptions.find(n => n.MA_NHOM === selNhomHH);
+            const tenNhom = nhom?.TEN_NHOM;
+            return hhOptions.filter(h => h.NHOM_HH === selNhomHH || h.NHOM_HH === tenNhom);
+        }
         return hhOptions;
-    }, [selDongHang, selPhanLoai, hhOptions]);
+    }, [selDongHang, selPhanLoai, selNhomHH, hhOptions, nhomHhOptions]);
 
-    // Tổng dòng sẽ tạo
-    const previewCount = selGoiGias.length * selHangHoas.length;
+    // Tổng dòng sẽ tạo (nếu không chọn gói giá → mỗi HH 1 dòng)
+    const previewCount = selHangHoas.length > 0 ? (selGoiGias.length > 0 ? selGoiGias.length * selHangHoas.length : selHangHoas.length) : 0;
 
     // ====== Handlers ======
     const handleOpen = () => {
@@ -149,12 +155,8 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
 
     // ====== Thêm xuống chi tiết ======
     const handleAddToDetail = () => {
-        if (!selNhomHH || !selPhanLoai || !selDongHang) {
-            toast.error('Vui lòng chọn Nhóm HH, Phân loại và Dòng hàng');
-            return;
-        }
-        if (selGoiGias.length === 0) {
-            toast.error('Vui lòng chọn ít nhất 1 Gói giá');
+        if (!selNhomHH) {
+            toast.error('Vui lòng chọn Nhóm HH');
             return;
         }
         if (selHangHoas.length === 0) {
@@ -168,10 +170,14 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
         // Tạo existingKeys set để check trùng
         const existingKeys = new Set(detailRows.map(r => r.key));
 
+        // Nếu có gói giá → tạo tổ hợp HH x GG, nếu không → mỗi HH 1 dòng
+        const goiGiaList = selGoiGias.length > 0 ? selGoiGias : ['__NONE__'];
+
         for (const maHH of selHangHoas) {
             const hh = hhOptions.find(h => h.MA_HH === maHH);
-            for (const maGoiGia of selGoiGias) {
-                const gg = goiGiaOptions.find(g => g.ID_GOI_GIA === maGoiGia);
+            for (const maGoiGia of goiGiaList) {
+                const isNoGoiGia = maGoiGia === '__NONE__';
+                const gg = isNoGoiGia ? null : goiGiaOptions.find(g => g.ID_GOI_GIA === maGoiGia);
                 const key = `${maHH}__${maGoiGia}`;
 
                 if (existingKeys.has(key)) {
@@ -184,8 +190,8 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                     MA_NHOM_HH: selNhomHH,
                     MA_PHAN_LOAI: selPhanLoai,
                     MA_DONG_HANG: selDongHang,
-                    MA_GOI_GIA: maGoiGia,
-                    goiGiaLabel: gg ? gg.GOI_GIA : maGoiGia,
+                    MA_GOI_GIA: isNoGoiGia ? '' : maGoiGia,
+                    goiGiaLabel: isNoGoiGia ? '—' : (gg ? gg.GOI_GIA : maGoiGia),
                     MA_HH: maHH,
                     hhLabel: hh ? hh.TEN_HH : maHH,
                     DON_GIA: 0,
@@ -369,7 +375,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
 
                     {/* Ngày hiệu lực */}
                     <div className="max-w-xs">
-                        <label className={labelClass}>Ngày hiệu lực (chung cho tất cả) *</label>
+                        <label className={labelClass}>Ngày hiệu lực (chung cho tất cả) <span className="text-destructive">*</span></label>
                         <input
                             type="date"
                             className={inputClass}
@@ -387,7 +393,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {/* Nhóm HH */}
                             <div>
-                                <label className={labelClass}>Nhóm HH *</label>
+                                <label className={labelClass}>Nhóm HH <span className="text-destructive">*</span></label>
                                 <select className={selectClass} value={selNhomHH} onChange={e => handleNhomHHChange(e.target.value)}>
                                     <option value="">-- Nhóm HH --</option>
                                     {nhomHhOptions.map(n => (<option key={n.ID} value={n.MA_NHOM}>{n.TEN_NHOM}</option>))}
@@ -395,7 +401,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                             </div>
                             {/* Phân loại */}
                             <div>
-                                <label className={labelClass}>Phân loại *</label>
+                                <label className={labelClass}>Phân loại</label>
                                 <select className={selectClass} value={selPhanLoai} onChange={e => handlePhanLoaiChange(e.target.value)}>
                                     <option value="">-- Phân loại --</option>
                                     {filteredPhanLoai.map(p => (<option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>))}
@@ -403,7 +409,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                             </div>
                             {/* Dòng hàng */}
                             <div>
-                                <label className={labelClass}>Dòng hàng *</label>
+                                <label className={labelClass}>Dòng hàng</label>
                                 <select className={selectClass} value={selDongHang} onChange={e => handleDongHangChange(e.target.value)}>
                                     <option value="">-- Dòng hàng --</option>
                                     {filteredDongHang.map(d => (<option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>))}
@@ -412,7 +418,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                         </div>
 
                         {/* Multi-select Gói giá + Hàng hóa */}
-                        {selDongHang && (
+                        {selNhomHH && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {/* Gói giá - multi checkbox */}
                                 <div>
@@ -474,9 +480,9 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                         <div className="flex items-center justify-between pt-2 border-t border-border/50">
                             <div className="text-sm text-muted-foreground">
                                 {previewCount > 0 ? (
-                                    <span>Sẽ tạo: <strong className="text-foreground">{selHangHoas.length}</strong> hàng hóa × <strong className="text-foreground">{selGoiGias.length}</strong> gói giá = <strong className="text-primary text-base">{previewCount}</strong> dòng</span>
+                                    <span>Sẽ tạo: <strong className="text-foreground">{selHangHoas.length}</strong> hàng hóa{selGoiGias.length > 0 && <> × <strong className="text-foreground">{selGoiGias.length}</strong> gói giá</>} = <strong className="text-primary text-base">{previewCount}</strong> dòng</span>
                                 ) : (
-                                    <span className="italic">Chọn Gói giá và Hàng hóa để tạo dòng chi tiết</span>
+                                    <span className="italic">Chọn Hàng hóa để tạo dòng chi tiết</span>
                                 )}
                             </div>
                             <button type="button" onClick={handleAddToDetail} disabled={previewCount === 0} className="inline-flex items-center gap-2 h-9 px-4 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-all active:scale-95 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
@@ -515,7 +521,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                                                 <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground w-10">#</th>
                                                 <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[200px]">Hàng hóa</th>
                                                 <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[160px]">Gói giá</th>
-                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[150px]">Đơn giá *</th>
+                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[150px]">Đơn giá <span className="text-destructive">*</span></th>
                                                 <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[140px]">Ghi chú</th>
                                                 <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground w-12"></th>
                                             </tr>

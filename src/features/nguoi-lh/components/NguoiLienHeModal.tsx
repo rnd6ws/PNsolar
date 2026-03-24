@@ -109,6 +109,34 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
         });
     }
 
+    const handleToggleHieuLuc = (e: React.MouseEvent, item: NguoiLienHe) => {
+        e.stopPropagation();
+        
+        startTransition(async () => {
+            const newHieuLuc = item.HIEU_LUC === "Đang hiệu lực" ? "Hết hiệu lực" : "Đang hiệu lực";
+            const dataToUpdate = {
+                TENNGUOI_LIENHE: item.TENNGUOI_LIENHE,
+                CHUC_VU: item.CHUC_VU || "",
+                SDT: item.SDT || "",
+                EMAIL: item.EMAIL || "",
+                GHI_CHU: item.GHI_CHU || "",
+                HIEU_LUC: newHieuLuc
+            };
+
+            // Optimistically update UI
+            setList(prev => prev.map(n => n.ID === item.ID ? { ...n, HIEU_LUC: newHieuLuc } : n));
+
+            const res = await updateNguoiLienHe(item.ID, dataToUpdate);
+            if (res.success) {
+                toast.success(`Đã đổi trạng thái thành ${newHieuLuc}`);
+            } else {
+                toast.error((res as any).message || "Lỗi thao tác");
+                // Revert
+                setList(prev => prev.map(n => n.ID === item.ID ? { ...n, HIEU_LUC: item.HIEU_LUC } : n));
+            }
+        });
+    };
+
 
 
     return (
@@ -277,16 +305,41 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <p className="text-sm font-semibold text-foreground">{item.TENNGUOI_LIENHE}</p>
-                                        {/* Badge hiệu lực */}
-                                        {item.HIEU_LUC === "Đang hiệu lực" ? (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                                <CheckCircle2 className="w-3 h-3" /> Đang hiệu lực
+                                        {/* Công tắc bật tắt hiệu lực */}
+                                        <div className="flex items-center gap-1.5 bg-muted/40 px-2 py-0.5 rounded-full border border-border/50">
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={item.HIEU_LUC === "Đang hiệu lực"}
+                                                onClick={(e) => handleToggleHieuLuc(e, item)}
+                                                className={`relative inline-flex h-[18px] w-8 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary hover:opacity-90 ${
+                                                    item.HIEU_LUC === "Đang hiệu lực" ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+                                                }`}
+                                                title="Sử dụng công tắc để đổi nhanh hiệu lực"
+                                            >
+                                                <span className="sr-only">Bật/tắt hiệu lực</span>
+                                                <span
+                                                    className={`pointer-events-none flex h-3.5 w-3.5 rounded-full bg-background shadow-sm ring-0 transition duration-200 ease-in-out items-center justify-center ${
+                                                        item.HIEU_LUC === "Đang hiệu lực" ? 'translate-x-[14px]' : 'translate-x-px'
+                                                    }`}
+                                                >
+                                                    {item.HIEU_LUC === "Đang hiệu lực" ? (
+                                                        <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+                                                    ) : (
+                                                        <XCircle className="w-2.5 h-2.5 text-muted-foreground" />
+                                                    )}
+                                                </span>
+                                            </button>
+                                            <span 
+                                                className={`text-[11px] font-semibold ${
+                                                    item.HIEU_LUC === "Đang hiệu lực" 
+                                                        ? "text-emerald-700 dark:text-emerald-400" 
+                                                        : "text-rose-600 dark:text-rose-400"
+                                                }`}
+                                            >
+                                                {item.HIEU_LUC === "Đang hiệu lực" ? "Đang hiệu lực" : "Hết hiệu lực"}
                                             </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
-                                                <XCircle className="w-3 h-3" /> Hết hiệu lực
-                                            </span>
-                                        )}
+                                        </div>
                                     </div>
                                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                                         {item.CHUC_VU && (

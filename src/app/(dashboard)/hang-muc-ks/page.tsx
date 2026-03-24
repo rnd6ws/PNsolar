@@ -51,6 +51,7 @@ export default async function HangMucKSPage() {
                             <AddHangMucKSButton
                                 loaiCongTrinhOptions={loaiCongTrinhOptions}
                                 nhomKSOptions={nhomKSOptions}
+                                hangMucKSs={hangMucKSs}
                             />
                         </PermissionGuard>
                     </div>

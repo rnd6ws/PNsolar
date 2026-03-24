@@ -60,10 +60,10 @@ export async function getProductsForBangGia(maHHList: string[]): Promise<BangGia
         // Map giá bán: chỉ lấy giá mới nhất cho mỗi MA_HH + MA_GOI_GIA (bỏ qua gói giá hết hiệu lực)
         const giaBanMap: Record<string, { GOI_GIA: string; DON_GIA: number }[]> = {};
         giaBanRecords.forEach(r => {
-            // Bỏ qua giá bán thuộc gói giá đã hết hiệu lực
-            if (!activeGoiGiaMap.has(r.MA_GOI_GIA)) return;
+            // Bỏ qua giá bán thuộc gói giá đã hết hiệu lực (chỉ check nếu có gói giá)
+            if (r.MA_GOI_GIA && !activeGoiGiaMap.has(r.MA_GOI_GIA)) return;
 
-            const tenGoiGia = r.GOI_GIA_REL?.GOI_GIA || r.MA_GOI_GIA;
+            const tenGoiGia = r.GOI_GIA_REL?.GOI_GIA || r.MA_GOI_GIA || 'Khác';
 
             if (!giaBanMap[r.MA_HH]) giaBanMap[r.MA_HH] = [];
             const exists = giaBanMap[r.MA_HH].find(x => x.GOI_GIA === tenGoiGia);

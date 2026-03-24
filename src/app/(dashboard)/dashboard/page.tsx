@@ -10,7 +10,7 @@ import {
     Truck, ShoppingCart, CreditCard, Bell,
     UserCheck, Calendar, Shield, HelpCircle,
     Archive, DollarSign, Target,
-    CalendarCheck2, ClipboardCheck,
+    CalendarCheck2, ClipboardCheck, MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/features/phan-quyen/PermissionContext";
@@ -155,6 +155,16 @@ const moduleGroups: ModuleGroup[] = [
                 bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
                 available: true,
                 moduleKey: "hang-muc-ks",
+            },
+            {
+                name: "Khảo sát công trình",
+                description: "Lập phiếu và quản lý khảo sát thực tế công trình.",
+                href: "/khao-sat",
+                icon: MapPin,
+                color: "text-emerald-600",
+                bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
+                available: true,
+                moduleKey: "khao-sat",
             },
         ],
     },

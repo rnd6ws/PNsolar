@@ -189,7 +189,7 @@ function GoiGiaModal({
                 {/* Hiệu lực + Mã dòng hàng */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label className={labelClass}>Mã dòng hàng *</label>
+                        <label className={labelClass}>Mã dòng hàng <span className="text-destructive">*</span></label>
                         <select
                             className={selectClass}
                             value={form.MA_DONG_HANG}
@@ -217,7 +217,7 @@ function GoiGiaModal({
 
                 {/* Gói giá */}
                 <div>
-                    <label className={labelClass}>Gói giá *</label>
+                    <label className={labelClass}>Gói giá <span className="text-destructive">*</span></label>
                     <input
                         type="text"
                         className={inputClass}
@@ -418,8 +418,8 @@ function BulkAddModal({
 
                     {/* Table header */}
                     <div className="hidden md:grid md:grid-cols-[1fr_1fr_80px_80px_40px] gap-2 mb-2 px-1">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dòng hàng *</span>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gói giá *</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dòng hàng <span className="text-destructive">*</span></span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gói giá <span className="text-destructive">*</span></span>
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SL Min</span>
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SL Max</span>
                         <span></span>
@@ -434,7 +434,7 @@ function BulkAddModal({
                             >
                                 {/* Dòng hàng */}
                                 <div>
-                                    <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dòng hàng *</label>
+                                    <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dòng hàng <span className="text-destructive">*</span></label>
                                     <select
                                         className={selectClass}
                                         value={row.MA_DONG_HANG}
@@ -449,7 +449,7 @@ function BulkAddModal({
                                 </div>
                                 {/* Gói giá */}
                                 <div>
-                                    <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Gói giá *</label>
+                                    <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Gói giá <span className="text-destructive">*</span></label>
                                     <input
                                         className={inputClass}
                                         placeholder="VD: Giá niêm yết"

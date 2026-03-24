@@ -17,7 +17,7 @@ export async function getKhachHangs(filters: {
     const { page = 1, limit = 10, query, NHOM_KH, PHAN_LOAI, NGUON } = filters;
 
     const user = await getCurrentUser();
-    
+
     const where: any = {};
     const andConditions: any[] = [];
 
@@ -52,14 +52,14 @@ export async function getKhachHangs(filters: {
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
-                orderBy: { CREATED_AT: "desc" },
-                include: { 
+                orderBy: { NGAY_GHI_NHAN: "desc" },
+                include: {
                     NGUOI_DAI_DIEN: true,
                     _count: {
-                        select: { 
+                        select: {
                             NGUOI_LIENHE: {
                                 where: { HIEU_LUC: "Đang hiệu lực" }
-                            } 
+                            }
                         }
                     }
                 }
@@ -87,13 +87,13 @@ export async function getKhachHangById(id: string) {
     try {
         const data = await prisma.kHTN.findUnique({
             where: { ID: id },
-            include: { 
+            include: {
                 NGUOI_DAI_DIEN: true,
                 _count: {
-                    select: { 
+                    select: {
                         NGUOI_LIENHE: {
                             where: { HIEU_LUC: "Đang hiệu lực" }
-                        } 
+                        }
                     }
                 }
             }
@@ -176,13 +176,13 @@ export async function createKhachHang(data: any) {
 
         let maKh = "";
         const prefix = data.TEN_VT ? `KHTN-${data.TEN_VT.substring(0, 10).toUpperCase()}` : `KHTN-KHAC`;
-        
+
         const lastKh = await prisma.kHTN.findFirst({
             where: { MA_KH: { startsWith: prefix } },
             orderBy: { MA_KH: 'desc' },
             select: { MA_KH: true }
         });
-        
+
         let nextNum = 1;
         if (lastKh && lastKh.MA_KH) {
             const parts = lastKh.MA_KH.split('-');
@@ -262,7 +262,7 @@ export async function updateKhachHang(id: string, data: any) {
 
         const now = new Date();
         const timestamp = `[${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}]`;
-        const updatedLichSu = existing.LICH_SU 
+        const updatedLichSu = existing.LICH_SU
             ? `${existing.LICH_SU}\n${timestamp} Cập nhật thông tin khách hàng`
             : `${timestamp} Cập nhật thông tin khách hàng`;
 
@@ -325,7 +325,7 @@ export async function thamDinhKhachHang(id: string, phanLoai: string, lyDoTuChoi
         const now = new Date();
         const timestamp = `[${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}]`;
         const actionStr = lyDoTuChoi ? `Thẩm định: ${phanLoai} - Lý do: ${lyDoTuChoi}` : `Thẩm định: ${phanLoai}`;
-        const updatedLichSu = existing.LICH_SU 
+        const updatedLichSu = existing.LICH_SU
             ? `${existing.LICH_SU}\n${timestamp} ${actionStr}`
             : `${timestamp} ${actionStr}`;
 
@@ -373,7 +373,7 @@ export async function getPhanLoaiKH() {
 export async function createPhanLoaiKH(pl_kh: string) {
     try {
         if (!pl_kh.trim()) return { success: false, message: "Vui lòng nhập tên phân loại" };
-        
+
         const exists = await prisma.pHANLOAI_KH.findFirst({
             where: { PL_KH: { equals: pl_kh.trim(), mode: "insensitive" } }
         });
@@ -470,7 +470,7 @@ export async function getNguoiGioiThieu() {
 export async function createNguoiGioiThieu(tenNgt: string, soDtNgt?: string) {
     try {
         if (!tenNgt.trim()) return { success: false, message: "Vui lòng nhập tên người giới thiệu" };
-        
+
         const now = new Date();
         const yy = String(now.getFullYear()).slice(-2);
         const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -491,7 +491,7 @@ export async function createNguoiGioiThieu(tenNgt: string, soDtNgt?: string) {
                 if (!isNaN(num)) nextNum = num + 1;
             }
         }
-        
+
         let created = false;
         let attempts = 0;
         let record: any = null;
@@ -619,7 +619,7 @@ export async function getLyDoTuChoi() {
 export async function createLyDoTuChoi(lyDo: string) {
     try {
         if (!lyDo.trim()) return { success: false, message: "Vui lòng nhập lý do" };
-        
+
         const exists = await prisma.lY_DO_TU_CHOI.findFirst({
             where: { LY_DO: { equals: lyDo.trim(), mode: "insensitive" } }
         });
