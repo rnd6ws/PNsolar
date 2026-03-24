@@ -6,12 +6,9 @@ import StatCards from "@/features/ke-hoach-cs/components/StatCards";
 import {
     getKeHoachCSKH,
     getKeHoachCSStats,
-    getLoaiCS,
-    getKetQuaCS,
-    getNVListCS,
-    getLyDoTuChoiCS,
 } from "@/features/ke-hoach-cs/action";
 import { getCurrentUser } from "@/lib/auth";
+import { getCachedLoaiCS, getCachedKetQuaCS, getCachedNVList, getCachedLyDoTuChoi } from "@/lib/cache";
 
 export const metadata = {
     title: "Kế hoạch chăm sóc khách hàng | PNSolar",
@@ -42,10 +39,10 @@ export default async function KeHoachCSPage({ searchParams }: PageProps) {
             LOAI_CS,
         }),
         getKeHoachCSStats(),
-        getLoaiCS(),
-        getKetQuaCS(),
-        getNVListCS(),
-        getLyDoTuChoiCS(),
+        getCachedLoaiCS(),
+        getCachedKetQuaCS(),
+        getCachedNVList(),
+        getCachedLyDoTuChoi(),
         getCurrentUser(),
     ]);
 

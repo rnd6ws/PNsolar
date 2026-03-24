@@ -1,5 +1,6 @@
 import { Metadata } from "next";
-import { getCoHois, getDmDichVu, getCoHoiStats } from "@/features/co-hoi/action";
+import { getCoHois, getCoHoiStats } from "@/features/co-hoi/action";
+import { getCachedDmDichVu } from "@/lib/cache";
 import Pagination from "@/components/Pagination";
 import { Target, TrendingUp, CheckCircle2, XCircle } from "lucide-react";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -34,7 +35,7 @@ export default async function CoHoiPage({
 
     const [{ data = [], pagination }, { data: dmDichVu = [] }, stats, user] = await Promise.all([
         getCoHois({ query, page, limit: 10, TINH_TRANG }),
-        getDmDichVu(),
+        getCachedDmDichVu(),
         getCoHoiStats(),
         getCurrentUser()
     ]);

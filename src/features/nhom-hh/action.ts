@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 
 export async function getNhomHHTable() {
     try {
@@ -39,6 +40,7 @@ export async function createNhomHH(formData: FormData) {
         });
 
         revalidatePath("/phan-loai-hh");
+        updateTag("nhom-hh");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi không xác định" };
