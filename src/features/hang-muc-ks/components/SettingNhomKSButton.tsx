@@ -9,13 +9,14 @@ import { createCdNhomKS, deleteCdNhomKS } from "@/features/hang-muc-ks/action";
 import { toast } from "sonner";
 
 interface Props {
-    cdNhomKSs: { ID: string; NHOM_KS: string }[];
+    cdNhomKSs: { ID: string; NHOM_KS: string; STT: number }[];
 }
 
 export default function SettingNhomKSButton({ cdNhomKSs }: Props) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [nhom, setNhom] = useState("");
+    const [stt, setStt] = useState<number>(0);
     const [loading, setLoading] = useState(false);
     const [deleteItem, setDeleteItem] = useState<{ id: string; name: string } | null>(null);
 
@@ -23,10 +24,11 @@ export default function SettingNhomKSButton({ cdNhomKSs }: Props) {
         e.preventDefault();
         if (!nhom.trim()) return;
         setLoading(true);
-        const res = await createCdNhomKS(nhom);
+        const res = await createCdNhomKS(nhom, stt);
         if (res.success) {
             toast.success("Đã thêm nhóm KS thành công!");
             setNhom("");
+            setStt(0);
             router.refresh();
         } else {
             toast.error(res.message || "Có lỗi xảy ra");
@@ -56,6 +58,14 @@ export default function SettingNhomKSButton({ cdNhomKSs }: Props) {
                             className="input-modern flex-1"
                             disabled={loading}
                         />
+                        <input
+                            type="number"
+                            value={stt}
+                            onChange={(e) => setStt(Number(e.target.value))}
+                            placeholder="STT"
+                            className="input-modern w-20 text-center"
+                            disabled={loading}
+                        />
                         <button
                             type="submit"
                             disabled={loading || !nhom.trim()}
@@ -71,7 +81,10 @@ export default function SettingNhomKSButton({ cdNhomKSs }: Props) {
                         )}
                         {cdNhomKSs.map((item) => (
                             <div key={item.ID} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg shadow-sm">
-                                <span className="font-medium text-sm">{item.NHOM_KS}</span>
+                                <div className="flex items-center gap-3">
+                                    <span className="font-semibold text-muted-foreground w-6 text-center">{item.STT ?? 0}</span>
+                                    <span className="font-medium text-sm">{item.NHOM_KS}</span>
+                                </div>
                                 <button
                                     onClick={() => setDeleteItem({ id: item.ID, name: item.NHOM_KS })}
                                     disabled={loading}

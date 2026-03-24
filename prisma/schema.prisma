@@ -35,6 +35,7 @@ model DSNV {
   KHTN_SALES_PT KHTN[]         @relation("SALES_PT")
   KHTN_NV_CS    KHTN[]         @relation("NV_CS")
   KEHOACH_CSKH  KEHOACH_CSKH[] @relation("NGUOI_CS")
+  KHAO_SAT      KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
 
   @@index([IS_ACTIVE, ROLE])
   @@fulltext([HO_TEN, USER_NAME, MA_NV])
@@ -68,9 +69,9 @@ model DMHH {
   BAO_HANH    String?
   HIEU_LUC    Boolean @default(true)
 
-  GIA_BANS      GIA_BAN[]    // Relation ngược từ GIA_BAN
-  GIA_NHAPS     GIA_NHAP[]   // Relation ngược từ GIA_NHAP
-  BAO_GIA_CTS   BAO_GIA_CT[] // Relation ngược từ BAO_GIA_CT
+  GIA_BANS    GIA_BAN[] // Relation ngược từ GIA_BAN
+  GIA_NHAPS   GIA_NHAP[] // Relation ngược từ GIA_NHAP
+  BAO_GIA_CTS BAO_GIA_CT[] // Relation ngược từ BAO_GIA_CT
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -278,6 +279,7 @@ model KHTN {
   CO_HOI         CO_HOI[]
   KEHOACH_CSKH   KEHOACH_CSKH[]
   BAO_GIAS       BAO_GIA[]
+  KHAO_SAT       KHAO_SAT[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -338,6 +340,7 @@ model NGUOI_LIENHE {
   HIEU_LUC        String  @default("Đang hiệu lực")
 
   KEHOACH_CSKH KEHOACH_CSKH[]
+  KHAO_SAT     KHAO_SAT[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -357,7 +360,7 @@ model GOI_GIA {
   SL_MIN        Int?
   SL_MAX        Int?
 
-  GIA_BANS  GIA_BAN[] // Relation ngược từ GIA_BAN
+  GIA_BANS GIA_BAN[] // Relation ngược từ GIA_BAN
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -472,6 +475,7 @@ model CO_HOI {
 
   KEHOACH_CSKH KEHOACH_CSKH[]
   BAO_GIAS     BAO_GIA[]
+  KHAO_SAT     KHAO_SAT[]
 
   @@index([MA_KH])
   @@index([TINH_TRANG])
@@ -580,6 +584,7 @@ model KEHOACH_CSKH {
 model CD_LOAI_CONG_TRINH {
   ID              String @id @default(auto()) @map("_id") @db.ObjectId
   LOAI_CONG_TRINH String @unique
+  STT             Int    @default(0)
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -591,6 +596,7 @@ model CD_LOAI_CONG_TRINH {
 model CD_NHOM_KS {
   ID      String @id @default(auto()) @map("_id") @db.ObjectId
   NHOM_KS String @unique
+  STT     Int    @default(0)
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -606,6 +612,7 @@ model HANG_MUC_KS {
   NHOM_KS         String
   HANG_MUC_KS     String
   HIEU_LUC        Boolean @default(true)
+  STT             Int     @default(0)
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -617,39 +624,39 @@ model HANG_MUC_KS {
 
 // ===== BÁO GIÁ (Quotation Header) =====
 model BAO_GIA {
-  ID              String   @id @default(auto()) @map("_id") @db.ObjectId
-  MA_BAO_GIA      String   @unique // BG-YYMMDD-001
+  ID         String @id @default(auto()) @map("_id") @db.ObjectId
+  MA_BAO_GIA String @unique // BG-YYMMDD-001
 
-  NGAY_BAO_GIA    DateTime @default(now())
+  NGAY_BAO_GIA DateTime @default(now())
 
   // Khách hàng — lưu MA_KH, relation sang KHTN
-  MA_KH           String
-  KH_REL          KHTN     @relation(fields: [MA_KH], references: [MA_KH])
+  MA_KH  String
+  KH_REL KHTN   @relation(fields: [MA_KH], references: [MA_KH])
 
   // Cơ hội — lưu MA_CH, relation sang CO_HOI (optional)
-  MA_CH           String?
-  CO_HOI_REL      CO_HOI?  @relation(fields: [MA_CH], references: [MA_CH])
+  MA_CH      String?
+  CO_HOI_REL CO_HOI? @relation(fields: [MA_CH], references: [MA_CH])
 
-  LOAI_BAO_GIA    String   @default("Dân dụng") // "Dân dụng" | "Công nghiệp"
+  LOAI_BAO_GIA String @default("Dân dụng") // "Dân dụng" | "Công nghiệp"
 
   // Tài chính — tổng hợp từ chi tiết
-  TT_TRUOC_UU_DAI Float    @default(0)
-  PT_UU_DAI       Float    @default(0) // % ưu đãi chung
-  TT_UU_DAI       Float    @default(0)
-  TT_SAU_UU_DAI   Float    @default(0)
-  PT_VAT          Float    @default(0) // % VAT chung
-  TT_VAT          Float    @default(0)
-  TONG_TIEN       Float    @default(0)
+  TT_TRUOC_UU_DAI Float @default(0)
+  PT_UU_DAI       Float @default(0) // % ưu đãi chung
+  TT_UU_DAI       Float @default(0)
+  TT_SAU_UU_DAI   Float @default(0)
+  PT_VAT          Float @default(0) // % VAT chung
+  TT_VAT          Float @default(0)
+  TONG_TIEN       Float @default(0)
 
-  GHI_CHU         String?
+  GHI_CHU           String?
   THOI_GIAN_LAP_DAT String?
-  TEP_DINH_KEM    String[]  // Mảng URL tệp đính kèm (ảnh, PDF, Word...)
+  TEP_DINH_KEM      String[] // Mảng URL tệp đính kèm (ảnh, PDF, Word...)
 
-  CHI_TIETS       BAO_GIA_CT[] // 1-N relation
-  DKTT_BG         DKTT_BG[]    // 1-N relation: điều kiện thanh toán
+  CHI_TIETS BAO_GIA_CT[] // 1-N relation
+  DKTT_BG   DKTT_BG[] // 1-N relation: điều kiện thanh toán
 
-  CREATED_AT      DateTime @default(now())
-  UPDATED_AT      DateTime @updatedAt
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
 
   @@index([MA_KH])
   @@index([MA_CH])
@@ -659,17 +666,17 @@ model BAO_GIA {
 
 // ===== ĐIỀU KIỆN THANH TOÁN BÁO GIÁ =====
 model DKTT_BG {
-  ID              String   @id @default(auto()) @map("_id") @db.ObjectId
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
 
-  MA_BAO_GIA      String
-  BAO_GIA_REL     BAO_GIA  @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA], onDelete: Cascade)
+  MA_BAO_GIA  String
+  BAO_GIA_REL BAO_GIA @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA], onDelete: Cascade)
 
-  DOT_THANH_TOAN  String   // Đợt 1, Đợt 2...
-  PT_THANH_TOAN   Float    @default(0) // % thanh toán
+  DOT_THANH_TOAN   String // Đợt 1, Đợt 2...
+  PT_THANH_TOAN    Float   @default(0) // % thanh toán
   NOI_DUNG_YEU_CAU String? // Nội dung yêu cầu
 
-  CREATED_AT      DateTime @default(now())
-  UPDATED_AT      DateTime @updatedAt
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
 
   @@index([MA_BAO_GIA])
   @@map("DKTT_BG")
@@ -677,34 +684,94 @@ model DKTT_BG {
 
 // ===== BÁO GIÁ CHI TIẾT (Quotation Detail) =====
 model BAO_GIA_CT {
-  ID              String   @id @default(auto()) @map("_id") @db.ObjectId
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
 
-  MA_BAO_GIA      String
-  BAO_GIA_REL     BAO_GIA  @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA], onDelete: Cascade)
+  MA_BAO_GIA  String
+  BAO_GIA_REL BAO_GIA @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA], onDelete: Cascade)
 
   // Hàng hóa — lưu MA_HH, relation sang DMHH
-  MA_HH           String
-  HH_REL          DMHH     @relation(fields: [MA_HH], references: [MA_HH])
+  MA_HH  String
+  HH_REL DMHH   @relation(fields: [MA_HH], references: [MA_HH])
 
-  DON_VI_TINH     String
-  GIA_BAN         Float    @default(0)
-  SO_LUONG        Float    @default(1)
-  THANH_TIEN      Float    @default(0)
+  DON_VI_TINH String
+  GIA_BAN     Float  @default(0)
+  SO_LUONG    Float  @default(1)
+  THANH_TIEN  Float  @default(0)
 
-  PT_UU_DAI       Float    @default(0)
-  TIEN_UU_DAI     Float    @default(0)
-  TIEN_SAU_UU_DAI Float    @default(0)
+  PT_UU_DAI       Float @default(0)
+  TIEN_UU_DAI     Float @default(0)
+  TIEN_SAU_UU_DAI Float @default(0)
 
-  PT_VAT          Float    @default(0)
-  TIEN_VAT        Float    @default(0)
-  TONG_TIEN       Float    @default(0)
+  PT_VAT    Float @default(0)
+  TIEN_VAT  Float @default(0)
+  TONG_TIEN Float @default(0)
 
-  GHI_CHU         String?
+  GHI_CHU String?
 
-  CREATED_AT      DateTime @default(now())
-  UPDATED_AT      DateTime @updatedAt
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
 
   @@index([MA_BAO_GIA])
   @@index([MA_HH])
   @@map("BAO_GIA_CT")
+}
+
+// ===== HÌNH ẢNH KHẢO SÁT =====
+type HINH_ANH_KS {
+  TEN_HINH String
+  URL_HINH String
+}
+
+// ===== KHẢO SÁT CÔNG TRÌNH =====
+model KHAO_SAT {
+  ID            String   @id @default(auto()) @map("_id") @db.ObjectId
+  MA_KHAO_SAT   String   @unique
+  NGAY_KHAO_SAT DateTime @default(now())
+
+  NGUOI_KHAO_SAT     String?
+  NGUOI_KHAO_SAT_REL DSNV?   @relation("NGUOI_KHAO_SAT", fields: [NGUOI_KHAO_SAT], references: [MA_NV])
+
+  MA_KH    String?
+  KHTN_REL KHTN?   @relation(fields: [MA_KH], references: [MA_KH])
+
+  MA_CH      String?
+  CO_HOI_REL CO_HOI? @relation(fields: [MA_CH], references: [MA_CH])
+
+  DIA_CHI           String?
+  NGUOI_LIEN_HE     String?
+  NGUOI_LIEN_HE_REL NGUOI_LIENHE? @relation(fields: [NGUOI_LIEN_HE], references: [MA_NLH])
+
+  DIA_CHI_CONG_TRINH String?
+  LOAI_CONG_TRINH    String
+  HINH_ANH           HINH_ANH_KS[]
+
+  KHAO_SAT_CT KHAO_SAT_CT[]
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([MA_KH, MA_CH])
+  @@fulltext([MA_KHAO_SAT, MA_KH, MA_CH, DIA_CHI, DIA_CHI_CONG_TRINH, LOAI_CONG_TRINH])
+  @@map("KHAO_SAT")
+}
+
+// ===== KHẢO SÁT CHI TIẾT =====
+model KHAO_SAT_CT {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  MA_KHAO_SAT  String
+  KHAO_SAT_REL KHAO_SAT @relation(fields: [MA_KHAO_SAT], references: [MA_KHAO_SAT], onDelete: Cascade)
+
+  NHOM_KS      String
+  HANG_MUC_KS  String
+  CHI_TIET     String
+  STT_NHOM_KS  Int    @default(0)
+  STT_HANG_MUC Int    @default(0)
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([MA_KHAO_SAT])
+  @@index([NHOM_KS, HANG_MUC_KS, STT_NHOM_KS, STT_HANG_MUC])
+  @@map("KHAO_SAT_CT")
 }

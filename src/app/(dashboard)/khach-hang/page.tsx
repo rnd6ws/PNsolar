@@ -7,6 +7,7 @@ import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuar
 import SettingKhachHangButton from "@/features/khach-hang/components/SettingKhachHangButton";
 import AddKhachHangButton from "@/features/khach-hang/components/AddKhachHangButton";
 import KhachHangPageClient from "@/features/khach-hang/components/KhachHangPageClient";
+import LimitSelect from "@/components/LimitSelect";
 import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -19,10 +20,11 @@ export const revalidate = 0;
 export default async function KhachHangPage({
     searchParams,
 }: {
-    searchParams: Promise<{ query?: string; page?: string; NHOM_KH?: string; PHAN_LOAI?: string; NGUON?: string }>;
+    searchParams: Promise<{ query?: string; page?: string; limit?: string; NHOM_KH?: string; PHAN_LOAI?: string; NGUON?: string }>;
 }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
+    const limit = Number(params.limit) || 50;
     const query = params.query;
     const NHOM_KH = params.NHOM_KH;
     const PHAN_LOAI = params.PHAN_LOAI;
@@ -30,7 +32,7 @@ export default async function KhachHangPage({
 
     const [{ data = [], pagination }, { data: phanLoais = [] }, { data: nguons = [] }, { data: nhoms = [] }, stats, { data: nhanViens = [] }, { data: nguoiGioiThieus = [] }, { data: lyDoTuChois = [] }, user] =
         await Promise.all([
-            getKhachHangs({ query, page, limit: 10, NHOM_KH, PHAN_LOAI, NGUON }),
+            getKhachHangs({ query, page, limit, NHOM_KH, PHAN_LOAI, NGUON }),
             getPhanLoaiKH(),
             getNguonKH(),
             getNhomKH(),
@@ -103,11 +105,13 @@ export default async function KhachHangPage({
                         currentUserId={user?.userId}
                     />
 
-                    {(pagination as any) && (pagination as any).totalPages > 1 && (
-                        <div className="p-4 border-t flex justify-between items-center bg-transparent">
-                            <p className="text-sm text-muted-foreground">
-                                Hiển thị <span className="font-semibold text-foreground">{data.length}</span> của {totalKH} khách hàng
-                            </p>
+                    {(pagination as any) && (pagination as any).total > 0 && (
+                        <div className="p-4 border-t flex flex-col sm:flex-row justify-between items-center bg-transparent gap-4">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
+                                <span>Hiển thị</span>
+                                <LimitSelect defaultLimit={limit} />
+                                <span>của {totalKH} khách hàng</span>
+                            </div>
                             <Pagination
                                 totalPages={(pagination as any).totalPages}
                                 currentPage={page}

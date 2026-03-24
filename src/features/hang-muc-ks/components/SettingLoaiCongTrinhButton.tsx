@@ -9,13 +9,14 @@ import { createCdLoaiCongTrinh, deleteCdLoaiCongTrinh } from "@/features/hang-mu
 import { toast } from "sonner";
 
 interface Props {
-    cdLoaiCongTrinhs: { ID: string; LOAI_CONG_TRINH: string }[];
+    cdLoaiCongTrinhs: { ID: string; LOAI_CONG_TRINH: string; STT: number }[];
 }
 
 export default function SettingLoaiCongTrinhButton({ cdLoaiCongTrinhs }: Props) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [loai, setLoai] = useState("");
+    const [stt, setStt] = useState<number>(0);
     const [loading, setLoading] = useState(false);
     const [deleteItem, setDeleteItem] = useState<{ id: string; name: string } | null>(null);
 
@@ -23,10 +24,11 @@ export default function SettingLoaiCongTrinhButton({ cdLoaiCongTrinhs }: Props) 
         e.preventDefault();
         if (!loai.trim()) return;
         setLoading(true);
-        const res = await createCdLoaiCongTrinh(loai);
+        const res = await createCdLoaiCongTrinh(loai, stt);
         if (res.success) {
             toast.success("Đã thêm loại công trình thành công!");
             setLoai("");
+            setStt(0);
             router.refresh();
         } else {
             toast.error(res.message || "Có lỗi xảy ra");
@@ -56,6 +58,14 @@ export default function SettingLoaiCongTrinhButton({ cdLoaiCongTrinhs }: Props) 
                             className="input-modern flex-1"
                             disabled={loading}
                         />
+                        <input
+                            type="number"
+                            value={stt}
+                            onChange={(e) => setStt(Number(e.target.value))}
+                            placeholder="STT"
+                            className="input-modern w-20 text-center"
+                            disabled={loading}
+                        />
                         <button
                             type="submit"
                             disabled={loading || !loai.trim()}
@@ -71,7 +81,10 @@ export default function SettingLoaiCongTrinhButton({ cdLoaiCongTrinhs }: Props) 
                         )}
                         {cdLoaiCongTrinhs.map((item) => (
                             <div key={item.ID} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg shadow-sm">
-                                <span className="font-medium text-sm">{item.LOAI_CONG_TRINH}</span>
+                                <div className="flex items-center gap-3">
+                                    <span className="font-semibold text-muted-foreground w-6 text-center">{item.STT ?? 0}</span>
+                                    <span className="font-medium text-sm">{item.LOAI_CONG_TRINH}</span>
+                                </div>
                                 <button
                                     onClick={() => setDeleteItem({ id: item.ID, name: item.LOAI_CONG_TRINH })}
                                     disabled={loading}

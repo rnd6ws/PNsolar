@@ -156,6 +156,16 @@ const moduleGroups: ModuleGroup[] = [
                 available: true,
                 moduleKey: "hang-muc-ks",
             },
+            {
+                name: "Khảo sát công trình",
+                description: "Lập phiếu và quản lý khảo sát thực tế công trình.",
+                href: "/khao-sat",
+                icon: Map,
+                color: "text-emerald-600",
+                bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
+                available: true,
+                moduleKey: "khao-sat",
+            },
         ],
     },
 

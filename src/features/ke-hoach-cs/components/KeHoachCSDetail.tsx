@@ -58,10 +58,13 @@ function getViewerUrl(fileUrl: string, name: string, savedType?: string): string
     const ext = (name.split(".").pop() || "").toLowerCase();
     const urlExt = (fileUrl.split("?")[0].split(".").pop() || "").toLowerCase();
     const resolvedExt = PREVIEWABLE_EXTS.includes(ext) ? ext : urlExt;
+    
     if (OFFICE_EXTS.includes(resolvedExt) || ["WORD", "EXCEL", "PPT"].includes(savedType || "")) {
         return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
     }
-    return `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+    
+    // PDF, txt, csv → mở qua file-view proxy để bypass Cloudinary Strict Transformations
+    return `/api/file-view?url=${encodeURIComponent(fileUrl)}`;
 }
 
 const formatDateTime = (d: any) => {
