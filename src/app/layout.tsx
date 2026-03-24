@@ -3,6 +3,7 @@ import { Be_Vietnam_Pro, Inter, Roboto, Plus_Jakarta_Sans } from "next/font/goog
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from 'sonner';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
@@ -61,6 +62,7 @@ export default function RootLayout({
         <ThemeProvider>
           <Toaster position="top-right" richColors closeButton />
           {children}
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
