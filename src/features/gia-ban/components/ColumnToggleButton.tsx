@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Columns3 } from "lucide-react";
 
-export type ColumnKey = "nhomHh" | "phanLoai" | "dongHang" | "goiGia" | "hangHoa" | "donGia" | "ghiChu";
+export type ColumnKey = "nhomHh" | "phanLoai" | "dongHang" | "goiGia" | "hangHoa" | "heSo" | "donGia" | "ghiChu";
 
 const COLUMN_MAP: Record<ColumnKey, string> = {
     nhomHh: "Nhóm hàng",
@@ -11,6 +11,7 @@ const COLUMN_MAP: Record<ColumnKey, string> = {
     dongHang: "Dòng hàng",
     goiGia: "Gói giá",
     hangHoa: "Hàng hóa",
+    heSo: "Hệ số",
     donGia: "Đơn giá",
     ghiChu: "Ghi chú",
 };

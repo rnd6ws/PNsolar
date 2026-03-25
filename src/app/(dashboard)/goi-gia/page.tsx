@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getGoiGiaList, getUniqueDongHangInGoiGia, getDongHangOptionsForGoiGia } from '@/features/goi-gia/action';
+import { getGoiGiaList, getUniqueDongHangInGoiGia, getDongHangOptionsForGoiGia, getNhomKHOptionsForGoiGia } from '@/features/goi-gia/action';
 import GoiGiaClient from '@/features/goi-gia/components/GoiGiaClient';
 import { getRowsPerPage } from '@/lib/getRowsPerPage';
 
@@ -29,6 +29,9 @@ export default async function GoiGiaPage({ searchParams }: { searchParams: Promi
     // Get dong hang options for create/edit modal
     const dongHangOptions = await getDongHangOptionsForGoiGia();
 
+    // Get nhom KH options for create/edit modal
+    const nhomKHOptions = await getNhomKHOptionsForGoiGia();
+
     return (
         <GoiGiaClient
             initialData={goiGiaData}
@@ -37,6 +40,7 @@ export default async function GoiGiaPage({ searchParams }: { searchParams: Promi
             pageSize={pageSize}
             uniqueDongHang={uniqueDongHang}
             dongHangOptions={dongHangOptions}
+            nhomKHOptions={nhomKHOptions}
         />
     );
 }

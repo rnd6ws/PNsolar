@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Settings2, Download, DollarSign, Package, TrendingUp } from "lucide-react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { Settings2, Download, DollarSign, Package, TrendingUp, Grid, Tag, Layers, Box, X, ChevronDown, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
@@ -9,6 +10,7 @@ import GiaBanList from "./GiaBanList";
 import AddGiaBanButton from "./AddGiaBanButton";
 import BulkAddGiaBanButton from "./BulkAddGiaBanButton";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface NhomHhOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
 interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; NHOM: string | null; }
@@ -16,7 +18,16 @@ interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: stri
 interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
 interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; MA_PHAN_LOAI: string | null; MA_DONG_HANG: string | null; PHAN_LOAI_REL?: { TEN_PHAN_LOAI: string } | null; DONG_HANG_REL?: { TEN_DONG_HANG: string } | null; }
 
-const DEFAULT_COLUMNS: ColumnKey[] = ["nhomHh", "phanLoai", "dongHang", "goiGia", "hangHoa", "donGia", "ghiChu"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["nhomHh", "phanLoai", "dongHang", "goiGia", "hangHoa", "heSo", "donGia", "ghiChu"];
+
+type GroupByKey = 'none' | 'MA_NHOM_HH' | 'MA_PHAN_LOAI' | 'MA_DONG_HANG' | 'MA_HH';
+
+const GROUP_LABELS: Record<string, string> = {
+    'MA_NHOM_HH': 'Nhóm HH',
+    'MA_PHAN_LOAI': 'Phân loại',
+    'MA_DONG_HANG': 'Dòng hàng',
+    'MA_HH': 'Hàng hóa',
+};
 
 interface Props {
     data: any[];
@@ -26,16 +37,48 @@ interface Props {
     goiGiaOptions: GoiGiaOption[];
     hhOptions: HHOption[];
     filterNhomHhOptions: { value: string; label: string }[];
-    filterGoiGiaOptions: { value: string; label: string }[];
+    filterPhanLoaiOptions: { value: string; label: string }[];
+    filterDongHangOptions: { value: string; label: string }[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
+    giaNhapMap: Record<string, number>;
 }
 
 export default function GiaBanPageClient({
     data, nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions,
-    filterNhomHhOptions, filterGoiGiaOptions, pagination
+    filterNhomHhOptions, filterPhanLoaiOptions, filterDongHangOptions, pagination, giaNhapMap
 }: Props) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
+    const [groupBy, setGroupBy] = useState<GroupByKey>('none');
+
+    // Date filter state (synced with URL)
+    const fromDate = searchParams.get('fromDate') || '';
+    const toDate = searchParams.get('toDate') || '';
+
+    const updateDateParams = (key: string, value: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (value) {
+            params.set(key, value);
+        } else {
+            params.delete(key);
+        }
+        params.delete('page');
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    const clearDateFilter = () => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('fromDate');
+        params.delete('toDate');
+        params.delete('page');
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    const hasDateFilter = fromDate || toDate;
 
     const uniqueHH = useMemo(() => new Set(data.map((d: any) => d.MA_HH)).size, [data]);
     const avgPrice = useMemo(() => {
@@ -65,6 +108,7 @@ export default function GiaBanPageClient({
                         dongHangOptions={dongHangOptions}
                         goiGiaOptions={goiGiaOptions}
                         hhOptions={hhOptions}
+                        giaNhapMap={giaNhapMap}
                     />
                     <AddGiaBanButton
                         nhomHhOptions={nhomHhOptions}
@@ -97,7 +141,7 @@ export default function GiaBanPageClient({
                 <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
                     <div className="flex items-center justify-between gap-3 w-full">
                         <div className="flex-1 w-full lg:max-w-[400px]">
-                            <SearchInput placeholder="Tìm theo mã HH, nhóm HH, gói giá..." />
+                            <SearchInput placeholder="Tìm theo mã HH, nhóm HH, tên HH..." />
                         </div>
 
                         {/* Nút Lọc cho Mobile */}
@@ -119,10 +163,103 @@ export default function GiaBanPageClient({
                                 placeholder="Nhóm HH"
                             />
                             <FilterSelect
-                                paramKey="GOI_GIA"
-                                options={filterGoiGiaOptions}
-                                placeholder="Gói giá"
+                                paramKey="PHAN_LOAI"
+                                options={filterPhanLoaiOptions}
+                                placeholder="Phân loại"
                             />
+                            <FilterSelect
+                                paramKey="DONG_HANG"
+                                options={filterDongHangOptions}
+                                placeholder="Dòng hàng"
+                            />
+
+                            {/* Date range filter */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        className={cn(
+                                            "px-3 py-2 border rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap",
+                                            hasDateFilter ? "bg-primary/5 text-primary border-primary/30 hover:bg-primary/10" : "bg-background hover:bg-muted text-foreground border-border"
+                                        )}
+                                    >
+                                        <Calendar className="w-4 h-4" />
+                                        <span>{hasDateFilter ? `${fromDate || '...'} → ${toDate || '...'}` : 'Ngày HL'}</span>
+                                        <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-72 p-4 rounded-xl">
+                                    <div className="space-y-3">
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lọc theo ngày hiệu lực</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="text-xs text-muted-foreground mb-1 block">Từ ngày</label>
+                                                <input
+                                                    type="date"
+                                                    value={fromDate}
+                                                    onChange={e => updateDateParams('fromDate', e.target.value)}
+                                                    className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-muted-foreground mb-1 block">Đến ngày</label>
+                                                <input
+                                                    type="date"
+                                                    value={toDate}
+                                                    onChange={e => updateDateParams('toDate', e.target.value)}
+                                                    className="w-full h-8 px-2 text-xs bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                                                />
+                                            </div>
+                                        </div>
+                                        {hasDateFilter && (
+                                            <button
+                                                onClick={clearDateFilter}
+                                                className="w-full h-7 text-xs text-destructive hover:bg-destructive/10 rounded-md transition-colors flex items-center justify-center gap-1"
+                                            >
+                                                <X className="w-3 h-3" /> Xóa bộ lọc ngày
+                                            </button>
+                                        )}
+                                    </div>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            {/* Group by */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        className={cn(
+                                            "px-3 py-2 border rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2",
+                                            groupBy !== 'none' ? "bg-primary/5 text-primary border-primary/30 hover:bg-primary/10" : "bg-background hover:bg-muted text-foreground border-border"
+                                        )}
+                                    >
+                                        <Grid className="w-4 h-4" />
+                                        <span>{GROUP_LABELS[groupBy] || 'Nhóm'}</span>
+                                        <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48 rounded-xl font-medium">
+                                    <DropdownMenuItem onClick={() => setGroupBy('MA_NHOM_HH')} className={cn('py-2.5', groupBy === 'MA_NHOM_HH' && 'bg-primary/10 text-primary')}>
+                                        <Tag className="w-4 h-4 mr-2" /> Nhóm HH
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setGroupBy('MA_PHAN_LOAI')} className={cn('py-2.5', groupBy === 'MA_PHAN_LOAI' && 'bg-primary/10 text-primary')}>
+                                        <Layers className="w-4 h-4 mr-2" /> Phân loại
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setGroupBy('MA_DONG_HANG')} className={cn('py-2.5', groupBy === 'MA_DONG_HANG' && 'bg-primary/10 text-primary')}>
+                                        <Box className="w-4 h-4 mr-2" /> Dòng hàng
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setGroupBy('MA_HH')} className={cn('py-2.5', groupBy === 'MA_HH' && 'bg-primary/10 text-primary')}>
+                                        <Package className="w-4 h-4 mr-2" /> Hàng hóa
+                                    </DropdownMenuItem>
+                                    {groupBy !== 'none' && (
+                                        <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => setGroupBy('none')} className="py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                <X className="w-4 h-4 mr-2" /> Không nhóm
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
                             <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                             <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0" title="Xuất Excel">
                                 <Download className="w-4 h-4" />
@@ -134,19 +271,44 @@ export default function GiaBanPageClient({
                     {showFilters && (
                         <div className="flex lg:hidden flex-col gap-3 w-full bg-muted/30 p-4 rounded-xl border border-border animate-in slide-in-from-top-2 fade-in duration-200">
                             <div className="flex flex-col gap-3 w-full">
-                                <FilterSelect
-                                    paramKey="NHOM_HH"
-                                    options={filterNhomHhOptions}
-                                    placeholder="Nhóm HH"
-                                />
-                                <FilterSelect
-                                    paramKey="GOI_GIA"
-                                    options={filterGoiGiaOptions}
-                                    placeholder="Gói giá"
-                                />
+                                <FilterSelect paramKey="NHOM_HH" options={filterNhomHhOptions} placeholder="Nhóm HH" />
+                                <FilterSelect paramKey="PHAN_LOAI" options={filterPhanLoaiOptions} placeholder="Phân loại" />
+                                <FilterSelect paramKey="DONG_HANG" options={filterDongHangOptions} placeholder="Dòng hàng" />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-xs text-muted-foreground mb-1 block">Từ ngày</label>
+                                        <input type="date" value={fromDate} onChange={e => updateDateParams('fromDate', e.target.value)} className="w-full h-9 px-2 text-sm bg-background border border-input rounded-md" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-muted-foreground mb-1 block">Đến ngày</label>
+                                        <input type="date" value={toDate} onChange={e => updateDateParams('toDate', e.target.value)} className="w-full h-9 px-2 text-sm bg-background border border-input rounded-md" />
+                                    </div>
+                                </div>
+                                {hasDateFilter && (
+                                    <button onClick={clearDateFilter} className="text-xs text-destructive hover:underline flex items-center gap-1">
+                                        <X className="w-3 h-3" /> Xóa bộ lọc ngày
+                                    </button>
+                                )}
                             </div>
-                            <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-border w-full">
-                                <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                            <div className="flex items-center justify-between gap-3 mt-1 pt-3 border-t border-border w-full">
+                                <div className="flex items-center gap-2">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <button className={cn("px-3 py-2 border rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2", groupBy !== 'none' ? "bg-primary/5 text-primary border-primary/30" : "bg-background hover:bg-muted text-foreground border-border")}>
+                                                <Grid className="w-4 h-4" />
+                                                <span>{GROUP_LABELS[groupBy] || 'Nhóm'}</span>
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start" className="w-48 rounded-xl font-medium">
+                                            <DropdownMenuItem onClick={() => setGroupBy('MA_NHOM_HH')} className={cn('py-2.5', groupBy === 'MA_NHOM_HH' && 'bg-primary/10 text-primary')}><Tag className="w-4 h-4 mr-2" /> Nhóm HH</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setGroupBy('MA_PHAN_LOAI')} className={cn('py-2.5', groupBy === 'MA_PHAN_LOAI' && 'bg-primary/10 text-primary')}><Layers className="w-4 h-4 mr-2" /> Phân loại</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setGroupBy('MA_DONG_HANG')} className={cn('py-2.5', groupBy === 'MA_DONG_HANG' && 'bg-primary/10 text-primary')}><Box className="w-4 h-4 mr-2" /> Dòng hàng</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setGroupBy('MA_HH')} className={cn('py-2.5', groupBy === 'MA_HH' && 'bg-primary/10 text-primary')}><Package className="w-4 h-4 mr-2" /> Hàng hóa</DropdownMenuItem>
+                                            {groupBy !== 'none' && (<><DropdownMenuSeparator /><DropdownMenuItem onClick={() => setGroupBy('none')} className="py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10"><X className="w-4 h-4 mr-2" /> Không nhóm</DropdownMenuItem></>)}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                                </div>
                                 <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex" title="Xuất Excel">
                                     <Download className="w-4 h-4" />
                                 </button>
@@ -164,6 +326,8 @@ export default function GiaBanPageClient({
                     dongHangOptions={dongHangOptions}
                     goiGiaOptions={goiGiaOptions}
                     hhOptions={hhOptions}
+                    giaNhapMap={giaNhapMap}
+                    groupBy={groupBy}
                 />
             </div>
         </div>

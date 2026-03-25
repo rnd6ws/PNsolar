@@ -73,11 +73,33 @@ export default function AddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, dongH
         setMaPhanLoai(val);
         setMaDongHang("");
         setMaHH("");
+
+        // Auto-fill cha: Nhóm HH từ Phân loại đã chọn
+        if (val) {
+            const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === val);
+            if (pl?.NHOM) {
+                const nhom = nhomHHOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM);
+                if (nhom) setMaNhomHH(nhom.MA_NHOM);
+            }
+        }
     };
 
     const handleDongHangChange = (val: string) => {
         setMaDongHang(val);
         setMaHH("");
+
+        // Auto-fill cha: Phân loại & Nhóm HH từ Dòng hàng đã chọn
+        if (val) {
+            const dh = dongHangOptions.find(d => d.MA_DONG_HANG === val);
+            if (dh?.MA_PHAN_LOAI) {
+                setMaPhanLoai(dh.MA_PHAN_LOAI);
+                const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === dh.MA_PHAN_LOAI);
+                if (pl?.NHOM) {
+                    const nhom = nhomHHOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM);
+                    if (nhom) setMaNhomHH(nhom.MA_NHOM);
+                }
+            }
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

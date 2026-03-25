@@ -5,7 +5,8 @@ import {
     getDongHangOptions,
     getGoiGiaOptions,
     getHangHoaOptionsForGiaBan,
-    getUniqueFiltersInGiaBan
+    getUniqueFiltersInGiaBan,
+    getGiaNhapMapByHangHoa
 } from "@/features/gia-ban/action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import Pagination from "@/components/Pagination";
@@ -18,16 +19,20 @@ export default async function GiaBanPage({ searchParams }: { searchParams: any }
     const pageSize = await getRowsPerPage(params?.pageSize, 15);
     const query = params?.q || "";
     const NHOM_HH = params?.NHOM_HH || "";
-    const GOI_GIA = params?.GOI_GIA || "";
+    const PHAN_LOAI = params?.PHAN_LOAI || "";
+    const DONG_HANG = params?.DONG_HANG || "";
+    const fromDate = params?.fromDate || "";
+    const toDate = params?.toDate || "";
 
-    const [result, nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions, uniqueFilters] = await Promise.all([
-        getGiaBanList({ page, limit: pageSize, query, NHOM_HH, GOI_GIA }),
+    const [result, nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions, uniqueFilters, giaNhapMap] = await Promise.all([
+        getGiaBanList({ page, limit: pageSize, query, NHOM_HH, PHAN_LOAI, DONG_HANG, fromDate, toDate }),
         getNhomHhOptions(),
         getPhanLoaiOptions(),
         getDongHangOptions(),
         getGoiGiaOptions(),
         getHangHoaOptionsForGiaBan(),
         getUniqueFiltersInGiaBan(),
+        getGiaNhapMapByHangHoa(),
     ]);
 
     const data = result.success ? (result.data as any[]) : [];
@@ -43,8 +48,10 @@ export default async function GiaBanPage({ searchParams }: { searchParams: any }
                 goiGiaOptions={goiGiaOptions}
                 hhOptions={hhOptions}
                 filterNhomHhOptions={uniqueFilters.nhomHhOptions}
-                filterGoiGiaOptions={uniqueFilters.goiGiaOptions}
+                filterPhanLoaiOptions={uniqueFilters.phanLoaiOptions}
+                filterDongHangOptions={uniqueFilters.dongHangOptions}
                 pagination={pagination}
+                giaNhapMap={giaNhapMap}
             />
 
             {pagination.total > 0 && (

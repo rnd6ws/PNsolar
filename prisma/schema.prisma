@@ -360,6 +360,7 @@ model GOI_GIA {
   GOI_GIA       String
   SL_MIN        Int?
   SL_MAX        Int?
+  NHOM_KH       String? // Nhóm khách hàng (NHOM_KH.NHOM)
 
   GIA_BANS GIA_BAN[] // Relation ngược từ GIA_BAN
 
@@ -505,6 +506,7 @@ model GIA_BAN {
   HANG_HOA DMHH?  @relation(fields: [MA_HH], references: [MA_HH])
 
   // --- Các cột dữ liệu ---
+  HE_SO   Float? // Hệ số nhân: Giá nhập × Hệ số = Đơn giá
   DON_GIA Float
   GHI_CHU String?
 

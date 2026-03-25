@@ -1,7 +1,8 @@
 'use client';
-import { useState, useMemo, startTransition } from 'react';
+import { useState, useMemo, startTransition, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, DollarSign, Search, AlertTriangle, Package, Hash, ListPlus, X, Settings2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, DollarSign, Search, AlertTriangle, Package, Hash, ListPlus, X, Settings2, ArrowUpDown, ArrowUp, ArrowDown, Grid, Tag, ChevronDown, ChevronRight } from 'lucide-react';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import { createGoiGiaAction, updateGoiGiaAction, deleteGoiGiaAction, createBulkGoiGiaAction } from '@/features/goi-gia/action';
@@ -22,6 +23,7 @@ interface GoiGia {
     GOI_GIA: string;
     SL_MIN?: number | null;
     SL_MAX?: number | null;
+    NHOM_KH?: string | null;
 }
 
 interface DongHangOption {
@@ -30,12 +32,18 @@ interface DongHangOption {
     TEN_DONG_HANG: string;
 }
 
+interface NhomKHOption {
+    ID: string;
+    NHOM: string;
+}
+
 interface FormData {
     HIEU_LUC: boolean;
     MA_DONG_HANG: string;
     GOI_GIA: string;
     SL_MIN: number | '';
     SL_MAX: number | '';
+    NHOM_KH: string;
 }
 
 const emptyForm: FormData = {
@@ -44,6 +52,7 @@ const emptyForm: FormData = {
     GOI_GIA: '',
     SL_MIN: '',
     SL_MAX: '',
+    NHOM_KH: '',
 };
 
 // ===== FORMAT HELPERS =====
@@ -53,13 +62,14 @@ function formatHieuLuc(value: boolean | undefined) {
 
 // ===== GOI GIA MODAL =====
 function GoiGiaModal({
-    isOpen, onClose, record, onSuccess, dongHangOptions
+    isOpen, onClose, record, onSuccess, dongHangOptions, nhomKHOptions
 }: {
     isOpen: boolean;
     onClose: () => void;
     record?: GoiGia | null;
     onSuccess: () => void;
     dongHangOptions: DongHangOption[];
+    nhomKHOptions: NhomKHOption[];
 }) {
     const [form, setForm] = useState<FormData>(emptyForm);
     const [loading, setLoading] = useState(false);
@@ -77,6 +87,7 @@ function GoiGiaModal({
                     GOI_GIA: record.GOI_GIA || '',
                     SL_MIN: record.SL_MIN ?? '',
                     SL_MAX: record.SL_MAX ?? '',
+                    NHOM_KH: record.NHOM_KH || '',
                 });
             } else {
                 setForm(emptyForm);
@@ -101,6 +112,7 @@ function GoiGiaModal({
                 GOI_GIA: form.GOI_GIA,
                 SL_MIN: form.SL_MIN === '' ? null : Number(form.SL_MIN),
                 SL_MAX: form.SL_MAX === '' ? null : Number(form.SL_MAX),
+                NHOM_KH: form.NHOM_KH || null,
             };
             const result = record
                 ? await updateGoiGiaAction(record.ID, { ...payload, ID_GOI_GIA: record.ID_GOI_GIA })
@@ -253,6 +265,21 @@ function GoiGiaModal({
                         />
                     </div>
                 </div>
+
+                {/* Nhóm khách hàng */}
+                <div>
+                    <label className={labelClass}>Nhóm khách hàng</label>
+                    <select
+                        className={selectClass}
+                        value={form.NHOM_KH}
+                        onChange={e => handleChange('NHOM_KH', e.target.value)}
+                    >
+                        <option value="">-- Tất cả nhóm --</option>
+                        {nhomKHOptions.map(n => (
+                            <option key={n.ID} value={n.NHOM}>{n.NHOM}</option>
+                        ))}
+                    </select>
+                </div>
             </form>
         </Modal>
     );
@@ -266,6 +293,7 @@ interface BulkRow {
     GOI_GIA: string;
     SL_MIN: number | '';
     SL_MAX: number | '';
+    NHOM_KH: string;
 }
 
 const emptyBulkRow: BulkRow = {
@@ -273,15 +301,17 @@ const emptyBulkRow: BulkRow = {
     GOI_GIA: '',
     SL_MIN: '',
     SL_MAX: '',
+    NHOM_KH: '',
 };
 
 function BulkAddModal({
-    isOpen, onClose, onSuccess, dongHangOptions
+    isOpen, onClose, onSuccess, dongHangOptions, nhomKHOptions
 }: {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
     dongHangOptions: DongHangOption[];
+    nhomKHOptions: NhomKHOption[];
 }) {
     const [rows, setRows] = useState<BulkRow[]>([{ ...emptyBulkRow }]);
     const [loading, setLoading] = useState(false);
@@ -322,6 +352,7 @@ function BulkAddModal({
                     GOI_GIA: r.GOI_GIA,
                     SL_MIN: r.SL_MIN === '' ? null : Number(r.SL_MIN),
                     SL_MAX: r.SL_MAX === '' ? null : Number(r.SL_MAX),
+                    NHOM_KH: r.NHOM_KH || null,
                 })),
             };
 
@@ -417,9 +448,10 @@ function BulkAddModal({
                     </div>
 
                     {/* Table header */}
-                    <div className="hidden md:grid md:grid-cols-[1fr_1fr_80px_80px_40px] gap-2 mb-2 px-1">
+                    <div className="hidden md:grid md:grid-cols-[1fr_0.8fr_0.7fr_80px_80px_40px] gap-2 mb-2 px-1">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dòng hàng <span className="text-destructive">*</span></span>
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gói giá <span className="text-destructive">*</span></span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Nhóm KH</span>
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SL Min</span>
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SL Max</span>
                         <span></span>
@@ -430,7 +462,7 @@ function BulkAddModal({
                         {rows.map((row, idx) => (
                             <div
                                 key={idx}
-                                className="grid grid-cols-1 md:grid-cols-[1fr_1fr_80px_80px_40px] gap-2 p-3 md:p-1 bg-muted/20 md:bg-transparent rounded-lg md:rounded-none border md:border-0 border-border"
+                                className="grid grid-cols-1 md:grid-cols-[1fr_0.8fr_0.7fr_80px_80px_40px] gap-2 p-3 md:p-1 bg-muted/20 md:bg-transparent rounded-lg md:rounded-none border md:border-0 border-border"
                             >
                                 {/* Dòng hàng */}
                                 <div>
@@ -457,6 +489,20 @@ function BulkAddModal({
                                         onChange={e => updateRow(idx, 'GOI_GIA', e.target.value)}
                                         required
                                     />
+                                </div>
+                                {/* Nhóm KH */}
+                                <div>
+                                    <label className="md:hidden text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Nhóm KH</label>
+                                    <select
+                                        className={selectClass}
+                                        value={row.NHOM_KH}
+                                        onChange={e => updateRow(idx, 'NHOM_KH', e.target.value)}
+                                    >
+                                        <option value="">-- Tất cả --</option>
+                                        {nhomKHOptions.map(n => (
+                                            <option key={n.ID} value={n.NHOM}>{n.NHOM}</option>
+                                        ))}
+                                    </select>
                                 </div>
                                 {/* SL Min */}
                                 <div>
@@ -515,7 +561,7 @@ function BulkAddModal({
 
 // ===== MAIN CLIENT COMPONENT =====
 export default function GoiGiaClient({
-    initialData, initialPagination, currentPage, pageSize = 10, uniqueDongHang, dongHangOptions
+    initialData, initialPagination, currentPage, pageSize = 10, uniqueDongHang, dongHangOptions, nhomKHOptions
 }: {
     initialData: GoiGia[];
     initialPagination: any;
@@ -523,6 +569,7 @@ export default function GoiGiaClient({
     pageSize?: number;
     uniqueDongHang: { value: string; label: string }[];
     dongHangOptions: DongHangOption[];
+    nhomKHOptions: NhomKHOption[];
 }) {
     const router = useRouter();
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -531,6 +578,8 @@ export default function GoiGiaClient({
     const [deleteRecord, setDeleteRecord] = useState<GoiGia | null>(null);
     const [showFilters, setShowFilters] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+    const [groupBy, setGroupBy] = useState<'none' | 'MA_DONG_HANG'>('none');
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
     const sortedData = useMemo(() => {
         if (!sortConfig) return initialData;
@@ -549,6 +598,29 @@ export default function GoiGiaClient({
             return 0;
         });
     }, [initialData, sortConfig]);
+
+    // Grouping logic
+    const groupedData = useMemo(() => {
+        if (!groupBy || groupBy === 'none') {
+            return [{ label: '', items: sortedData, total: sortedData.length }];
+        }
+        const groups: { label: string; items: GoiGia[] }[] = [];
+        const labelMap = new Map<string, number>();
+        sortedData.forEach(item => {
+            const label = item.DONG_HANG_REL?.TEN_DONG_HANG || item.MA_DONG_HANG || 'Chưa có dòng hàng';
+            if (labelMap.has(label)) {
+                groups[labelMap.get(label)!].items.push(item);
+            } else {
+                labelMap.set(label, groups.length);
+                groups.push({ label, items: [item] });
+            }
+        });
+        return groups.map(g => ({ ...g, total: g.items.length }));
+    }, [sortedData, groupBy]);
+
+    const toggleGroup = (key: string) => {
+        setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+    };
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -649,6 +721,35 @@ export default function GoiGiaClient({
                                     options={uniqueDongHang}
                                     placeholder="Dòng hàng"
                                 />
+
+                                {/* Group by */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            className={cn(
+                                                "px-3 py-2 border rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2",
+                                                groupBy !== 'none' ? "bg-primary/5 text-primary border-primary/30 hover:bg-primary/10" : "bg-background hover:bg-muted text-foreground border-border"
+                                            )}
+                                        >
+                                            <Grid className="w-4 h-4" />
+                                            <span>{groupBy === 'MA_DONG_HANG' ? 'Dòng hàng' : 'Nhóm'}</span>
+                                            <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48 rounded-xl font-medium">
+                                        <DropdownMenuItem onClick={() => setGroupBy('MA_DONG_HANG')} className={cn('py-2.5', groupBy === 'MA_DONG_HANG' && 'bg-primary/10 text-primary')}>
+                                            <Tag className="w-4 h-4 mr-2" /> Dòng hàng
+                                        </DropdownMenuItem>
+                                        {groupBy !== 'none' && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => setGroupBy('none')} className="py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                    <X className="w-4 h-4 mr-2" /> Không nhóm
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
 
@@ -675,13 +776,32 @@ export default function GoiGiaClient({
                                     <th onClick={() => handleSort('HIEU_LUC')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Hiệu lực <SortIcon columnKey="HIEU_LUC" /></th>
                                     <th onClick={() => handleSort('MA_DONG_HANG')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Mã dòng hàng <SortIcon columnKey="MA_DONG_HANG" /></th>
                                     <th onClick={() => handleSort('GOI_GIA')} className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Gói giá <SortIcon columnKey="GOI_GIA" /></th>
+                                    <th onClick={() => handleSort('NHOM_KH')} className="h-11 px-4 text-left align-middle font-bold text-muted-foreground text-[11px] tracking-widest cursor-pointer group hover:text-foreground">Nhóm KH <SortIcon columnKey="NHOM_KH" /></th>
                                     <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">SL Min</th>
                                     <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">SL Max</th>
                                     <th className="h-11 px-4 text-right align-middle font-bold text-muted-foreground text-[11px] tracking-widest">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {sortedData.map((row: GoiGia) => (
+                                {groupedData.map((group, gIdx) => {
+                                    const isExpanded = expandedGroups[group.label] !== false;
+                                    return (
+                                        <Fragment key={`g-${gIdx}`}>
+                                            {group.label && (
+                                                <tr
+                                                    className="bg-primary/5 border-b border-border cursor-pointer hover:bg-primary/10 transition-colors"
+                                                    onClick={() => toggleGroup(group.label)}
+                                                >
+                                                    <td colSpan={100} className="px-4 py-2.5">
+                                                        <div className="flex items-center gap-2">
+                                                            {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                                            <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                                            <span className="text-xs font-normal text-muted-foreground">({group.total} gói giá)</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            {(!group.label || isExpanded) && group.items.map((row: GoiGia) => (
                                     <tr
                                         key={row.ID}
                                         className="border-b border-border hover:bg-muted/30 transition-all group"
@@ -713,6 +833,17 @@ export default function GoiGiaClient({
                                         {/* Gói giá */}
                                         <td className="p-4 align-middle text-right">
                                             <span className="text-sm font-bold text-emerald-600">{row.GOI_GIA}</span>
+                                        </td>
+
+                                        {/* Nhóm KH */}
+                                        <td className="p-4 align-middle">
+                                            {row.NHOM_KH ? (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                                                    {row.NHOM_KH}
+                                                </span>
+                                            ) : (
+                                                <span className="text-sm text-muted-foreground">—</span>
+                                            )}
                                         </td>
 
                                         {/* SL Min */}
@@ -750,6 +881,9 @@ export default function GoiGiaClient({
                                         </td>
                                     </tr>
                                 ))}
+                                        </Fragment>
+                                    );
+                                })}
                                 {initialData.length === 0 && (
                                     <tr>
                                         <td colSpan={7} className="py-20 text-center text-muted-foreground">
@@ -780,23 +914,37 @@ export default function GoiGiaClient({
 
                     {/* Mobile View (Cards) */}
                     <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-                        {sortedData.map((row: GoiGia) => (
-                            <div key={row.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-3">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-11 h-11 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-sm shrink-0">
-                                            <DollarSign className="w-5 h-5 text-amber-600" />
+                        {groupedData.map((group, gIdx) => {
+                            const isExpanded = expandedGroups[group.label] !== false;
+                            return (
+                                <Fragment key={`mg-${gIdx}`}>
+                                    {group.label && (
+                                        <div
+                                            className="bg-primary/5 border border-border rounded-xl px-4 py-3 cursor-pointer hover:bg-primary/10 transition-colors flex items-center gap-2"
+                                            onClick={() => toggleGroup(group.label)}
+                                        >
+                                            {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                            <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                            <span className="text-xs text-muted-foreground">({group.total})</span>
                                         </div>
-                                        <div className="min-w-0">
-                                            <p className="font-medium text-foreground text-base leading-tight font-mono">{row.ID_GOI_GIA}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">{row.DONG_HANG_REL?.TEN_DONG_HANG || row.MA_DONG_HANG}</p>
-                                        </div>
+                                    )}
+                                    {(!group.label || isExpanded) && group.items.map((row: GoiGia) => (
+                            <div key={row.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-sm shrink-0 mt-0.5">
+                                        <DollarSign className="w-4 h-4 text-amber-600" />
                                     </div>
-                                    <span className="text-sm font-bold text-emerald-600 shrink-0">{row.GOI_GIA}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs text-muted-foreground truncate">{row.DONG_HANG_REL?.TEN_DONG_HANG || row.MA_DONG_HANG}</p>
+                                        <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                                            {row.GOI_GIA}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="text-xs text-muted-foreground space-y-0.5">
                                     <div>Hiệu lực: <span className={row.HIEU_LUC !== false ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}>{row.HIEU_LUC !== false ? 'Có' : 'Không'}</span></div>
                                     <div>SL: <span className="text-foreground">{row.SL_MIN ?? '—'}</span> - <span className="text-foreground">{row.SL_MAX ?? '—'}</span></div>
+                                    {row.NHOM_KH && <div>Nhóm KH: <span className="text-blue-600 font-semibold">{row.NHOM_KH}</span></div>}
                                 </div>
                                 <div className="flex items-center gap-2 pt-1 border-t">
                                     <PermissionGuard moduleKey="goi-gia" level="edit">
@@ -812,6 +960,9 @@ export default function GoiGiaClient({
                                 </div>
                             </div>
                         ))}
+                                </Fragment>
+                            );
+                        })}
                         {initialData.length === 0 && (
                             <div className="text-center py-12 text-muted-foreground">
                                 <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -839,6 +990,7 @@ export default function GoiGiaClient({
                     onClose={() => setIsCreateOpen(false)}
                     onSuccess={handleSuccess}
                     dongHangOptions={dongHangOptions}
+                    nhomKHOptions={nhomKHOptions}
                 />
                 <GoiGiaModal
                     isOpen={!!editRecord}
@@ -846,6 +998,7 @@ export default function GoiGiaClient({
                     record={editRecord}
                     onSuccess={handleSuccess}
                     dongHangOptions={dongHangOptions}
+                    nhomKHOptions={nhomKHOptions}
                 />
                 <DeleteConfirmDialog
                     isOpen={!!deleteRecord}
@@ -871,6 +1024,7 @@ export default function GoiGiaClient({
                     onClose={() => setIsBulkOpen(false)}
                     onSuccess={handleSuccess}
                     dongHangOptions={dongHangOptions}
+                    nhomKHOptions={nhomKHOptions}
                 />
             </div>
         </PermissionGuard>

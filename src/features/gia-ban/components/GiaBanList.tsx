@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import {
     Edit2, Trash2, ArrowUpDown, ArrowUp, ArrowDown,
-    MoreHorizontal, Package, DollarSign
+    MoreHorizontal, Package, DollarSign, ChevronDown, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteGiaBan, updateGiaBan } from "../action";
@@ -16,7 +16,7 @@ import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import type { ColumnKey } from "./ColumnToggleButton";
 
 interface NhomHhOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
-interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; }
+interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; NHOM: string | null; }
 interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
 interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
 interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; MA_PHAN_LOAI: string | null; MA_DONG_HANG: string | null; PHAN_LOAI_REL?: { TEN_PHAN_LOAI: string } | null; DONG_HANG_REL?: { TEN_DONG_HANG: string } | null; }
@@ -29,6 +29,8 @@ interface Props {
     dongHangOptions: DongHangOption[];
     goiGiaOptions: GoiGiaOption[];
     hhOptions: HHOption[];
+    giaNhapMap?: Record<string, number>;
+    groupBy?: string;
 }
 
 function formatDate(val: any) {
@@ -62,6 +64,7 @@ function GiaBanForm({
     const [goiGia, setGoiGia] = useState(defaultValues?.MA_GOI_GIA || "");
     const [maHH, setMaHH] = useState(defaultValues?.MA_HH || "");
     const [ghiChu, setGhiChu] = useState(defaultValues?.GHI_CHU || "");
+    const [heSoValue, setHeSoValue] = useState<number | ''>(defaultValues?.HE_SO ?? '');
     const initDonGia = defaultValues?.DON_GIA ?? 0;
     const [donGiaValue, setDonGiaValue] = useState(initDonGia);
     const [donGiaDisplay, setDonGiaDisplay] = useState(initDonGia > 0 ? new Intl.NumberFormat('vi-VN').format(initDonGia) : '');
@@ -91,6 +94,7 @@ function GiaBanForm({
             MA_GOI_GIA: goiGia,
             MA_HH: maHH,
             DON_GIA: donGiaValue,
+            HE_SO: heSoValue !== '' ? Number(heSoValue) : undefined,
             GHI_CHU: ghiChu || undefined,
         });
     };
@@ -131,7 +135,7 @@ function GiaBanForm({
                     <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
                     <select
                         value={phanLoai}
-                        onChange={e => { setPhanLoai(e.target.value); setDongHang(""); setGoiGia(""); setMaHH(""); }}
+                        onChange={e => { const val = e.target.value; setPhanLoai(val); setDongHang(""); setGoiGia(""); setMaHH(""); if (val) { const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === val); if (pl?.NHOM) { const nhom = nhomHhOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM); if (nhom) setNhomHh(nhom.MA_NHOM); } } }}
                         required
                         className="input-modern"
                     >
@@ -149,7 +153,7 @@ function GiaBanForm({
                     <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
                     <select
                         value={dongHang}
-                        onChange={e => { setDongHang(e.target.value); setGoiGia(""); setMaHH(""); }}
+                        onChange={e => { const val = e.target.value; setDongHang(val); setGoiGia(""); setMaHH(""); if (val) { const dh = dongHangOptions.find(d => d.MA_DONG_HANG === val); if (dh?.MA_PHAN_LOAI) { setPhanLoai(dh.MA_PHAN_LOAI); const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === dh.MA_PHAN_LOAI); if (pl?.NHOM) { const nhom = nhomHhOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM); if (nhom) setNhomHh(nhom.MA_NHOM); } } } }}
                         required
                         className="input-modern"
                     >
@@ -175,40 +179,51 @@ function GiaBanForm({
                 </div>
             </div>
 
-            {/* Mã HH + Tên HH */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className={labelClass}>Hàng hóa <span className="text-destructive">*</span></label>
-                    <select
-                        value={maHH}
-                        onChange={e => setMaHH(e.target.value)}
-                        required
-                        className="input-modern"
-                    >
-                        <option value="">-- Chọn HH --</option>
-                        {filteredHH.map(h => (
-                            <option key={h.ID} value={h.MA_HH}>{h.MA_HH} - {h.TEN_HH}</option>
-                        ))}
-                    </select>
-                </div>
-                <div className="space-y-1.5">
-                    <label className={labelClass}>Tên hàng hóa</label>
-                    <input className="input-modern bg-muted/30" readOnly value={selectedHH?.TEN_HH || "Theo mã HH"} />
-                </div>
-            </div>
-
-            {/* Đơn giá */}
+            {/* Hàng hóa - full width, bỏ ô tên thừa */}
             <div className="space-y-1.5">
-                <label className={labelClass}>Đơn giá (VNĐ) <span className="text-destructive">*</span></label>
-                <input
-                    type="text"
-                    inputMode="numeric"
+                <label className={labelClass}>Hàng hóa <span className="text-destructive">*</span></label>
+                <select
+                    value={maHH}
+                    onChange={e => setMaHH(e.target.value)}
                     required
                     className="input-modern"
-                    placeholder="VD: 1,234,500"
-                    value={donGiaDisplay}
-                    onChange={handleDonGiaChange}
-                />
+                >
+                    <option value="">-- Chọn HH --</option>
+                    {filteredHH.map(h => (
+                        <option key={h.ID} value={h.MA_HH}>{h.MA_HH} — {h.TEN_HH}</option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Hệ số + Đơn giá */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className={labelClass}>Hệ số (× Giá nhập)</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="input-modern"
+                        placeholder="VD: 1.3"
+                        value={heSoValue}
+                        onChange={e => {
+                            const v = e.target.value;
+                            setHeSoValue(v === '' ? '' : parseFloat(v) || '');
+                        }}
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <label className={labelClass}>Đơn giá (VNĐ) <span className="text-destructive">*</span></label>
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        required
+                        className="input-modern"
+                        placeholder="VD: 1,234,500"
+                        value={donGiaDisplay}
+                        onChange={handleDonGiaChange}
+                    />
+                </div>
             </div>
 
             {/* Ghi chú */}
@@ -234,14 +249,19 @@ function GiaBanForm({
 }
 
 // ─── Component chính ──────────────────────────────────────────
-export default function GiaBanList({ data, visibleColumns, nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions }: Props) {
+export default function GiaBanList({ data, visibleColumns, nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions, giaNhapMap = {}, groupBy = 'none' }: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
-    const cols = visibleColumns ?? ["nhomHh", "phanLoai", "dongHang", "goiGia", "hangHoa", "donGia", "ghiChu"] as ColumnKey[];
+    const cols = visibleColumns ?? ["nhomHh", "phanLoai", "dongHang", "goiGia", "hangHoa", "heSo", "donGia", "ghiChu"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
+
+    const toggleGroup = (key: string) => {
+        setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+    };
 
     const sortedData = useMemo(() => {
         if (!sortConfig) return data;
@@ -262,6 +282,36 @@ export default function GiaBanList({ data, visibleColumns, nhomHhOptions, phanLo
             return 0;
         });
     }, [data, sortConfig]);
+
+    // Grouping logic
+    const groupedData = useMemo(() => {
+        if (!groupBy || groupBy === 'none') {
+            return [{ label: '', items: sortedData, total: sortedData.length }];
+        }
+        const groups: { label: string; items: any[] }[] = [];
+        const labelMap = new Map<string, number>();
+
+        sortedData.forEach(item => {
+            let label = 'Chưa phân loại';
+            if (groupBy === 'MA_NHOM_HH') {
+                label = item.NHOM?.TEN_NHOM || item.MA_NHOM_HH || 'Chưa có nhóm';
+            } else if (groupBy === 'MA_PHAN_LOAI') {
+                label = item.PHAN_LOAI_REL?.TEN_PHAN_LOAI || item.MA_PHAN_LOAI || 'Chưa phân loại';
+            } else if (groupBy === 'MA_DONG_HANG') {
+                label = item.DONG_HANG_REL?.TEN_DONG_HANG || item.MA_DONG_HANG || 'Chưa có dòng hàng';
+            } else if (groupBy === 'MA_HH') {
+                label = item.HANG_HOA?.TEN_HH || item.MA_HH || 'Chưa có hàng hóa';
+            }
+            if (labelMap.has(label)) {
+                groups[labelMap.get(label)!].items.push(item);
+            } else {
+                labelMap.set(label, groups.length);
+                groups.push({ label, items: [item] });
+            }
+        });
+
+        return groups.map(g => ({ ...g, total: g.items.length }));
+    }, [sortedData, groupBy]);
 
     const handleSort = (key: string) => {
         let direction: "asc" | "desc" = "asc";
@@ -329,6 +379,11 @@ export default function GiaBanList({ data, visibleColumns, nhomHhOptions, phanLo
                                     Hàng hóa <SortIcon columnKey="MA_HH" />
                                 </th>
                             )}
+                            {show("heSo") && (
+                                <th className={`${thClass} text-right`}>
+                                    Hệ số
+                                </th>
+                            )}
                             {show("donGia") && (
                                 <th onClick={() => handleSort("DON_GIA")} className={`${thSortClass} text-right`}>
                                     Đơn giá <SortIcon columnKey="DON_GIA" />
@@ -341,7 +396,25 @@ export default function GiaBanList({ data, visibleColumns, nhomHhOptions, phanLo
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {sortedData.map((item: any) => (
+                        {groupedData.map((group, gIdx) => {
+                            const isExpanded = expandedGroups[group.label] !== false;
+                            return (
+                                <Fragment key={gIdx}>
+                                    {group.label && (
+                                        <tr
+                                            className="bg-primary/5 border-b border-border cursor-pointer hover:bg-primary/10 transition-colors"
+                                            onClick={() => toggleGroup(group.label)}
+                                        >
+                                            <td colSpan={100} className="px-4 py-2.5">
+                                                <div className="flex items-center gap-2">
+                                                    {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                                    <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                                    <span className="text-xs font-normal text-muted-foreground">({group.total} dòng)</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {(!group.label || isExpanded) && group.items.map((item: any) => (
                             <tr key={item.ID} className="hover:bg-muted/30 transition-all">
                                 <td className="px-4 py-3 align-middle text-xs text-muted-foreground font-medium whitespace-nowrap">
                                     {formatDate(item.NGAY_HIEU_LUC)}
@@ -369,11 +442,20 @@ export default function GiaBanList({ data, visibleColumns, nhomHhOptions, phanLo
                                 {show("hangHoa") && (
                                     <td className="px-4 py-3 align-middle">
                                         <div>
-                                            <span className="font-mono text-xs font-semibold text-primary">{item.MA_HH}</span>
-                                            <p className="text-[11px] text-muted-foreground truncate max-w-[200px]">
-                                                {item.HANG_HOA?.TEN_HH || ""}
-                                            </p>
+                                            <div className="font-semibold text-xs text-foreground">{item.HANG_HOA?.TEN_HH || item.MA_HH}</div>
+                                            <div className="text-[11px] text-muted-foreground truncate max-w-[200px] font-mono">
+                                                {item.MA_HH}
+                                            </div>
                                         </div>
+                                    </td>
+                                )}
+                                {show("heSo") && (
+                                    <td className="px-4 py-3 align-middle text-right">
+                                        {item.HE_SO ? (
+                                            <span className="text-xs font-medium text-foreground">{item.HE_SO}</span>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">—</span>
+                                        )}
                                     </td>
                                 )}
                                 {show("donGia") && (
@@ -410,6 +492,9 @@ export default function GiaBanList({ data, visibleColumns, nhomHhOptions, phanLo
                                 </td>
                             </tr>
                         ))}
+                        </Fragment>
+                        );
+                        })}
                         {data.length === 0 && (
                             <tr>
                                 <td colSpan={12} className="px-6 py-16 text-center text-muted-foreground italic">

@@ -15,12 +15,14 @@ export default function PhanLoaiHHList({
     visibleColumns,
     goiGiaMap = {},
     phanLoaiList = [],
+    groupBy = 'none',
 }: {
     data: any[],
     nhomHHs: { ID: string; MA_NHOM: string; TEN_NHOM: string; }[],
     visibleColumns?: ColumnKey[],
     goiGiaMap?: Record<string, { count: number; latestDate: string | null; items: any[] }>,
     phanLoaiList?: { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string }[],
+    groupBy?: string,
 }) {
     const [editMode, setEditMode] = useState<any>(null);
     const [dongHHModal, setDongHHModal] = useState<{ mode: 'ADD' | 'EDIT', phanLoaiId: string, phanLoaiMa: string, itemData?: any, dvtNhom?: string } | null>(null);
@@ -31,6 +33,7 @@ export default function PhanLoaiHHList({
     const [deletePL, setDeletePL] = useState<any>(null);
     const [deleteDH, setDeleteDH] = useState<any>(null);
     const [selectedBulkPhanLoai, setSelectedBulkPhanLoai] = useState<string>('');
+    const [expandedGroupHeaders, setExpandedGroupHeaders] = useState<Record<string, boolean>>({});
 
     // Quick add gói giá
     const [showAddGoiGia, setShowAddGoiGia] = useState(false);
@@ -124,6 +127,31 @@ export default function PhanLoaiHHList({
             return 0;
         });
     }, [data, sortConfig]);
+
+    // Grouping logic
+    const groupedData = useMemo(() => {
+        if (!groupBy || groupBy === 'none') {
+            return [{ label: '', items: sortedData, total: sortedData.length }];
+        }
+        const groups: { label: string; items: any[] }[] = [];
+        const labelMap = new Map<string, number>();
+
+        sortedData.forEach(item => {
+            const label = item.NHOM || 'Chưa có nhóm';
+            if (labelMap.has(label)) {
+                groups[labelMap.get(label)!].items.push(item);
+            } else {
+                labelMap.set(label, groups.length);
+                groups.push({ label, items: [item] });
+            }
+        });
+
+        return groups.map(g => ({ ...g, total: g.items.length }));
+    }, [sortedData, groupBy]);
+
+    const toggleGroupHeader = (key: string) => {
+        setExpandedGroupHeaders(prev => ({ ...prev, [key]: !prev[key] }));
+    };
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -242,8 +270,26 @@ export default function PhanLoaiHHList({
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {sortedData.map((item) => (
-                            <React.Fragment key={item.ID}>
+                        {groupedData.map((group, gIdx) => {
+                            const isGroupExpanded = expandedGroupHeaders[group.label] !== false;
+                            return (
+                                <React.Fragment key={`group-${gIdx}`}>
+                                    {group.label && (
+                                        <tr
+                                            className="bg-primary/5 border-b border-border cursor-pointer hover:bg-primary/10 transition-colors"
+                                            onClick={() => toggleGroupHeader(group.label)}
+                                        >
+                                            <td colSpan={100} className="px-4 py-2.5">
+                                                <div className="flex items-center gap-2">
+                                                    {isGroupExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                                    <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                                    <span className="text-xs font-normal text-muted-foreground">({group.total} phân loại)</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {(!group.label || isGroupExpanded) && group.items.map((item) => (
+                                <React.Fragment key={item.ID}>
                                 <tr className="border-b border-border hover:bg-muted/30 transition-all data-[state=selected]:bg-muted group">
                                     <td className="p-3 align-middle text-center w-10">
                                         <button
@@ -407,6 +453,9 @@ export default function PhanLoaiHHList({
                                 )}
                             </React.Fragment>
                         ))}
+                                </React.Fragment>
+                            );
+                        })}
                         {data.length === 0 && (
                             <tr>
                                 <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic text-sm">
@@ -420,7 +469,21 @@ export default function PhanLoaiHHList({
 
             {/* Mobile View */}
             <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-                {data.map((item) => (
+                {groupedData.map((group, gIdx) => {
+                    const isGroupExpanded = expandedGroupHeaders[group.label] !== false;
+                    return (
+                        <React.Fragment key={`mgroup-${gIdx}`}>
+                            {group.label && (
+                                <div
+                                    className="bg-primary/5 border border-border rounded-xl px-4 py-3 cursor-pointer hover:bg-primary/10 transition-colors flex items-center gap-2"
+                                    onClick={() => toggleGroupHeader(group.label)}
+                                >
+                                    {isGroupExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                    <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                    <span className="text-xs text-muted-foreground">({group.total})</span>
+                                </div>
+                            )}
+                            {(!group.label || isGroupExpanded) && group.items.map((item) => (
                     <div key={item.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-4">
                         <div className="flex justify-between items-start">
                             <div>
@@ -529,6 +592,9 @@ export default function PhanLoaiHHList({
                         )}
                     </div>
                 ))}
+                        </React.Fragment>
+                    );
+                })}
                 {data.length === 0 && (
                     <div className="p-8 text-center text-muted-foreground italic text-sm">Chưa có phân loại nào.</div>
                 )}
