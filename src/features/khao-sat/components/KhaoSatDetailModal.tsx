@@ -61,7 +61,7 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
             footer={
                 <>
                     <span className="text-xs text-muted-foreground mr-auto">
-                        Người QS: <span className="font-semibold text-foreground">{nguoiKhaoSatName || item.NGUOI_KHAO_SAT_REL?.HO_TEN || "—"}</span>
+                        Người KS: <span className="font-semibold text-foreground">{nguoiKhaoSatName || item.NGUOI_KHAO_SAT_REL?.HO_TEN || "—"}</span>
                     </span>
                     <button onClick={onClose} className="btn-premium-secondary">Đóng</button>
                 </>

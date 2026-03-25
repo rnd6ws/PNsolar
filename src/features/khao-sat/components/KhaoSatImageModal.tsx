@@ -25,7 +25,13 @@ interface UploadItem {
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    item: { ID: string; MA_KHAO_SAT: string; HINH_ANH: ImageItem[] } | null;
+    item: {
+        ID: string;
+        MA_KHAO_SAT: string;
+        HINH_ANH: ImageItem[];
+        LOAI_CONG_TRINH?: string;
+        KHTN_REL?: { TEN_KH: string } | null;
+    } | null;
 }
 
 export default function KhaoSatImageModal({ isOpen, onClose, item }: Props) {
@@ -190,7 +196,15 @@ export default function KhaoSatImageModal({ isOpen, onClose, item }: Props) {
     );
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`Ảnh khảo sát ${item.MA_KHAO_SAT}`} size="lg" footer={footer}>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={`Ảnh khảo sát`}
+            subtitle={`${item.LOAI_CONG_TRINH || ''}${item.KHTN_REL?.TEN_KH ? ` — ${item.KHTN_REL.TEN_KH}` : ''}`}
+            icon={ImageIcon}
+            size="lg"
+            footer={footer}
+        >
             <div className="space-y-4">
 
                 {/* Upload Zone */}
