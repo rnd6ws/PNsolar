@@ -11,6 +11,8 @@ interface Props {
         MA_KHAO_SAT: string;
         NGAY_KHAO_SAT: Date;
         LOAI_CONG_TRINH: string;
+        HANG_MUC: string | null;
+        CONG_SUAT: string | null;
         DIA_CHI_CONG_TRINH: string | null;
         DIA_CHI: string | null;
         NGUOI_KHAO_SAT_REL: { HO_TEN: string; MA_NV: string } | null;
@@ -96,6 +98,8 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                             <InfoCard icon={User} label="Khách hàng" value={item.KHTN_REL?.TEN_KH || "—"} className="md:col-span-2 lg:col-span-3" />
                             <InfoCard icon={MapPin} label="Địa chỉ" value={item.DIA_CHI || "—"} className="md:col-span-2 lg:col-span-3" />
                             <InfoCard icon={MapPin} label="Địa điểm lắp đặt" value={item.DIA_CHI_CONG_TRINH || "—"} className="md:col-span-2 lg:col-span-3" />
+                            <InfoCard icon={Building2} label="Hạng mục" value={item.HANG_MUC || "—"} className="md:col-span-2 lg:col-span-2" />
+                            <InfoCard icon={Building2} label="Công suất" value={item.CONG_SUAT || "—"} className="md:col-span-2 lg:col-span-1" />
                         </div>
 
                         {/* Chi tiết */}

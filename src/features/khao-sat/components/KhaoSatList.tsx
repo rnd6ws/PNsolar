@@ -27,6 +27,8 @@ type KhaoSatItem = {
     MA_KHAO_SAT: string;
     NGAY_KHAO_SAT: Date;
     LOAI_CONG_TRINH: string;
+    HANG_MUC: string | null;
+    CONG_SUAT: string | null;
     DIA_CHI_CONG_TRINH: string | null;
     DIA_CHI: string | null;
     NGUOI_KHAO_SAT: string | null;

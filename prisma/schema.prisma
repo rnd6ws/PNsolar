@@ -728,6 +728,8 @@ model KHAO_SAT {
   ID            String   @id @default(auto()) @map("_id") @db.ObjectId
   MA_KHAO_SAT   String   @unique
   NGAY_KHAO_SAT DateTime @default(now())
+  HANG_MUC      String? //Hạng mục
+  CONG_SUAT     String? //Công suất
 
   NGUOI_KHAO_SAT     String?
   NGUOI_KHAO_SAT_REL DSNV?   @relation("NGUOI_KHAO_SAT", fields: [NGUOI_KHAO_SAT], references: [MA_NV])

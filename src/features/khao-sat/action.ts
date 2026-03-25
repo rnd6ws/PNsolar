@@ -164,6 +164,8 @@ export async function createKhaoSat(data: {
     DIA_CHI?: string;
     NGUOI_LIEN_HE?: string;
     DIA_CHI_CONG_TRINH?: string;
+    HANG_MUC?: string;
+    CONG_SUAT?: string;
     LOAI_CONG_TRINH: string;
     NGAY_KHAO_SAT?: string;
 }) {
@@ -182,6 +184,8 @@ export async function createKhaoSat(data: {
                 DIA_CHI: data.DIA_CHI || null,
                 NGUOI_LIEN_HE: data.NGUOI_LIEN_HE || null,
                 DIA_CHI_CONG_TRINH: data.DIA_CHI_CONG_TRINH || null,
+                HANG_MUC: data.HANG_MUC || null,
+                CONG_SUAT: data.CONG_SUAT || null,
                 NGAY_KHAO_SAT: data.NGAY_KHAO_SAT ? new Date(data.NGAY_KHAO_SAT) : new Date(),
             },
         });
@@ -199,6 +203,8 @@ export async function updateKhaoSat(id: string, data: {
     DIA_CHI?: string;
     NGUOI_LIEN_HE?: string;
     DIA_CHI_CONG_TRINH?: string;
+    HANG_MUC?: string;
+    CONG_SUAT?: string;
     LOAI_CONG_TRINH?: string;
     NGAY_KHAO_SAT?: string;
 }) {
@@ -213,6 +219,8 @@ export async function updateKhaoSat(id: string, data: {
                 DIA_CHI: data.DIA_CHI || null,
                 NGUOI_LIEN_HE: data.NGUOI_LIEN_HE || null,
                 DIA_CHI_CONG_TRINH: data.DIA_CHI_CONG_TRINH || null,
+                HANG_MUC: data.HANG_MUC || null,
+                CONG_SUAT: data.CONG_SUAT || null,
                 NGAY_KHAO_SAT: data.NGAY_KHAO_SAT ? new Date(data.NGAY_KHAO_SAT) : undefined,
             },
         });
