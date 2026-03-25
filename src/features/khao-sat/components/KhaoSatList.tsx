@@ -117,8 +117,8 @@ export default function KhaoSatList({
 
     return (
         <>
-            {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
+            {/* Table */}
+            <div className="overflow-x-auto">
                 <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -183,22 +183,22 @@ export default function KhaoSatList({
                                     <td className="px-4 py-3 align-middle text-center font-medium text-xs text-foreground">{item.LOAI_CONG_TRINH}</td>
                                 )}
                                 {show("nguoi") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs text-muted-foreground">
+                                    <td className="px-4 py-3 align-middle text-center text-xs">
                                         {renderNguoiKS(item.NGUOI_KHAO_SAT)}
                                     </td>
                                 )}
                                 {show("khachHang") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs text-muted-foreground">
+                                    <td className="px-4 py-3 align-middle text-center text-xs">
                                         {item.KHTN_REL?.TEN_KH || "—"}
                                     </td>
                                 )}
                                 {show("diaChi") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs text-muted-foreground max-w-[200px] md:max-w-[250px] whitespace-normal wrap-break-word">
+                                    <td className="px-4 py-3 align-middle text-center text-xs min-w-[200px] max-w-[250px] md:max-w-[350px] whitespace-normal wrap-break-word">
                                         {item.DIA_CHI_CONG_TRINH || item.DIA_CHI || "—"}
                                     </td>
                                 )}
                                 <td className="px-4 py-3 align-middle text-right">
-                                    <div className="hidden md:flex justify-end gap-1">
+                                    <div className="flex justify-end gap-1 items-center">
                                         <button
                                             onClick={() => setDetailItem(item)}
                                             className="p-1.5 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-600 rounded transition-colors"
@@ -216,7 +216,7 @@ export default function KhaoSatList({
                                             </button>
                                             <button
                                                 onClick={() => setEditItem(item)}
-                                                className="p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded transition-colors"
+                                                className="hidden md:block p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded transition-colors"
                                                 title="Sửa phiếu"
                                             >
                                                 <Pencil className="w-3.5 h-3.5" />
@@ -225,97 +225,39 @@ export default function KhaoSatList({
                                         <PermissionGuard moduleKey="khao-sat" level="delete">
                                             <button
                                                 onClick={() => setDeleteItem(item)}
-                                                className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                                                className="hidden md:block p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                                                title="Xóa phiếu"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />
                                             </button>
                                         </PermissionGuard>
-                                    </div>
-                                    <div className="md:hidden">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button className="p-1.5 hover:bg-muted rounded">
-                                                    <MoreHorizontal className="w-4 h-4" />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-36 rounded-xl">
-                                                <DropdownMenuItem onClick={() => setDetailItem(item)}>
-                                                    <Eye className="w-3.5 h-3.5 mr-2" />Xem chi tiết
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setChiTietEditItem(item)}>
-                                                    <ClipboardEdit className="w-3.5 h-3.5 mr-2" />Ghi nhận KS
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setEditItem(item)}>
-                                                    <Pencil className="w-3.5 h-3.5 mr-2" />Sửa
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
-                                                    <Trash2 className="w-3.5 h-3.5 mr-2" />Xóa
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <div className="md:hidden flex items-center">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors">
+                                                        <MoreHorizontal className="w-4 h-4" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-36 rounded-xl">
+                                                    <PermissionGuard moduleKey="khao-sat" level="edit">
+                                                        <DropdownMenuItem onClick={() => setEditItem(item)}>
+                                                            <Pencil className="w-3.5 h-3.5 mr-2" />Sửa
+                                                        </DropdownMenuItem>
+                                                    </PermissionGuard>
+                                                    <PermissionGuard moduleKey="khao-sat" level="delete">
+                                                        <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
+                                                            <Trash2 className="w-3.5 h-3.5 mr-2" />Xóa
+                                                        </DropdownMenuItem>
+                                                    </PermissionGuard>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
-            </div>
-
-            {/* Mobile Cards */}
-            <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-                {sorted.length === 0 && (
-                    <p className="text-center py-8 text-muted-foreground text-sm italic">Chưa có phiếu khảo sát nào</p>
-                )}
-                {sorted.map((item) => (
-                    <div key={item.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-2.5">
-                        <div className="flex items-start justify-between gap-2">
-                            <div>
-                                <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
-                                    {item.MA_KHAO_SAT}
-                                </span>
-                                <p className="font-semibold text-sm mt-1.5">{item.LOAI_CONG_TRINH}</p>
-                            </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="p-1 hover:bg-muted rounded shrink-0">
-                                        <MoreHorizontal className="w-4 h-4" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-36 rounded-xl">
-                                    <DropdownMenuItem onClick={() => setDetailItem(item)}>
-                                        <Eye className="w-3.5 h-3.5 mr-2" />Xem chi tiết
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setChiTietEditItem(item)}>
-                                        <ClipboardEdit className="w-3.5 h-3.5 mr-2" />Ghi nhận KS
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setEditItem(item)}>
-                                        <Pencil className="w-3.5 h-3.5 mr-2" />Sửa
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
-                                        <Trash2 className="w-3.5 h-3.5 mr-2" />Xóa
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                            <span>📅 {formatDate(item.NGAY_KHAO_SAT)}</span>
-                            {item.NGUOI_KHAO_SAT && (
-                                <span>👤 {renderNguoiKS(item.NGUOI_KHAO_SAT)}</span>
-                            )}
-                            {item.KHTN_REL?.TEN_KH && (
-                                <span>🏢 {item.KHTN_REL.TEN_KH}</span>
-                            )}
-                        </div>
-                        {(item.DIA_CHI_CONG_TRINH || item.DIA_CHI) && (
-                            <p className="text-xs text-muted-foreground truncate">
-                                📍 {item.DIA_CHI_CONG_TRINH || item.DIA_CHI}
-                            </p>
-                        )}
-                        <div className="text-xs text-muted-foreground">
-                            {item.KHAO_SAT_CT.length} hạng mục chi tiết
-                        </div>
-                    </div>
-                ))}
             </div>
 
             {/* Edit Modal (Info) */}
@@ -344,6 +286,7 @@ export default function KhaoSatList({
                     hangMucData={hangMucData}
                     initialChiTiet={chiTietEditItem.KHAO_SAT_CT}
                     savedOnly={true}
+                    khachHangName={chiTietEditItem.KHTN_REL?.TEN_KH}
                 />
             )}
 

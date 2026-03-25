@@ -29,6 +29,8 @@ async function generateMaKhaoSat(): Promise<string> {
 
 // ─── QUERIES ──────────────────────────────────────────────────
 
+import { getCurrentUser } from "@/lib/auth";
+
 export async function getKhaoSatList(params?: {
     query?: string;
     loai?: string;
@@ -36,6 +38,17 @@ export async function getKhaoSatList(params?: {
 }) {
     try {
         const { query, loai, nguoi } = params || {};
+        
+        // --- STAFF Filtering Rule ---
+        const user = await getCurrentUser();
+        let staffMaNv = null;
+        if (user && user.ROLE === "STAFF") {
+            const nv = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (nv?.MA_NV) {
+                staffMaNv = nv.MA_NV;
+            }
+        }
+        
         const data = await prisma.kHAO_SAT.findMany({
             where: {
                 AND: [
@@ -47,7 +60,8 @@ export async function getKhaoSatList(params?: {
                         ]
                     } : {},
                     loai && loai !== "all" ? { LOAI_CONG_TRINH: loai } : {},
-                    nguoi && nguoi !== "all" ? { NGUOI_KHAO_SAT: nguoi } : {},
+                    nguoi && nguoi !== "all" ? { NGUOI_KHAO_SAT: { contains: nguoi } } : {},
+                    staffMaNv ? { NGUOI_KHAO_SAT: { contains: staffMaNv } } : {},
                 ],
             },
             include: {
@@ -87,10 +101,20 @@ export async function getKhaoSatById(id: string) {
 
 export async function getKhaoSatStats() {
     try {
+        const user = await getCurrentUser();
+        let staffMaNv = null;
+        if (user && user.ROLE === "STAFF") {
+            const nv = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (nv?.MA_NV) staffMaNv = nv.MA_NV;
+        }
+
+        const baseWhere = staffMaNv ? { NGUOI_KHAO_SAT: { contains: staffMaNv } } : {};
+
         const [total, thisMonth] = await Promise.all([
-            prisma.kHAO_SAT.count(),
+            prisma.kHAO_SAT.count({ where: baseWhere }),
             prisma.kHAO_SAT.count({
                 where: {
+                    ...baseWhere,
                     NGAY_KHAO_SAT: {
                         gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
                     },
@@ -100,6 +124,7 @@ export async function getKhaoSatStats() {
 
         const byLoai = await prisma.kHAO_SAT.groupBy({
             by: ["LOAI_CONG_TRINH"],
+            where: baseWhere,
             _count: { _all: true },
             orderBy: { _count: { LOAI_CONG_TRINH: "desc" } },
             take: 1,

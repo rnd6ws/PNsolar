@@ -137,6 +137,12 @@ export default function KhaoSatFormModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!form.MA_KH) {
+            toast.error("Vui lòng chọn khách hàng để tiếp tục");
+            return;
+        }
+
         setSubmitting(true);
         const submitData = {
             ...form,
@@ -220,7 +226,7 @@ export default function KhaoSatFormModal({
                         />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Khách hàng</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Khách hàng <span className="text-destructive">*</span></label>
                         <KhachHangSearch
                             value={khSearchValue}
                             onChange={handleKhachHangChange}

@@ -64,6 +64,7 @@ export default function AddKhaoSatButton({
                     nhomKSData={nhomKSData}
                     hangMucData={hangMucData}
                     initialChiTiet={[]}
+                    khachHangName={khachHangOptions.find(opt => opt.value === pendingForm.MA_KH)?.label}
                 />
             )}
         </>

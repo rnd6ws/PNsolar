@@ -10,6 +10,7 @@ import { toast } from "sonner";
 function DebouncedTextarea({ value, onChange, placeholder }: { value: string; onChange: (val: string) => void; placeholder?: string }) {
     const [localVal, setLocalVal] = useState(value);
     const onChangeRef = useRef(onChange);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
         onChangeRef.current = onChange;
@@ -29,24 +30,28 @@ function DebouncedTextarea({ value, onChange, placeholder }: { value: string; on
         return () => clearTimeout(handler);
     }, [localVal]);
 
+    const resize = () => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    };
+
+    useEffect(() => {
+        resize();
+    }, [localVal]);
+
     return (
         <textarea
-            className="input-modern flex-1 text-sm py-2 resize-none overflow-hidden min-h-[40px] leading-relaxed"
+            ref={textareaRef}
+            className="input-modern w-full md:flex-1 text-sm py-2 resize-none overflow-hidden min-h-[40px] leading-relaxed"
             value={localVal}
             rows={1}
-            onChange={(e) => setLocalVal(e.target.value)}
+            onChange={(e) => {
+                setLocalVal(e.target.value);
+                resize();
+            }}
             onBlur={() => onChangeRef.current(localVal)}
-            onInput={(e) => {
-                const target = e.currentTarget;
-                target.style.height = 'auto';
-                target.style.height = `${target.scrollHeight}px`;
-            }}
-            ref={(el) => {
-                if (el) {
-                    el.style.height = 'auto';
-                    el.style.height = `${el.scrollHeight}px`;
-                }
-            }}
             placeholder={placeholder}
         />
     );
@@ -70,6 +75,7 @@ interface Props {
     }[];
     initialChiTiet?: ChiTietItem[];
     savedOnly?: boolean;
+    khachHangName?: string;
 }
 
 export default function KhaoSatChiTietModal({
@@ -82,6 +88,7 @@ export default function KhaoSatChiTietModal({
     hangMucData,
     initialChiTiet = [],
     savedOnly = false,
+    khachHangName,
 }: Props) {
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
@@ -283,7 +290,8 @@ export default function KhaoSatChiTietModal({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={maKhaoSat ? `Chi tiết khảo sát: ${maKhaoSat}` : "Chi tiết khảo sát"}
+            title="Chi tiết khảo sát"
+            subtitle={`${loaiCongTrinh}${khachHangName ? ` — ${khachHangName}` : ''}`}
             icon={ClipboardList}
             size="xl"
             fullHeight
@@ -401,10 +409,20 @@ export default function KhaoSatChiTietModal({
                                         if (isExcluded) return null;
                                         const list = chiTietData[nhom]?.[hm.HANG_MUC_KS] || [{ val: "" }];
                                         return (
-                                            <div key={hm.HANG_MUC_KS} className="px-4 py-3 flex flex-col md:flex-row md:items-start gap-3 hover:bg-muted/30 transition-colors">
-                                                <label className="text-sm font-medium text-foreground md:w-[35%] lg:w-[30%] shrink-0 pt-2.5">
-                                                    {hm.HANG_MUC_KS}
-                                                </label>
+                                            <div key={hm.HANG_MUC_KS} className="px-4 py-3 flex flex-col md:flex-row md:items-start gap-2 md:gap-3 hover:bg-muted/30 transition-colors">
+                                                <div className="flex items-start justify-between gap-2 md:w-[35%] lg:w-[30%] shrink-0 md:pt-2.5">
+                                                    <label className="text-sm font-medium text-foreground">
+                                                        {hm.HANG_MUC_KS}
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        title="Xóa hạng mục này khỏi form"
+                                                        onClick={() => removeHM(nhom, hm.HANG_MUC_KS)}
+                                                        className="md:hidden -mt-1 -mr-2 p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors shrink-0"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                                 <DebouncedTextarea
                                                     value={list[0]?.val || ""}
                                                     onChange={(val) => updateChiTiet(nhom, hm.HANG_MUC_KS, 0, val)}
@@ -414,7 +432,7 @@ export default function KhaoSatChiTietModal({
                                                     type="button"
                                                     title="Xóa hạng mục này khỏi form"
                                                     onClick={() => removeHM(nhom, hm.HANG_MUC_KS)}
-                                                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors shrink-0"
+                                                    className="hidden md:block p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors shrink-0"
                                                 >
                                                     <X className="w-4 h-4" />
                                                 </button>
