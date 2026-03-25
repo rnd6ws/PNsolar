@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
     Pencil, Trash2, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown,
-    ClipboardList, Eye,
+    ClipboardList, Eye, ClipboardEdit
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -12,16 +12,14 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Modal from "@/components/Modal";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { updateKhaoSat, deleteKhaoSat, getKhachHangChiTiet } from "@/features/khao-sat/action";
 import { toast } from "sonner";
 import type { KhaoSatColumnKey } from "./KhaoSatColumnToggle";
-import FormSelect from "@/components/FormSelect";
-import FormMultiSelect from "@/components/FormMultiSelect";
-import KhachHangSearch from "@/components/KhachHangSearch";
 import KhaoSatDetailModal from "./KhaoSatDetailModal";
+import KhaoSatFormModal from "./KhaoSatFormModal";
+import KhaoSatChiTietModal from "./KhaoSatChiTietModal";
 
 type KhaoSatItem = {
     ID: string;
@@ -51,6 +49,14 @@ interface Props {
     coHoiOptions: StringOption[];
     nguoiLienHeOptions: StringOption[];
     visibleColumns: KhaoSatColumnKey[];
+    nhomKSData: { NHOM_KS: string; STT: number | null }[];
+    hangMucData: {
+        LOAI_CONG_TRINH: string;
+        NHOM_KS: string;
+        HANG_MUC_KS: string;
+        STT: number | null;
+        HIEU_LUC: boolean;
+    }[];
 }
 
 type SortDir = "asc" | "desc";
@@ -75,28 +81,16 @@ export default function KhaoSatList({
     coHoiOptions,
     nguoiLienHeOptions,
     visibleColumns,
+    nhomKSData,
+    hangMucData,
 }: Props) {
     const router = useRouter();
     const [sortKey, setSortKey] = useState<string | null>(null);
     const [sortDir, setSortDir] = useState<SortDir>("asc");
     const [editItem, setEditItem] = useState<KhaoSatItem | null>(null);
+    const [chiTietEditItem, setChiTietEditItem] = useState<KhaoSatItem | null>(null);
     const [deleteItem, setDeleteItem] = useState<KhaoSatItem | null>(null);
     const [detailItem, setDetailItem] = useState<KhaoSatItem | null>(null);
-    const [submitting, setSubmitting] = useState(false);
-
-    const [form, setForm] = useState({
-        LOAI_CONG_TRINH: "",
-        NGUOI_KHAO_SAT: [] as string[],
-        MA_KH: "",
-        MA_CH: "",
-        DIA_CHI: "",
-        NGUOI_LIEN_HE: "",
-        DIA_CHI_CONG_TRINH: "",
-        NGAY_KHAO_SAT: "",
-    });
-    const [khSearchValue, setKhSearchValue] = useState("");
-    const [khDefaultValue, setKhDefaultValue] = useState<any>(null);
-    const [nlhOptions, setNlhOptions] = useState<StringOption[]>([]);
 
     const renderNguoiKS = (nguoiKS: string | null) => {
         if (!nguoiKS) return "—";
@@ -119,136 +113,52 @@ export default function KhaoSatList({
         });
     }, [data, sortKey, sortDir]);
 
-    const openEdit = async (item: KhaoSatItem) => {
-        const ngay = item.NGAY_KHAO_SAT
-            ? new Date(item.NGAY_KHAO_SAT).toISOString().split("T")[0]
-            : "";
-        setForm({
-            LOAI_CONG_TRINH: item.LOAI_CONG_TRINH || "",
-            NGUOI_KHAO_SAT: item.NGUOI_KHAO_SAT ? item.NGUOI_KHAO_SAT.split(",").map((x) => x.trim()).filter(Boolean) : [],
-            MA_KH: item.MA_KH || "",
-            MA_CH: item.MA_CH || "",
-            DIA_CHI: item.DIA_CHI || "",
-            NGUOI_LIEN_HE: item.NGUOI_LIEN_HE || "",
-            DIA_CHI_CONG_TRINH: item.DIA_CHI_CONG_TRINH || "",
-            NGAY_KHAO_SAT: ngay,
-        });
-        
-        setKhSearchValue(item.MA_KH || "");
-        let initialNlh: StringOption[] = [];
-        if (item.MA_KH) {
-            setKhDefaultValue(item.KHTN_REL ? {
-                ID: item.KHTN_REL.MA_KH,
-                TEN_KH: item.KHTN_REL.TEN_KH,
-            } : null);
-            // Fetch default Khach Hang details to populate nguoiLienHeOptions
-            const res = await getKhachHangChiTiet(item.MA_KH);
-            if (res.success && res.data && res.data.NGUOI_LIENHE) {
-                initialNlh = res.data.NGUOI_LIENHE.map((n: any) => ({
-                    value: n.MA_NLH,
-                    label: n.SDT ? `${n.TENNGUOI_LIENHE} - ${n.SDT}` : n.TENNGUOI_LIENHE
-                }));
-            }
-        } else {
-            setKhDefaultValue(null);
-        }
-        setNlhOptions(initialNlh);
-        setEditItem(item);
-    };
-
-    const handleKhachHangChange = async (maKh: string, kh: any) => {
-        setKhSearchValue(maKh);
-        setForm((f) => ({ ...f, MA_KH: maKh, DIA_CHI_CONG_TRINH: "", DIA_CHI: "", NGUOI_LIEN_HE: "" }));
-        setNlhOptions([]);
-        
-        if (!maKh) return;
-        
-        const res = await getKhachHangChiTiet(maKh);
-        if (res.success && res.data) {
-            setForm((f) => ({ 
-                ...f, 
-                DIA_CHI_CONG_TRINH: res.data?.DIA_CHI || "", 
-                DIA_CHI: res.data?.DIA_CHI || "" 
-            }));
-            
-            if (res.data?.NGUOI_LIENHE && res.data.NGUOI_LIENHE.length > 0) {
-                const options = res.data.NGUOI_LIENHE.map((n: any) => ({
-                    value: n.MA_NLH,
-                    label: n.SDT ? `${n.TENNGUOI_LIENHE} - ${n.SDT}` : n.TENNGUOI_LIENHE
-                }));
-                setNlhOptions(options);
-                setForm((f) => ({ ...f, NGUOI_LIEN_HE: options[0].value }));
-            }
-        }
-    };
-
-    const handleSubmitEdit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!editItem) return;
-        setSubmitting(true);
-        const submitData = {
-            ...form,
-            NGUOI_KHAO_SAT: form.NGUOI_KHAO_SAT.length > 0 ? form.NGUOI_KHAO_SAT.join(",") : undefined,
-            MA_KH: form.MA_KH || undefined,
-            NGUOI_LIEN_HE: form.NGUOI_LIEN_HE || undefined,
-        };
-        const res = await updateKhaoSat(editItem.ID, submitData);
-        if (res.success) {
-            toast.success("Cập nhật thành công!");
-            setEditItem(null);
-            router.refresh();
-        } else {
-            toast.error(res.message || "Có lỗi xảy ra");
-        }
-        setSubmitting(false);
-    };
-
     const show = (col: KhaoSatColumnKey) => visibleColumns.includes(col);
 
     return (
         <>
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-x-auto">
-                <table className="w-full text-left border-collapse text-[13px]">
+                <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] w-10">#</th>
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-10 text-center">#</th>
                             {show("ma") && (
-                                <th onClick={() => handleSort("MA_KHAO_SAT")} className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] cursor-pointer group hover:text-foreground">
+                                <th onClick={() => handleSort("MA_KHAO_SAT")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
                                     Mã KS <SortIcon col="MA_KHAO_SAT" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("ngay") && (
-                                <th onClick={() => handleSort("NGAY_KHAO_SAT")} className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] cursor-pointer group hover:text-foreground">
+                                <th onClick={() => handleSort("NGAY_KHAO_SAT")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
                                     Ngày KS <SortIcon col="NGAY_KHAO_SAT" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("loai") && (
-                                <th onClick={() => handleSort("LOAI_CONG_TRINH")} className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] cursor-pointer group hover:text-foreground">
+                                <th onClick={() => handleSort("LOAI_CONG_TRINH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
                                     Loại CT <SortIcon col="LOAI_CONG_TRINH" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("nguoi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Người KS
                                 </th>
                             )}
                             {show("khachHang") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Khách hàng
                                 </th>
                             )}
                             {show("diaChi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Địa chỉ CT
                                 </th>
                             )}
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] text-right">
+                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">
                                 Hành động
                             </th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-border">
                         {sorted.length === 0 && (
                             <tr>
                                 <td colSpan={10} className="text-center py-16 text-muted-foreground text-sm italic">
@@ -257,38 +167,38 @@ export default function KhaoSatList({
                             </tr>
                         )}
                         {sorted.map((item, idx) => (
-                            <tr key={item.ID} className="border-b border-border hover:bg-muted/50 transition-all group bg-background">
-                                <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{idx + 1}</td>
+                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
+                                <td className="px-4 py-3 align-middle text-muted-foreground text-xs text-center font-mono">{idx + 1}</td>
                                 {show("ma") && (
-                                    <td className="px-4 py-3">
+                                    <td className="px-4 py-3 align-middle text-center">
                                         <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
                                             {item.MA_KHAO_SAT}
                                         </span>
                                     </td>
                                 )}
                                 {show("ngay") && (
-                                    <td className="px-4 py-3 text-sm">{formatDate(item.NGAY_KHAO_SAT)}</td>
+                                    <td className="px-4 py-3 align-middle text-center text-xs text-muted-foreground font-medium whitespace-nowrap">{formatDate(item.NGAY_KHAO_SAT)}</td>
                                 )}
                                 {show("loai") && (
-                                    <td className="px-4 py-3 font-medium text-sm">{item.LOAI_CONG_TRINH}</td>
+                                    <td className="px-4 py-3 align-middle text-center font-medium text-xs text-foreground">{item.LOAI_CONG_TRINH}</td>
                                 )}
                                 {show("nguoi") && (
-                                    <td className="px-4 py-3 text-sm">
+                                    <td className="px-4 py-3 align-middle text-center text-xs text-muted-foreground">
                                         {renderNguoiKS(item.NGUOI_KHAO_SAT)}
                                     </td>
                                 )}
                                 {show("khachHang") && (
-                                    <td className="px-4 py-3 text-sm">
+                                    <td className="px-4 py-3 align-middle text-center text-xs text-muted-foreground">
                                         {item.KHTN_REL?.TEN_KH || "—"}
                                     </td>
                                 )}
                                 {show("diaChi") && (
-                                    <td className="px-4 py-3 text-sm max-w-[200px] truncate">
+                                    <td className="px-4 py-3 align-middle text-center text-xs text-muted-foreground max-w-[200px] md:max-w-[250px] whitespace-normal wrap-break-word">
                                         {item.DIA_CHI_CONG_TRINH || item.DIA_CHI || "—"}
                                     </td>
                                 )}
-                                <td className="px-4 py-3 text-right">
-                                    <div className="hidden md:flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <td className="px-4 py-3 align-middle text-right">
+                                    <div className="hidden md:flex justify-end gap-1">
                                         <button
                                             onClick={() => setDetailItem(item)}
                                             className="p-1.5 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-600 rounded transition-colors"
@@ -298,8 +208,16 @@ export default function KhaoSatList({
                                         </button>
                                         <PermissionGuard moduleKey="khao-sat" level="edit">
                                             <button
-                                                onClick={() => openEdit(item)}
+                                                onClick={() => setChiTietEditItem(item)}
+                                                className="p-1.5 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 rounded transition-colors"
+                                                title="Ghi nhận khảo sát"
+                                            >
+                                                <ClipboardEdit className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={() => setEditItem(item)}
                                                 className="p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded transition-colors"
+                                                title="Sửa phiếu"
                                             >
                                                 <Pencil className="w-3.5 h-3.5" />
                                             </button>
@@ -324,7 +242,10 @@ export default function KhaoSatList({
                                                 <DropdownMenuItem onClick={() => setDetailItem(item)}>
                                                     <Eye className="w-3.5 h-3.5 mr-2" />Xem chi tiết
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => openEdit(item)}>
+                                                <DropdownMenuItem onClick={() => setChiTietEditItem(item)}>
+                                                    <ClipboardEdit className="w-3.5 h-3.5 mr-2" />Ghi nhận KS
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => setEditItem(item)}>
                                                     <Pencil className="w-3.5 h-3.5 mr-2" />Sửa
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
@@ -364,7 +285,10 @@ export default function KhaoSatList({
                                     <DropdownMenuItem onClick={() => setDetailItem(item)}>
                                         <Eye className="w-3.5 h-3.5 mr-2" />Xem chi tiết
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => openEdit(item)}>
+                                    <DropdownMenuItem onClick={() => setChiTietEditItem(item)}>
+                                        <ClipboardEdit className="w-3.5 h-3.5 mr-2" />Ghi nhận KS
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setEditItem(item)}>
                                         <Pencil className="w-3.5 h-3.5 mr-2" />Sửa
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
@@ -394,98 +318,33 @@ export default function KhaoSatList({
                 ))}
             </div>
 
-            {/* Edit Modal */}
+            {/* Edit Modal (Info) */}
             {editItem && (
-                <Modal
+                <KhaoSatFormModal
                     isOpen={true}
                     onClose={() => setEditItem(null)}
-                    title="Sửa phiếu khảo sát"
-                    icon={ClipboardList}
-                    size="lg"
-                    footer={
-                        <>
-                            <span />
-                            <div className="flex gap-3">
-                                <button type="button" onClick={() => setEditItem(null)} className="btn-premium-secondary">Hủy</button>
-                                <button
-                                    type="button"
-                                    disabled={submitting}
-                                    className="btn-premium-primary"
-                                    onClick={() => (document.querySelector("#form-edit-ks") as HTMLFormElement)?.requestSubmit()}
-                                >
-                                    {submitting ? "Đang lưu..." : "Lưu"}
-                                </button>
-                            </div>
-                        </>
-                    }
-                >
-                    <form id="form-edit-ks" onSubmit={handleSubmitEdit} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Loại công trình <span className="text-destructive">*</span></label>
-                                <FormSelect
-                                    name="LOAI_CONG_TRINH"
-                                    value={form.LOAI_CONG_TRINH}
-                                    onChange={(v) => setForm((f) => ({ ...f, LOAI_CONG_TRINH: v }))}
-                                    options={loaiCongTrinhOptions}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Ngày khảo sát</label>
-                                <input
-                                    type="date"
-                                    className="input-modern"
-                                    value={form.NGAY_KHAO_SAT}
-                                    onChange={(e) => setForm((f) => ({ ...f, NGAY_KHAO_SAT: e.target.value }))}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Khách hàng</label>
-                                <KhachHangSearch
-                                    value={khSearchValue}
-                                    onChange={handleKhachHangChange}
-                                    defaultValue={khDefaultValue}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Người khảo sát</label>
-                                <FormMultiSelect
-                                    value={form.NGUOI_KHAO_SAT}
-                                    onChange={(v) => setForm((f) => ({ ...f, NGUOI_KHAO_SAT: v }))}
-                                    options={nhanVienOptions}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Người liên hệ</label>
-                                <FormSelect
-                                    name="NGUOI_LIEN_HE"
-                                    value={form.NGUOI_LIEN_HE}
-                                    onChange={(v) => setForm((f) => ({ ...f, NGUOI_LIEN_HE: v }))}
-                                    options={nlhOptions}
-                                    placeholder="— Chọn NLH —"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-muted-foreground">Địa chỉ công trình</label>
-                                <input
-                                    className="input-modern"
-                                    value={form.DIA_CHI_CONG_TRINH}
-                                    onChange={(e) => setForm((f) => ({ ...f, DIA_CHI_CONG_TRINH: e.target.value }))}
-                                    placeholder="Số nhà, đường, quận/huyện..."
-                                />
-                            </div>
-                            <div className="space-y-2 md:col-span-1">
-                                <label className="text-sm font-semibold text-muted-foreground">Địa chỉ liên hệ</label>
-                                <input
-                                    className="input-modern"
-                                    value={form.DIA_CHI}
-                                    onChange={(e) => setForm((f) => ({ ...f, DIA_CHI: e.target.value }))}
-                                    placeholder="Địa chỉ liên hệ"
-                                />
-                            </div>
-                        </div>
-                    </form>
-                </Modal>
+                    loaiCongTrinhOptions={loaiCongTrinhOptions}
+                    nhanVienOptions={nhanVienOptions}
+                    initialData={editItem}
+                    onSuccess={() => {
+                        setEditItem(null);
+                        router.refresh();
+                    }}
+                />
+            )}
+
+            {/* Chi Tiet Edit Modal */}
+            {chiTietEditItem && (
+                <KhaoSatChiTietModal
+                    isOpen={true}
+                    onClose={() => setChiTietEditItem(null)}
+                    maKhaoSat={chiTietEditItem.MA_KHAO_SAT}
+                    loaiCongTrinh={chiTietEditItem.LOAI_CONG_TRINH}
+                    nhomKSData={nhomKSData}
+                    hangMucData={hangMucData}
+                    initialChiTiet={chiTietEditItem.KHAO_SAT_CT}
+                    savedOnly={true}
+                />
             )}
 
             {/* Detail Modal */}

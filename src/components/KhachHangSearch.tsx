@@ -32,6 +32,12 @@ export default function KhachHangSearch({ value, onChange, defaultValue, disable
     }, [value]);
 
     useEffect(() => {
+        if (defaultValue) {
+            setSelectedKh(defaultValue);
+        }
+    }, [defaultValue]);
+
+    useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (khRef.current && !khRef.current.contains(e.target as Node)) setKhOpen(false);
         };

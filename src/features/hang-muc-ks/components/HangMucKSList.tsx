@@ -107,7 +107,7 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
         } else {
             toast.error(res.message || "Lỗi cập nhật thứ tự");
         }
-        
+
         setUpdatingOrder(false);
         setDraggedItem(null);
         setDragOverItem(null);
@@ -154,16 +154,16 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                 loaiGroup = { loai: item.LOAI_CONG_TRINH, nhomGroups: [] };
                 groups.push(loaiGroup);
             }
-            
+
             let nhomGroup = loaiGroup.nhomGroups.find(g => g.nhom === item.NHOM_KS);
             if (!nhomGroup) {
                 nhomGroup = { nhom: item.NHOM_KS, items: [] };
                 loaiGroup.nhomGroups.push(nhomGroup);
             }
-            
+
             nhomGroup.items.push(item);
         });
-        
+
         // Sắp xếp các nhóm dựa trên mảng Options (đã được sort theo STT từ Backend)
         groups.sort((a, b) => {
             const indexA = loaiCongTrinhOptions.findIndex(o => o.value === a.loai);
@@ -286,34 +286,34 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                         )}
                         {groupedData.map((loaiGroup) => (
                             <Fragment key={loaiGroup.loai}>
-                                <tr 
+                                <tr
                                     className="bg-blue-50/50 hover:bg-blue-50/80 transition-colors border-b border-border cursor-pointer select-none"
                                     onClick={() => toggleGroup(`loai-${loaiGroup.loai}`)}
                                 >
                                     <td colSpan={10} className="px-4 py-2.5 text-sm font-bold text-blue-700 tracking-wide">
                                         <div className="flex items-center">
                                             {expandedGroups[`loai-${loaiGroup.loai}`] ? <ChevronDown className="w-4 h-4 mr-1.5" /> : <ChevronRight className="w-4 h-4 mr-1.5" />}
-                                            Loại Công Trình: {loaiGroup.loai}
+                                            {loaiGroup.loai}
                                         </div>
                                     </td>
                                 </tr>
                                 {expandedGroups[`loai-${loaiGroup.loai}`] && loaiGroup.nhomGroups.map((nhomGroup) => (
                                     <Fragment key={`${loaiGroup.loai}-${nhomGroup.nhom}`}>
-                                        <tr 
+                                        <tr
                                             className="bg-purple-50/40 hover:bg-purple-50/60 transition-colors border-b border-border cursor-pointer select-none"
                                             onClick={() => toggleGroup(`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`)}
                                         >
                                             <td colSpan={10} className="px-4 py-2 pl-9 text-[13px] font-semibold text-purple-700">
                                                 <div className="flex items-center">
                                                     {expandedGroups[`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`] ? <ChevronDown className="w-4 h-4 mr-1.5" /> : <ChevronRight className="w-4 h-4 mr-1.5" />}
-                                                    Nhóm KS: {nhomGroup.nhom}
+                                                    {nhomGroup.nhom}
                                                     <span className="ml-2.5 text-xs font-normal text-muted-foreground bg-purple-100 px-2 py-0.5 rounded-full">{nhomGroup.items.length} hạng mục</span>
                                                 </div>
                                             </td>
                                         </tr>
                                         {expandedGroups[`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`] && nhomGroup.items.map((item, idx) => (
-                                            <tr 
-                                                key={item.ID} 
+                                            <tr
+                                                key={item.ID}
                                                 draggable={!sortKey && !updatingOrder}
                                                 onDragStart={() => setDraggedItem(item)}
                                                 onDragOver={(e) => { e.preventDefault(); setDragOverItem(item); }}
@@ -334,7 +334,7 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                                                 {show("ten") && <td className="px-4 py-3 font-medium">{item.HANG_MUC_KS}</td>}
                                                 {show("hieuLuc") && (
                                                     <td className="px-4 py-3">
-                                                        <button 
+                                                        <button
                                                             onClick={(e) => { e.stopPropagation(); handleToggleHieuLuc(item); }}
                                                             disabled={togglingId === item.ID}
                                                             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none focus-visible:ring-2 focus-visible:ring-primary ${item.HIEU_LUC ? 'bg-green-500' : 'bg-muted-foreground/30'} ${(togglingId === item.ID) ? "opacity-50" : ""}`}
@@ -382,10 +382,10 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
             {/* Mobile Cards */}
             <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
                 {sorted.length === 0 && <p className="text-center py-8 text-muted-foreground text-sm italic">Chưa có dữ liệu</p>}
-                
+
                 {groupedData.map(loaiGroup => (
                     <div key={loaiGroup.loai} className="flex flex-col gap-3">
-                        <div 
+                        <div
                             className="bg-blue-600 text-white rounded-lg px-3 py-2.5 font-bold text-sm shadow-sm sticky top-0 z-10 flex items-center justify-between cursor-pointer select-none"
                             onClick={() => toggleGroup(`loai-${loaiGroup.loai}`)}
                         >
@@ -394,10 +394,10 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                                 <span>{loaiGroup.loai}</span>
                             </div>
                         </div>
-                        
+
                         {expandedGroups[`loai-${loaiGroup.loai}`] && loaiGroup.nhomGroups.map(nhomGroup => (
                             <div key={`${loaiGroup.loai}-${nhomGroup.nhom}`} className="flex flex-col gap-2.5 pl-2 border-l-2 border-blue-400 ml-1">
-                                <div 
+                                <div
                                     className="text-purple-700 font-semibold text-sm bg-purple-100 rounded-lg px-3 py-2 flex justify-between items-center shadow-sm cursor-pointer select-none"
                                     onClick={() => toggleGroup(`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`)}
                                 >
@@ -407,10 +407,10 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                                     </div>
                                     <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-bold">{nhomGroup.items.length}</span>
                                 </div>
-                                
+
                                 {expandedGroups[`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`] && nhomGroup.items.map(item => (
-                                    <div 
-                                        key={item.ID} 
+                                    <div
+                                        key={item.ID}
                                         draggable={!sortKey && !updatingOrder}
                                         onDragStart={() => setDraggedItem(item)}
                                         onDragOver={(e) => { e.preventDefault(); setDragOverItem(item); }}
@@ -440,7 +440,7 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                                         </div>
                                         <div className="flex items-center gap-3 flex-wrap mt-1">
                                             <div className="flex items-center gap-2">
-                                                <button 
+                                                <button
                                                     onClick={(e) => { e.stopPropagation(); handleToggleHieuLuc(item); }}
                                                     disabled={togglingId === item.ID}
                                                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none focus-visible:ring-2 focus-visible:ring-primary ${item.HIEU_LUC ? 'bg-green-500' : 'bg-muted-foreground/30'} ${(togglingId === item.ID) ? "opacity-50" : ""}`}

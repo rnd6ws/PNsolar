@@ -213,7 +213,6 @@ export async function deleteKhaoSat(id: string) {
 export async function upsertKhaoSatChiTiet(data: {
     MA_KHAO_SAT: string;
     items: {
-        ID?: string;
         NHOM_KS: string;
         HANG_MUC_KS: string;
         CHI_TIET: string;
@@ -224,40 +223,19 @@ export async function upsertKhaoSatChiTiet(data: {
     try {
         const { MA_KHAO_SAT, items } = data;
 
-        // Lấy IDs hiện tại để xóa những cái không còn trong list
-        const existing = await prisma.kHAO_SAT_CT.findMany({
-            where: { MA_KHAO_SAT },
-            select: { ID: true },
-        });
-        const existingIds = existing.map((e) => e.ID);
-        const newIds = items.filter((i) => i.ID).map((i) => i.ID as string);
-        const toDelete = existingIds.filter((id) => !newIds.includes(id));
-
+        // deleteMany + createMany in a single transaction = 2 statements instead of N
         await prisma.$transaction([
-            ...(toDelete.length > 0 ? [prisma.kHAO_SAT_CT.deleteMany({ where: { ID: { in: toDelete } } })] : []),
-            ...items.map((item) =>
-                item.ID
-                    ? prisma.kHAO_SAT_CT.update({
-                        where: { ID: item.ID },
-                        data: {
-                            NHOM_KS: item.NHOM_KS,
-                            HANG_MUC_KS: item.HANG_MUC_KS,
-                            CHI_TIET: item.CHI_TIET,
-                            STT_NHOM_KS: item.STT_NHOM_KS,
-                            STT_HANG_MUC: item.STT_HANG_MUC,
-                        },
-                    })
-                    : prisma.kHAO_SAT_CT.create({
-                        data: {
-                            MA_KHAO_SAT,
-                            NHOM_KS: item.NHOM_KS,
-                            HANG_MUC_KS: item.HANG_MUC_KS,
-                            CHI_TIET: item.CHI_TIET,
-                            STT_NHOM_KS: item.STT_NHOM_KS,
-                            STT_HANG_MUC: item.STT_HANG_MUC,
-                        },
-                    })
-            ),
+            prisma.kHAO_SAT_CT.deleteMany({ where: { MA_KHAO_SAT } }),
+            prisma.kHAO_SAT_CT.createMany({
+                data: items.map((item) => ({
+                    MA_KHAO_SAT,
+                    NHOM_KS: item.NHOM_KS,
+                    HANG_MUC_KS: item.HANG_MUC_KS,
+                    CHI_TIET: item.CHI_TIET,
+                    STT_NHOM_KS: item.STT_NHOM_KS,
+                    STT_HANG_MUC: item.STT_HANG_MUC,
+                })),
+            }),
         ]);
 
         revalidatePath("/khao-sat");
