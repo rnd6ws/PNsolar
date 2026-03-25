@@ -99,9 +99,12 @@ export async function getGiaBanList(filters: {
     page?: number;
     limit?: number;
     NHOM_HH?: string;
-    GOI_GIA?: string;
+    PHAN_LOAI?: string;
+    DONG_HANG?: string;
+    fromDate?: string;
+    toDate?: string;
 } = {}): Promise<ActionResponse> {
-    const { page = 1, limit = 15, query, NHOM_HH, GOI_GIA } = filters;
+    const { page = 1, limit = 15, query, NHOM_HH, PHAN_LOAI, DONG_HANG, fromDate, toDate } = filters;
 
     const where: any = {};
     const andConditions: any[] = [];
@@ -122,8 +125,24 @@ export async function getGiaBanList(filters: {
         andConditions.push({ MA_NHOM_HH: NHOM_HH });
     }
 
-    if (GOI_GIA && GOI_GIA !== 'all') {
-        andConditions.push({ MA_GOI_GIA: GOI_GIA });
+    if (PHAN_LOAI && PHAN_LOAI !== 'all') {
+        andConditions.push({ MA_PHAN_LOAI: PHAN_LOAI });
+    }
+
+    if (DONG_HANG && DONG_HANG !== 'all') {
+        andConditions.push({ MA_DONG_HANG: DONG_HANG });
+    }
+
+    // Lọc theo khoảng ngày hiệu lực
+    if (fromDate || toDate) {
+        const dateFilter: any = {};
+        if (fromDate) dateFilter.gte = new Date(fromDate);
+        if (toDate) {
+            const to = new Date(toDate);
+            to.setHours(23, 59, 59, 999);
+            dateFilter.lte = to;
+        }
+        andConditions.push({ NGAY_HIEU_LUC: dateFilter });
     }
 
     if (andConditions.length > 0) {
@@ -164,23 +183,29 @@ export async function getUniqueFiltersInGiaBan() {
         const records = await prisma.gIA_BAN.findMany({
             select: {
                 MA_NHOM_HH: true,
-                MA_GOI_GIA: true,
+                MA_PHAN_LOAI: true,
+                MA_DONG_HANG: true,
                 NHOM: { select: { TEN_NHOM: true } },
-                GOI_GIA_REL: { select: { GOI_GIA: true } },
+                PHAN_LOAI_REL: { select: { TEN_PHAN_LOAI: true } },
+                DONG_HANG_REL: { select: { TEN_DONG_HANG: true } },
             },
         });
         const uniqueNhomHh = Array.from(
-            new Map(records.map((r: any) => [r.MA_NHOM_HH, { value: r.MA_NHOM_HH, label: r.NHOM?.TEN_NHOM || r.MA_NHOM_HH }])).values()
+            new Map(records.filter(r => r.MA_NHOM_HH).map((r: any) => [r.MA_NHOM_HH, { value: r.MA_NHOM_HH, label: r.NHOM?.TEN_NHOM || r.MA_NHOM_HH }])).values()
         );
-        const uniqueGoiGia = Array.from(
-            new Map(records.map((r: any) => [r.MA_GOI_GIA, { value: r.MA_GOI_GIA, label: r.GOI_GIA_REL?.GOI_GIA || r.MA_GOI_GIA }])).values()
+        const uniquePhanLoai = Array.from(
+            new Map(records.filter(r => r.MA_PHAN_LOAI).map((r: any) => [r.MA_PHAN_LOAI, { value: r.MA_PHAN_LOAI, label: r.PHAN_LOAI_REL?.TEN_PHAN_LOAI || r.MA_PHAN_LOAI }])).values()
         );
-        return { nhomHhOptions: uniqueNhomHh, goiGiaOptions: uniqueGoiGia };
+        const uniqueDongHang = Array.from(
+            new Map(records.filter(r => r.MA_DONG_HANG).map((r: any) => [r.MA_DONG_HANG, { value: r.MA_DONG_HANG, label: r.DONG_HANG_REL?.TEN_DONG_HANG || r.MA_DONG_HANG }])).values()
+        );
+        return { nhomHhOptions: uniqueNhomHh, phanLoaiOptions: uniquePhanLoai, dongHangOptions: uniqueDongHang };
     } catch (error) {
         console.error('[getUniqueFiltersInGiaBan]', error);
-        return { nhomHhOptions: [], goiGiaOptions: [] };
+        return { nhomHhOptions: [], phanLoaiOptions: [], dongHangOptions: [] };
     }
 }
+
 
 // ===== Tạo Giá bán =====
 export async function createGiaBan(data: {
@@ -191,6 +216,7 @@ export async function createGiaBan(data: {
     MA_GOI_GIA?: string;
     MA_HH: string;
     DON_GIA: number;
+    HE_SO?: number;
     GHI_CHU?: string;
 }) {
     try {
@@ -206,6 +232,7 @@ export async function createGiaBan(data: {
                 MA_DONG_HANG: data.MA_DONG_HANG || null,
                 MA_GOI_GIA: data.MA_GOI_GIA || null,
                 MA_HH: data.MA_HH,
+                HE_SO: data.HE_SO ?? null,
                 DON_GIA: data.DON_GIA,
                 GHI_CHU: data.GHI_CHU || null,
             }
@@ -228,6 +255,7 @@ export async function updateGiaBan(id: string, data: {
     MA_GOI_GIA?: string;
     MA_HH: string;
     DON_GIA: number;
+    HE_SO?: number;
     GHI_CHU?: string;
 }) {
     try {
@@ -240,6 +268,7 @@ export async function updateGiaBan(id: string, data: {
                 MA_DONG_HANG: data.MA_DONG_HANG || null,
                 MA_GOI_GIA: data.MA_GOI_GIA || null,
                 MA_HH: data.MA_HH,
+                HE_SO: data.HE_SO ?? null,
                 DON_GIA: data.DON_GIA,
                 GHI_CHU: data.GHI_CHU || null,
             }
@@ -276,6 +305,7 @@ export async function createBulkGiaBan(payload: {
         MA_GOI_GIA?: string;
         MA_HH: string;
         DON_GIA: number;
+        HE_SO?: number;
         GHI_CHU?: string;
     }[];
 }) {
@@ -309,6 +339,7 @@ export async function createBulkGiaBan(payload: {
                     MA_DONG_HANG: r.MA_DONG_HANG || null,
                     MA_GOI_GIA: r.MA_GOI_GIA || null,
                     MA_HH: r.MA_HH,
+                    HE_SO: r.HE_SO ?? null,
                     DON_GIA: r.DON_GIA,
                     GHI_CHU: r.GHI_CHU || null,
                 }
@@ -413,6 +444,71 @@ export async function getGiaBanMapByHangHoa(): Promise<Record<string, { GOI_GIA:
         return map;
     } catch (error) {
         console.error('[getGiaBanMapByHangHoa]', error);
+        return {};
+    }
+}
+
+// ===== Lấy map Giá nhập mới nhất theo MA_HH (dùng để so sánh giá bán vs giá nhập) =====
+export async function getGiaNhapMapByHangHoa(ngayHieuLuc?: string): Promise<Record<string, number>> {
+    try {
+        // Nếu có ngày hiệu lực → lấy giá nhập có ngày hiệu lực <= ngày đó, mới nhất
+        const whereClause: any = {};
+        if (ngayHieuLuc) {
+            const targetDate = new Date(ngayHieuLuc);
+            targetDate.setHours(23, 59, 59, 999);
+            whereClause.NGAY_HIEU_LUC = { lte: targetDate };
+        }
+
+        const records = await prisma.gIA_NHAP.findMany({
+            where: whereClause,
+            orderBy: { NGAY_HIEU_LUC: 'desc' },
+            select: {
+                MA_HH: true,
+                DON_GIA: true,
+            },
+        });
+
+        // Chỉ giữ giá nhập mới nhất cho mỗi MA_HH (đã order desc)
+        const map: Record<string, number> = {};
+        records.forEach(r => {
+            if (!map[r.MA_HH]) {
+                map[r.MA_HH] = r.DON_GIA;
+            }
+        });
+
+        return map;
+    } catch (error) {
+        console.error('[getGiaNhapMapByHangHoa]', error);
+        return {};
+    }
+}
+
+// ===== Lấy map Hệ số gần nhất theo MA_GOI_GIA =====
+export async function getHeSoMapByGoiGia(): Promise<Record<string, number>> {
+    try {
+        const records = await prisma.gIA_BAN.findMany({
+            where: {
+                MA_GOI_GIA: { not: null },
+                HE_SO: { not: null },
+            },
+            orderBy: { NGAY_HIEU_LUC: 'desc' },
+            select: {
+                MA_GOI_GIA: true,
+                HE_SO: true,
+            },
+        });
+
+        // Chỉ giữ hệ số mới nhất cho mỗi MA_GOI_GIA (đã order desc)
+        const map: Record<string, number> = {};
+        records.forEach(r => {
+            if (r.MA_GOI_GIA && r.HE_SO != null && !map[r.MA_GOI_GIA]) {
+                map[r.MA_GOI_GIA] = r.HE_SO;
+            }
+        });
+
+        return map;
+    } catch (error) {
+        console.error('[getHeSoMapByGoiGia]', error);
         return {};
     }
 }

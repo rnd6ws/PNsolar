@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Plus, X, ListPlus, AlertTriangle, Trash2, ChevronDown, Check } from "lucide-react";
 import { toast } from "sonner";
-import { createBulkGiaBan } from "../action";
+import { createBulkGiaBan, getGiaNhapMapByHangHoa, getHeSoMapByGoiGia } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import Modal from "@/components/Modal";
 
@@ -23,6 +23,8 @@ interface DetailRow {
     goiGiaLabel: string;
     MA_HH: string;
     hhLabel: string;
+    giaNhap: number; // Giá nhập tự động
+    HE_SO: number; // Hệ số
     DON_GIA: number;
     donGiaDisplay: string;
     GHI_CHU: string;
@@ -34,13 +36,21 @@ interface Props {
     dongHangOptions: DongHangOption[];
     goiGiaOptions: GoiGiaOption[];
     hhOptions: HHOption[];
+    giaNhapMap?: Record<string, number>;
 }
 
-export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions }: Props) {
+export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHangOptions, goiGiaOptions, hhOptions, giaNhapMap: initialGiaNhapMap = {} }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [ngayHieuLuc, setNgayHieuLuc] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // ====== Giá nhập theo ngày hiệu lực ======
+    const [giaNhapMap, setGiaNhapMap] = useState<Record<string, number>>(initialGiaNhapMap);
+    const [loadingGiaNhap, setLoadingGiaNhap] = useState(false);
+
+    // ====== Map hệ số mặc định (lần khai báo gần nhất) theo MA_GOI_GIA ======
+    const [heSoDefaultMap, setHeSoDefaultMap] = useState<Record<string, number>>({});
 
     // ====== Vùng chọn (bộ lọc) ======
     const [selNhomHH, setSelNhomHH] = useState('');
@@ -49,15 +59,30 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
     const [selGoiGias, setSelGoiGias] = useState<string[]>([]);
     const [selHangHoas, setSelHangHoas] = useState<string[]>([]);
 
+    // ====== Hệ số cho mỗi gói giá (khi đang chọn) ======
+    const [heSoMap, setHeSoMap] = useState<Record<string, number>>({});
+
     // ====== Bảng chi tiết (tích lũy) ======
     const [detailRows, setDetailRows] = useState<DetailRow[]>([]);
+
+    // ====== Fetch giá nhập khi ngày hiệu lực thay đổi ======
+    const fetchGiaNhap = useCallback(async (date: string) => {
+        if (!date) return;
+        setLoadingGiaNhap(true);
+        try {
+            const map = await getGiaNhapMapByHangHoa(date);
+            setGiaNhapMap(map);
+        } catch (err) {
+            console.error('[fetchGiaNhap]', err);
+        }
+        setLoadingGiaNhap(false);
+    }, []);
 
     // ====== Cascade filter logic ======
     const filteredPhanLoai = useMemo(() => {
         if (!selNhomHH) return phanLoaiOptions;
         const nhom = nhomHhOptions.find(n => n.MA_NHOM === selNhomHH);
         if (!nhom) return phanLoaiOptions;
-        // NHOM là text, có thể lưu MA_NHOM hoặc TEN_NHOM
         return phanLoaiOptions.filter(p => p.NHOM === nhom.MA_NHOM || p.NHOM === nhom.TEN_NHOM);
     }, [selNhomHH, phanLoaiOptions, nhomHhOptions]);
 
@@ -73,7 +98,6 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
         if (selDongHang) return hhOptions.filter(h => h.MA_DONG_HANG === selDongHang);
         if (selPhanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === selPhanLoai);
         if (selNhomHH) {
-            // NHOM_HH trong DMHH lưu TEN_NHOM, nhưng dropdown value là MA_NHOM
             const nhom = nhomHhOptions.find(n => n.MA_NHOM === selNhomHH);
             const tenNhom = nhom?.TEN_NHOM;
             return hhOptions.filter(h => h.NHOM_HH === selNhomHH || h.NHOM_HH === tenNhom);
@@ -81,17 +105,47 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
         return hhOptions;
     }, [selDongHang, selPhanLoai, selNhomHH, hhOptions, nhomHhOptions]);
 
-    // Tổng dòng sẽ tạo (nếu không chọn gói giá → mỗi HH 1 dòng)
+    // Auto chọn tất cả Gói giá khi danh sách filter thay đổi
+    useEffect(() => {
+        if (filteredGoiGia.length > 0 && selNhomHH) {
+            const ids = filteredGoiGia.map(g => g.ID_GOI_GIA);
+            setSelGoiGias(ids);
+            // Auto-fill hệ số từ dữ liệu gần nhất
+            setHeSoMap(prev => {
+                const next = { ...prev };
+                ids.forEach(id => {
+                    if (!(id in next) && heSoDefaultMap[id]) {
+                        next[id] = heSoDefaultMap[id];
+                    }
+                });
+                return next;
+            });
+        }
+    }, [filteredGoiGia, selNhomHH, heSoDefaultMap]);
+
+    // Auto chọn tất cả Hàng hóa khi danh sách filter thay đổi
+    useEffect(() => {
+        if (filteredHH.length > 0 && selNhomHH) {
+            setSelHangHoas(filteredHH.map(h => h.MA_HH));
+        }
+    }, [filteredHH, selNhomHH]);
+
+    // Tổng dòng sẽ tạo
     const previewCount = selHangHoas.length > 0 ? (selGoiGias.length > 0 ? selGoiGias.length * selHangHoas.length : selHangHoas.length) : 0;
 
     // ====== Handlers ======
     const handleOpen = () => {
         setIsOpen(true);
-        setNgayHieuLuc(new Date().toISOString().split('T')[0]);
+        const today = new Date().toISOString().split('T')[0];
+        setNgayHieuLuc(today);
         clearSelections();
         setDetailRows([]);
         setError(null);
         setLoading(false);
+        setHeSoMap({});
+        // Fetch giá nhập và hệ số mặc định song song
+        fetchGiaNhap(today);
+        getHeSoMapByGoiGia().then(map => setHeSoDefaultMap(map)).catch(() => {});
     };
 
     const handleClose = () => setIsOpen(false);
@@ -102,6 +156,13 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
         setSelDongHang('');
         setSelGoiGias([]);
         setSelHangHoas([]);
+        setHeSoMap({});
+    };
+
+    const handleNgayHieuLucChange = (val: string) => {
+        setNgayHieuLuc(val);
+        // Khi thay đổi ngày hiệu lực → fetch lại giá nhập
+        fetchGiaNhap(val);
     };
 
     const handleNhomHHChange = (val: string) => {
@@ -110,6 +171,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
         setSelDongHang('');
         setSelGoiGias([]);
         setSelHangHoas([]);
+        setHeSoMap({});
     };
 
     const handlePhanLoaiChange = (val: string) => {
@@ -117,17 +179,46 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
         setSelDongHang('');
         setSelGoiGias([]);
         setSelHangHoas([]);
+        setHeSoMap({});
+
+        if (val) {
+            const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === val);
+            if (pl?.NHOM) {
+                const nhom = nhomHhOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM);
+                if (nhom) setSelNhomHH(nhom.MA_NHOM);
+            }
+        }
     };
 
     const handleDongHangChange = (val: string) => {
         setSelDongHang(val);
         setSelGoiGias([]);
         setSelHangHoas([]);
+        setHeSoMap({});
+
+        if (val) {
+            const dh = dongHangOptions.find(d => d.MA_DONG_HANG === val);
+            if (dh?.MA_PHAN_LOAI) {
+                setSelPhanLoai(dh.MA_PHAN_LOAI);
+                const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === dh.MA_PHAN_LOAI);
+                if (pl?.NHOM) {
+                    const nhom = nhomHhOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM);
+                    if (nhom) setSelNhomHH(nhom.MA_NHOM);
+                }
+            }
+        }
     };
 
     // Toggle checkbox cho Gói giá
     const toggleGoiGia = (id: string) => {
-        setSelGoiGias(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+        setSelGoiGias(prev => {
+            if (prev.includes(id)) return prev.filter(x => x !== id);
+            // Khi chọn → auto-fill hệ số gần nhất nếu chưa có
+            if (heSoDefaultMap[id] && !heSoMap[id]) {
+                setHeSoMap(m => ({ ...m, [id]: heSoDefaultMap[id] }));
+            }
+            return [...prev, id];
+        });
     };
 
     // Toggle checkbox cho Hàng hóa
@@ -135,7 +226,6 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
         setSelHangHoas(prev => prev.includes(ma) ? prev.filter(x => x !== ma) : [...prev, ma]);
     };
 
-    // Chọn tất cả / Bỏ chọn tất cả Hàng hóa
     const toggleAllHH = () => {
         if (selHangHoas.length === filteredHH.length) {
             setSelHangHoas([]);
@@ -144,13 +234,18 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
         }
     };
 
-    // Chọn tất cả / Bỏ chọn tất cả Gói giá
     const toggleAllGoiGia = () => {
         if (selGoiGias.length === filteredGoiGia.length) {
             setSelGoiGias([]);
         } else {
             setSelGoiGias(filteredGoiGia.map(g => g.ID_GOI_GIA));
         }
+    };
+
+    // ====== Xử lý hệ số cho từng gói giá (vùng chọn) ======
+    const handleHeSoChange = (goiGiaId: string, value: string) => {
+        const num = parseFloat(value) || 0;
+        setHeSoMap(prev => ({ ...prev, [goiGiaId]: num }));
     };
 
     // ====== Thêm xuống chi tiết ======
@@ -167,14 +262,14 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
         const newRows: DetailRow[] = [];
         let duplicateCount = 0;
 
-        // Tạo existingKeys set để check trùng
         const existingKeys = new Set(detailRows.map(r => r.key));
 
-        // Nếu có gói giá → tạo tổ hợp HH x GG, nếu không → mỗi HH 1 dòng
         const goiGiaList = selGoiGias.length > 0 ? selGoiGias : ['__NONE__'];
 
         for (const maHH of selHangHoas) {
             const hh = hhOptions.find(h => h.MA_HH === maHH);
+            const giaNhap = giaNhapMap[maHH] || 0;
+
             for (const maGoiGia of goiGiaList) {
                 const isNoGoiGia = maGoiGia === '__NONE__';
                 const gg = isNoGoiGia ? null : goiGiaOptions.find(g => g.ID_GOI_GIA === maGoiGia);
@@ -182,8 +277,13 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
 
                 if (existingKeys.has(key)) {
                     duplicateCount++;
-                    continue; // Bỏ qua dòng đã tồn tại
+                    continue;
                 }
+
+                // Lấy hệ số từ heSoMap cho gói giá này
+                const heSo = isNoGoiGia ? (heSoMap['__NONE__'] || 0) : (heSoMap[maGoiGia] || 0);
+                // Tính đơn giá tự động: giá nhập × hệ số
+                const donGia = heSo > 0 && giaNhap > 0 ? Math.round(giaNhap * heSo) : 0;
 
                 newRows.push({
                     key,
@@ -194,8 +294,10 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                     goiGiaLabel: isNoGoiGia ? '—' : (gg ? gg.GOI_GIA : maGoiGia),
                     MA_HH: maHH,
                     hhLabel: hh ? hh.TEN_HH : maHH,
-                    DON_GIA: 0,
-                    donGiaDisplay: '',
+                    giaNhap,
+                    HE_SO: heSo,
+                    DON_GIA: donGia,
+                    donGiaDisplay: donGia > 0 ? new Intl.NumberFormat('vi-VN').format(donGia) : '',
                     GHI_CHU: '',
                 });
             }
@@ -214,11 +316,10 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
             toast.success(`Đã thêm ${newRows.length} dòng chi tiết`);
         }
 
-        // Clear lựa chọn để người dùng chọn tổ hợp mới
         clearSelections();
     };
 
-    // ====== Xử lý nhập giá ======
+    // ====== Xử lý sửa đơn giá ======
     const handleDonGiaChange = (index: number, rawValue: string) => {
         const raw = rawValue.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10) || 0;
@@ -227,6 +328,21 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
             DON_GIA: num,
             donGiaDisplay: num > 0 ? new Intl.NumberFormat('vi-VN').format(num) : '',
         } : row));
+    };
+
+    // ====== Xử lý sửa hệ số trong bảng chi tiết ======
+    const handleDetailHeSoChange = (index: number, value: string) => {
+        const num = parseFloat(value) || 0;
+        setDetailRows(prev => prev.map((row, i) => {
+            if (i !== index) return row;
+            const donGia = num > 0 && row.giaNhap > 0 ? Math.round(row.giaNhap * num) : row.DON_GIA;
+            return {
+                ...row,
+                HE_SO: num,
+                DON_GIA: donGia,
+                donGiaDisplay: donGia > 0 ? new Intl.NumberFormat('vi-VN').format(donGia) : '',
+            };
+        }));
     };
 
     const handleGhiChuChange = (index: number, value: string) => {
@@ -267,6 +383,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                     MA_GOI_GIA: r.MA_GOI_GIA,
                     MA_HH: r.MA_HH,
                     DON_GIA: r.DON_GIA,
+                    HE_SO: r.HE_SO > 0 ? r.HE_SO : undefined,
                     GHI_CHU: r.GHI_CHU || undefined,
                 })),
             });
@@ -376,13 +493,20 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                     {/* Ngày hiệu lực */}
                     <div className="max-w-xs">
                         <label className={labelClass}>Ngày hiệu lực (chung cho tất cả) <span className="text-destructive">*</span></label>
-                        <input
-                            type="date"
-                            className={inputClass}
-                            value={ngayHieuLuc}
-                            onChange={e => setNgayHieuLuc(e.target.value)}
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                type="date"
+                                className={inputClass}
+                                value={ngayHieuLuc}
+                                onChange={e => handleNgayHieuLucChange(e.target.value)}
+                                required
+                            />
+                            {loadingGiaNhap && (
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                    <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* ====== VÙNG CHỌN TỔ HỢP ====== */}
@@ -420,7 +544,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                         {/* Multi-select Gói giá + Hàng hóa */}
                         {selNhomHH && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {/* Gói giá - multi checkbox */}
+                                {/* Gói giá - multi checkbox + Hệ số */}
                                 <div>
                                     <div className="flex items-center justify-between mb-1.5">
                                         <label className={labelClass + " mb-0"}>Gói giá * <span className="text-primary font-bold">({selGoiGias.length}/{filteredGoiGia.length})</span></label>
@@ -430,18 +554,34 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                                             </button>
                                         )}
                                     </div>
-                                    <div className="bg-background border border-input rounded-lg max-h-40 overflow-y-auto">
+                                    <div className="bg-background border border-input rounded-lg max-h-52 overflow-y-auto">
                                         {filteredGoiGia.length === 0 ? (
                                             <p className="text-xs text-muted-foreground p-3 text-center">Không có gói giá nào</p>
                                         ) : filteredGoiGia.map(g => (
-                                            <div key={g.ID} onClick={() => toggleGoiGia(g.ID_GOI_GIA)} className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors border-b border-border/50 last:border-b-0 select-none">
-                                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${selGoiGias.includes(g.ID_GOI_GIA) ? 'bg-primary border-primary' : 'border-input'}`}>
-                                                    {selGoiGias.includes(g.ID_GOI_GIA) && <Check className="w-3 h-3 text-primary-foreground" />}
+                                            <div key={g.ID} className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors border-b border-border/50 last:border-b-0 select-none">
+                                                <div onClick={() => toggleGoiGia(g.ID_GOI_GIA)} className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${selGoiGias.includes(g.ID_GOI_GIA) ? 'bg-primary border-primary' : 'border-input'}`}>
+                                                        {selGoiGias.includes(g.ID_GOI_GIA) && <Check className="w-3 h-3 text-primary-foreground" />}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <span className="text-sm font-medium block truncate">{g.GOI_GIA}</span>
+                                                        <span className="text-[10px] text-muted-foreground block truncate">{g.ID_GOI_GIA}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <span className="text-sm font-medium block truncate">{g.GOI_GIA}</span>
-                                                    <span className="text-[10px] text-muted-foreground block truncate">{g.ID_GOI_GIA}</span>
-                                                </div>
+                                                {/* Ô nhập hệ số cho gói giá này */}
+                                                {selGoiGias.includes(g.ID_GOI_GIA) && (
+                                                    <div className="shrink-0 w-20" onClick={e => e.stopPropagation()}>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            placeholder="Hệ số"
+                                                            className="w-full h-7 px-2 text-xs bg-background border border-primary/30 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40 text-right font-medium"
+                                                            value={heSoMap[g.ID_GOI_GIA] || ''}
+                                                            onChange={e => handleHeSoChange(g.ID_GOI_GIA, e.target.value)}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -457,7 +597,7 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                                             </button>
                                         )}
                                     </div>
-                                    <div className="bg-background border border-input rounded-lg max-h-40 overflow-y-auto">
+                                    <div className="bg-background border border-input rounded-lg max-h-52 overflow-y-auto">
                                         {filteredHH.length === 0 ? (
                                             <p className="text-xs text-muted-foreground p-3 text-center">Không có hàng hóa nào</p>
                                         ) : filteredHH.map(h => (
@@ -520,9 +660,12 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                                             <tr className="bg-muted/50 text-left">
                                                 <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground w-10">#</th>
                                                 <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[200px]">Hàng hóa</th>
-                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[160px]">Gói giá</th>
-                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[150px]">Đơn giá <span className="text-destructive">*</span></th>
-                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[140px]">Ghi chú</th>
+                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[130px]">Gói giá</th>
+                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[100px] text-right">Giá nhập</th>
+                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[80px] text-center">Hệ số</th>
+                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[120px]">Đơn giá <span className="text-destructive">*</span></th>
+                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground w-16 text-right">Chênh lệch</th>
+                                                <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground min-w-[120px]">Ghi chú</th>
                                                 <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground w-12"></th>
                                             </tr>
                                         </thead>
@@ -538,8 +681,39 @@ export default function BulkAddGiaBanButton({ nhomHhOptions, phanLoaiOptions, do
                                                         <div className="text-sm text-foreground">{row.goiGiaLabel}</div>
                                                         <div className="text-[10px] text-muted-foreground">{row.MA_GOI_GIA}</div>
                                                     </td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        {row.giaNhap > 0 ? (
+                                                            <span className="text-xs font-medium text-blue-600">
+                                                                {new Intl.NumberFormat('vi-VN').format(row.giaNhap)} ₫
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">—</span>
+                                                        )}
+                                                    </td>
                                                     <td className="px-3 py-2">
-                                                        <input type="text" inputMode="numeric" className="w-full h-8 px-2.5 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring transition-all placeholder:text-muted-foreground text-right font-medium" placeholder="0" value={row.donGiaDisplay} onChange={e => handleDonGiaChange(idx, e.target.value)} />
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring transition-all text-center font-medium"
+                                                            placeholder="1.0"
+                                                            value={row.HE_SO || ''}
+                                                            onChange={e => handleDetailHeSoChange(idx, e.target.value)}
+                                                        />
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <input type="text" inputMode="numeric" className="w-full h-8 px-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring transition-all placeholder:text-muted-foreground text-right font-medium" placeholder="0" value={row.donGiaDisplay} onChange={e => handleDonGiaChange(idx, e.target.value)} />
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        {(() => {
+                                                            const giaNhap = row.giaNhap;
+                                                            if (giaNhap && giaNhap > 0 && row.DON_GIA > 0) {
+                                                                const pct = ((row.DON_GIA - giaNhap) / giaNhap) * 100;
+                                                                const isPositive = pct >= 0;
+                                                                return <span className={`text-xs font-semibold ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>{isPositive ? '+' : ''}{pct.toFixed(1)}%</span>;
+                                                            }
+                                                            return <span className="text-xs text-muted-foreground">—</span>;
+                                                        })()}
                                                     </td>
                                                     <td className="px-3 py-2">
                                                         <input type="text" className="w-full h-8 px-2.5 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring transition-all placeholder:text-muted-foreground" placeholder="Ghi chú" value={row.GHI_CHU} onChange={e => handleGhiChuChange(idx, e.target.value)} />

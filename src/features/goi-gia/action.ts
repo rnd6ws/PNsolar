@@ -23,6 +23,20 @@ export async function getDongHangOptionsForGoiGia() {
     }
 }
 
+// ===== Lấy danh sách Nhóm KH để dùng cho dropdown =====
+export async function getNhomKHOptionsForGoiGia() {
+    try {
+        const data = await prisma.nHOM_KH.findMany({
+            select: { ID: true, NHOM: true },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+        return data.map(d => ({ ID: d.ID, NHOM: d.NHOM }));
+    } catch (error) {
+        console.error('[getNhomKHOptionsForGoiGia]', error);
+        return [];
+    }
+}
+
 // ===== Lấy danh sách Gói giá (có filter, phân trang) =====
 export async function getGoiGiaList(filters: {
     query?: string;
@@ -123,6 +137,7 @@ export async function createGoiGiaAction(data: {
     SL_MIN?: number | null;
     SL_MAX?: number | null;
     HIEU_LUC?: boolean;
+    NHOM_KH?: string | null;
 }) {
     try {
         if (!data.MA_DONG_HANG) return { success: false, message: 'Mã dòng hàng là bắt buộc.' };
@@ -138,6 +153,7 @@ export async function createGoiGiaAction(data: {
                 GOI_GIA: data.GOI_GIA,
                 SL_MIN: data.SL_MIN ?? null,
                 SL_MAX: data.SL_MAX ?? null,
+                NHOM_KH: data.NHOM_KH || null,
             }
         });
         revalidatePath('/goi-gia');
@@ -156,6 +172,7 @@ export async function createBulkGoiGiaAction(payload: {
         GOI_GIA: string;
         SL_MIN?: number | null;
         SL_MAX?: number | null;
+        NHOM_KH?: string | null;
     }>;
 }) {
     try {
@@ -184,6 +201,7 @@ export async function createBulkGoiGiaAction(payload: {
             GOI_GIA: row.GOI_GIA,
             SL_MIN: row.SL_MIN ?? null,
             SL_MAX: row.SL_MAX ?? null,
+            NHOM_KH: row.NHOM_KH || null,
         }));
 
         await prisma.gOI_GIA.createMany({ data: dataToCreate });
@@ -214,6 +232,7 @@ export async function updateGoiGiaAction(id: string, data: any) {
                 GOI_GIA: parsed.data.GOI_GIA,
                 SL_MIN: parsed.data.SL_MIN ?? null,
                 SL_MAX: parsed.data.SL_MAX ?? null,
+                NHOM_KH: parsed.data.NHOM_KH || null,
             }
         });
         revalidatePath('/goi-gia');

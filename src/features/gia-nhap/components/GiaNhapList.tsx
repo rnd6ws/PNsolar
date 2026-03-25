@@ -130,9 +130,9 @@ function GiaNhapForm({
                     </select>
                 </div>
                 <div className="space-y-1.5">
-                    <label className={labelClass}>Phân loại <span className="text-destructive">*</span></label>
-                    <select value={maPhanLoai} onChange={e => { setMaPhanLoai(e.target.value); setMaDongHang(""); setMaHH(""); }} required className="input-modern">
-                        <option value="">-- Chọn phân loại --</option>
+                    <label className={labelClass}>Phân loại</label>
+                    <select value={maPhanLoai} onChange={e => { const val = e.target.value; setMaPhanLoai(val); setMaDongHang(""); setMaHH(""); if (val) { const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === val); if (pl?.NHOM) { const nhom = nhomHHOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM); if (nhom) setMaNhomHH(nhom.MA_NHOM); } } }} className="input-modern">
+                        <option value="">-- Phân loại --</option>
                         {filteredPhanLoai.map(p => (
                             <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>
                         ))}
@@ -143,9 +143,9 @@ function GiaNhapForm({
             {/* Dòng hàng */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <label className={labelClass}>Dòng hàng <span className="text-destructive">*</span></label>
-                    <select value={maDongHang} onChange={e => { setMaDongHang(e.target.value); setMaHH(""); }} required className="input-modern">
-                        <option value="">-- Chọn dòng hàng --</option>
+                    <label className={labelClass}>Dòng hàng</label>
+                    <select value={maDongHang} onChange={e => { const val = e.target.value; setMaDongHang(val); setMaHH(""); if (val) { const dh = dongHangOptions.find(d => d.MA_DONG_HANG === val); if (dh?.MA_PHAN_LOAI) { setMaPhanLoai(dh.MA_PHAN_LOAI); const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === dh.MA_PHAN_LOAI); if (pl?.NHOM) { const nhom = nhomHHOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM); if (nhom) setMaNhomHH(nhom.MA_NHOM); } } } }} className="input-modern">
+                        <option value="">-- Dòng hàng --</option>
                         {filteredDongHang.map(d => (
                             <option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>
                         ))}
@@ -300,9 +300,9 @@ export default function GiaNhapList({
 
                                 <td className="px-4 py-3 align-middle text-xs">{item.NCC_REL?.TEN_NCC || item.MA_NCC}</td>
                                 {show("tenHH") && (
-                                    <td className="px-4 py-3 align-middle text-xs max-w-[200px] truncate">
-                                        <span className="font-mono text-primary font-semibold">{item.MA_HH}</span>
-                                        {item.HH_REL?.TEN_HH && <span className="ml-1 text-muted-foreground">- {item.HH_REL.TEN_HH}</span>}
+                                    <td className="px-4 py-3 align-middle text-xs max-w-[260px]">
+                                        <div className="font-semibold text-foreground">{item.HH_REL?.TEN_HH || item.MA_HH}</div>
+                                        {/* <div className="truncate font-mono text-[11px] text-muted-foreground mt-0.5">{item.MA_HH}</div> */}
                                     </td>
                                 )}
                                 {show("donGia") && (

@@ -7,6 +7,7 @@ export const goiGiaSchema = z.object({
     GOI_GIA: z.string().min(1, 'Gói giá là bắt buộc'),
     SL_MIN: z.number().int().min(0).optional().nullable(),
     SL_MAX: z.number().int().min(0).optional().nullable(),
+    NHOM_KH: z.string().optional().nullable(),
 });
 
 export type GoiGiaInput = z.infer<typeof goiGiaSchema>;

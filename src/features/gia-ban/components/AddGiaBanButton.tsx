@@ -11,7 +11,7 @@ interface NhomHhOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
 interface PhanLoaiOption { ID: string; MA_PHAN_LOAI: string; TEN_PHAN_LOAI: string; NHOM: string | null; }
 interface DongHangOption { ID: string; MA_DONG_HANG: string; TEN_DONG_HANG: string; MA_PHAN_LOAI: string; }
 interface GoiGiaOption { ID: string; ID_GOI_GIA: string; GOI_GIA: string; MA_DONG_HANG: string; }
-interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; MA_PHAN_LOAI: string | null; MA_DONG_HANG: string | null; PHAN_LOAI_REL?: { TEN_PHAN_LOAI: string } | null; DONG_HANG_REL?: { TEN_DONG_HANG: string } | null; }
+interface HHOption { ID: string; MA_HH: string; TEN_HH: string; NHOM_HH: string | null; MA_PHAN_LOAI: string | null; MA_DONG_HANG: string | null; }
 
 interface Props {
     nhomHhOptions: NhomHhOption[];
@@ -31,12 +31,10 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
     const [maHH, setMaHH] = useState("");
     const [donGiaDisplay, setDonGiaDisplay] = useState("");
     const [donGiaValue, setDonGiaValue] = useState(0);
+    const [heSoValue, setHeSoValue] = useState<number | ''>('');
     const [ghiChu, setGhiChu] = useState("");
 
-    const selectedHH = hhOptions.find(h => h.MA_HH === maHH);
-
     // ====== Cascade filter logic ======
-    // Nhóm HH → Phân loại
     const filteredPhanLoai = useMemo(() => {
         if (!nhomHh) return phanLoaiOptions;
         const nhom = nhomHhOptions.find(n => n.MA_NHOM === nhomHh);
@@ -44,22 +42,18 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
         return phanLoaiOptions.filter(p => p.NHOM === nhom.MA_NHOM || p.NHOM === nhom.TEN_NHOM);
     }, [nhomHh, phanLoaiOptions, nhomHhOptions]);
 
-    // Phân loại → Dòng hàng
     const filteredDongHang = useMemo(() => {
         return phanLoai ? dongHangOptions.filter(d => d.MA_PHAN_LOAI === phanLoai) : dongHangOptions;
     }, [phanLoai, dongHangOptions]);
 
-    // Dòng hàng → Gói giá
     const filteredGoiGia = useMemo(() => {
         return dongHang ? goiGiaOptions.filter(g => g.MA_DONG_HANG === dongHang) : goiGiaOptions;
     }, [dongHang, goiGiaOptions]);
 
-    // Dòng hàng/Phân loại/Nhóm HH → Hàng hóa
     const filteredHH = useMemo(() => {
         if (dongHang) return hhOptions.filter(h => h.MA_DONG_HANG === dongHang);
         if (phanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === phanLoai);
         if (nhomHh) {
-            // NHOM_HH trong DMHH lưu TEN_NHOM, nhưng dropdown value là MA_NHOM
             const nhom = nhomHhOptions.find(n => n.MA_NHOM === nhomHh);
             const tenNhom = nhom?.TEN_NHOM;
             return hhOptions.filter(h => h.NHOM_HH === nhomHh || h.NHOM_HH === tenNhom);
@@ -69,30 +63,45 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
 
     // ====== Cascade handlers ======
     const handleNhomHhChange = (val: string) => {
-        setNhomHh(val);
-        setPhanLoai("");
-        setDongHang("");
-        setGoiGia("");
-        setMaHH("");
+        setNhomHh(val); setPhanLoai(""); setDongHang(""); setGoiGia(""); setMaHH("");
     };
 
     const handlePhanLoaiChange = (val: string) => {
-        setPhanLoai(val);
-        setDongHang("");
-        setGoiGia("");
-        setMaHH("");
+        setPhanLoai(val); setDongHang(""); setGoiGia(""); setMaHH("");
+        if (val) {
+            const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === val);
+            if (pl?.NHOM) {
+                const nhom = nhomHhOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM);
+                if (nhom) setNhomHh(nhom.MA_NHOM);
+            }
+        }
     };
 
     const handleDongHangChange = (val: string) => {
-        setDongHang(val);
-        setGoiGia("");
-        setMaHH("");
+        setDongHang(val); setGoiGia(""); setMaHH("");
+        if (val) {
+            const dh = dongHangOptions.find(d => d.MA_DONG_HANG === val);
+            if (dh?.MA_PHAN_LOAI) {
+                setPhanLoai(dh.MA_PHAN_LOAI);
+                const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === dh.MA_PHAN_LOAI);
+                if (pl?.NHOM) {
+                    const nhom = nhomHhOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM);
+                    if (nhom) setNhomHh(nhom.MA_NHOM);
+                }
+            }
+        }
+    };
+
+    const handleDonGiaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value.replace(/[^0-9]/g, '');
+        const num = parseInt(raw, 10) || 0;
+        setDonGiaValue(num);
+        setDonGiaDisplay(num > 0 ? new Intl.NumberFormat('vi-VN').format(num) : '');
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
-
         setLoading(true);
         const res = await createGiaBan({
             NGAY_HIEU_LUC: fd.get("NGAY_HIEU_LUC") as string,
@@ -102,38 +111,21 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
             MA_GOI_GIA: goiGia,
             MA_HH: maHH,
             DON_GIA: donGiaValue,
+            HE_SO: heSoValue !== '' ? Number(heSoValue) : undefined,
             GHI_CHU: ghiChu || undefined,
         });
-
-        if (res.success) {
-            toast.success(res.message);
-            handleClose();
-        } else {
-            toast.error(res.message || "Lỗi thêm giá bán");
-        }
+        if (res.success) { toast.success(res.message); handleClose(); }
+        else { toast.error(res.message || "Lỗi thêm giá bán"); }
         setLoading(false);
     };
 
     const handleClose = () => {
         setOpen(false);
-        setNhomHh("");
-        setPhanLoai("");
-        setDongHang("");
-        setGoiGia("");
-        setMaHH("");
-        setDonGiaDisplay("");
-        setDonGiaValue(0);
-        setGhiChu("");
+        setNhomHh(""); setPhanLoai(""); setDongHang(""); setGoiGia(""); setMaHH("");
+        setDonGiaDisplay(""); setDonGiaValue(0); setHeSoValue(''); setGhiChu("");
     };
 
     const labelClass = "text-xs font-bold text-muted-foreground tracking-widest";
-
-    const handleDonGiaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const raw = e.target.value.replace(/[^0-9]/g, '');
-        const num = parseInt(raw, 10) || 0;
-        setDonGiaValue(num);
-        setDonGiaDisplay(num > 0 ? new Intl.NumberFormat('vi-VN').format(num) : '');
-    };
 
     return (
         <>
@@ -176,29 +168,16 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className={labelClass}>Nhóm HH <span className="text-destructive">*</span></label>
-                            <select
-                                value={nhomHh}
-                                onChange={e => handleNhomHhChange(e.target.value)}
-                                required
-                                className="input-modern"
-                            >
+                            <select value={nhomHh} onChange={e => handleNhomHhChange(e.target.value)} required className="input-modern">
                                 <option value="">-- Chọn nhóm HH --</option>
-                                {nhomHhOptions.map(n => (
-                                    <option key={n.ID} value={n.MA_NHOM}>{n.TEN_NHOM}</option>
-                                ))}
+                                {nhomHhOptions.map(n => (<option key={n.ID} value={n.MA_NHOM}>{n.TEN_NHOM}</option>))}
                             </select>
                         </div>
                         <div className="space-y-1.5">
                             <label className={labelClass}>Phân loại</label>
-                            <select
-                                value={phanLoai}
-                                onChange={e => handlePhanLoaiChange(e.target.value)}
-                                className="input-modern"
-                            >
+                            <select value={phanLoai} onChange={e => handlePhanLoaiChange(e.target.value)} className="input-modern">
                                 <option value="">-- Phân loại --</option>
-                                {filteredPhanLoai.map(p => (
-                                    <option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>
-                                ))}
+                                {filteredPhanLoai.map(p => (<option key={p.ID} value={p.MA_PHAN_LOAI}>{p.TEN_PHAN_LOAI}</option>))}
                             </select>
                         </div>
                     </div>
@@ -207,66 +186,60 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className={labelClass}>Dòng hàng</label>
-                            <select
-                                value={dongHang}
-                                onChange={e => handleDongHangChange(e.target.value)}
-                                className="input-modern"
-                            >
+                            <select value={dongHang} onChange={e => handleDongHangChange(e.target.value)} className="input-modern">
                                 <option value="">-- Dòng hàng --</option>
-                                {filteredDongHang.map(d => (
-                                    <option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>
-                                ))}
+                                {filteredDongHang.map(d => (<option key={d.ID} value={d.MA_DONG_HANG}>{d.TEN_DONG_HANG}</option>))}
                             </select>
                         </div>
                         <div className="space-y-1.5">
                             <label className={labelClass}>Gói giá</label>
-                            <select
-                                value={goiGia}
-                                onChange={e => setGoiGia(e.target.value)}
-                                className="input-modern"
-                            >
+                            <select value={goiGia} onChange={e => setGoiGia(e.target.value)} className="input-modern">
                                 <option value="">-- Gói giá --</option>
-                                {filteredGoiGia.map(g => (
-                                    <option key={g.ID} value={g.ID_GOI_GIA}>{g.GOI_GIA}</option>
-                                ))}
+                                {filteredGoiGia.map(g => (<option key={g.ID} value={g.ID_GOI_GIA}>{g.GOI_GIA}</option>))}
                             </select>
                         </div>
                     </div>
 
-                    {/* Hàng hóa + Tên HH */}
+                    {/* Hàng hóa - full width, hiển thị mã + tên */}
+                    <div className="space-y-1.5">
+                        <label className={labelClass}>Hàng hóa <span className="text-destructive">*</span></label>
+                        <select value={maHH} onChange={e => setMaHH(e.target.value)} required className="input-modern">
+                            <option value="">-- Chọn hàng hóa --</option>
+                            {filteredHH.map(h => (
+                                <option key={h.ID} value={h.MA_HH}>{h.MA_HH} — {h.TEN_HH}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Hệ số + Đơn giá */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className={labelClass}>Hàng hóa <span className="text-destructive">*</span></label>
-                            <select
-                                value={maHH}
-                                onChange={e => setMaHH(e.target.value)}
-                                required
+                            <label className={labelClass}>Hệ số (× Giá nhập)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
                                 className="input-modern"
-                            >
-                                <option value="">-- Chọn hàng hóa --</option>
-                                {filteredHH.map(h => (
-                                    <option key={h.ID} value={h.MA_HH}>{h.TEN_HH}</option>
-                                ))}
-                            </select>
+                                placeholder="VD: 1.3"
+                                value={heSoValue}
+                                onChange={e => {
+                                    const v = e.target.value;
+                                    setHeSoValue(v === '' ? '' : parseFloat(v) || '');
+                                }}
+                            />
                         </div>
                         <div className="space-y-1.5">
-                            <label className={labelClass}>Mã hàng hóa</label>
-                            <input className="input-modern bg-muted/30" readOnly value={selectedHH?.MA_HH || "—"} />
+                            <label className={labelClass}>Đơn giá (VNĐ) <span className="text-destructive">*</span></label>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                required
+                                className="input-modern"
+                                placeholder="VD: 1,234,500"
+                                value={donGiaDisplay}
+                                onChange={handleDonGiaChange}
+                            />
                         </div>
-                    </div>
-
-                    {/* Đơn giá */}
-                    <div className="space-y-1.5">
-                        <label className={labelClass}>Đơn giá (VNĐ) <span className="text-destructive">*</span></label>
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            required
-                            className="input-modern"
-                            placeholder="VD: 1,234,500"
-                            value={donGiaDisplay}
-                            onChange={handleDonGiaChange}
-                        />
                     </div>
 
                     {/* Ghi chú */}
@@ -279,7 +252,6 @@ export default function AddGiaBanButton({ nhomHhOptions, phanLoaiOptions, dongHa
                             onChange={e => setGhiChu(e.target.value)}
                         />
                     </div>
-
                 </form>
             </Modal>
         </>

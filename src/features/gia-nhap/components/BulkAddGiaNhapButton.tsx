@@ -64,14 +64,12 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
     }, [selPhanLoai, dongHangOptions]);
 
     const filteredHH = useMemo(() => {
+        if (!selNhomHH) return []; // Chưa chọn Nhóm HH → không hiện HH
         if (selDongHang) return hhOptions.filter(h => h.MA_DONG_HANG === selDongHang);
         if (selPhanLoai) return hhOptions.filter(h => h.MA_PHAN_LOAI === selPhanLoai);
-        if (selNhomHH) {
-            const nhom = nhomHHOptions.find(n => n.MA_NHOM === selNhomHH);
-            const tenNhom = nhom?.TEN_NHOM;
-            return hhOptions.filter(h => h.NHOM_HH === selNhomHH || h.NHOM_HH === tenNhom);
-        }
-        return hhOptions;
+        const nhom = nhomHHOptions.find(n => n.MA_NHOM === selNhomHH);
+        const tenNhom = nhom?.TEN_NHOM;
+        return hhOptions.filter(h => h.NHOM_HH === selNhomHH || h.NHOM_HH === tenNhom);
     }, [selDongHang, selPhanLoai, selNhomHH, hhOptions, nhomHHOptions]);
 
     // Tổng dòng sẽ tạo
@@ -108,16 +106,50 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
         setSelPhanLoai(val);
         setSelDongHang('');
         setSelHangHoas([]);
+
+        // Auto-fill cha: Nhóm HH từ Phân loại đã chọn
+        if (val) {
+            const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === val);
+            if (pl?.NHOM) {
+                const nhom = nhomHHOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM);
+                if (nhom) setSelNhomHH(nhom.MA_NHOM);
+            }
+        }
     };
 
     const handleDongHangChange = (val: string) => {
         setSelDongHang(val);
         setSelHangHoas([]);
+
+        // Auto-fill cha: Phân loại & Nhóm HH từ Dòng hàng đã chọn
+        if (val) {
+            const dh = dongHangOptions.find(d => d.MA_DONG_HANG === val);
+            if (dh?.MA_PHAN_LOAI) {
+                setSelPhanLoai(dh.MA_PHAN_LOAI);
+                // Tìm Nhóm HH từ Phân loại
+                const pl = phanLoaiOptions.find(p => p.MA_PHAN_LOAI === dh.MA_PHAN_LOAI);
+                if (pl?.NHOM) {
+                    // NHOM có thể là MA_NHOM hoặc TEN_NHOM, cần tìm đúng MA_NHOM
+                    const nhom = nhomHHOptions.find(n => n.MA_NHOM === pl.NHOM || n.TEN_NHOM === pl.NHOM);
+                    if (nhom) setSelNhomHH(nhom.MA_NHOM);
+                }
+            }
+        }
     };
 
-    // Toggle checkbox cho Hàng hóa
+    // Toggle checkbox cho Hàng hóa (auto-fill Phân loại + Dòng hàng khi chọn)
     const toggleHH = (maHH: string) => {
-        setSelHangHoas(prev => prev.includes(maHH) ? prev.filter(x => x !== maHH) : [...prev, maHH]);
+        if (selHangHoas.includes(maHH)) {
+            setSelHangHoas(prev => prev.filter(x => x !== maHH));
+        } else {
+            // Auto-fill cascade từ HH được chọn nếu dropdown đang rỗng
+            const hh = hhOptions.find(h => h.MA_HH === maHH);
+            if (hh) {
+                if (!selPhanLoai && hh.MA_PHAN_LOAI) setSelPhanLoai(hh.MA_PHAN_LOAI);
+                if (!selDongHang && hh.MA_DONG_HANG) setSelDongHang(hh.MA_DONG_HANG);
+            }
+            setSelHangHoas(prev => [...prev, maHH]);
+        }
     };
     const toggleAllHH = () => {
         setSelHangHoas(prev => prev.length === filteredHH.length ? [] : filteredHH.map(h => h.MA_HH));
@@ -152,8 +184,9 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
             newRows.push({
                 key,
                 MA_NHOM_HH: selNhomHH,
-                MA_PHAN_LOAI: selPhanLoai,
-                MA_DONG_HANG: selDongHang,
+                // Fallback về dữ liệu từ HH nếu filter chưa được chọn
+                MA_PHAN_LOAI: selPhanLoai || hh?.MA_PHAN_LOAI || '',
+                MA_DONG_HANG: selDongHang || hh?.MA_DONG_HANG || '',
                 MA_NCC: selNCC,
                 nccLabel: ncc ? ncc.TEN_NCC : selNCC,
                 MA_HH: maHH,
@@ -347,7 +380,12 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
                             </div>
                         </div>
 
-                        {/* Multi-select Hàng hóa */}
+                        {/* Multi-select Hàng hóa - chỉ hiện khi đã chọn Nhóm HH */}
+                        {!selNhomHH ? (
+                            <p className="text-xs text-muted-foreground italic px-1">
+                                👆 Vui lòng chọn <strong>Nhóm HH</strong> để hiển thị danh sách hàng hóa
+                            </p>
+                        ) : (
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
                                 <label className={labelClass + " mb-0"}>Hàng hóa <span className="text-destructive">*</span> <span className="text-primary font-bold">({selHangHoas.length}/{filteredHH.length})</span></label>
@@ -359,7 +397,7 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
                             </div>
                             <div className="bg-background border border-input rounded-lg max-h-40 overflow-y-auto">
                                 {filteredHH.length === 0 ? (
-                                    <p className="text-xs text-muted-foreground p-3 text-center">Không có hàng hóa nào</p>
+                                    <p className="text-xs text-muted-foreground p-3 text-center">Không có hàng hóa nào trong nhóm này</p>
                                 ) : filteredHH.map(h => (
                                     <div key={h.ID} onClick={() => toggleHH(h.MA_HH)} className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors border-b border-border/50 last:border-b-0 select-none">
                                         <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${selHangHoas.includes(h.MA_HH) ? 'bg-primary border-primary' : 'border-input'}`}>
@@ -373,6 +411,7 @@ export default function BulkAddGiaNhapButton({ nhomHHOptions, phanLoaiOptions, d
                                 ))}
                             </div>
                         </div>
+                        )}
 
                         {/* Preview + Nút thêm xuống chi tiết */}
                         <div className="flex items-center justify-between pt-2 border-t border-border/50">

@@ -8,5 +8,6 @@ export const giaBanSchema = z.object({
     MA_GOI_GIA: z.string().optional(),
     MA_HH: z.string().min(1, 'Mã HH là bắt buộc'),
     DON_GIA: z.number().min(0, 'Đơn giá phải >= 0'),
+    HE_SO: z.number().optional(),
     GHI_CHU: z.string().optional(),
 });
