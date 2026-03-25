@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
     Pencil, Trash2, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown,
-    ClipboardList, Eye, ClipboardEdit
+    ClipboardList, Eye, ClipboardEdit, Images
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -20,6 +20,7 @@ import type { KhaoSatColumnKey } from "./KhaoSatColumnToggle";
 import KhaoSatDetailModal from "./KhaoSatDetailModal";
 import KhaoSatFormModal from "./KhaoSatFormModal";
 import KhaoSatChiTietModal from "./KhaoSatChiTietModal";
+import KhaoSatImageModal from "./KhaoSatImageModal";
 
 type KhaoSatItem = {
     ID: string;
@@ -36,6 +37,7 @@ type KhaoSatItem = {
     KHTN_REL: { TEN_KH: string; MA_KH: string } | null;
     CO_HOI_REL: { MA_CH: string } | null;
     NGUOI_LIEN_HE_REL: { TENNGUOI_LIENHE: string } | null;
+    HINH_ANH: { STT: number; TEN_HINH: string; URL_HINH: string }[];
     KHAO_SAT_CT: any[];
 };
 
@@ -89,6 +91,7 @@ export default function KhaoSatList({
     const [sortDir, setSortDir] = useState<SortDir>("asc");
     const [editItem, setEditItem] = useState<KhaoSatItem | null>(null);
     const [chiTietEditItem, setChiTietEditItem] = useState<KhaoSatItem | null>(null);
+    const [imageUploadItem, setImageUploadItem] = useState<KhaoSatItem | null>(null);
     const [deleteItem, setDeleteItem] = useState<KhaoSatItem | null>(null);
     const [detailItem, setDetailItem] = useState<KhaoSatItem | null>(null);
 
@@ -135,7 +138,7 @@ export default function KhaoSatList({
                             )}
                             {show("loai") && (
                                 <th onClick={() => handleSort("LOAI_CONG_TRINH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
-                                    Loại CT <SortIcon col="LOAI_CONG_TRINH" sortKey={sortKey} dir={sortDir} />
+                                    Loại công trình <SortIcon col="LOAI_CONG_TRINH" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("nguoi") && (
@@ -150,7 +153,7 @@ export default function KhaoSatList({
                             )}
                             {show("diaChi") && (
                                 <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
-                                    Địa chỉ CT
+                                    Địa điểm lắp đặt
                                 </th>
                             )}
                             <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">
@@ -167,7 +170,7 @@ export default function KhaoSatList({
                             </tr>
                         )}
                         {sorted.map((item, idx) => (
-                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
+                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setDetailItem(item)}>
                                 <td className="px-4 py-3 align-middle text-muted-foreground text-xs text-center font-mono">{idx + 1}</td>
                                 {show("ma") && (
                                     <td className="px-4 py-3 align-middle text-center">
@@ -197,7 +200,7 @@ export default function KhaoSatList({
                                         {item.DIA_CHI_CONG_TRINH || item.DIA_CHI || "—"}
                                     </td>
                                 )}
-                                <td className="px-4 py-3 align-middle text-right">
+                                <td className="px-4 py-3 align-middle text-right" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-end gap-1 items-center">
                                         <button
                                             onClick={() => setDetailItem(item)}
@@ -213,6 +216,13 @@ export default function KhaoSatList({
                                                 title="Ghi nhận khảo sát"
                                             >
                                                 <ClipboardEdit className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={() => setImageUploadItem(item)}
+                                                className="p-1.5 hover:bg-indigo-500/10 text-muted-foreground hover:text-indigo-600 rounded transition-colors"
+                                                title="Ảnh khảo sát"
+                                            >
+                                                <Images className="w-3.5 h-3.5" />
                                             </button>
                                             <button
                                                 onClick={() => setEditItem(item)}
@@ -242,6 +252,9 @@ export default function KhaoSatList({
                                                     <PermissionGuard moduleKey="khao-sat" level="edit">
                                                         <DropdownMenuItem onClick={() => setEditItem(item)}>
                                                             <Pencil className="w-3.5 h-3.5 mr-2" />Sửa
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => setImageUploadItem(item)}>
+                                                            <Images className="w-3.5 h-3.5 mr-2" />Ảnh KS
                                                         </DropdownMenuItem>
                                                     </PermissionGuard>
                                                     <PermissionGuard moduleKey="khao-sat" level="delete">
@@ -290,9 +303,26 @@ export default function KhaoSatList({
                 />
             )}
 
+            {/* Image Upload Modal */}
+            {imageUploadItem && (
+                <KhaoSatImageModal
+                    key={imageUploadItem.ID}
+                    isOpen={true}
+                    onClose={() => {
+                        setImageUploadItem(null);
+                        router.refresh();
+                    }}
+                    item={imageUploadItem}
+                />
+            )}
+
             {/* Detail Modal */}
             {detailItem && (
-                <KhaoSatDetailModal item={detailItem} onClose={() => setDetailItem(null)} />
+                <KhaoSatDetailModal
+                    item={detailItem}
+                    onClose={() => setDetailItem(null)}
+                    nguoiKhaoSatName={renderNguoiKS(detailItem.NGUOI_KHAO_SAT)}
+                />
             )}
 
             {/* Delete Confirm */}

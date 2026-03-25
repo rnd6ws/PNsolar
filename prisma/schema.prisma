@@ -718,6 +718,7 @@ model BAO_GIA_CT {
 
 // ===== HÌNH ẢNH KHẢO SÁT =====
 type HINH_ANH_KS {
+  STT      Int
   TEN_HINH String
   URL_HINH String
 }

@@ -97,6 +97,78 @@ export function useFileUpload({
 }
 
 /**
+ * Hook chuyên dụng để upload đồng thời (song song) nhiều file
+ * Tối ưu hóa API calls bằng cách sử dụng Promise.all internally
+ */
+export function useMultipleFileUpload({
+    folder = 'pnsolar/uploads',
+    type = 'any',
+    onError,
+}: UseFileUploadOptions = {}) {
+    const [uploading, setUploading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const uploadMultiple = useCallback(async (items: { file: File; customName?: string }[]): Promise<UploadedFile[]> => {
+        if (!items || items.length === 0) return [];
+        setUploading(true);
+        setError(null);
+
+        try {
+            const uploadPromises = items.map(async ({ file, customName }) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('folder', folder);
+                formData.append('type', type);
+                
+                if (customName) {
+                    formData.append('public_id', customName);
+                }
+
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    throw new Error(`[${file.name}] ${data.message || 'Upload thất bại'}`);
+                }
+
+                return {
+                    url: data.url,
+                    public_id: data.public_id,
+                    format: data.format,
+                    bytes: data.bytes,
+                    resource_type: data.resource_type,
+                    original_filename: data.original_filename,
+                    name: data.original_filename || file.name,
+                } as UploadedFile;
+            });
+
+            // Chạy API call đồng thời (Parallel execution)
+            const uploadedFiles = await Promise.all(uploadPromises);
+            
+            return uploadedFiles;
+
+        } catch (err: any) {
+            const msg = err.message || 'Lỗi kết nối, vui lòng kiểm tra lại mạng';
+            setError(msg);
+            onError?.(msg);
+            throw err; // Bắn lỗi ra ngoài để component biết mà dừng lại
+        } finally {
+            setUploading(false);
+        }
+    }, [folder, type, onError]);
+
+    const reset = useCallback(() => {
+        setError(null);
+    }, []);
+
+    return { uploadMultiple, uploading, error, reset };
+}
+
+/**
  * Format bytes thành chuỗi dễ đọc
  */
 export function formatFileSize(bytes: number): string {

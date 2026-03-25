@@ -137,7 +137,7 @@ export default function KhaoSatFormModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!form.MA_KH) {
             toast.error("Vui lòng chọn khách hàng để tiếp tục");
             return;
@@ -234,12 +234,12 @@ export default function KhaoSatFormModal({
                         />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Địa chỉ liên hệ</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Địa chỉ</label>
                         <input
                             className="input-modern"
                             value={form.DIA_CHI}
                             onChange={(e) => setForm((f) => ({ ...f, DIA_CHI: e.target.value }))}
-                            placeholder="Địa chỉ liên hệ"
+                            placeholder="Địa chỉ"
                         />
                     </div>
                     <div className="space-y-2">
@@ -261,7 +261,7 @@ export default function KhaoSatFormModal({
                         />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Địa chỉ công trình</label>
+                        <label className="text-sm font-semibold text-muted-foreground">Địa điểm lắp đặt</label>
                         <input
                             className="input-modern"
                             value={form.DIA_CHI_CONG_TRINH}

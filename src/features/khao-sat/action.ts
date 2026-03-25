@@ -233,6 +233,19 @@ export async function deleteKhaoSat(id: string) {
     }
 }
 
+export async function updateKhaoSatImages(id: string, images: { STT: number; TEN_HINH: string; URL_HINH: string; }[]) {
+    try {
+        await prisma.kHAO_SAT.update({
+            where: { ID: id },
+            data: { HINH_ANH: images },
+        });
+        revalidatePath("/khao-sat");
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, message: e.message || "Lỗi không xác định" };
+    }
+}
+
 // ─── KHAO SAT CHI TIET ────────────────────────────────────────
 
 export async function upsertKhaoSatChiTiet(data: {
