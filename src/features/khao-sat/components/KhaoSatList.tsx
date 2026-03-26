@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
     Pencil, Trash2, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown,
-    ClipboardList, Eye, ClipboardEdit, Images
+    ClipboardList, Eye, ClipboardEdit, Images, FileDown, Loader2
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -21,6 +21,7 @@ import KhaoSatDetailModal from "./KhaoSatDetailModal";
 import KhaoSatFormModal from "./KhaoSatFormModal";
 import KhaoSatChiTietModal from "./KhaoSatChiTietModal";
 import KhaoSatImageModal from "./KhaoSatImageModal";
+import { exportKhaoSatDocx } from "@/features/khao-sat/utils/exportKhaoSat";
 
 type KhaoSatItem = {
     ID: string;
@@ -96,6 +97,20 @@ export default function KhaoSatList({
     const [imageUploadItem, setImageUploadItem] = useState<KhaoSatItem | null>(null);
     const [deleteItem, setDeleteItem] = useState<KhaoSatItem | null>(null);
     const [detailItem, setDetailItem] = useState<KhaoSatItem | null>(null);
+    const [exportingId, setExportingId] = useState<string | null>(null);
+
+    const handleExport = async (item: KhaoSatItem, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setExportingId(item.ID);
+        try {
+            await exportKhaoSatDocx(item as any, renderNguoiKS(item.NGUOI_KHAO_SAT));
+            toast.success(`Đã xuất báo cáo ${item.MA_KHAO_SAT}`);
+        } catch (err: any) {
+            toast.error(err?.message || "Xuất file thất bại");
+        } finally {
+            setExportingId(null);
+        }
+    };
 
     const renderNguoiKS = (nguoiKS: string | null) => {
         if (!nguoiKS) return "—";
@@ -211,6 +226,16 @@ export default function KhaoSatList({
                                         >
                                             <Eye className="w-3.5 h-3.5" />
                                         </button>
+                                        <button
+                                            onClick={(e) => handleExport(item, e)}
+                                            disabled={exportingId === item.ID}
+                                            className="p-1.5 hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-600 rounded transition-colors disabled:opacity-50"
+                                            title="Xuất báo cáo Word"
+                                        >
+                                            {exportingId === item.ID
+                                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                : <FileDown className="w-3.5 h-3.5" />}
+                                        </button>
                                         <PermissionGuard moduleKey="khao-sat" level="edit">
                                             <button
                                                 onClick={() => setChiTietEditItem(item)}
@@ -251,6 +276,12 @@ export default function KhaoSatList({
                                                     </button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-36 rounded-xl">
+                                                    <DropdownMenuItem onClick={(e) => handleExport(item, e as any)} disabled={exportingId === item.ID}>
+                                                        {exportingId === item.ID
+                                                            ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                                                            : <FileDown className="w-3.5 h-3.5 mr-2" />}
+                                                        Xuất Word
+                                                    </DropdownMenuItem>
                                                     <PermissionGuard moduleKey="khao-sat" level="edit">
                                                         <DropdownMenuItem onClick={() => setEditItem(item)}>
                                                             <Pencil className="w-3.5 h-3.5 mr-2" />Sửa
