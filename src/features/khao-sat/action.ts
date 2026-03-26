@@ -60,7 +60,12 @@ export async function getKhaoSatList(params?: {
                         { LOAI_CONG_TRINH: { contains: query, mode: "insensitive" as const } },
                     ]
                 } : {},
-                loai && loai !== "all" ? { LOAI_CONG_TRINH: loai } : {},
+                loai && loai !== "all" && loai !== "month" ? { LOAI_CONG_TRINH: loai } : {},
+                loai === "month" ? {
+                    NGAY_KHAO_SAT: {
+                        gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                    }
+                } : {},
                 nguoi && nguoi !== "all" ? { NGUOI_KHAO_SAT: { contains: nguoi } } : {},
                 staffMaNv ? { NGUOI_KHAO_SAT: { contains: staffMaNv } } : {},
             ],

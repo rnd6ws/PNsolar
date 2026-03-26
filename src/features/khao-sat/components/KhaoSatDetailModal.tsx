@@ -146,13 +146,15 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                                             <button
                                                 type="button"
                                                 onClick={() => setCollapsed((p) => ({ ...p, [nhom]: !isCollapsed }))}
-                                                className="w-full flex items-center justify-between px-4 py-2.5 bg-primary/10 hover:bg-primary/15 transition-colors"
+                                                className="w-full flex items-center justify-between px-4 py-2.5 bg-primary/10 hover:bg-primary/15 transition-colors gap-3"
                                             >
-                                                <span className="font-semibold text-sm text-primary">
-                                                    {isCollapsed ? <ChevronRight className="w-4 h-4 inline mr-1.5" /> : <ChevronDown className="w-4 h-4 inline mr-1.5" />}
-                                                    {nhom}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-primary/20">
+                                                <div className="flex items-start gap-2 flex-1 min-w-0">
+                                                    {isCollapsed ? <ChevronRight className="w-4 h-4 text-primary shrink-0 mt-0.5" /> : <ChevronDown className="w-4 h-4 text-primary shrink-0 mt-0.5" />}
+                                                    <span className="font-semibold text-sm text-primary text-left wrap-break-word">
+                                                        {nhom}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-primary/20 whitespace-nowrap shrink-0">
                                                     {totalCt} chi tiết
                                                 </span>
                                             </button>

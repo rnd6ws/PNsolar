@@ -182,7 +182,7 @@ export async function exportKhaoSatDocx(
     const ndd = item.KHTN_REL?.NGUOI_DAI_DIEN?.[0];
 
     const templateData = {
-        HANG_MUC: item.HANG_MUC || "—",
+        HANG_MUC: item.HANG_MUC?.toUpperCase() || "—",
         CONG_SUAT: item.CONG_SUAT || "—",
         LOAI_CONG_TRINH: item.LOAI_CONG_TRINH || "—",
         NGAY_KHAO_SAT: formatDateVN(item.NGAY_KHAO_SAT),
@@ -224,12 +224,12 @@ export async function exportKhaoSatDocx(
                 const url = URL.createObjectURL(blob);
                 const img = new Image();
                 img.onload = () => {
-                    const maxWidth = 400;
+                    const maxWidth = 550;
                     const ratio = img.naturalWidth > maxWidth ? maxWidth / img.naturalWidth : 1;
                     resolve([Math.round(img.naturalWidth * ratio), Math.round(img.naturalHeight * ratio)]);
                     URL.revokeObjectURL(url);
                 };
-                img.onerror = () => { resolve([400, 300]); URL.revokeObjectURL(url); };
+                img.onerror = () => { resolve([550, 412]); URL.revokeObjectURL(url); };
                 img.src = url;
             });
         },

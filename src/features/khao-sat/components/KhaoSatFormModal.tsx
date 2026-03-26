@@ -234,7 +234,7 @@ export default function KhaoSatFormModal({
                                 className="btn-premium-primary"
                                 onClick={() => (document.querySelector("#form-ks-modal") as HTMLFormElement)?.requestSubmit()}
                             >
-                                {submitting ? "Đang xử lý..." : mode === "add" ? "Tạo và tiếp tục →" : "Lưu"}
+                                {submitting ? "Đang xử lý..." : mode === "add" ? "Tiếp tục →" : "Lưu"}
                             </button>
                         </div>
                     </>

@@ -303,7 +303,7 @@ export default function KhaoSatList({
             </div>
 
             {/* Card View */}
-            <div className={`grid grid-cols-1 gap-4 ${viewMode === "card" ? "block" :
+            <div className={`grid grid-cols-1 gap-2 p-1 ${viewMode === "card" ? "block" :
                 viewMode === "table" ? "hidden" :
                     "block md:hidden"
                 }`}>
@@ -332,24 +332,24 @@ export default function KhaoSatList({
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-44 rounded-xl">
-                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}>
-                                        <Eye className="w-4 h-4 mr-2" />Xem chi tiết
+                                    <DropdownMenuItem className="text-blue-600 focus:text-blue-700 dark:text-blue-400 dark:focus:text-blue-300 cursor-pointer focus:bg-blue-50 dark:focus:bg-blue-900/20" onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}>
+                                        <Eye className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />Xem chi tiết
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExport(item, e as any); }} disabled={exportingId === item.ID}>
+                                    <DropdownMenuItem className="text-emerald-600 focus:text-emerald-700 dark:text-emerald-400 dark:focus:text-emerald-300 cursor-pointer focus:bg-emerald-50 dark:focus:bg-emerald-900/20" onClick={(e) => { e.stopPropagation(); handleExport(item, e as any); }} disabled={exportingId === item.ID}>
                                         {exportingId === item.ID
-                                            ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            : <FileDown className="w-4 h-4 mr-2" />}
+                                            ? <Loader2 className="w-4 h-4 mr-2 animate-spin text-emerald-600 dark:text-emerald-400" />
+                                            : <FileDown className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />}
                                         Xuất Word
                                     </DropdownMenuItem>
                                     <PermissionGuard moduleKey="khao-sat" level="edit">
-                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setChiTietEditItem(item); }}>
-                                            <ClipboardEdit className="w-4 h-4 mr-2" />Ghi nhận KS
+                                        <DropdownMenuItem className="text-orange-600 focus:text-orange-700 dark:text-orange-400 dark:focus:text-orange-300 cursor-pointer focus:bg-orange-50 dark:focus:bg-orange-900/20" onClick={(e) => { e.stopPropagation(); setChiTietEditItem(item); }}>
+                                            <ClipboardEdit className="w-4 h-4 mr-2 text-orange-600 dark:text-orange-400" />Ghi nhận KS
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setImageUploadItem(item); }}>
-                                            <Images className="w-4 h-4 mr-2" />Ảnh KS
+                                        <DropdownMenuItem className="text-purple-600 focus:text-purple-700 dark:text-purple-400 dark:focus:text-purple-300 cursor-pointer focus:bg-purple-50 dark:focus:bg-purple-900/20" onClick={(e) => { e.stopPropagation(); setImageUploadItem(item); }}>
+                                            <Images className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />Ảnh KS
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditItem(item); }}>
-                                            <Pencil className="w-4 h-4 mr-2" />Sửa
+                                        <DropdownMenuItem className="text-sky-600 focus:text-sky-700 dark:text-sky-400 dark:focus:text-sky-300 cursor-pointer focus:bg-sky-50 dark:focus:bg-sky-900/20" onClick={(e) => { e.stopPropagation(); setEditItem(item); }}>
+                                            <Pencil className="w-4 h-4 mr-2 text-sky-600 dark:text-sky-400" />Sửa
                                         </DropdownMenuItem>
                                     </PermissionGuard>
                                     <PermissionGuard moduleKey="khao-sat" level="delete">

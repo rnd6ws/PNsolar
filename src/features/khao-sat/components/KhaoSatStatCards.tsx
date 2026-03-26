@@ -34,20 +34,20 @@ export default function KhaoSatStatCards({ stats }: Props) {
             color: "text-orange-500 bg-orange-500/10",
             filterVal: "month",
         },
-        {
-            label: "Loại phổ biến",
-            value: stats.phoBienLoai,
-            icon: Building2,
-            color: "text-green-600 bg-green-500/10",
-            filterVal: "none",
-        },
-        {
-            label: "Tỉ lệ hoàn thành",
-            value: stats.total > 0 ? `${Math.round((stats.thisMonth / stats.total) * 100)}%` : "0%",
-            icon: TrendingUp,
-            color: "text-purple-600 bg-purple-500/10",
-            filterVal: "none",
-        },
+        // {
+        //     label: "Loại phổ biến",
+        //     value: stats.phoBienLoai,
+        //     icon: Building2,
+        //     color: "text-green-600 bg-green-500/10",
+        //     filterVal: "none",
+        // },
+        // {
+        //     label: "Tỉ lệ hoàn thành",
+        //     value: stats.total > 0 ? `${Math.round((stats.thisMonth / stats.total) * 100)}%` : "0%",
+        //     icon: TrendingUp,
+        //     color: "text-purple-600 bg-purple-500/10",
+        //     filterVal: "none",
+        // },
     ];
 
     const handleCardClick = (filterVal: string) => {
@@ -65,7 +65,7 @@ export default function KhaoSatStatCards({ stats }: Props) {
     };
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
             {cards.map((stat) => {
                 const isActive = stat.filterVal !== "none" && (
                     stat.filterVal === "all"
@@ -77,9 +77,8 @@ export default function KhaoSatStatCards({ stats }: Props) {
                         key={stat.label}
                         onClick={() => handleCardClick(stat.filterVal)}
                         disabled={isPending || stat.filterVal === "none"}
-                        className={`bg-card border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all text-left ${
-                            stat.filterVal === "none" ? "cursor-default" : "cursor-pointer"
-                        } ${isActive ? "border-primary ring-1 ring-primary/20" : "border-border"} ${isPending ? "opacity-70" : ""}`}
+                        className={`bg-card border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all text-left ${stat.filterVal === "none" ? "cursor-default" : "cursor-pointer"
+                            } ${isActive ? "border-primary ring-1 ring-primary/20" : "border-border"} ${isPending ? "opacity-70" : ""}`}
                     >
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stat.color}`}>
                             {isPending && isActive ? (
