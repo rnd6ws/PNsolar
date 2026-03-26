@@ -23,6 +23,7 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     khachHang: { ID: string; TEN_KH: string } | null;
+    onCreated?: () => void;
 }
 
 const EMPTY_FORM = {
@@ -34,7 +35,7 @@ const EMPTY_FORM = {
     HIEU_LUC: "Đang hiệu lực",
 };
 
-export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) {
+export default function NguoiLienHeModal({ isOpen, onClose, khachHang, onCreated }: Props) {
     const [list, setList] = useState<NguoiLienHe[]>([]);
     const [loadingList, setLoadingList] = useState(false);
     const [form, setForm] = useState(EMPTY_FORM);
@@ -101,6 +102,7 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang }: Props) 
 
             if (res.success) {
                 toast.success(editItem ? "Cập nhật người liên hệ thành công" : "Đã thêm người liên hệ mới");
+                if (!editItem && onCreated) onCreated();
                 cancelForm();
                 loadList();
             } else {

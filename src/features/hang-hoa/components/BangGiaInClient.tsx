@@ -13,26 +13,29 @@ function fmtVND(n: number | null | undefined) {
 export default function BangGiaInClient() {
     const [products, setProducts] = useState<BangGiaProduct[]>([]);
     const [loading, setLoading] = useState(true);
-    const [tieuDe, setTieuDe] = useState('BẢNG GIÁ INVERTER DEYE');
+    const [tieuDe, setTieuDe] = useState('BẢNG GIÁ');
     const [ghiChu, setGhiChu] = useState('(Đã bao gồm VAT)');
     const [showSettings, setShowSettings] = useState(false);
     const [showChinhSachBH, setShowChinhSachBH] = useState(true);
     const [showGiaNhap, setShowGiaNhap] = useState(true);
+    const [ngayHieuLuc, setNgayHieuLuc] = useState<string>('');
 
     // Load selected products from sessionStorage
     useEffect(() => {
         const stored = sessionStorage.getItem('bangGia_selectedProducts');
+        const storedNgay = sessionStorage.getItem('bangGia_ngayHieuLuc') || '';
+        setNgayHieuLuc(storedNgay);
         if (stored) {
             const maHHList: string[] = JSON.parse(stored);
-            loadProducts(maHHList);
+            loadProducts(maHHList, storedNgay);
         } else {
             setLoading(false);
         }
     }, []);
 
-    const loadProducts = async (maHHList: string[]) => {
+    const loadProducts = async (maHHList: string[], ngay?: string) => {
         setLoading(true);
-        const data = await getProductsForBangGia(maHHList);
+        const data = await getProductsForBangGia(maHHList, ngay || undefined);
         setProducts(data);
         setLoading(false);
     };
@@ -214,6 +217,11 @@ export default function BangGiaInClient() {
                         </h2>
                         {ghiChu && (
                             <p className="text-[12px] text-gray-600 mt-1 font-medium">{ghiChu}</p>
+                        )}
+                        {ngayHieuLuc && (
+                            <p className="text-[11px] text-gray-500 mt-0.5">
+                                Hiệu lực từ ngày: {new Date(ngayHieuLuc).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            </p>
                         )}
                     </div>
 

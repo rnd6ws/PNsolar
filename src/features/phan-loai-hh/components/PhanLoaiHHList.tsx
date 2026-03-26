@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Edit2, Trash2, Plus, ChevronDown, ChevronRight, DollarSign, X, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Tags, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { updatePhanLoaiHH, deletePhanLoaiHH, createDongHH, updateDongHH, deleteDongHH, createBulkDongHH } from '@/features/phan-loai-hh/action';
-import { createGoiGiaAction, toggleGoiGiaHieuLuc } from '@/features/goi-gia/action';
+import { createGoiGiaAction, toggleGoiGiaHieuLuc, getNhomKHOptionsForGoiGia } from '@/features/goi-gia/action';
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
 import Modal from '@/components/Modal';
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
@@ -38,7 +38,8 @@ export default function PhanLoaiHHList({
     // Quick add gói giá
     const [showAddGoiGia, setShowAddGoiGia] = useState(false);
     const [addGoiGiaLoading, setAddGoiGiaLoading] = useState(false);
-    const [newGoiGia, setNewGoiGia] = useState({ GOI_GIA: '', SL_MIN: '', SL_MAX: '' });
+    const [newGoiGia, setNewGoiGia] = useState({ GOI_GIA: '', SL_MIN: '', SL_MAX: '', NHOM_KH: '' });
+    const [nhomKHOptions, setNhomKHOptions] = useState<{ ID: string; NHOM: string }[]>([]);
 
     const handleAddGoiGia = async () => {
         if (!goiGiaDetail) return;
@@ -52,6 +53,7 @@ export default function PhanLoaiHHList({
             GOI_GIA: newGoiGia.GOI_GIA,
             SL_MIN: newGoiGia.SL_MIN ? Number(newGoiGia.SL_MIN) : null,
             SL_MAX: newGoiGia.SL_MAX ? Number(newGoiGia.SL_MAX) : null,
+            NHOM_KH: newGoiGia.NHOM_KH || null,
         });
         if (res.success) {
             toast.success(res.message);
@@ -70,9 +72,10 @@ export default function PhanLoaiHHList({
                     SL_MIN: newGoiGia.SL_MIN ? Number(newGoiGia.SL_MIN) : null,
                     SL_MAX: newGoiGia.SL_MAX ? Number(newGoiGia.SL_MAX) : null,
                     HIEU_LUC: true,
+                    NHOM_KH: newGoiGia.NHOM_KH || null,
                 }],
             } : null);
-            setNewGoiGia({ GOI_GIA: '', SL_MIN: '', SL_MAX: '' });
+            setNewGoiGia({ GOI_GIA: '', SL_MIN: '', SL_MAX: '', NHOM_KH: '' });
             setShowAddGoiGia(false);
         } else {
             toast.error(res.message);
@@ -851,8 +854,8 @@ export default function PhanLoaiHHList({
                         <table className="w-full text-left text-[13px]">
                             <thead>
                                 <tr className="text-muted-foreground uppercase tracking-widest text-[10px] border-b">
-                                    <th className="pb-2 font-bold">Mã gói giá</th>
                                     <th className="pb-2 font-bold">Gói giá</th>
+                                    <th className="pb-2 font-bold">Nhóm KH</th>
                                     <th className="pb-2 font-bold text-center">SL Min</th>
                                     <th className="pb-2 font-bold text-center">SL Max</th>
                                     <th className="pb-2 font-bold text-center">Hiệu lực</th>
@@ -861,8 +864,16 @@ export default function PhanLoaiHHList({
                             <tbody className="divide-y divide-border/40">
                                 {goiGiaDetail.items.map((item: any) => (
                                     <tr key={item.ID} className={`hover:bg-muted/30 transition-colors ${item.HIEU_LUC === false ? 'opacity-40' : ''}`}>
-                                        <td className="py-2.5 font-mono text-sm font-medium text-foreground">{item.ID_GOI_GIA}</td>
                                         <td className={`py-2.5 font-bold ${item.HIEU_LUC === false ? 'text-muted-foreground line-through' : 'text-emerald-600'}`}>{item.GOI_GIA}</td>
+                                        <td className="py-2.5">
+                                            {item.NHOM_KH ? (
+                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-600 border border-violet-500/20">
+                                                    {item.NHOM_KH}
+                                                </span>
+                                            ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                            )}
+                                        </td>
                                         <td className="py-2.5 text-center text-muted-foreground">{item.SL_MIN ?? '—'}</td>
                                         <td className="py-2.5 text-center text-muted-foreground">{item.SL_MAX ?? '—'}</td>
                                         <td className="py-2.5 text-center">
@@ -897,7 +908,14 @@ export default function PhanLoaiHHList({
                         <PermissionGuard moduleKey="goi-gia" level="add">
                             {!showAddGoiGia ? (
                                 <button
-                                    onClick={() => setShowAddGoiGia(true)}
+                                    onClick={async () => {
+                                        setShowAddGoiGia(true);
+                                        // Fetch nhóm KH options
+                                        if (nhomKHOptions.length === 0) {
+                                            const opts = await getNhomKHOptionsForGoiGia();
+                                            setNhomKHOptions(opts);
+                                        }
+                                    }}
                                     className="mt-4 w-full h-9 border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-lg text-sm font-medium text-amber-600 dark:text-amber-400 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all flex items-center justify-center gap-1.5"
                                 >
                                     <Plus className="w-4 h-4" /> Thêm gói giá cho {goiGiaDetail.maDongHang}
@@ -905,7 +923,7 @@ export default function PhanLoaiHHList({
                             ) : (
                                 <div className="mt-4 p-4 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3">
                                     <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Thêm gói giá mới — {goiGiaDetail.maDongHang}</p>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-muted-foreground uppercase">Gói giá <span className="text-destructive">*</span></label>
                                             <input
@@ -916,6 +934,22 @@ export default function PhanLoaiHHList({
                                                 onChange={e => setNewGoiGia(prev => ({ ...prev, GOI_GIA: e.target.value }))}
                                                 required
                                             />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-muted-foreground uppercase">Nhóm KH</label>
+                                            <div className="relative">
+                                                <select
+                                                    className="input-modern text-sm appearance-none cursor-pointer pr-8"
+                                                    value={newGoiGia.NHOM_KH}
+                                                    onChange={e => setNewGoiGia(prev => ({ ...prev, NHOM_KH: e.target.value }))}
+                                                >
+                                                    <option value="">— Chọn —</option>
+                                                    {nhomKHOptions.map(opt => (
+                                                        <option key={opt.ID} value={opt.NHOM}>{opt.NHOM}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                            </div>
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-muted-foreground uppercase">SL Min</label>
@@ -941,7 +975,7 @@ export default function PhanLoaiHHList({
                                     <div className="flex gap-2 justify-end">
                                         <button
                                             type="button"
-                                            onClick={() => { setShowAddGoiGia(false); setNewGoiGia({ GOI_GIA: '', SL_MIN: '', SL_MAX: '' }); }}
+                                            onClick={() => { setShowAddGoiGia(false); setNewGoiGia({ GOI_GIA: '', SL_MIN: '', SL_MAX: '', NHOM_KH: '' }); }}
                                             className="btn-premium-secondary px-3"
                                         >
                                             Hủy

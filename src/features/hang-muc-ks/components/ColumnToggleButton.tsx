@@ -4,10 +4,7 @@ import { useState } from "react";
 import { Columns3 } from "lucide-react";
 import {
     DropdownMenu,
-    DropdownMenuCheckboxItem,
     DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -48,22 +45,34 @@ export function ColumnToggleButton({ allColumns, visibleColumns, onChange }: Pro
                     title="Chọn cột hiển thị"
                 >
                     <Columns3 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Cột</span>
+                    {/* <span className="hidden sm:inline">Cột</span> */}
                 </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 rounded-xl">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">Hiển thị cột</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {allColumns.map((col) => (
-                    <DropdownMenuCheckboxItem
-                        key={col.key}
-                        checked={visibleColumns.includes(col.key)}
-                        onCheckedChange={() => toggle(col.key)}
-                        className="text-sm"
-                    >
-                        {col.label}
-                    </DropdownMenuCheckboxItem>
-                ))}
+            <DropdownMenuContent align="end" className="w-52 p-0 border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="p-2 border-b border-border">
+                    <p className="text-xs font-bold text-muted-foreground tracking-widest px-2 uppercase">HIỂN THỊ CỘT</p>
+                </div>
+                <div className="p-1.5 space-y-0.5">
+                    {allColumns.map((col) => {
+                        const isVisible = visibleColumns.includes(col.key);
+                        return (
+                            <label
+                                key={col.key}
+                                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors m-0"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={isVisible}
+                                    onChange={() => toggle(col.key)}
+                                    className="rounded border-border accent-primary w-3.5 h-3.5 cursor-pointer"
+                                />
+                                <span className={`text-sm ${isVisible ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                                    {col.label}
+                                </span>
+                            </label>
+                        );
+                    })}
+                </div>
             </DropdownMenuContent>
         </DropdownMenu>
     );

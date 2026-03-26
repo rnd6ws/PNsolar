@@ -23,6 +23,8 @@ interface ModalProps {
      * Phù hợp cho modal phức tạp (nhiều tab, bảng dữ liệu...) 
      */
     fullHeight?: boolean;
+    disableBodyScroll?: boolean;
+    bodyClassName?: string;
 }
 
 const sizeClasses = { md: 'max-w-2xl', lg: 'max-w-4xl', xl: 'max-w-5xl', '2xl': 'max-w-6xl' };
@@ -38,6 +40,8 @@ export default function Modal({
     footer,
     size = 'md',
     fullHeight = false,
+    disableBodyScroll = false,
+    bodyClassName,
 }: ModalProps) {
     useEffect(() => {
         if (isOpen) document.body.style.overflow = 'hidden';
@@ -87,8 +91,8 @@ export default function Modal({
                         </button>
                     </div>
 
-                    {/* Body (scrollable) */}
-                    <div className="flex-1 overflow-y-auto p-5 md:p-6 min-h-0">
+                    {/* Body (scrollable or fixed based on props) */}
+                    <div className={`flex-1 min-h-0 ${disableBodyScroll ? "overflow-hidden flex flex-col" : "overflow-y-auto"} ${bodyClassName !== undefined ? bodyClassName : "p-5 md:p-6 min-h-0"}`}>
                         {children}
                     </div>
 
@@ -118,8 +122,8 @@ export default function Modal({
                     </button>
                 </div>
 
-                {/* Body (scrollable) */}
-                <div className="flex-1 overflow-y-auto p-5 md:p-6 min-h-0">
+                {/* Body (scrollable or fixed based on props) */}
+                <div className={`flex-1 min-h-0 ${disableBodyScroll ? "overflow-hidden flex flex-col" : "overflow-y-auto"} ${bodyClassName !== undefined ? bodyClassName : "p-5 md:p-6 min-h-0"}`}>
                     {children}
                 </div>
 

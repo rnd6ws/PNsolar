@@ -11,7 +11,7 @@ const BAO_GIA_INCLUDE = {
     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true, TINH_TRANG: true } },
     CHI_TIETS: {
         include: {
-            HH_REL: { select: { TEN_HH: true, MA_HH: true, DON_VI_TINH: true } },
+            HH_REL: { select: { TEN_HH: true, MA_HH: true, DON_VI_TINH: true, NHOM_HH: true } },
         },
         orderBy: { CREATED_AT: 'asc' as const },
     },
@@ -28,7 +28,6 @@ async function generateMaBaoGia(): Promise<string> {
     const dd = String(now.getDate()).padStart(2, '0');
     const prefix = `BG-${yy}${mm}${dd}-`;
 
-    // Lấy mã cuối cùng để tăng số thứ tự liên tục (không reset theo ngày)
     const last = await prisma.bAO_GIA.findFirst({
         orderBy: { CREATED_AT: 'desc' },
         select: { MA_BAO_GIA: true },
@@ -47,45 +46,32 @@ async function generateMaBaoGia(): Promise<string> {
     return `${prefix}${seq}`;
 }
 
-// ─── Tính toán chi tiết ─────────────────────────────────────
-function calculateChiTiet(ct: BaoGiaChiTietInput): BaoGiaChiTietInput {
+// ─── Tính toán chi tiết (GIÁ BÁN đã bao gồm VAT) ──────────
+function calculateChiTiet(ct: BaoGiaChiTietInput, ptVat: number): BaoGiaChiTietInput {
     const thanhTien = ct.GIA_BAN * ct.SO_LUONG;
-    const tienUuDai = thanhTien * (ct.PT_UU_DAI || 0) / 100;
-    const tienSauUuDai = thanhTien - tienUuDai;
-    const tienVat = tienSauUuDai * (ct.PT_VAT || 0) / 100;
-    const tongTien = tienSauUuDai + tienVat;
+    const giaBanChuaVat = ptVat > 0 ? ct.GIA_BAN / (1 + ptVat / 100) : ct.GIA_BAN;
 
     return {
         ...ct,
+        GIA_BAN_CHUA_VAT: Math.round(giaBanChuaVat),
         THANH_TIEN: Math.round(thanhTien),
-        TIEN_UU_DAI: Math.round(tienUuDai),
-        TIEN_SAU_UU_DAI: Math.round(tienSauUuDai),
-        TIEN_VAT: Math.round(tienVat),
-        TONG_TIEN: Math.round(tongTien),
     };
 }
 
 // ─── Tổng hợp các dòng chi tiết lên header ─────────────────
-function calculateHeaderTotals(chiTiets: BaoGiaChiTietInput[]) {
-    let ttTruocUuDai = 0;
-    let ttUuDai = 0;
-    let ttSauUuDai = 0;
-    let ttVat = 0;
-    let tongTien = 0;
-
+function calculateHeaderTotals(chiTiets: BaoGiaChiTietInput[], ptVat: number, ttUuDai: number) {
+    let thanhTien = 0;
     for (const ct of chiTiets) {
-        ttTruocUuDai += ct.THANH_TIEN;
-        ttUuDai += ct.TIEN_UU_DAI;
-        ttSauUuDai += ct.TIEN_SAU_UU_DAI;
-        ttVat += ct.TIEN_VAT;
-        tongTien += ct.TONG_TIEN;
+        thanhTien += ct.THANH_TIEN;
     }
+    // TT_VAT = THANH_TIEN * PT_VAT / (100 + PT_VAT)
+    const ttVat = ptVat > 0 ? thanhTien * ptVat / (100 + ptVat) : 0;
+    const tongTien = thanhTien + ttUuDai;
 
     return {
-        TT_TRUOC_UU_DAI: Math.round(ttTruocUuDai),
-        TT_UU_DAI: Math.round(ttUuDai),
-        TT_SAU_UU_DAI: Math.round(ttSauUuDai),
+        THANH_TIEN: Math.round(thanhTien),
         TT_VAT: Math.round(ttVat),
+        TT_UU_DAI: Math.round(ttUuDai),
         TONG_TIEN: Math.round(tongTien),
     };
 }
@@ -220,13 +206,14 @@ export async function createBaoGia(
             return { success: false, message: 'Vui lòng thêm ít nhất 1 hàng hóa vào chi tiết.' };
         }
 
+        const ptVat = parsed.data.PT_VAT;
         const calculatedDetails: BaoGiaChiTietInput[] = [];
         for (let i = 0; i < chiTiets.length; i++) {
             const ctParsed = baoGiaChiTietSchema.safeParse(chiTiets[i]);
             if (!ctParsed.success) {
                 return { success: false, message: `Dòng ${i + 1}: ${ctParsed.error.issues[0].message}` };
             }
-            calculatedDetails.push(calculateChiTiet(ctParsed.data));
+            calculatedDetails.push(calculateChiTiet(ctParsed.data, ptVat));
         }
 
         // Validate DKTT
@@ -240,7 +227,7 @@ export async function createBaoGia(
         }
 
         // Tổng hợp header
-        const totals = calculateHeaderTotals(calculatedDetails);
+        const totals = calculateHeaderTotals(calculatedDetails, ptVat, parsed.data.TT_UU_DAI);
 
         // Sinh mã
         const maBaoGia = await generateMaBaoGia();
@@ -276,7 +263,6 @@ export async function createBaoGia(
                 MA_KH: parsed.data.MA_KH,
                 MA_CH: parsed.data.MA_CH || null,
                 LOAI_BAO_GIA: parsed.data.LOAI_BAO_GIA,
-                PT_UU_DAI: parsed.data.PT_UU_DAI,
                 PT_VAT: parsed.data.PT_VAT,
                 GHI_CHU: parsed.data.GHI_CHU || null,
                 THOI_GIAN_LAP_DAT: parsed.data.THOI_GIAN_LAP_DAT || null,
@@ -285,16 +271,12 @@ export async function createBaoGia(
                 CHI_TIETS: {
                     create: calculatedDetails.map(ct => ({
                         MA_HH: ct.MA_HH,
+                        NHOM_HH: ct.NHOM_HH || null,
                         DON_VI_TINH: ct.DON_VI_TINH,
+                        GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT,
                         GIA_BAN: ct.GIA_BAN,
                         SO_LUONG: ct.SO_LUONG,
                         THANH_TIEN: ct.THANH_TIEN,
-                        PT_UU_DAI: ct.PT_UU_DAI,
-                        TIEN_UU_DAI: ct.TIEN_UU_DAI,
-                        TIEN_SAU_UU_DAI: ct.TIEN_SAU_UU_DAI,
-                        PT_VAT: ct.PT_VAT,
-                        TIEN_VAT: ct.TIEN_VAT,
-                        TONG_TIEN: ct.TONG_TIEN,
                         GHI_CHU: ct.GHI_CHU || null,
                     })),
                 },
@@ -334,6 +316,8 @@ export async function updateBaoGia(
             return { success: false, message: 'Vui lòng thêm ít nhất 1 hàng hóa vào chi tiết.' };
         }
 
+        const ptVat = parsed.data.PT_VAT;
+
         // Validate + tính toán chi tiết
         const calculatedDetails: BaoGiaChiTietInput[] = [];
         for (let i = 0; i < chiTiets.length; i++) {
@@ -341,7 +325,7 @@ export async function updateBaoGia(
             if (!ctParsed.success) {
                 return { success: false, message: `Dòng ${i + 1}: ${ctParsed.error.issues[0].message}` };
             }
-            calculatedDetails.push(calculateChiTiet(ctParsed.data));
+            calculatedDetails.push(calculateChiTiet(ctParsed.data, ptVat));
         }
 
         // Validate DKTT
@@ -354,7 +338,7 @@ export async function updateBaoGia(
             validDktt.push(dkttParsed.data);
         }
 
-        const totals = calculateHeaderTotals(calculatedDetails);
+        const totals = calculateHeaderTotals(calculatedDetails, ptVat, parsed.data.TT_UU_DAI);
 
         // Tìm báo giá cũ
         const existing = await prisma.bAO_GIA.findUnique({ where: { ID: id }, select: { MA_BAO_GIA: true } });
@@ -372,7 +356,6 @@ export async function updateBaoGia(
                 MA_KH: parsed.data.MA_KH,
                 MA_CH: parsed.data.MA_CH || null,
                 LOAI_BAO_GIA: parsed.data.LOAI_BAO_GIA,
-                PT_UU_DAI: parsed.data.PT_UU_DAI,
                 PT_VAT: parsed.data.PT_VAT,
                 GHI_CHU: parsed.data.GHI_CHU || null,
                 THOI_GIAN_LAP_DAT: parsed.data.THOI_GIAN_LAP_DAT || null,
@@ -381,16 +364,12 @@ export async function updateBaoGia(
                 CHI_TIETS: {
                     create: calculatedDetails.map(ct => ({
                         MA_HH: ct.MA_HH,
+                        NHOM_HH: ct.NHOM_HH || null,
                         DON_VI_TINH: ct.DON_VI_TINH,
+                        GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT,
                         GIA_BAN: ct.GIA_BAN,
                         SO_LUONG: ct.SO_LUONG,
                         THANH_TIEN: ct.THANH_TIEN,
-                        PT_UU_DAI: ct.PT_UU_DAI,
-                        TIEN_UU_DAI: ct.TIEN_UU_DAI,
-                        TIEN_SAU_UU_DAI: ct.TIEN_SAU_UU_DAI,
-                        PT_VAT: ct.PT_VAT,
-                        TIEN_VAT: ct.TIEN_VAT,
-                        TONG_TIEN: ct.TONG_TIEN,
                         GHI_CHU: ct.GHI_CHU || null,
                     })),
                 },
@@ -481,10 +460,11 @@ export async function getCoHoiByKhachHang(maKH: string) {
     }
 }
 
-// ─── Tìm kiếm hàng hóa cho selector ────────────────────────
-export async function searchHangHoaForBaoGia(query?: string) {
+// ─── Tìm kiếm hàng hóa cho selector (lọc theo nhóm HH) ─────
+export async function searchHangHoaForBaoGia(query?: string, nhomHH?: string) {
     try {
         const where: any = { HIEU_LUC: true };
+        if (nhomHH) where.NHOM_HH = nhomHH;
         if (query?.trim()) {
             where.OR = [
                 { TEN_HH: { contains: query, mode: 'insensitive' } },
@@ -501,8 +481,9 @@ export async function searchHangHoaForBaoGia(query?: string) {
                 MODEL: true,
                 DON_VI_TINH: true,
                 MA_DONG_HANG: true,
+                NHOM_HH: true,
             },
-            take: 30,
+            take: 100,
             orderBy: { TEN_HH: 'asc' },
         });
         return data;
@@ -512,10 +493,38 @@ export async function searchHangHoaForBaoGia(query?: string) {
     }
 }
 
-// ─── Lấy giá bán phù hợp theo hàng hóa + số lượng ─────────
-export async function getGiaBanForProduct(maHH: string, soLuong: number) {
+// ─── Lấy danh sách nhóm hàng hóa cho báo giá ──────────────
+export async function getNhomHHForBaoGia() {
+    try {
+        const data = await prisma.nHOM_HH.findMany({
+            select: { MA_NHOM: true, TEN_NHOM: true },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+        return data;
+    } catch (error) {
+        console.error('[getNhomHHForBaoGia]', error);
+        return [];
+    }
+}
+
+// ─── Lấy giá bán phù hợp theo hàng hóa + số lượng + ngày BG + loại BG ──
+export async function getGiaBanForProduct(
+    maHH: string,
+    soLuong: number,
+    ngayBaoGia?: string,
+    loaiBaoGia?: string
+) {
     try {
         if (!maHH || soLuong <= 0) return { success: false, giaBan: 0 };
+
+        // Ngày hiệu lực: lấy theo ngày báo giá, mặc định ngày hiện tại
+        const targetDate = ngayBaoGia ? new Date(ngayBaoGia) : new Date();
+        targetDate.setHours(23, 59, 59, 999);
+        const dateFilter = { NGAY_HIEU_LUC: { lte: targetDate } };
+
+        // Map loại báo giá → nhóm khách hàng trong GOI_GIA
+        // Dân dụng → "Khách lẻ", Công nghiệp → "Đại lý"
+        const nhomKH = loaiBaoGia === 'Công nghiệp' ? 'Đại lý' : 'Khách lẻ';
 
         // Lấy DONG_HANG của hàng hóa
         const hh = await prisma.dMHH.findUnique({
@@ -527,9 +536,9 @@ export async function getGiaBanForProduct(maHH: string, soLuong: number) {
         // Nếu hàng hóa không có dòng hàng → fallback lấy giá bán trực tiếp
         if (!hh.MA_DONG_HANG) {
             const fallback = await prisma.gIA_BAN.findFirst({
-                where: { MA_HH: maHH },
+                where: { MA_HH: maHH, ...dateFilter },
                 orderBy: { NGAY_HIEU_LUC: 'desc' },
-                select: { DON_GIA: true, GOI_GIA_REL: { select: { GOI_GIA: true } } },
+                select: { DON_GIA: true, GOI_GIA_REL: { select: { GOI_GIA: true, NHOM_KH: true } } },
             });
             return {
                 success: true,
@@ -538,16 +547,17 @@ export async function getGiaBanForProduct(maHH: string, soLuong: number) {
             };
         }
 
-        // Tìm GOI_GIA hiệu lực, phù hợp số lượng
+        // Tìm GOI_GIA hiệu lực, lọc theo NHOM_KH + SL phù hợp
         const goiGias = await prisma.gOI_GIA.findMany({
             where: {
                 MA_DONG_HANG: hh.MA_DONG_HANG,
                 HIEU_LUC: true,
+                NHOM_KH: nhomKH,
             },
-            select: { ID_GOI_GIA: true, GOI_GIA: true, SL_MIN: true, SL_MAX: true },
+            select: { ID_GOI_GIA: true, GOI_GIA: true, SL_MIN: true, SL_MAX: true, NHOM_KH: true },
         });
 
-        // Lọc theo SL_MIN <= soLuong <= SL_MAX (handle null)
+        // Lọc theo SL_MIN <= soLuong <= SL_MAX
         const matchingGoiGia = goiGias.filter(g => {
             const minOk = g.SL_MIN == null || soLuong >= g.SL_MIN;
             const maxOk = g.SL_MAX == null || soLuong <= g.SL_MAX;
@@ -555,25 +565,40 @@ export async function getGiaBanForProduct(maHH: string, soLuong: number) {
         });
 
         if (matchingGoiGia.length === 0) {
-            // Fallback: lấy giá bán mới nhất bất kỳ cho HH này
-            const fallback = await prisma.gIA_BAN.findFirst({
-                where: { MA_HH: maHH },
+            // Fallback 1: lấy bất kỳ gói giá nào của nhóm KH này (không lọc SL)
+            const anyGoiGia = goiGias.length > 0 ? goiGias : [];
+            if (anyGoiGia.length > 0) {
+                const ids = anyGoiGia.map(g => g.ID_GOI_GIA);
+                const fallback = await prisma.gIA_BAN.findFirst({
+                    where: { MA_HH: maHH, MA_GOI_GIA: { in: ids }, ...dateFilter },
+                    orderBy: { NGAY_HIEU_LUC: 'desc' },
+                    select: { DON_GIA: true, GOI_GIA_REL: { select: { GOI_GIA: true } } },
+                });
+                if (fallback) {
+                    return { success: true, giaBan: fallback.DON_GIA, goiGia: fallback.GOI_GIA_REL?.GOI_GIA || null };
+                }
+            }
+
+            // Fallback 2: lấy giá bán mới nhất bất kỳ cho HH này
+            const fallback2 = await prisma.gIA_BAN.findFirst({
+                where: { MA_HH: maHH, ...dateFilter },
                 orderBy: { NGAY_HIEU_LUC: 'desc' },
                 select: { DON_GIA: true, GOI_GIA_REL: { select: { GOI_GIA: true } } },
             });
             return {
                 success: true,
-                giaBan: fallback?.DON_GIA || 0,
-                goiGia: fallback?.GOI_GIA_REL?.GOI_GIA || null,
+                giaBan: fallback2?.DON_GIA || 0,
+                goiGia: fallback2?.GOI_GIA_REL?.GOI_GIA || null,
             };
         }
 
-        // Lấy GIA_BAN mới nhất cho HH + GOI_GIA khớp
+        // Lấy GIA_BAN mới nhất cho HH + GOI_GIA khớp (đúng nhóm KH + SL)
         const matchingIds = matchingGoiGia.map(g => g.ID_GOI_GIA);
         const giaBanRecord = await prisma.gIA_BAN.findFirst({
             where: {
                 MA_HH: maHH,
                 MA_GOI_GIA: { in: matchingIds },
+                ...dateFilter,
             },
             orderBy: { NGAY_HIEU_LUC: 'desc' },
             select: { DON_GIA: true, MA_GOI_GIA: true, GOI_GIA_REL: { select: { GOI_GIA: true } } },
@@ -589,3 +614,5 @@ export async function getGiaBanForProduct(maHH: string, soLuong: number) {
         return { success: false, giaBan: 0 };
     }
 }
+
+

@@ -3,16 +3,12 @@ import { z } from 'zod';
 // ===== Zod Schema cho BAO_GIA_CT (chi tiết) =====
 export const baoGiaChiTietSchema = z.object({
     MA_HH: z.string().min(1, 'Vui lòng chọn hàng hóa'),
+    NHOM_HH: z.string().optional().nullable(),
     DON_VI_TINH: z.string().min(1, 'Đơn vị tính không được trống'),
+    GIA_BAN_CHUA_VAT: z.number().min(0).default(0),
     GIA_BAN: z.number().min(0, 'Giá bán phải >= 0'),
     SO_LUONG: z.number().min(0.01, 'Số lượng phải > 0'),
-    THANH_TIEN: z.number().min(0),
-    PT_UU_DAI: z.number().min(0).max(100).default(0),
-    TIEN_UU_DAI: z.number().min(0).default(0),
-    TIEN_SAU_UU_DAI: z.number().min(0).default(0),
-    PT_VAT: z.number().min(0).max(100).default(0),
-    TIEN_VAT: z.number().min(0).default(0),
-    TONG_TIEN: z.number().min(0).default(0),
+    THANH_TIEN: z.number().min(0).default(0), // = GIA_BAN * SO_LUONG
     GHI_CHU: z.string().optional().nullable(),
 });
 
@@ -22,8 +18,8 @@ export const baoGiaSchema = z.object({
     MA_KH: z.string().min(1, 'Vui lòng chọn khách hàng'),
     MA_CH: z.string().optional().nullable(),
     LOAI_BAO_GIA: z.enum(['Dân dụng', 'Công nghiệp']).default('Dân dụng'),
-    PT_UU_DAI: z.number().min(0).max(100).default(0),
-    PT_VAT: z.number().min(0).max(100).default(0),
+    PT_VAT: z.number().min(0).max(100).default(8),
+    TT_UU_DAI: z.number().default(0), // Nhập tay, số âm = giảm giá
     GHI_CHU: z.string().optional().nullable(),
     THOI_GIAN_LAP_DAT: z.string().optional().nullable(),
     TEP_DINH_KEM: z.array(z.string()).default([]),
@@ -48,12 +44,10 @@ export interface BaoGiaFull {
     MA_KH: string;
     MA_CH: string | null;
     LOAI_BAO_GIA: string;
-    TT_TRUOC_UU_DAI: number;
-    PT_UU_DAI: number;
-    TT_UU_DAI: number;
-    TT_SAU_UU_DAI: number;
     PT_VAT: number;
     TT_VAT: number;
+    THANH_TIEN: number;
+    TT_UU_DAI: number;
     TONG_TIEN: number;
     GHI_CHU: string | null;
     THOI_GIAN_LAP_DAT: string | null;

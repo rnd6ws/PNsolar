@@ -78,7 +78,7 @@ export default async function KhaoSatPage() {
                 <KhaoSatStatCards stats={stats} />
 
                 {/* Content */}
-                <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col relative">
+                <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col relative overflow-hidden">
                     <KhaoSatPageClient
                         data={data}
                         loaiCongTrinhOptions={loaiOptions}
@@ -86,6 +86,8 @@ export default async function KhaoSatPage() {
                         khachHangOptions={khachHangOptions}
                         coHoiOptions={[]}
                         nguoiLienHeOptions={[]}
+                        hangMucData={hangMucList}
+                        nhomKSData={nhomKSList}
                     />
                 </div>
             </div>

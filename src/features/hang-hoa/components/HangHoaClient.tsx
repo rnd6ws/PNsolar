@@ -111,6 +111,7 @@ interface GiaBanItem {
     GOI_GIA: string;
     DON_GIA: number;
     NGAY_HIEU_LUC: string;
+    NHOM_KH?: string | null;
 }
 
 interface GiaBanHistoryItem {
@@ -121,6 +122,7 @@ interface GiaBanHistoryItem {
     DON_GIA: number;
     GHI_CHU: string | null;
     GOI_GIA_NAME: string;
+    NHOM_KH?: string | null;
     NHOM?: { TEN_NHOM: string } | null;
     GOI_GIA_REL?: { GOI_GIA: string } | null;
 }
@@ -555,6 +557,7 @@ export default function HangHoaClient({
     dongHangOptions: DongHangOption[];
     giaNhapMap?: Record<string, GiaNhapInfo>;
     giaBanMap?: Record<string, GiaBanItem[]>;
+    nhomKHOptions?: { NHOM: string }[];
 }) {
     const router = useRouter();
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -1374,9 +1377,16 @@ export default function HangHoaClient({
                                             {/* Giá hiện tại */}
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <DollarSign className="w-3.5 h-3.5 text-rose-600" />
-                                                        <span className="text-sm font-semibold text-foreground">{group.label}</span>
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <DollarSign className="w-3.5 h-3.5 text-rose-600" />
+                                                            <span className="text-sm font-semibold text-foreground">{group.label}</span>
+                                                        </div>
+                                                        {latest.NHOM_KH && (
+                                                            <span className="inline-flex items-center self-start ml-5.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-600 border border-violet-500/20">
+                                                                {latest.NHOM_KH}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {latest.GHI_CHU && (
                                                         <p className="text-[11px] text-muted-foreground italic mt-0.5 ml-5.5">{latest.GHI_CHU}</p>
@@ -1521,7 +1531,14 @@ export default function HangHoaClient({
                                 <div className="divide-y divide-border">
                                     {giaBanMap[viewProduct.MA_HH].map((gb, idx) => (
                                         <div key={idx} className="flex items-center justify-between px-3 py-2">
-                                            <span className="text-sm font-medium text-foreground">{gb.GOI_GIA}</span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-sm font-medium text-foreground">{gb.GOI_GIA}</span>
+                                                {gb.NHOM_KH && (
+                                                    <span className="inline-flex items-center self-start px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-600 border border-violet-500/20">
+                                                        {gb.NHOM_KH}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="text-sm font-bold text-rose-600">
                                                 {new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫
                                             </span>

@@ -4,136 +4,70 @@ import { Calendar, Building2, Target, FileText, Package, Download, ExternalLink,
 import Image from "next/image";
 import Modal from "@/components/Modal";
 
-// ─── Format helpers ─────────────────────────────────────────
 const fmtDate = (d: string | Date) => {
     const date = typeof d === "string" ? new Date(d) : d;
     return date.toLocaleDateString("vi-VN");
 };
 const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
 
-interface Props {
-    isOpen: boolean;
-    onClose: () => void;
-    data: any;
-}
+interface Props { isOpen: boolean; onClose: () => void; data: any; }
 
-// Check if URL is an image
 function isImageUrl(url: string): boolean {
     if (!url) return false;
     const ext = url.split('.').pop()?.toLowerCase().split('?')[0] || '';
     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
 }
-
-// Proxy URL cho xem file inline (PDF, Word, Excel)
-function getViewUrl(url: string): string {
-    return `/api/file-view?url=${encodeURIComponent(url)}`;
-}
+function getViewUrl(url: string): string { return `/api/file-view?url=${encodeURIComponent(url)}`; }
 
 export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
     if (!isOpen || !data) return null;
-
     const chiTiets = data.CHI_TIETS || [];
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title={data.MA_BAO_GIA}
-            subtitle="Chi tiết báo giá"
-            icon={FileText}
-            size="xl"
-            fullHeight
+        <Modal isOpen={isOpen} onClose={onClose} title={data.MA_BAO_GIA} subtitle="Chi tiết báo giá" icon={FileText} size="xl" fullHeight
             footer={
                 <>
                     <div className="text-sm">
                         <span className="text-muted-foreground">Tổng giá trị: </span>
                         <span className="font-bold text-primary text-base">{fmtMoney(data.TONG_TIEN)}</span>
                     </div>
-                    <button type="button" onClick={onClose} className="btn-premium-secondary px-6 h-10 text-sm">
-                        Đóng
-                    </button>
+                    <button type="button" onClick={onClose} className="btn-premium-secondary px-6 h-10 text-sm">Đóng</button>
                 </>
             }
         >
             <div className="space-y-6">
-                {/* ── Section 1: Thông tin chung ── */}
+                {/* Section 1: Thông tin chung */}
                 <div>
                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
                         <FileText className="w-4 h-4 text-primary" /> Thông tin chung
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-muted/20 rounded-xl p-4 border border-border/50">
-                        {/* Ngày báo giá */}
                         <div className="space-y-1">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Ngày báo giá</p>
-                            <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-primary" />
-                                <p className="text-sm font-medium">{fmtDate(data.NGAY_BAO_GIA)}</p>
-                            </div>
+                            <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /><p className="text-sm font-medium">{fmtDate(data.NGAY_BAO_GIA)}</p></div>
                         </div>
-
-                        {/* Khách hàng */}
                         <div className="space-y-1">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Khách hàng</p>
-                            <div className="flex items-center gap-2">
-                                <Building2 className="w-4 h-4 text-primary" />
-                                <div>
-                                    <p className="text-sm font-medium">{data.KH_REL?.TEN_KH || data.MA_KH}</p>
-                                    <p className="text-[11px] text-muted-foreground">{data.MA_KH}</p>
-                                </div>
-                            </div>
+                            <div className="flex items-center gap-2"><Building2 className="w-4 h-4 text-primary" /><div><p className="text-sm font-medium">{data.KH_REL?.TEN_KH || data.MA_KH}</p><p className="text-[11px] text-muted-foreground">{data.MA_KH}</p></div></div>
                         </div>
-
-                        {/* Cơ hội */}
                         <div className="space-y-1">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Cơ hội</p>
                             {data.MA_CH ? (
-                                <div className="flex items-center gap-2">
-                                    <Target className="w-4 h-4 text-primary" />
-                                    <div>
-                                        <p className="text-sm font-medium">{data.MA_CH}</p>
-                                        {data.CO_HOI_REL && (
-                                            <p className="text-[11px] text-muted-foreground">
-                                                {fmtDate(data.CO_HOI_REL.NGAY_TAO)}
-                                                {data.CO_HOI_REL.GIA_TRI_DU_KIEN ? ` • ${fmtMoney(data.CO_HOI_REL.GIA_TRI_DU_KIEN)}` : ""}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground">—</p>
-                            )}
+                                <div className="flex items-center gap-2"><Target className="w-4 h-4 text-primary" /><div><p className="text-sm font-medium">{data.MA_CH}</p>{data.CO_HOI_REL && (<p className="text-[11px] text-muted-foreground">{fmtDate(data.CO_HOI_REL.NGAY_TAO)}{data.CO_HOI_REL.GIA_TRI_DU_KIEN ? ` • ${fmtMoney(data.CO_HOI_REL.GIA_TRI_DU_KIEN)}` : ""}</p>)}</div></div>
+                            ) : (<p className="text-sm text-muted-foreground">—</p>)}
                         </div>
-
-                        {/* Loại báo giá */}
                         <div className="space-y-1">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Loại báo giá</p>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${data.LOAI_BAO_GIA === "Dân dụng"
-                                    ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                                    : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                }`}>
-                                {data.LOAI_BAO_GIA}
-                            </span>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${data.LOAI_BAO_GIA === "Dân dụng" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}>{data.LOAI_BAO_GIA}</span>
                         </div>
-
-                        {/* % Ưu đãi */}
                         <div className="space-y-1">
-                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">% Ưu đãi chung</p>
-                            <p className="text-sm font-medium">{data.PT_UU_DAI || 0}%</p>
-                        </div>
-
-                        {/* % VAT */}
-                        <div className="space-y-1">
-                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">% VAT chung</p>
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">% VAT</p>
                             <p className="text-sm font-medium">{data.PT_VAT || 0}%</p>
                         </div>
-
-                        {/* TG lắp đặt */}
                         <div className="space-y-1">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Thời gian lắp đặt</p>
                             <p className="text-sm font-medium">{data.THOI_GIAN_LAP_DAT || "—"}</p>
                         </div>
-
-                        {/* Ghi chú */}
                         <div className="space-y-1 md:col-span-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Ghi chú</p>
                             <p className="text-sm text-foreground">{data.GHI_CHU || "—"}</p>
@@ -141,14 +75,12 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                     </div>
                 </div>
 
-                {/* ── Section: Tệp đính kèm ── */}
+                {/* Tệp đính kèm */}
                 {data.TEP_DINH_KEM && data.TEP_DINH_KEM.length > 0 && (
                     <div>
                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
                             <ImageIcon className="w-4 h-4 text-primary" /> Tệp đính kèm
-                            <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">
-                                {data.TEP_DINH_KEM.length}
-                            </span>
+                            <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">{data.TEP_DINH_KEM.length}</span>
                         </h3>
                         <div className="space-y-2">
                             {data.TEP_DINH_KEM.map((url: string, idx: number) => {
@@ -156,46 +88,11 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                                 const isImg = isImageUrl(url);
                                 return (
                                     <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/20">
-                                        {isImg ? (
-                                            <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-border shrink-0">
-                                                <Image
-                                                    src={url}
-                                                    alt={`Ảnh ${idx + 1}`}
-                                                    fill
-                                                    className="object-cover"
-                                                    unoptimized
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                                <FileText className="w-5 h-5 text-primary" />
-                                            </div>
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium truncate">{decodeURIComponent(fileName)}</p>
-                                            <p className="text-xs text-muted-foreground">{isImg ? 'Hình ảnh' : 'Tài liệu'}</p>
-                                        </div>
+                                        {isImg ? (<div className="relative w-16 h-16 rounded-lg overflow-hidden border border-border shrink-0"><Image src={url} alt={`Ảnh ${idx + 1}`} fill className="object-cover" unoptimized /></div>) : (<div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><FileText className="w-5 h-5 text-primary" /></div>)}
+                                        <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{decodeURIComponent(fileName)}</p><p className="text-xs text-muted-foreground">{isImg ? 'Hình ảnh' : 'Tài liệu'}</p></div>
                                         <div className="flex items-center gap-1 shrink-0">
-                                            <a
-                                                href={isImg ? url : getViewUrl(url)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-2 hover:bg-muted rounded-lg transition-colors text-primary"
-                                                title={isImg ? "Mở ảnh gốc" : "Xem tài liệu"}
-                                            >
-                                                <ExternalLink className="w-4 h-4" />
-                                            </a>
-                                            {!isImg && (
-                                                <a
-                                                    href={url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-primary"
-                                                    title="Tải về"
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </a>
-                                            )}
+                                            <a href={isImg ? url : getViewUrl(url)} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-muted rounded-lg transition-colors text-primary" title={isImg ? "Mở ảnh gốc" : "Xem tài liệu"}><ExternalLink className="w-4 h-4" /></a>
+                                            {!isImg && (<a href={url} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-primary" title="Tải về"><Download className="w-4 h-4" /></a>)}
                                         </div>
                                     </div>
                                 );
@@ -204,13 +101,11 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                     </div>
                 )}
 
-                {/* ── Section 2: Chi tiết hàng hóa ── */}
+                {/* Section 2: Chi tiết hàng hóa */}
                 <div>
                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
                         <Package className="w-4 h-4 text-primary" /> Chi tiết hàng hóa
-                        <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">
-                            {chiTiets.length}
-                        </span>
+                        <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">{chiTiets.length}</span>
                     </h3>
 
                     {chiTiets.length > 0 ? (
@@ -221,15 +116,13 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                                         <tr className="bg-primary/10 border-b">
                                             <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8">#</th>
                                             <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[160px]">Hàng hóa</th>
+                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Nhóm HH</th>
                                             <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-16">ĐVT</th>
+                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24 text-right">Giá chưa VAT</th>
                                             <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24 text-right">Giá bán</th>
                                             <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-14 text-right">SL</th>
-                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24 text-right">Thành tiền</th>
-                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-14 text-right">%ƯĐ</th>
-                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24 text-right">Tiền ƯĐ</th>
-                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-14 text-right">%VAT</th>
-                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24 text-right">Tiền VAT</th>
-                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-28 text-right">Tổng tiền</th>
+                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-28 text-right">Thành tiền</th>
+                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Ghi chú</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -240,15 +133,13 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                                                     <p className="font-medium text-foreground">{ct.HH_REL?.TEN_HH || ct.MA_HH}</p>
                                                     <p className="text-[10px] text-muted-foreground">{ct.MA_HH}</p>
                                                 </td>
+                                                <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{ct.NHOM_HH || ct.HH_REL?.NHOM_HH || "—"}</td>
                                                 <td className="px-3 py-2.5 text-muted-foreground">{ct.DON_VI_TINH}</td>
+                                                <td className="px-3 py-2.5 text-right text-muted-foreground">{fmtMoney(ct.GIA_BAN_CHUA_VAT || 0)}</td>
                                                 <td className="px-3 py-2.5 text-right">{fmtMoney(ct.GIA_BAN)}</td>
                                                 <td className="px-3 py-2.5 text-right font-medium">{ct.SO_LUONG}</td>
-                                                <td className="px-3 py-2.5 text-right">{fmtMoney(ct.THANH_TIEN)}</td>
-                                                <td className="px-3 py-2.5 text-right text-muted-foreground">{ct.PT_UU_DAI || 0}%</td>
-                                                <td className="px-3 py-2.5 text-right text-orange-600">{fmtMoney(ct.TIEN_UU_DAI)}</td>
-                                                <td className="px-3 py-2.5 text-right text-muted-foreground">{ct.PT_VAT || 0}%</td>
-                                                <td className="px-3 py-2.5 text-right text-blue-600">{fmtMoney(ct.TIEN_VAT)}</td>
-                                                <td className="px-3 py-2.5 text-right font-bold">{fmtMoney(ct.TONG_TIEN)}</td>
+                                                <td className="px-3 py-2.5 text-right font-bold">{fmtMoney(ct.THANH_TIEN)}</td>
+                                                <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{ct.GHI_CHU || "—"}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -256,22 +147,18 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                             </div>
 
                             {/* Tổng hợp */}
-                            <div className="bg-linear-to-r from-primary/5 to-transparent border-t px-4 py-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                            <div className="bg-linear-to-r from-primary/5 to-transparent border-t px-4 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                 <div>
-                                    <p className="text-[11px] text-muted-foreground font-semibold">TT trước ƯĐ</p>
-                                    <p className="font-semibold mt-0.5">{fmtMoney(data.TT_TRUOC_UU_DAI)}</p>
+                                    <p className="text-[11px] text-muted-foreground font-semibold">Thành tiền</p>
+                                    <p className="font-semibold mt-0.5">{fmtMoney(data.THANH_TIEN)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[11px] text-muted-foreground font-semibold">Tiền ƯĐ</p>
-                                    <p className="font-semibold text-orange-600 mt-0.5">{fmtMoney(data.TT_UU_DAI)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[11px] text-muted-foreground font-semibold">TT sau ƯĐ</p>
-                                    <p className="font-semibold mt-0.5">{fmtMoney(data.TT_SAU_UU_DAI)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[11px] text-muted-foreground font-semibold">Tiền VAT</p>
+                                    <p className="text-[11px] text-muted-foreground font-semibold">Tiền VAT ({data.PT_VAT}%)</p>
                                     <p className="font-semibold text-blue-600 mt-0.5">{fmtMoney(data.TT_VAT)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] text-muted-foreground font-semibold">Ưu đãi</p>
+                                    <p className="font-semibold text-orange-600 mt-0.5">{data.TT_UU_DAI !== 0 ? fmtMoney(Math.abs(data.TT_UU_DAI)) : "0 ₫"}</p>
                                 </div>
                                 <div>
                                     <p className="text-[11px] text-muted-foreground font-bold">TỔNG TIỀN</p>
