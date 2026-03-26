@@ -217,134 +217,134 @@ export default function KhaoSatFormModal({
 
     return (
         <>
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title={mode === "edit" ? "Sửa phiếu khảo sát" : "Thêm phiếu khảo sát mới"}
-            icon={ClipboardList}
-            size="lg"
-            footer={
-                <>
-                    <span />
-                    <div className="flex gap-3">
-                        <button type="button" onClick={onClose} className="btn-premium-secondary">Hủy</button>
-                        <button
-                            type="button"
-                            disabled={submitting}
-                            className="btn-premium-primary"
-                            onClick={() => (document.querySelector("#form-ks-modal") as HTMLFormElement)?.requestSubmit()}
-                        >
-                            {submitting ? "Đang xử lý..." : mode === "add" ? "Tạo và tiếp tục →" : "Lưu"}
-                        </button>
-                    </div>
-                </>
-            }
-        >
-            <form id="form-ks-modal" onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Loại công trình <span className="text-destructive">*</span></label>
-                        <FormSelect
-                            name="LOAI_CONG_TRINH"
-                            value={form.LOAI_CONG_TRINH}
-                            onChange={(v) => setForm((f) => ({ ...f, LOAI_CONG_TRINH: v }))}
-                            options={loaiCongTrinhOptions}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Ngày khảo sát</label>
-                        <input
-                            type="date"
-                            className="input-modern"
-                            value={form.NGAY_KHAO_SAT}
-                            onChange={(e) => setForm((f) => ({ ...f, NGAY_KHAO_SAT: e.target.value }))}
-                        />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Khách hàng <span className="text-destructive">*</span></label>
-                        <KhachHangSearch
-                            value={khSearchValue}
-                            onChange={handleKhachHangChange}
-                            defaultValue={khDefaultValue}
-                        />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Địa chỉ liên hệ</label>
-                        <input
-                            className="input-modern"
-                            value={form.DIA_CHI}
-                            onChange={(e) => setForm((f) => ({ ...f, DIA_CHI: e.target.value }))}
-                            placeholder="Địa chỉ liên hệ"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-semibold text-muted-foreground">Người liên hệ</label>
-                            {form.MA_KH && (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowNlhModal(true)}
-                                    title="Thêm người liên hệ mới"
-                                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
-                                >
-                                    <UserPlus className="w-3.5 h-3.5" />
-                                    Thêm nhanh
-                                </button>
-                            )}
+            <Modal
+                isOpen={isOpen}
+                onClose={onClose}
+                title={mode === "edit" ? "Sửa phiếu khảo sát" : "Thêm phiếu khảo sát mới"}
+                icon={ClipboardList}
+                size="lg"
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={onClose} className="btn-premium-secondary">Hủy</button>
+                            <button
+                                type="button"
+                                disabled={submitting}
+                                className="btn-premium-primary"
+                                onClick={() => (document.querySelector("#form-ks-modal") as HTMLFormElement)?.requestSubmit()}
+                            >
+                                {submitting ? "Đang xử lý..." : mode === "add" ? "Tạo và tiếp tục →" : "Lưu"}
+                            </button>
                         </div>
-                        <FormSelect
-                            name="NGUOI_LIEN_HE"
-                            value={form.NGUOI_LIEN_HE}
-                            onChange={(v) => setForm((f) => ({ ...f, NGUOI_LIEN_HE: v }))}
-                            options={nlhOptions}
-                            placeholder="— Chọn NLH —"
-                        />
+                    </>
+                }
+            >
+                <form id="form-ks-modal" onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Loại công trình <span className="text-destructive">*</span></label>
+                            <FormSelect
+                                name="LOAI_CONG_TRINH"
+                                value={form.LOAI_CONG_TRINH}
+                                onChange={(v) => setForm((f) => ({ ...f, LOAI_CONG_TRINH: v }))}
+                                options={loaiCongTrinhOptions}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Ngày khảo sát</label>
+                            <input
+                                type="date"
+                                className="input-modern"
+                                value={form.NGAY_KHAO_SAT}
+                                onChange={(e) => setForm((f) => ({ ...f, NGAY_KHAO_SAT: e.target.value }))}
+                            />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Khách hàng <span className="text-destructive">*</span></label>
+                            <KhachHangSearch
+                                value={khSearchValue}
+                                onChange={handleKhachHangChange}
+                                defaultValue={khDefaultValue}
+                            />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Địa chỉ liên hệ</label>
+                            <input
+                                className="input-modern"
+                                value={form.DIA_CHI}
+                                onChange={(e) => setForm((f) => ({ ...f, DIA_CHI: e.target.value }))}
+                                placeholder="Địa chỉ liên hệ"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-semibold text-muted-foreground">Người liên hệ</label>
+                                {form.MA_KH && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNlhModal(true)}
+                                        title="Thêm người liên hệ mới"
+                                        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
+                                    >
+                                        <UserPlus className="w-3.5 h-3.5" />
+                                        Thêm nhanh
+                                    </button>
+                                )}
+                            </div>
+                            <FormSelect
+                                name="NGUOI_LIEN_HE"
+                                value={form.NGUOI_LIEN_HE}
+                                onChange={(v) => setForm((f) => ({ ...f, NGUOI_LIEN_HE: v }))}
+                                options={nlhOptions}
+                                placeholder="— Chọn NLH —"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Người khảo sát</label>
+                            <FormMultiSelect
+                                value={form.NGUOI_KHAO_SAT}
+                                onChange={(v) => setForm((f) => ({ ...f, NGUOI_KHAO_SAT: v }))}
+                                options={nhanVienOptions}
+                            />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Địa điểm lắp đặt</label>
+                            <input
+                                className="input-modern"
+                                value={form.DIA_CHI_CONG_TRINH}
+                                onChange={(e) => setForm((f) => ({ ...f, DIA_CHI_CONG_TRINH: e.target.value }))}
+                                placeholder="Số nhà, đường, quận/huyện, tỉnh/thành..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Hạng mục</label>
+                            <input
+                                className="input-modern"
+                                value={form.HANG_MUC}
+                                onChange={(e) => setForm((f) => ({ ...f, HANG_MUC: e.target.value }))}
+                                placeholder="VD: Dự án mới..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Công suất</label>
+                            <input
+                                className="input-modern"
+                                value={form.CONG_SUAT}
+                                onChange={(e) => setForm((f) => ({ ...f, CONG_SUAT: e.target.value }))}
+                                placeholder="VD: 10 kWp"
+                            />
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Người khảo sát</label>
-                        <FormMultiSelect
-                            value={form.NGUOI_KHAO_SAT}
-                            onChange={(v) => setForm((f) => ({ ...f, NGUOI_KHAO_SAT: v }))}
-                            options={nhanVienOptions}
-                        />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Địa điểm lắp đặt</label>
-                        <input
-                            className="input-modern"
-                            value={form.DIA_CHI_CONG_TRINH}
-                            onChange={(e) => setForm((f) => ({ ...f, DIA_CHI_CONG_TRINH: e.target.value }))}
-                            placeholder="Số nhà, đường, quận/huyện, tỉnh/thành..."
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Hạng mục</label>
-                        <input
-                            className="input-modern"
-                            value={form.HANG_MUC}
-                            onChange={(e) => setForm((f) => ({ ...f, HANG_MUC: e.target.value }))}
-                            placeholder="VD: Điện mặt trời áp mái..."
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-muted-foreground">Công suất</label>
-                        <input
-                            className="input-modern"
-                            value={form.CONG_SUAT}
-                            onChange={(e) => setForm((f) => ({ ...f, CONG_SUAT: e.target.value }))}
-                            placeholder="VD: 10 kWp"
-                        />
-                    </div>
-                </div>
-            </form>
-        </Modal>
+                </form>
+            </Modal>
 
-        <NguoiLienHeModal
-            isOpen={showNlhModal}
-            onClose={() => setShowNlhModal(false)}
-            khachHang={khachHangInfo}
-            onCreated={handleNlhCreated}
-        />
+            <NguoiLienHeModal
+                isOpen={showNlhModal}
+                onClose={() => setShowNlhModal(false)}
+                khachHang={khachHangInfo}
+                onCreated={handleNlhCreated}
+            />
         </>
     );
 }

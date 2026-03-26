@@ -4,6 +4,8 @@ import { getKhaoSatList, getKhaoSatStats } from "@/features/khao-sat/action";
 import { getCdLoaiCongTrinh } from "@/features/hang-muc-ks/action";
 import { getHangMucKS, getCdNhomKS } from "@/features/hang-muc-ks/action";
 import { prisma } from "@/lib/prisma";
+import { getRowsPerPage } from "@/lib/getRowsPerPage";
+import Pagination from "@/components/Pagination";
 import KhaoSatPageClient from "@/features/khao-sat/components/KhaoSatPageClient";
 import KhaoSatStatCards from "@/features/khao-sat/components/KhaoSatStatCards";
 import AddKhaoSatButton from "@/features/khao-sat/components/AddKhaoSatButton";
@@ -17,9 +19,20 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function KhaoSatPage() {
+export default async function KhaoSatPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ query?: string; page?: string; pageSize?: string; LOAI_CONG_TRINH?: string; NGUOI_KHAO_SAT?: string }>;
+}) {
+    const params = await searchParams;
+    const page = Number(params.page) || 1;
+    const pageSize = await getRowsPerPage(params.pageSize, 50);
+    const query = params.query;
+    const loai = params.LOAI_CONG_TRINH;
+    const nguoi = params.NGUOI_KHAO_SAT;
+
     const [listRes, statsRes, loaiRes, hangMucRes, nhomKSRes, nhanVienList, khachHangList] = await Promise.all([
-        getKhaoSatList(),
+        getKhaoSatList({ query, loai, nguoi, page, limit: pageSize }),
         getKhaoSatStats(),
         getCdLoaiCongTrinh(),
         getHangMucKS(),
@@ -29,6 +42,7 @@ export default async function KhaoSatPage() {
     ]);
 
     const data = listRes.success && listRes.data ? listRes.data : [];
+    const pagination = listRes.success && listRes.pagination ? listRes.pagination : null;
     const stats = statsRes.success && statsRes.data ? statsRes.data : { total: 0, thisMonth: 0, phoBienLoai: "—" };
 
     const loaiOptions = loaiRes.success && loaiRes.data
@@ -89,6 +103,17 @@ export default async function KhaoSatPage() {
                         hangMucData={hangMucList}
                         nhomKSData={nhomKSList}
                     />
+
+                    {pagination && (
+                        <div className="p-4 border-t flex justify-center items-center bg-transparent">
+                            <Pagination
+                                totalPages={pagination.totalPages}
+                                currentPage={page}
+                                total={pagination.total}
+                                pageSize={pageSize}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </PermissionGuard>

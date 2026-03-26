@@ -62,6 +62,7 @@ interface Props {
         STT: number | null;
         HIEU_LUC: boolean;
     }[];
+    viewMode?: "table" | "card" | "auto";
 }
 
 type SortDir = "asc" | "desc";
@@ -88,6 +89,7 @@ export default function KhaoSatList({
     visibleColumns,
     nhomKSData,
     hangMucData,
+    viewMode = "auto",
 }: Props) {
     const router = useRouter();
     const [sortKey, setSortKey] = useState<string | null>(null);
@@ -138,7 +140,10 @@ export default function KhaoSatList({
     return (
         <>
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto ${viewMode === "table" ? "block" :
+                viewMode === "card" ? "hidden" :
+                    "hidden md:block"
+                }`}>
                 <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -224,7 +229,7 @@ export default function KhaoSatList({
                                             className="p-1.5 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-600 rounded transition-colors"
                                             title="Xem chi tiết"
                                         >
-                                            <Eye className="w-3.5 h-3.5" />
+                                            <Eye className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={(e) => handleExport(item, e)}
@@ -233,8 +238,8 @@ export default function KhaoSatList({
                                             title="Xuất báo cáo Word"
                                         >
                                             {exportingId === item.ID
-                                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                : <FileDown className="w-3.5 h-3.5" />}
+                                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                                : <FileDown className="w-4 h-4" />}
                                         </button>
                                         <PermissionGuard moduleKey="khao-sat" level="edit">
                                             <button
@@ -242,21 +247,21 @@ export default function KhaoSatList({
                                                 className="p-1.5 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 rounded transition-colors"
                                                 title="Ghi nhận khảo sát"
                                             >
-                                                <ClipboardEdit className="w-3.5 h-3.5" />
+                                                <ClipboardEdit className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setImageUploadItem(item)}
                                                 className="p-1.5 hover:bg-indigo-500/10 text-muted-foreground hover:text-indigo-600 rounded transition-colors"
                                                 title="Ảnh khảo sát"
                                             >
-                                                <Images className="w-3.5 h-3.5" />
+                                                <Images className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setEditItem(item)}
                                                 className="hidden md:block p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded transition-colors"
                                                 title="Sửa phiếu"
                                             >
-                                                <Pencil className="w-3.5 h-3.5" />
+                                                <Pencil className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="khao-sat" level="delete">
@@ -265,7 +270,7 @@ export default function KhaoSatList({
                                                 className="hidden md:block p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
                                                 title="Xóa phiếu"
                                             >
-                                                <Trash2 className="w-3.5 h-3.5" />
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
                                         <div className="md:hidden flex items-center">
@@ -276,23 +281,14 @@ export default function KhaoSatList({
                                                     </button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-36 rounded-xl">
-                                                    <DropdownMenuItem onClick={(e) => handleExport(item, e as any)} disabled={exportingId === item.ID}>
-                                                        {exportingId === item.ID
-                                                            ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                                                            : <FileDown className="w-3.5 h-3.5 mr-2" />}
-                                                        Xuất Word
-                                                    </DropdownMenuItem>
                                                     <PermissionGuard moduleKey="khao-sat" level="edit">
                                                         <DropdownMenuItem onClick={() => setEditItem(item)}>
-                                                            <Pencil className="w-3.5 h-3.5 mr-2" />Sửa
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => setImageUploadItem(item)}>
-                                                            <Images className="w-3.5 h-3.5 mr-2" />Ảnh KS
+                                                            <Pencil className="w-4 h-4 mr-2" />Sửa
                                                         </DropdownMenuItem>
                                                     </PermissionGuard>
                                                     <PermissionGuard moduleKey="khao-sat" level="delete">
                                                         <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
-                                                            <Trash2 className="w-3.5 h-3.5 mr-2" />Xóa
+                                                            <Trash2 className="w-4 h-4 mr-2 text-destructive" />Xóa
                                                         </DropdownMenuItem>
                                                     </PermissionGuard>
                                                 </DropdownMenuContent>
@@ -304,6 +300,95 @@ export default function KhaoSatList({
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Card View */}
+            <div className={`grid grid-cols-1 gap-4 ${viewMode === "card" ? "block" :
+                viewMode === "table" ? "hidden" :
+                    "block md:hidden"
+                }`}>
+                {sorted.length === 0 && (
+                    <div className="text-center py-16 text-muted-foreground text-sm italic border rounded-xl border-dashed">
+                        Chưa có phiếu khảo sát nào
+                    </div>
+                )}
+                {sorted.map((item, idx) => (
+                    <div key={item.ID} className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setDetailItem(item)}>
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
+                                    {show("ma") ? item.MA_KHAO_SAT : `#${idx + 1}`}
+                                </span>
+                                {show("ngay") && (
+                                    <span className="text-sm text-primary bg-primary/10 px-2 py-0.5 rounded-md font-medium">
+                                        {formatDate(item.NGAY_KHAO_SAT)}
+                                    </span>
+                                )}
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button onClick={(e) => e.stopPropagation()} className="p-1.5 -m-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors" title="Thao tác">
+                                        <MoreHorizontal className="w-5 h-5" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}>
+                                        <Eye className="w-4 h-4 mr-2" />Xem chi tiết
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExport(item, e as any); }} disabled={exportingId === item.ID}>
+                                        {exportingId === item.ID
+                                            ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            : <FileDown className="w-4 h-4 mr-2" />}
+                                        Xuất Word
+                                    </DropdownMenuItem>
+                                    <PermissionGuard moduleKey="khao-sat" level="edit">
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setChiTietEditItem(item); }}>
+                                            <ClipboardEdit className="w-4 h-4 mr-2" />Ghi nhận KS
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setImageUploadItem(item); }}>
+                                            <Images className="w-4 h-4 mr-2" />Ảnh KS
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditItem(item); }}>
+                                            <Pencil className="w-4 h-4 mr-2" />Sửa
+                                        </DropdownMenuItem>
+                                    </PermissionGuard>
+                                    <PermissionGuard moduleKey="khao-sat" level="delete">
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                            <Trash2 className="w-4 h-4 mr-2 text-destructive" />Xóa
+                                        </DropdownMenuItem>
+                                    </PermissionGuard>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+
+                        <div className="space-y-2 text-sm mt-4">
+                            {show("loai") && (
+                                <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                    <span className="text-muted-foreground whitespace-nowrap">Loại công trình:</span>
+                                    <span className="font-medium text-right line-clamp-2">{item.LOAI_CONG_TRINH}</span>
+                                </div>
+                            )}
+                            {show("nguoi") && (
+                                <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                    <span className="text-muted-foreground whitespace-nowrap">Người KS:</span>
+                                    <span className="text-right line-clamp-2">{renderNguoiKS(item.NGUOI_KHAO_SAT)}</span>
+                                </div>
+                            )}
+                            {show("khachHang") && (
+                                <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                    <span className="text-muted-foreground whitespace-nowrap">Khách hàng:</span>
+                                    <span className="text-right line-clamp-2">{item.KHTN_REL?.TEN_KH || "—"}</span>
+                                </div>
+                            )}
+                            {show("diaChi") && (
+                                <div className="flex justify-between items-start pt-1 gap-4">
+                                    <span className="text-muted-foreground whitespace-nowrap">Địa điểm:</span>
+                                    <span className="text-right line-clamp-3">{item.DIA_CHI_CONG_TRINH || item.DIA_CHI || "—"}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
             </div>
 
             {/* Edit Modal (Info) */}
