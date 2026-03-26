@@ -21,8 +21,13 @@ export interface BangGiaProduct {
 }
 
 // Lấy danh sách hàng hóa kèm giá bán cho bảng giá in
-export async function getProductsForBangGia(maHHList: string[]): Promise<BangGiaProduct[]> {
+// ngayHieuLuc: ngày để lấy giá bán/nhập (mặc định ngày hiện tại)
+export async function getProductsForBangGia(maHHList: string[], ngayHieuLuc?: string): Promise<BangGiaProduct[]> {
     try {
+        const targetDate = ngayHieuLuc ? new Date(ngayHieuLuc) : new Date();
+        // Set to end of day
+        targetDate.setHours(23, 59, 59, 999);
+
         // Lấy hàng hóa theo danh sách mã
         const products = await prisma.dMHH.findMany({
             where: {
@@ -43,10 +48,11 @@ export async function getProductsForBangGia(maHHList: string[]): Promise<BangGia
         });
         const activeGoiGiaMap = new Map(activeGoiGia.map(g => [g.ID_GOI_GIA, g.GOI_GIA]));
 
-        // Lấy giá bán tương ứng (mới nhất cho mỗi gói giá)
+        // Lấy giá bán tương ứng (theo ngày hiệu lực <= targetDate, mới nhất cho mỗi gói giá)
         const giaBanRecords = await prisma.gIA_BAN.findMany({
             where: {
                 MA_HH: { in: maHHList },
+                NGAY_HIEU_LUC: { lte: targetDate },
             },
             orderBy: { NGAY_HIEU_LUC: 'desc' },
             select: {
@@ -75,12 +81,11 @@ export async function getProductsForBangGia(maHHList: string[]): Promise<BangGia
             }
         });
 
-        // Lấy giá nhập mới nhất
-        const today = new Date();
+        // Lấy giá nhập mới nhất theo ngày hiệu lực
         const giaNhapRecords = await prisma.gIA_NHAP.findMany({
             where: {
                 MA_HH: { in: maHHList },
-                NGAY_HIEU_LUC: { lte: today },
+                NGAY_HIEU_LUC: { lte: targetDate },
             },
             orderBy: { NGAY_HIEU_LUC: 'desc' },
             select: {
@@ -149,7 +154,7 @@ export async function getAllProductsForSelect() {
             DONG_HANG: (p as any).DONG_HANG_REL?.TEN_DONG_HANG || p.MA_DONG_HANG,
         }));
     } catch (error) {
-        console.error('[getAllProductsForSelect]', error);
+        console.error('[getAllProductsForSelect]');
         return [];
     }
 }
@@ -171,5 +176,29 @@ export async function getGoiGiaNames() {
     } catch (error) {
         console.error('[getGoiGiaNames]', error);
         return [];
+    }
+}
+
+// Lấy danh sách filter options cho BangGiaSelectModal
+export async function getBangGiaFilterOptions() {
+    try {
+        const [nhomHH, phanLoai, dongHang] = await Promise.all([
+            prisma.nHOM_HH.findMany({
+                select: { MA_NHOM: true, TEN_NHOM: true },
+                orderBy: { CREATED_AT: 'asc' },
+            }),
+            prisma.pHANLOAI_HH.findMany({
+                select: { MA_PHAN_LOAI: true, TEN_PHAN_LOAI: true, NHOM: true },
+                orderBy: { CREATED_AT: 'asc' },
+            }),
+            prisma.dONG_HH.findMany({
+                select: { MA_DONG_HANG: true, TEN_DONG_HANG: true, MA_PHAN_LOAI: true },
+                orderBy: { CREATED_AT: 'asc' },
+            }),
+        ]);
+        return { nhomHH, phanLoai, dongHang };
+    } catch (error) {
+        console.error('[getBangGiaFilterOptions]', error);
+        return { nhomHH: [], phanLoai: [], dongHang: [] };
     }
 }
