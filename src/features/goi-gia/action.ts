@@ -299,6 +299,7 @@ export async function getGoiGiaMapByDongHang(): Promise<
                 SL_MIN: rec.SL_MIN,
                 SL_MAX: rec.SL_MAX,
                 HIEU_LUC: rec.HIEU_LUC,
+                NHOM_KH: rec.NHOM_KH,
             });
             // count chỉ tính gói có hiệu lực (dùng cho badge)
             if (rec.HIEU_LUC) {

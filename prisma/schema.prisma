@@ -642,14 +642,12 @@ model BAO_GIA {
 
   LOAI_BAO_GIA String @default("Dân dụng") // "Dân dụng" | "Công nghiệp"
 
-  // Tài chính — tổng hợp từ chi tiết
-  TT_TRUOC_UU_DAI Float @default(0)
-  PT_UU_DAI       Float @default(0) // % ưu đãi chung
-  TT_UU_DAI       Float @default(0)
-  TT_SAU_UU_DAI   Float @default(0)
-  PT_VAT          Float @default(0) // % VAT chung
-  TT_VAT          Float @default(0)
-  TONG_TIEN       Float @default(0)
+  // Tài chính — GIÁ BÁN đã bao gồm VAT
+  PT_VAT    Float @default(8) // % VAT (mặc định 8%)
+  TT_VAT    Float @default(0) // Tổng tiền VAT (tính tự động)
+  THANH_TIEN Float @default(0) // Tổng thành tiền (sum từ chi tiết)
+  TT_UU_DAI  Float @default(0) // Tiền ưu đãi (nhập tay, số âm = giảm giá)
+  TONG_TIEN  Float @default(0) // = THANH_TIEN + TT_UU_DAI
 
   GHI_CHU           String?
   THOI_GIAN_LAP_DAT String?
@@ -696,18 +694,12 @@ model BAO_GIA_CT {
   MA_HH  String
   HH_REL DMHH   @relation(fields: [MA_HH], references: [MA_HH])
 
-  DON_VI_TINH String
-  GIA_BAN     Float  @default(0)
-  SO_LUONG    Float  @default(1)
-  THANH_TIEN  Float  @default(0)
-
-  PT_UU_DAI       Float @default(0)
-  TIEN_UU_DAI     Float @default(0)
-  TIEN_SAU_UU_DAI Float @default(0)
-
-  PT_VAT    Float @default(0)
-  TIEN_VAT  Float @default(0)
-  TONG_TIEN Float @default(0)
+  NHOM_HH         String? // Nhóm hàng hóa
+  DON_VI_TINH     String
+  GIA_BAN_CHUA_VAT Float  @default(0) // Giá bán chưa VAT (tính tự động)
+  GIA_BAN         Float  @default(0) // Giá bán đã bao gồm VAT
+  SO_LUONG        Float  @default(1)
+  THANH_TIEN      Float  @default(0) // = GIA_BAN * SO_LUONG
 
   GHI_CHU String?
 

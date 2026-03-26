@@ -359,9 +359,10 @@ export async function getGiaBanHistoryByHH(maHH: string) {
     try {
         // Load tất cả GOI_GIA để lookup tên + kiểm tra hiệu lực
         const allGoiGia = await prisma.gOI_GIA.findMany({
-            select: { ID_GOI_GIA: true, GOI_GIA: true, HIEU_LUC: true },
+            select: { ID_GOI_GIA: true, GOI_GIA: true, HIEU_LUC: true, NHOM_KH: true },
         });
         const goiGiaLookup = new Map(allGoiGia.map(g => [g.ID_GOI_GIA, g.GOI_GIA]));
+        const goiGiaNhomKHLookup = new Map(allGoiGia.map(g => [g.ID_GOI_GIA, g.NHOM_KH]));
         const activeGoiGiaIds = new Set(allGoiGia.filter(g => g.HIEU_LUC).map(g => g.ID_GOI_GIA));
 
         const records = await prisma.gIA_BAN.findMany({
@@ -373,9 +374,10 @@ export async function getGiaBanHistoryByHH(maHH: string) {
                 MA_NHOM_HH: true,
                 MA_GOI_GIA: true,
                 DON_GIA: true,
+                HE_SO: true,
                 GHI_CHU: true,
                 NHOM: { select: { TEN_NHOM: true } },
-                GOI_GIA_REL: { select: { GOI_GIA: true, HIEU_LUC: true } },
+                GOI_GIA_REL: { select: { GOI_GIA: true, HIEU_LUC: true, NHOM_KH: true } },
             },
         });
 
@@ -394,6 +396,7 @@ export async function getGiaBanHistoryByHH(maHH: string) {
             NGAY_HIEU_LUC: r.NGAY_HIEU_LUC.toISOString(),
             // Normalize tên gói giá: ưu tiên relation → lookup từ mã → dùng mã raw
             GOI_GIA_NAME: r.GOI_GIA_REL?.GOI_GIA || (r.MA_GOI_GIA ? goiGiaLookup.get(r.MA_GOI_GIA) : null) || r.MA_GOI_GIA || 'Khác',
+            NHOM_KH: r.GOI_GIA_REL?.NHOM_KH || (r.MA_GOI_GIA ? goiGiaNhomKHLookup.get(r.MA_GOI_GIA) : null) || null,
         }));
     } catch (error) {
         console.error('[getGiaBanHistoryByHH]', error);
@@ -402,7 +405,7 @@ export async function getGiaBanHistoryByHH(maHH: string) {
 }
 
 // ===== Lấy map Giá bán theo Hàng hóa (dùng ở Danh mục HH) - chỉ lấy gói giá còn hiệu lực =====
-export async function getGiaBanMapByHangHoa(): Promise<Record<string, { GOI_GIA: string; DON_GIA: number; NGAY_HIEU_LUC: string }[]>> {
+export async function getGiaBanMapByHangHoa(): Promise<Record<string, { GOI_GIA: string; DON_GIA: number; NGAY_HIEU_LUC: string; NHOM_KH?: string | null }[]>> {
     try {
         // Lấy danh sách ID gói giá còn hiệu lực
         const activeGoiGia = await prisma.gOI_GIA.findMany({
@@ -418,11 +421,11 @@ export async function getGiaBanMapByHangHoa(): Promise<Record<string, { GOI_GIA:
                 MA_GOI_GIA: true,
                 DON_GIA: true,
                 NGAY_HIEU_LUC: true,
-                GOI_GIA_REL: { select: { GOI_GIA: true } },
+                GOI_GIA_REL: { select: { GOI_GIA: true, NHOM_KH: true } },
             },
         });
 
-        const map: Record<string, { GOI_GIA: string; DON_GIA: number; NGAY_HIEU_LUC: string }[]> = {};
+        const map: Record<string, { GOI_GIA: string; DON_GIA: number; NGAY_HIEU_LUC: string; NHOM_KH?: string | null }[]> = {};
         records.forEach(r => {
             // Bỏ qua giá bán thuộc gói giá đã hết hiệu lực (chỉ check nếu có gói giá)
             if (r.MA_GOI_GIA && !activeGoiGiaMap.has(r.MA_GOI_GIA)) return;
@@ -437,6 +440,7 @@ export async function getGiaBanMapByHangHoa(): Promise<Record<string, { GOI_GIA:
                     GOI_GIA: goiGiaName,
                     DON_GIA: r.DON_GIA,
                     NGAY_HIEU_LUC: r.NGAY_HIEU_LUC.toISOString(),
+                    NHOM_KH: r.GOI_GIA_REL?.NHOM_KH || null,
                 });
             }
         });
