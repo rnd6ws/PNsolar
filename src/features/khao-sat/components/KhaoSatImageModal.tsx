@@ -241,7 +241,7 @@ export default function KhaoSatImageModal({ isOpen, onClose, item }: Props) {
                             <GripVertical className="w-3 h-3" />
                             Kéo thả để thay đổi thứ tự ảnh
                         </p>
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {images.map((img, index) => (
                                 <div
                                     key={img.id}
@@ -276,8 +276,18 @@ export default function KhaoSatImageModal({ isOpen, onClose, item }: Props) {
                                             </div>
                                         )}
 
-                                        {/* Hover overlay */}
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                        {/* Nút xóa cho mobile (luôn hiện góc dưới phải) */}
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); handleRemove(img.id); }}
+                                            className="md:hidden absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-destructive/90 text-white flex items-center justify-center shadow-md active:bg-destructive transition-colors z-10"
+                                            title="Xóa ảnh"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        {/* Hover overlay cho desktop */}
+                                        <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3">
                                             <GripVertical className="w-5 h-5 text-white/70" />
                                             <button
                                                 type="button"
@@ -297,7 +307,7 @@ export default function KhaoSatImageModal({ isOpen, onClose, item }: Props) {
                                             onChange={(e) => handleNameChange(img.id, e.target.value)}
                                             placeholder="Nhập tên ảnh..."
                                             disabled={isSaving || uploading}
-                                            className="w-full text-xs box-border px-2 py-1.5 rounded-md border text-foreground bg-background placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-primary disabled:opacity-50"
+                                            className="w-full text-[11px] box-border px-2 py-1 rounded-md border text-foreground bg-background placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-primary disabled:opacity-50"
                                         />
                                     </div>
                                 </div>

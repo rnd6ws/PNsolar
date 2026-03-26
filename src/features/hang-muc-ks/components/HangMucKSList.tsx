@@ -287,10 +287,10 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                         {groupedData.map((loaiGroup) => (
                             <Fragment key={loaiGroup.loai}>
                                 <tr
-                                    className="bg-blue-50/50 hover:bg-blue-50/80 transition-colors border-b border-border cursor-pointer select-none"
+                                    className="bg-primary/10 hover:bg-primary/20 transition-colors border-b border-primary/20 cursor-pointer select-none"
                                     onClick={() => toggleGroup(`loai-${loaiGroup.loai}`)}
                                 >
-                                    <td colSpan={10} className="px-4 py-2.5 text-sm font-bold text-blue-700 tracking-wide">
+                                    <td colSpan={10} className="px-4 py-2.5 text-sm font-bold text-primary tracking-wide">
                                         <div className="flex items-center">
                                             {expandedGroups[`loai-${loaiGroup.loai}`] ? <ChevronDown className="w-4 h-4 mr-1.5" /> : <ChevronRight className="w-4 h-4 mr-1.5" />}
                                             {loaiGroup.loai}
@@ -300,14 +300,14 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                                 {expandedGroups[`loai-${loaiGroup.loai}`] && loaiGroup.nhomGroups.map((nhomGroup) => (
                                     <Fragment key={`${loaiGroup.loai}-${nhomGroup.nhom}`}>
                                         <tr
-                                            className="bg-purple-50/40 hover:bg-purple-50/60 transition-colors border-b border-border cursor-pointer select-none"
+                                            className="bg-muted/40 hover:bg-muted/60 transition-colors border-b border-border cursor-pointer select-none"
                                             onClick={() => toggleGroup(`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`)}
                                         >
-                                            <td colSpan={10} className="px-4 py-2 pl-9 text-[13px] font-semibold text-purple-700">
+                                            <td colSpan={10} className="px-4 py-2 pl-9 text-[13px] font-semibold text-foreground/80">
                                                 <div className="flex items-center">
                                                     {expandedGroups[`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`] ? <ChevronDown className="w-4 h-4 mr-1.5" /> : <ChevronRight className="w-4 h-4 mr-1.5" />}
                                                     {nhomGroup.nhom}
-                                                    <span className="ml-2.5 text-xs font-normal text-muted-foreground bg-purple-100 px-2 py-0.5 rounded-full">{nhomGroup.items.length} hạng mục</span>
+                                                    <span className="ml-2.5 text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{nhomGroup.items.length} hạng mục</span>
                                                 </div>
                                             </td>
                                         </tr>
@@ -386,7 +386,7 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                 {groupedData.map(loaiGroup => (
                     <div key={loaiGroup.loai} className="flex flex-col gap-3">
                         <div
-                            className="bg-blue-600 text-white rounded-lg px-3 py-2.5 font-bold text-sm shadow-sm sticky top-0 z-10 flex items-center justify-between cursor-pointer select-none"
+                            className="bg-primary/10 text-primary border border-primary/20 rounded-lg px-3 py-2.5 font-bold text-sm shadow-sm sticky top-0 z-10 flex items-center justify-between cursor-pointer select-none"
                             onClick={() => toggleGroup(`loai-${loaiGroup.loai}`)}
                         >
                             <div className="flex items-center">
@@ -396,16 +396,16 @@ export default function HangMucKSList({ data, loaiCongTrinhOptions, nhomKSOption
                         </div>
 
                         {expandedGroups[`loai-${loaiGroup.loai}`] && loaiGroup.nhomGroups.map(nhomGroup => (
-                            <div key={`${loaiGroup.loai}-${nhomGroup.nhom}`} className="flex flex-col gap-2.5 pl-2 border-l-2 border-blue-400 ml-1">
+                            <div key={`${loaiGroup.loai}-${nhomGroup.nhom}`} className="flex flex-col gap-2.5 pl-2 border-l-2 border-primary/20 ml-1">
                                 <div
-                                    className="text-purple-700 font-semibold text-sm bg-purple-100 rounded-lg px-3 py-2 flex justify-between items-center shadow-sm cursor-pointer select-none"
+                                    className="text-foreground/80 font-semibold text-sm bg-muted/50 border border-border/50 rounded-lg px-3 py-2 flex justify-between items-center shadow-sm cursor-pointer select-none"
                                     onClick={() => toggleGroup(`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`)}
                                 >
                                     <div className="flex items-center">
                                         {expandedGroups[`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`] ? <ChevronDown className="w-4 h-4 mr-1.5" /> : <ChevronRight className="w-4 h-4 mr-1.5" />}
                                         <span>{nhomGroup.nhom}</span>
                                     </div>
-                                    <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-bold">{nhomGroup.items.length}</span>
+                                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-bold">{nhomGroup.items.length}</span>
                                 </div>
 
                                 {expandedGroups[`nhom-${loaiGroup.loai}-${nhomGroup.nhom}`] && nhomGroup.items.map(item => (

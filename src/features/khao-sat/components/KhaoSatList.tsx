@@ -174,7 +174,7 @@ export default function KhaoSatList({
                                 </th>
                             )}
                             <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">
-                                Hành động
+                                Thao tác
                             </th>
                         </tr>
                     </thead>

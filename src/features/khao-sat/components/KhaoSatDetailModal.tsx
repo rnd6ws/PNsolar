@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Building2, MapPin, User, Calendar, ChevronDown, ChevronRight, ImageIcon } from "lucide-react";
+import { ClipboardList, Building2, MapPin, User, Calendar, ChevronDown, ChevronRight, ImageIcon, X } from "lucide-react";
 import { useState } from "react";
 import Modal from "@/components/Modal";
 import Image from "next/image";
@@ -51,6 +51,7 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
     const nhomList = Object.keys(grouped);
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
     const [activeTab, setActiveTab] = useState<"info" | "images">("info");
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     return (
         <Modal
@@ -98,7 +99,7 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                     >
                         <span className="flex items-center gap-2">
                             <ImageIcon className={`w-4 h-4 transition-colors ${activeTab === "images" ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
-                            Thư viện ảnh
+                            Ảnh khảo sát
                             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold transition-colors ${activeTab === "images"
                                 ? "bg-primary/10 text-primary"
                                 : "bg-muted text-muted-foreground group-hover:bg-muted/80 group-hover:text-foreground"
@@ -179,11 +180,15 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                             </div>
                         </div>
                     ) : (
-                        <div className="p-4 md:p-6 grid grid-cols-2 md:grid-cols-3 gap-4 auto-rows-max h-full">
+                        <div className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max h-full">
                             {item.HINH_ANH && item.HINH_ANH.length > 0 ? (
                                 [...item.HINH_ANH].sort((a, b) => a.STT - b.STT).map((img, i) => (
-                                    <div key={i} className="flex flex-col gap-2 p-2 border border-border rounded-xl bg-muted/10 transition-colors">
-                                        <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/30 border border-border shadow-sm">
+                                    <div 
+                                        key={i} 
+                                        className="flex flex-col gap-2 p-2 border border-border rounded-xl bg-muted/10 transition-colors cursor-pointer hover:border-primary/50 hover:shadow-md group"
+                                        onClick={() => setPreviewImage(img.URL_HINH)}
+                                    >
+                                        <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/30 border border-border shadow-sm group-hover:opacity-90 transition-opacity">
                                             <Image
                                                 src={img.URL_HINH}
                                                 alt={img.TEN_HINH || "Ảnh"}
@@ -211,6 +216,30 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                     )}
                 </div>
             </div>
+
+            {/* Image Preview Overlay */}
+            {previewImage && (
+                <div 
+                    className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setPreviewImage(null)}
+                >
+                    <button 
+                        className="fixed top-4 right-4 p-2 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full transition-colors z-50"
+                        onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }}
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    <div className="relative w-full h-[85vh] max-w-5xl flex items-center justify-center pointer-events-none">
+                        <Image
+                            src={previewImage}
+                            alt="Phóng to ảnh"
+                            fill
+                            className="object-contain pointer-events-auto"
+                            unoptimized
+                        />
+                    </div>
+                </div>
+            )}
         </Modal>
     );
 }
@@ -221,7 +250,7 @@ function InfoCard({ icon: Icon, label, value, className = "" }: { icon: any; lab
             <Icon className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
             <div className="min-w-0">
                 <p className="text-[11px] text-muted-foreground font-semibold tracking-wide">{label}</p>
-                <p className="text-sm font-medium text-foreground mt-0.5 truncate">{value}</p>
+                <p className="text-sm font-medium text-foreground mt-0.5 wrap-break-word leading-relaxed">{value}</p>
             </div>
         </div>
     );

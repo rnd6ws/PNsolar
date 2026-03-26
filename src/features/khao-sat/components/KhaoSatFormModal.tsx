@@ -81,6 +81,11 @@ export default function KhaoSatFormModal({
                         ID: initialData.KHTN_REL.MA_KH,
                         TEN_KH: initialData.KHTN_REL.TEN_KH,
                     } : null);
+                    // Set khachHangInfo để NguoiLienHeModal dùng khi thêm nhanh NLH
+                    setKhachHangInfo({
+                        ID: initialData.MA_KH,
+                        TEN_KH: initialData.KHTN_REL?.TEN_KH || initialData.MA_KH,
+                    });
                     // Fetch default Khach Hang details to populate nguoiLienHeOptions
                     const res = await getKhachHangChiTiet(initialData.MA_KH);
                     if (res.success && res.data && res.data.NGUOI_LIENHE) {
