@@ -29,6 +29,8 @@ async function generateMaKhaoSat(): Promise<string> {
 
 // ─── QUERIES ──────────────────────────────────────────────────
 
+import { getCurrentUser } from "@/lib/auth";
+
 export async function getKhaoSatList(params?: {
     query?: string;
     loai?: string;
@@ -36,6 +38,17 @@ export async function getKhaoSatList(params?: {
 }) {
     try {
         const { query, loai, nguoi } = params || {};
+        
+        // --- STAFF Filtering Rule ---
+        const user = await getCurrentUser();
+        let staffMaNv = null;
+        if (user && user.ROLE === "STAFF") {
+            const nv = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (nv?.MA_NV) {
+                staffMaNv = nv.MA_NV;
+            }
+        }
+        
         const data = await prisma.kHAO_SAT.findMany({
             where: {
                 AND: [
@@ -47,12 +60,13 @@ export async function getKhaoSatList(params?: {
                         ]
                     } : {},
                     loai && loai !== "all" ? { LOAI_CONG_TRINH: loai } : {},
-                    nguoi && nguoi !== "all" ? { NGUOI_KHAO_SAT: nguoi } : {},
+                    nguoi && nguoi !== "all" ? { NGUOI_KHAO_SAT: { contains: nguoi } } : {},
+                    staffMaNv ? { NGUOI_KHAO_SAT: { contains: staffMaNv } } : {},
                 ],
             },
             include: {
                 NGUOI_KHAO_SAT_REL: { select: { HO_TEN: true, MA_NV: true } },
-                KHTN_REL: { select: { TEN_KH: true, MA_KH: true } },
+                KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIA_CHI: true, DIEN_THOAI: true, EMAIL: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, SDT: true, EMAIL: true } } } },
                 CO_HOI_REL: { select: { MA_CH: true } },
                 NGUOI_LIEN_HE_REL: { select: { TENNGUOI_LIENHE: true } },
                 KHAO_SAT_CT: true,
@@ -71,7 +85,7 @@ export async function getKhaoSatById(id: string) {
             where: { ID: id },
             include: {
                 NGUOI_KHAO_SAT_REL: { select: { HO_TEN: true, MA_NV: true } },
-                KHTN_REL: { select: { TEN_KH: true, MA_KH: true } },
+                KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIA_CHI: true, DIEN_THOAI: true, EMAIL: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, SDT: true, EMAIL: true } } } },
                 CO_HOI_REL: { select: { MA_CH: true } },
                 NGUOI_LIEN_HE_REL: { select: { TENNGUOI_LIENHE: true, SDT: true } },
                 KHAO_SAT_CT: {
@@ -87,10 +101,20 @@ export async function getKhaoSatById(id: string) {
 
 export async function getKhaoSatStats() {
     try {
+        const user = await getCurrentUser();
+        let staffMaNv = null;
+        if (user && user.ROLE === "STAFF") {
+            const nv = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (nv?.MA_NV) staffMaNv = nv.MA_NV;
+        }
+
+        const baseWhere = staffMaNv ? { NGUOI_KHAO_SAT: { contains: staffMaNv } } : {};
+
         const [total, thisMonth] = await Promise.all([
-            prisma.kHAO_SAT.count(),
+            prisma.kHAO_SAT.count({ where: baseWhere }),
             prisma.kHAO_SAT.count({
                 where: {
+                    ...baseWhere,
                     NGAY_KHAO_SAT: {
                         gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
                     },
@@ -100,6 +124,7 @@ export async function getKhaoSatStats() {
 
         const byLoai = await prisma.kHAO_SAT.groupBy({
             by: ["LOAI_CONG_TRINH"],
+            where: baseWhere,
             _count: { _all: true },
             orderBy: { _count: { LOAI_CONG_TRINH: "desc" } },
             take: 1,
@@ -139,6 +164,8 @@ export async function createKhaoSat(data: {
     DIA_CHI?: string;
     NGUOI_LIEN_HE?: string;
     DIA_CHI_CONG_TRINH?: string;
+    HANG_MUC?: string;
+    CONG_SUAT?: string;
     LOAI_CONG_TRINH: string;
     NGAY_KHAO_SAT?: string;
 }) {
@@ -157,6 +184,8 @@ export async function createKhaoSat(data: {
                 DIA_CHI: data.DIA_CHI || null,
                 NGUOI_LIEN_HE: data.NGUOI_LIEN_HE || null,
                 DIA_CHI_CONG_TRINH: data.DIA_CHI_CONG_TRINH || null,
+                HANG_MUC: data.HANG_MUC || null,
+                CONG_SUAT: data.CONG_SUAT || null,
                 NGAY_KHAO_SAT: data.NGAY_KHAO_SAT ? new Date(data.NGAY_KHAO_SAT) : new Date(),
             },
         });
@@ -174,6 +203,8 @@ export async function updateKhaoSat(id: string, data: {
     DIA_CHI?: string;
     NGUOI_LIEN_HE?: string;
     DIA_CHI_CONG_TRINH?: string;
+    HANG_MUC?: string;
+    CONG_SUAT?: string;
     LOAI_CONG_TRINH?: string;
     NGAY_KHAO_SAT?: string;
 }) {
@@ -188,6 +219,8 @@ export async function updateKhaoSat(id: string, data: {
                 DIA_CHI: data.DIA_CHI || null,
                 NGUOI_LIEN_HE: data.NGUOI_LIEN_HE || null,
                 DIA_CHI_CONG_TRINH: data.DIA_CHI_CONG_TRINH || null,
+                HANG_MUC: data.HANG_MUC || null,
+                CONG_SUAT: data.CONG_SUAT || null,
                 NGAY_KHAO_SAT: data.NGAY_KHAO_SAT ? new Date(data.NGAY_KHAO_SAT) : undefined,
             },
         });
@@ -208,12 +241,24 @@ export async function deleteKhaoSat(id: string) {
     }
 }
 
+export async function updateKhaoSatImages(id: string, images: { STT: number; TEN_HINH: string; URL_HINH: string; }[]) {
+    try {
+        await prisma.kHAO_SAT.update({
+            where: { ID: id },
+            data: { HINH_ANH: images },
+        });
+        revalidatePath("/khao-sat");
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, message: e.message || "Lỗi không xác định" };
+    }
+}
+
 // ─── KHAO SAT CHI TIET ────────────────────────────────────────
 
 export async function upsertKhaoSatChiTiet(data: {
     MA_KHAO_SAT: string;
     items: {
-        ID?: string;
         NHOM_KS: string;
         HANG_MUC_KS: string;
         CHI_TIET: string;
@@ -224,40 +269,19 @@ export async function upsertKhaoSatChiTiet(data: {
     try {
         const { MA_KHAO_SAT, items } = data;
 
-        // Lấy IDs hiện tại để xóa những cái không còn trong list
-        const existing = await prisma.kHAO_SAT_CT.findMany({
-            where: { MA_KHAO_SAT },
-            select: { ID: true },
-        });
-        const existingIds = existing.map((e) => e.ID);
-        const newIds = items.filter((i) => i.ID).map((i) => i.ID as string);
-        const toDelete = existingIds.filter((id) => !newIds.includes(id));
-
+        // deleteMany + createMany in a single transaction = 2 statements instead of N
         await prisma.$transaction([
-            ...(toDelete.length > 0 ? [prisma.kHAO_SAT_CT.deleteMany({ where: { ID: { in: toDelete } } })] : []),
-            ...items.map((item) =>
-                item.ID
-                    ? prisma.kHAO_SAT_CT.update({
-                        where: { ID: item.ID },
-                        data: {
-                            NHOM_KS: item.NHOM_KS,
-                            HANG_MUC_KS: item.HANG_MUC_KS,
-                            CHI_TIET: item.CHI_TIET,
-                            STT_NHOM_KS: item.STT_NHOM_KS,
-                            STT_HANG_MUC: item.STT_HANG_MUC,
-                        },
-                    })
-                    : prisma.kHAO_SAT_CT.create({
-                        data: {
-                            MA_KHAO_SAT,
-                            NHOM_KS: item.NHOM_KS,
-                            HANG_MUC_KS: item.HANG_MUC_KS,
-                            CHI_TIET: item.CHI_TIET,
-                            STT_NHOM_KS: item.STT_NHOM_KS,
-                            STT_HANG_MUC: item.STT_HANG_MUC,
-                        },
-                    })
-            ),
+            prisma.kHAO_SAT_CT.deleteMany({ where: { MA_KHAO_SAT } }),
+            prisma.kHAO_SAT_CT.createMany({
+                data: items.map((item) => ({
+                    MA_KHAO_SAT,
+                    NHOM_KS: item.NHOM_KS,
+                    HANG_MUC_KS: item.HANG_MUC_KS,
+                    CHI_TIET: item.CHI_TIET,
+                    STT_NHOM_KS: item.STT_NHOM_KS,
+                    STT_HANG_MUC: item.STT_HANG_MUC,
+                })),
+            }),
         ]);
 
         revalidatePath("/khao-sat");

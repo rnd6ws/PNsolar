@@ -7,7 +7,7 @@ import FilterSelect from "@/components/FilterSelect";
 import KhaoSatColumnToggle, { type KhaoSatColumnKey, KS_ALL_COLUMNS } from "./KhaoSatColumnToggle";
 import KhaoSatList from "./KhaoSatList";
 
-const DEFAULT_COLS: KhaoSatColumnKey[] = ["ma", "ngay", "nguoi", "loai", "diaChi", "khachHang"];
+const DEFAULT_COLS: KhaoSatColumnKey[] = ["ngay", "nguoi", "loai", "diaChi", "khachHang"];
 
 type StringOption = { value: string; label: string };
 
@@ -18,6 +18,14 @@ interface Props {
     khachHangOptions: StringOption[];
     coHoiOptions: StringOption[];
     nguoiLienHeOptions: StringOption[];
+    nhomKSData: { NHOM_KS: string; STT: number | null }[];
+    hangMucData: {
+        LOAI_CONG_TRINH: string;
+        NHOM_KS: string;
+        HANG_MUC_KS: string;
+        STT: number | null;
+        HIEU_LUC: boolean;
+    }[];
 }
 
 export default function KhaoSatPageClient({
@@ -27,6 +35,8 @@ export default function KhaoSatPageClient({
     khachHangOptions,
     coHoiOptions,
     nguoiLienHeOptions,
+    nhomKSData,
+    hangMucData,
 }: Props) {
     const [showFilters, setShowFilters] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<KhaoSatColumnKey[]>(DEFAULT_COLS);
@@ -88,6 +98,8 @@ export default function KhaoSatPageClient({
                 coHoiOptions={coHoiOptions}
                 nguoiLienHeOptions={nguoiLienHeOptions}
                 visibleColumns={visibleColumns}
+                nhomKSData={nhomKSData}
+                hangMucData={hangMucData}
             />
         </>
     );

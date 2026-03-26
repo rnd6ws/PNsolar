@@ -58,7 +58,7 @@ export default async function HangMucKSPage() {
                 </div>
 
                 {/* Content Card */}
-                <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col relative">
+                <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col relative overflow-hidden">
                     <HangMucKSPageClient
                         hangMucKSs={hangMucKSs}
                         cdLoaiCongTrinhs={cdLoaiCongTrinhs}

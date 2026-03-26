@@ -1,8 +1,9 @@
 "use client";
 
-import { ClipboardList, Building2, MapPin, User, Calendar, ChevronDown, ChevronRight } from "lucide-react";
+import { ClipboardList, Building2, MapPin, User, Calendar, ChevronDown, ChevronRight, ImageIcon, X } from "lucide-react";
 import { useState } from "react";
 import Modal from "@/components/Modal";
+import Image from "next/image";
 
 interface Props {
     item: {
@@ -10,6 +11,8 @@ interface Props {
         MA_KHAO_SAT: string;
         NGAY_KHAO_SAT: Date;
         LOAI_CONG_TRINH: string;
+        HANG_MUC: string | null;
+        CONG_SUAT: string | null;
         DIA_CHI_CONG_TRINH: string | null;
         DIA_CHI: string | null;
         NGUOI_KHAO_SAT_REL: { HO_TEN: string; MA_NV: string } | null;
@@ -24,15 +27,17 @@ interface Props {
             STT_HANG_MUC: number;
             STT_NHOM_KS: number;
         }[];
+        HINH_ANH?: { STT: number; TEN_HINH: string; URL_HINH: string }[];
     };
     onClose: () => void;
+    nguoiKhaoSatName?: string;
 }
 
 function formatDate(d: Date) {
     return new Date(d).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-export default function KhaoSatDetailModal({ item, onClose }: Props) {
+export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: Props) {
     // Group chi tiết theo nhom → hang muc
     const grouped: Record<string, Record<string, string[]>> = {};
     [...item.KHAO_SAT_CT]
@@ -45,6 +50,8 @@ export default function KhaoSatDetailModal({ item, onClose }: Props) {
 
     const nhomList = Object.keys(grouped);
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+    const [activeTab, setActiveTab] = useState<"info" | "images">("info");
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     return (
         <Modal
@@ -54,80 +61,185 @@ export default function KhaoSatDetailModal({ item, onClose }: Props) {
             icon={ClipboardList}
             size="2xl"
             fullHeight
+            disableBodyScroll
+            bodyClassName="p-0 md:p-0"
             footer={
                 <>
-                    <span className="text-xs text-muted-foreground">
-                        {item.KHAO_SAT_CT.length} chi tiết khảo sát
+                    <span className="text-xs text-muted-foreground mr-auto">
+                        Người KS: <span className="font-semibold text-foreground">{nguoiKhaoSatName || item.NGUOI_KHAO_SAT_REL?.HO_TEN || "—"}</span>
                     </span>
                     <button onClick={onClose} className="btn-premium-secondary">Đóng</button>
                 </>
             }
         >
-            <div className="space-y-5">
-                {/* Info grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    <InfoCard icon={Building2} label="Loại công trình" value={item.LOAI_CONG_TRINH} />
-                    <InfoCard icon={Calendar} label="Ngày khảo sát" value={formatDate(item.NGAY_KHAO_SAT)} />
-                    <InfoCard icon={User} label="Người khảo sát" value={item.NGUOI_KHAO_SAT_REL?.HO_TEN || "—"} />
-                    <InfoCard icon={User} label="Khách hàng" value={item.KHTN_REL?.TEN_KH || "—"} />
-                    <InfoCard icon={MapPin} label="Địa chỉ CT" value={item.DIA_CHI_CONG_TRINH || "—"} className="col-span-2" />
+            <div className="relative flex flex-col flex-1 min-h-0 w-full overflow-hidden bg-background/50">
+                {/* Frame Header - Tabs */}
+                <div className="shrink-0 z-30 flex items-center gap-8 px-6 pt-4 bg-muted/30 backdrop-blur-xl border-b border-border/60">
+                    <button
+                        onClick={() => setActiveTab("info")}
+                        className={`group relative pb-4 text-sm font-medium transition-all ${activeTab === "info"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
+                            }`}
+                    >
+                        <span className="flex items-center gap-2">
+                            <ClipboardList className={`w-4 h-4 transition-colors ${activeTab === "info" ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+                            Nội dung chi tiết
+                        </span>
+                        {activeTab === "info" && (
+                            <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-primary/90 rounded-t-full shadow-sm" />
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("images")}
+                        className={`group relative pb-4 text-sm font-medium transition-all ${activeTab === "images"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
+                            }`}
+                    >
+                        <span className="flex items-center gap-2">
+                            <ImageIcon className={`w-4 h-4 transition-colors ${activeTab === "images" ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+                            Ảnh khảo sát
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold transition-colors ${activeTab === "images"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground group-hover:bg-muted/80 group-hover:text-foreground"
+                                }`}>
+                                {item.HINH_ANH?.length || 0}
+                            </span>
+                        </span>
+                        {activeTab === "images" && (
+                            <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-primary/90 rounded-t-full shadow-sm" />
+                        )}
+                    </button>
                 </div>
 
-                {/* Chi tiết */}
-                <div className="space-y-3">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-                        Nội dung khảo sát
-                    </h3>
-
-                    {nhomList.length === 0 && (
-                        <p className="text-center py-6 text-muted-foreground text-sm italic bg-muted/10 rounded-xl border border-dashed border-border">
-                            Chưa có nội dung chi tiết khảo sát
-                        </p>
-                    )}
-
-                    {nhomList.map((nhom) => {
-                        const isCollapsed = collapsed[nhom];
-                        const hangMucs = Object.keys(grouped[nhom]);
-                        const totalCt = Object.values(grouped[nhom]).reduce((a, v) => a + v.length, 0);
-
-                        return (
-                            <div key={nhom} className="border border-border rounded-xl overflow-hidden">
-                                <button
-                                    type="button"
-                                    onClick={() => setCollapsed((p) => ({ ...p, [nhom]: !isCollapsed }))}
-                                    className="w-full flex items-center justify-between px-4 py-3 bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 transition-colors"
-                                >
-                                    <span className="font-semibold text-sm text-purple-700 dark:text-purple-300">
-                                        {isCollapsed ? <ChevronRight className="w-4 h-4 inline mr-1.5" /> : <ChevronDown className="w-4 h-4 inline mr-1.5" />}
-                                        {nhom}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 rounded-full">
-                                        {hangMucs.length} hạng mục • {totalCt} chi tiết
-                                    </span>
-                                </button>
-
-                                {!isCollapsed && (
-                                    <div className="divide-y divide-border">
-                                        {hangMucs.map((hm) => (
-                                            <div key={hm} className="px-4 py-3 bg-background">
-                                                <p className="font-medium text-sm text-blue-700 dark:text-blue-300 mb-2">{hm}</p>
-                                                <ul className="space-y-1 ml-3">
-                                                    {grouped[nhom][hm].map((ct, i) => (
-                                                        <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                                                            <span className="w-5 text-xs text-muted-foreground font-mono shrink-0 mt-0.5">{i + 1}.</span>
-                                                            <span>{ct}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                <div className="flex-1 overflow-y-auto p-0">
+                    {activeTab === "info" ? (
+                        <div className="p-4 md:p-6 space-y-6">
+                            {/* Info grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <InfoCard icon={Building2} label="Loại công trình" value={item.LOAI_CONG_TRINH} />
+                                <InfoCard icon={Calendar} label="Ngày khảo sát" value={formatDate(item.NGAY_KHAO_SAT)} />
+                                <InfoCard icon={User} label="Nhân viên khảo sát" value={nguoiKhaoSatName || item.NGUOI_KHAO_SAT_REL?.HO_TEN || "—"} className="md:col-span-2 lg:col-span-1" />
+                                <InfoCard icon={User} label="Khách hàng" value={item.KHTN_REL?.TEN_KH || "—"} className="md:col-span-2 lg:col-span-3" />
+                                <InfoCard icon={MapPin} label="Địa chỉ" value={item.DIA_CHI || "—"} className="md:col-span-2 lg:col-span-3" />
+                                <InfoCard icon={MapPin} label="Địa điểm lắp đặt" value={item.DIA_CHI_CONG_TRINH || "—"} className="md:col-span-2 lg:col-span-3" />
+                                <InfoCard icon={Building2} label="Hạng mục" value={item.HANG_MUC || "—"} className="md:col-span-2 lg:col-span-2" />
+                                <InfoCard icon={Building2} label="Công suất" value={item.CONG_SUAT || "—"} className="md:col-span-2 lg:col-span-1" />
                             </div>
-                        );
-                    })}
+
+                            {/* Chi tiết */}
+                            <div className="space-y-3">
+                                {nhomList.length === 0 && (
+                                    <p className="text-center py-6 text-muted-foreground text-sm italic bg-muted/10 rounded-xl border border-dashed border-border">
+                                        Chưa có nội dung chi tiết khảo sát
+                                    </p>
+                                )}
+
+                                {nhomList.map((nhom) => {
+                                    const isCollapsed = collapsed[nhom];
+                                    const hangMucs = Object.keys(grouped[nhom]);
+                                    const totalCt = Object.values(grouped[nhom]).reduce((a, v) => a + v.length, 0);
+
+                                    return (
+                                        <div key={nhom} className="border border-border rounded-xl overflow-hidden">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCollapsed((p) => ({ ...p, [nhom]: !isCollapsed }))}
+                                                className="w-full flex items-center justify-between px-4 py-2.5 bg-primary/10 hover:bg-primary/15 transition-colors"
+                                            >
+                                                <span className="font-semibold text-sm text-primary">
+                                                    {isCollapsed ? <ChevronRight className="w-4 h-4 inline mr-1.5" /> : <ChevronDown className="w-4 h-4 inline mr-1.5" />}
+                                                    {nhom}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-primary/20">
+                                                    {totalCt} chi tiết
+                                                </span>
+                                            </button>
+
+                                            {!isCollapsed && (
+                                                <div className="divide-y divide-border">
+                                                    {hangMucs.flatMap((hm) =>
+                                                        grouped[nhom][hm].map((ct, i) => (
+                                                            <div key={`${hm}-${i}`} className="px-4 py-2.5 flex flex-col md:flex-row md:items-start gap-1 md:gap-4 bg-background hover:bg-muted/10 transition-colors">
+                                                                <div className="md:w-1/3 text-sm font-medium dark:text-blue-300 pt-[2px]">
+                                                                    {i === 0 ? hm : ""}
+                                                                </div>
+                                                                <div className="md:w-2/3 text-sm text-foreground flex items-start gap-2">
+                                                                    {/* <span className="w-3 text-xs text-muted-foreground/50 shrink-0 mt-0.5">•</span> */}
+                                                                    <span className="leading-relaxed whitespace-pre-wrap">{ct || "-"}</span>
+                                                                </div>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max h-full">
+                            {item.HINH_ANH && item.HINH_ANH.length > 0 ? (
+                                [...item.HINH_ANH].sort((a, b) => a.STT - b.STT).map((img, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex flex-col gap-2 p-2 border border-border rounded-xl bg-muted/10 transition-colors cursor-pointer hover:border-primary/50 hover:shadow-md group"
+                                        onClick={() => setPreviewImage(img.URL_HINH)}
+                                    >
+                                        <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/30 border border-border shadow-sm group-hover:opacity-90 transition-opacity">
+                                            <Image
+                                                src={img.URL_HINH}
+                                                alt={img.TEN_HINH || "Ảnh"}
+                                                fill
+                                                className="object-cover"
+                                                unoptimized
+                                            />
+                                            <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/60 text-white text-[10px] font-bold flex items-center justify-center shadow">
+                                                {img.STT}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-foreground font-medium text-center truncate px-1" title={img.TEN_HINH}>
+                                            {img.TEN_HINH || `Ảnh ${i + 1}`}
+                                        </p>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full py-16 flex flex-col items-center justify-center text-muted-foreground border border-dashed border-border rounded-xl bg-muted/5">
+                                    <ImageIcon className="w-10 h-10 opacity-20 mb-3" />
+                                    <span className="text-sm font-medium">Chưa có ảnh khảo sát nào đính kèm</span>
+                                    <span className="text-xs mt-1 text-muted-foreground/70">Có thể tải lên hình ảnh từ danh sách khảo sát</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Image Preview Overlay */}
+            {previewImage && (
+                <div
+                    className="fixed inset-0 z-9999 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setPreviewImage(null)}
+                >
+                    <button
+                        className="fixed top-4 right-4 p-2 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full transition-colors z-50"
+                        onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }}
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    <div className="relative w-full h-[85vh] max-w-5xl flex items-center justify-center pointer-events-none">
+                        <Image
+                            src={previewImage}
+                            alt="Phóng to ảnh"
+                            fill
+                            className="object-contain pointer-events-auto"
+                            unoptimized
+                        />
+                    </div>
+                </div>
+            )}
         </Modal>
     );
 }
@@ -137,8 +249,8 @@ function InfoCard({ icon: Icon, label, value, className = "" }: { icon: any; lab
         <div className={`bg-muted/30 rounded-lg p-3 flex items-start gap-2.5 ${className}`}>
             <Icon className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
             <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</p>
-                <p className="text-sm font-medium text-foreground mt-0.5 truncate">{value}</p>
+                <p className="text-[11px] text-muted-foreground font-semibold tracking-wide">{label}</p>
+                <p className="text-sm font-medium text-foreground mt-0.5 wrap-break-word leading-relaxed">{value}</p>
             </div>
         </div>
     );
