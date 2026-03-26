@@ -183,8 +183,8 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                         <div className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max h-full">
                             {item.HINH_ANH && item.HINH_ANH.length > 0 ? (
                                 [...item.HINH_ANH].sort((a, b) => a.STT - b.STT).map((img, i) => (
-                                    <div 
-                                        key={i} 
+                                    <div
+                                        key={i}
                                         className="flex flex-col gap-2 p-2 border border-border rounded-xl bg-muted/10 transition-colors cursor-pointer hover:border-primary/50 hover:shadow-md group"
                                         onClick={() => setPreviewImage(img.URL_HINH)}
                                     >
@@ -219,11 +219,11 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
 
             {/* Image Preview Overlay */}
             {previewImage && (
-                <div 
-                    className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200"
+                <div
+                    className="fixed inset-0 z-9999 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200"
                     onClick={() => setPreviewImage(null)}
                 >
-                    <button 
+                    <button
                         className="fixed top-4 right-4 p-2 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full transition-colors z-50"
                         onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }}
                     >
