@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, UserPlus } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import Modal from "@/components/Modal";
 import FormSelect from "@/components/FormSelect";
 import FormMultiSelect from "@/components/FormMultiSelect";
 import KhachHangSearch from "@/components/KhachHangSearch";
 import NguoiLienHeModal from "@/features/nguoi-lh/components/NguoiLienHeModal";
 import { createKhaoSat, updateKhaoSat, getKhachHangChiTiet } from "@/features/khao-sat/action";
+import { getNguoiLienHe } from "@/features/nguoi-lh/action";
 import { toast } from "sonner";
 
 type StringOption = { value: string; label: string };
@@ -18,7 +19,7 @@ interface KhaoSatFormModalProps {
     onClose: () => void;
     loaiCongTrinhOptions: StringOption[];
     nhanVienOptions: StringOption[];
-    initialData?: any; // the KhaoSatItem if edit mode
+    initialData?: any;
     onSuccess?: (maKhaoSat: string, loaiCongTrinh: string) => void;
     onLocalSubmit?: (data: any) => void;
 }
@@ -54,8 +55,33 @@ export default function KhaoSatFormModal({
     const [khachHangInfo, setKhachHangInfo] = useState<{ ID: string; TEN_KH: string } | null>(null);
     const [showNlhModal, setShowNlhModal] = useState(false);
 
+    // ── Load danh sách NLH (chỉ đang hiệu lực, mới nhất trước) ─────────
+    const refreshNlhOptions = async (idKh: string) => {
+        const res = await getNguoiLienHe(idKh);
+        if (res.success && res.data && res.data.length > 0) {
+            const options = (res.data as any[])
+                .filter((n) => n.HIEU_LUC === "Đang hiệu lực")
+                .reverse()
+                .map((n) => ({
+                    value: n.MA_NLH,
+                    label: n.SDT ? `${n.TENNGUOI_LIENHE} - ${n.SDT}` : n.TENNGUOI_LIENHE,
+                }));
+            setNlhOptions(options);
+            return options;
+        }
+        setNlhOptions([]);
+        return [];
+    };
+
+    const hasInitializedRef = useRef(false);
+
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            hasInitializedRef.current = false;
+            return;
+        }
+
+        if (hasInitializedRef.current) return;
 
         const loadInitial = async () => {
             if (initialData) {
@@ -81,22 +107,11 @@ export default function KhaoSatFormModal({
                         ID: initialData.KHTN_REL.MA_KH,
                         TEN_KH: initialData.KHTN_REL.TEN_KH,
                     } : null);
-                    // Set khachHangInfo để NguoiLienHeModal dùng khi thêm nhanh NLH
                     setKhachHangInfo({
                         ID: initialData.MA_KH,
                         TEN_KH: initialData.KHTN_REL?.TEN_KH || initialData.MA_KH,
                     });
-                    // Fetch default Khach Hang details to populate nguoiLienHeOptions
-                    const res = await getKhachHangChiTiet(initialData.MA_KH);
-                    if (res.success && res.data && res.data.NGUOI_LIENHE) {
-                        const options = res.data.NGUOI_LIENHE.map((n: any) => ({
-                            value: n.MA_NLH,
-                            label: n.SDT ? `${n.TENNGUOI_LIENHE} - ${n.SDT}` : n.TENNGUOI_LIENHE
-                        }));
-                        setNlhOptions(options);
-                    } else {
-                        setNlhOptions([]);
-                    }
+                    await refreshNlhOptions(initialData.MA_KH);
                 } else {
                     setKhDefaultValue(null);
                     setNlhOptions([]);
@@ -121,6 +136,7 @@ export default function KhaoSatFormModal({
         };
 
         loadInitial();
+        hasInitializedRef.current = true;
     }, [isOpen, initialData, loaiCongTrinhOptions]);
 
     const handleKhachHangChange = async (maKh: string, kh: any) => {
@@ -131,49 +147,50 @@ export default function KhaoSatFormModal({
 
         if (!maKh) return;
 
-        // Lưu thông tin KH hiện tại để dùng cho NguoiLienHeModal
         if (kh) setKhachHangInfo({ ID: kh.ID || maKh, TEN_KH: kh.TEN_KH || maKh });
 
+        // Lấy địa chỉ từ getKhachHangChiTiet
         const res = await getKhachHangChiTiet(maKh);
         if (res.success && res.data) {
             if (!kh) setKhachHangInfo({ ID: res.data.ID || maKh, TEN_KH: res.data.TEN_KH || maKh });
             setForm((f) => ({
                 ...f,
                 DIA_CHI_CONG_TRINH: res.data?.DIA_CHI || "",
-                DIA_CHI: res.data?.DIA_CHI || ""
+                DIA_CHI: res.data?.DIA_CHI || "",
             }));
+        }
 
-            if (res.data?.NGUOI_LIENHE && res.data.NGUOI_LIENHE.length > 0) {
-                const options = res.data.NGUOI_LIENHE.map((n: any) => ({
-                    value: n.MA_NLH,
-                    label: n.SDT ? `${n.TENNGUOI_LIENHE} - ${n.SDT}` : n.TENNGUOI_LIENHE
-                }));
-                setNlhOptions(options);
-                setForm((f) => ({ ...f, NGUOI_LIEN_HE: options[0].value }));
-            }
+        // Lấy NLH đang hiệu lực qua getNguoiLienHe
+        const options = await refreshNlhOptions(maKh);
+        if (options.length > 0) {
+            setForm((f) => ({ ...f, NGUOI_LIEN_HE: options[0].value }));
         }
     };
 
-    // Sau khi tạo NLH mới, reload options và auto-chọn người mới nhất
-    const handleNlhCreated = async () => {
+    // Sau khi cập nhật NLH → refresh options, giữ nguyên NLH hiện tại nếu còn hiệu lực
+    const handleNlhSuccess = async () => {
         if (!form.MA_KH) return;
-        const res = await getKhachHangChiTiet(form.MA_KH);
-        if (res.success && res.data?.NGUOI_LIENHE && res.data.NGUOI_LIENHE.length > 0) {
-            const options = res.data.NGUOI_LIENHE.map((n: any) => ({
-                value: n.MA_NLH,
-                label: n.SDT ? `${n.TENNGUOI_LIENHE} - ${n.SDT}` : n.TENNGUOI_LIENHE
-            }));
-            setNlhOptions(options);
-            // Chọn người cuối (vừa thêm)
-            setForm((f) => ({ ...f, NGUOI_LIEN_HE: options[options.length - 1].value }));
-        }
+        const options = await refreshNlhOptions(form.MA_KH);
+        
+        setForm((f) => {
+            if (options.length > 0) {
+                // Nếu đang có 1 người LH được chọn và nó vẫn tồn tại + còn hiệu lực -> giữ nguyên
+                const isValid = options.some((opt) => opt.value === f.NGUOI_LIEN_HE);
+                if (isValid) return { ...f }; // Không thay đổi gì
+                
+                // Nếu bị xóa / hết hiệu lực / hoặc chưa chọn -> chọn người mới nhất
+                return { ...f, NGUOI_LIEN_HE: options[0].value };
+            }
+            // Nếu không còn NLH nào
+            return { ...f, NGUOI_LIEN_HE: "" };
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!form.MA_KH) {
-            toast.error("Vui lòng chọn khách hàng để tiếp tục");
+            toast.error("Vui lòng chọn khách hàng để tiếp tục");
             return;
         }
 
@@ -285,10 +302,10 @@ export default function KhaoSatFormModal({
                                         type="button"
                                         onClick={() => setShowNlhModal(true)}
                                         title="Thêm người liên hệ mới"
-                                        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
+                                        className="text-[11px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
                                     >
-                                        <UserPlus className="w-3.5 h-3.5" />
-                                        Thêm nhanh
+                                        <Plus className="w-3.5 h-3.5" />
+                                        Thêm người liên hệ
                                     </button>
                                 )}
                             </div>
@@ -339,12 +356,17 @@ export default function KhaoSatFormModal({
                 </form>
             </Modal>
 
-            <NguoiLienHeModal
-                isOpen={showNlhModal}
-                onClose={() => setShowNlhModal(false)}
-                khachHang={khachHangInfo}
-                onCreated={handleNlhCreated}
-            />
+            {/* Modal quản lý NLH */}
+            {showNlhModal && khachHangInfo && (
+                <NguoiLienHeModal
+                    isOpen={showNlhModal}
+                    onClose={() => {
+                        setShowNlhModal(false);
+                        handleNlhSuccess();
+                    }}
+                    khachHang={khachHangInfo}
+                />
+            )}
         </>
     );
 }
