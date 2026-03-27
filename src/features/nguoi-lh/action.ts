@@ -15,7 +15,7 @@ export async function getNguoiLienHe(idKh: string) {
 
         const data = await prisma.nGUOI_LIENHE.findMany({
             where: { MA_KH: maKh },
-            orderBy: { CREATED_AT: "asc" },
+            orderBy: { CREATED_AT: "desc" },
         });
         const mapped = data.map(d => ({ ...d, ID_KH: d.MA_KH }));
         return { success: true, data: mapped };

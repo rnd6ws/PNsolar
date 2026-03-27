@@ -176,23 +176,25 @@ export default function KhaoSatImageModal({ isOpen, onClose, item }: Props) {
     if (!item) return null;
 
     const footer = (
-        <>
+        <div className="flex gap-3 ml-auto">
             <button
+                type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-border rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
+                className="btn-premium-secondary"
                 disabled={isSaving || uploading}
             >
                 Hủy
             </button>
             <button
+                type="button"
                 onClick={handleSave}
                 disabled={isSaving || uploading}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors flex items-center gap-2"
+                className="btn-premium-primary flex items-center gap-2"
             >
                 {(isSaving || uploading) && <Loader2 className="w-4 h-4 animate-spin" />}
-                {uploading ? "Đang tải ảnh lên..." : isSaving ? "Đang lưu..." : "Lưu danh sách ảnh"}
+                {uploading ? "Đang tải ảnh lên..." : isSaving ? "Đang lưu..." : "Lưu ảnh khảo sát"}
             </button>
-        </>
+        </div>
     );
 
     return (

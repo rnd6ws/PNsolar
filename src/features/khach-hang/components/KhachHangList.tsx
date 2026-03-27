@@ -259,7 +259,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                     </thead>
                     <tbody className="divide-y divide-border">
                         {sortedData.map((item, idx) => (
-                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors">
+                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors group/row">
                                 <td className="px-4 py-3 align-middle text-muted-foreground text-xs text-center">{idx + 1}</td>
                                 {show("ngayGhiNhan") && (
                                     <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground font-medium whitespace-nowrap text-center">
@@ -382,7 +382,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                     <div className="flex justify-end gap-1 items-center">
                                         <button
                                             onClick={() => setViewItem(item)}
-                                            className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors"
+                                            className="p-2 hover:bg-muted text-muted-foreground hover:text-primary group-hover/row:text-primary rounded-lg transition-colors"
                                             title="Xem chi tiết"
                                         >
                                             <Eye className="w-4 h-4" />
@@ -390,7 +390,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         <PermissionGuard moduleKey="co-hoi" level="add">
                                             <button
                                                 onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })}
-                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-orange-500 rounded-lg transition-colors"
+                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-orange-500 group-hover/row:text-orange-500 rounded-lg transition-colors"
                                                 title="Tạo cơ hội"
                                             >
                                                 <Target className="w-4 h-4" />
@@ -399,7 +399,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         <PermissionGuard moduleKey="ke-hoach-cs" level="add">
                                             <button
                                                 onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })}
-                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors"
+                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 group-hover/row:text-violet-600 rounded-lg transition-colors"
                                                 title="Lên kế hoạch CSKH"
                                             >
                                                 <CalendarPlus2 className="w-4 h-4" />
@@ -408,7 +408,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         <PermissionGuard moduleKey="khach-hang" level="add">
                                             <button
                                                 onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
-                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors relative group"
+                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 group-hover/row:text-emerald-600 rounded-lg transition-colors relative group"
                                                 title="Người liên hệ"
                                             >
                                                 <UserPlus className="w-4 h-4" />
@@ -425,7 +425,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                             <PermissionGuard moduleKey="khach-hang" level="edit">
                                                 <button
                                                     onClick={() => setEditItem(item)}
-                                                    className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors"
+                                                    className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 group-hover/row:text-blue-600 rounded-lg transition-colors"
                                                     title="Sửa"
                                                 >
                                                     <Edit2 className="w-4 h-4" />
@@ -434,7 +434,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                             <PermissionGuard moduleKey="khach-hang" level="delete">
                                                 <button
                                                     onClick={() => setDeleteItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
-                                                    className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
+                                                    className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive group-hover/row:text-destructive rounded-lg transition-colors"
                                                     title="Xóa"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -446,7 +446,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         <div className="2xl:hidden">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors">
+                                                    <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground group-hover/row:text-foreground rounded-lg transition-colors">
                                                         <MoreHorizontal className="w-4 h-4" />
                                                     </button>
                                                 </DropdownMenuTrigger>
@@ -454,9 +454,9 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                     <PermissionGuard moduleKey="khach-hang" level="edit">
                                                         <DropdownMenuItem
                                                             onClick={(e) => { e.stopPropagation(); setEditItem(item); }}
-                                                            className="cursor-pointer gap-2 text-foreground hover:text-blue-600 focus:text-blue-600 rounded-lg"
+                                                            className="cursor-pointer gap-2 text-blue-600"
                                                         >
-                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                            <Edit2 className="w-3.5 h-3.5 text-blue-600" />
                                                             Sửa
                                                         </DropdownMenuItem>
                                                     </PermissionGuard>

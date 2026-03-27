@@ -114,11 +114,29 @@ export default function KhaoSatList({
         }
     };
 
-    const renderNguoiKS = (nguoiKS: string | null) => {
-        if (!nguoiKS) return "—";
+    const renderNguoiKSArray = (nguoiKS: string | null) => {
+        if (!nguoiKS) return [];
         const arr = nguoiKS.split(",").map((s) => s.trim()).filter(Boolean);
+        return arr.map((ma) => nhanVienOptions.find((o) => o.value === ma)?.label || ma);
+    };
+
+    const renderNguoiKS = (nguoiKS: string | null) => {
+        const arr = renderNguoiKSArray(nguoiKS);
+        return arr.length > 0 ? arr.join(", ") : "—";
+    };
+
+    const renderNguoiKSTags = (nguoiKS: string | null, align: "center" | "end" = "center") => {
+        const arr = renderNguoiKSArray(nguoiKS);
         if (arr.length === 0) return "—";
-        return arr.map((ma) => nhanVienOptions.find((o) => o.value === ma)?.label || ma).join(", ");
+        return (
+            <div className={`flex flex-wrap gap-1 ${align === "center" ? "justify-center" : "justify-end"}`}>
+                {arr.map((name, i) => (
+                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400 border border-cyan-200/50 dark:border-cyan-500/20">
+                        {name}
+                    </span>
+                ))}
+            </div>
+        );
     };
 
     const handleSort = (key: string) => {
@@ -147,38 +165,38 @@ export default function KhaoSatList({
                 <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-10 text-center">#</th>
+                            <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-10 text-center">#</th>
                             {show("ma") && (
-                                <th onClick={() => handleSort("MA_KHAO_SAT")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
+                                <th onClick={() => handleSort("MA_KHAO_SAT")} className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
                                     Mã KS <SortIcon col="MA_KHAO_SAT" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("ngay") && (
-                                <th onClick={() => handleSort("NGAY_KHAO_SAT")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
+                                <th onClick={() => handleSort("NGAY_KHAO_SAT")} className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
                                     Ngày KS <SortIcon col="NGAY_KHAO_SAT" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("loai") && (
-                                <th onClick={() => handleSort("LOAI_CONG_TRINH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
+                                <th onClick={() => handleSort("LOAI_CONG_TRINH")} className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
                                     Loại công trình <SortIcon col="LOAI_CONG_TRINH" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("nguoi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
+                                <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Người KS
                                 </th>
                             )}
                             {show("khachHang") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
+                                <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Khách hàng
                                 </th>
                             )}
                             {show("diaChi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
+                                <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Địa điểm lắp đặt
                                 </th>
                             )}
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">
+                            <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">
                                 Thao tác
                             </th>
                         </tr>
@@ -192,41 +210,41 @@ export default function KhaoSatList({
                             </tr>
                         )}
                         {sorted.map((item, idx) => (
-                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setDetailItem(item)}>
-                                <td className="px-4 py-3 align-middle text-muted-foreground text-xs text-center font-mono">{idx + 1}</td>
+                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors cursor-pointer group" onClick={() => setDetailItem(item)}>
+                                <td className="px-2 py-3 align-middle text-muted-foreground group-hover:text-primary transition-colors text-xs text-center font-mono font-medium">{idx + 1}</td>
                                 {show("ma") && (
-                                    <td className="px-4 py-3 align-middle text-center">
+                                    <td className="px-2 py-3 align-middle text-center">
                                         <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
                                             {item.MA_KHAO_SAT}
                                         </span>
                                     </td>
                                 )}
                                 {show("ngay") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs text-muted-foreground font-medium whitespace-nowrap">{formatDate(item.NGAY_KHAO_SAT)}</td>
+                                    <td className="px-2 py-3 align-middle text-center text-xs text-muted-foreground font-medium whitespace-nowrap">{formatDate(item.NGAY_KHAO_SAT)}</td>
                                 )}
                                 {show("loai") && (
-                                    <td className="px-4 py-3 align-middle text-center font-medium text-xs text-foreground">{item.LOAI_CONG_TRINH}</td>
+                                    <td className="px-2 py-3 align-middle text-center font-medium text-xs text-foreground">{item.LOAI_CONG_TRINH}</td>
                                 )}
                                 {show("nguoi") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs">
-                                        {renderNguoiKS(item.NGUOI_KHAO_SAT)}
+                                    <td className="px-2 py-3 align-middle text-center text-xs">
+                                        {renderNguoiKSTags(item.NGUOI_KHAO_SAT, "center")}
                                     </td>
                                 )}
                                 {show("khachHang") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs">
+                                    <td className="px-2 py-3 align-middle text-center text-xs">
                                         {item.KHTN_REL?.TEN_KH || "—"}
                                     </td>
                                 )}
                                 {show("diaChi") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs min-w-[200px] max-w-[250px] md:max-w-[350px] whitespace-normal wrap-break-word">
+                                    <td className="px-2 py-3 align-middle text-center text-xs min-w-[200px] max-w-[250px] md:max-w-[350px] whitespace-normal wrap-break-word">
                                         {item.DIA_CHI_CONG_TRINH || item.DIA_CHI || "—"}
                                     </td>
                                 )}
-                                <td className="px-4 py-3 align-middle text-right" onClick={(e) => e.stopPropagation()}>
+                                <td className="px-2 py-3 align-middle text-right" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-end gap-1 items-center">
                                         <button
                                             onClick={() => setDetailItem(item)}
-                                            className="p-1.5 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-600 rounded transition-colors"
+                                            className="p-1.5 hover:bg-blue-500/10 text-muted-foreground group-hover:text-blue-500 hover:text-blue-600 rounded transition-colors"
                                             title="Xem chi tiết"
                                         >
                                             <Eye className="w-4 h-4" />
@@ -234,7 +252,7 @@ export default function KhaoSatList({
                                         <button
                                             onClick={(e) => handleExport(item, e)}
                                             disabled={exportingId === item.ID}
-                                            className="p-1.5 hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-600 rounded transition-colors disabled:opacity-50"
+                                            className="p-1.5 hover:bg-emerald-500/10 text-muted-foreground group-hover:text-emerald-500 hover:text-emerald-600 rounded transition-colors disabled:opacity-50"
                                             title="Xuất báo cáo Word"
                                         >
                                             {exportingId === item.ID
@@ -244,21 +262,21 @@ export default function KhaoSatList({
                                         <PermissionGuard moduleKey="khao-sat" level="edit">
                                             <button
                                                 onClick={() => setChiTietEditItem(item)}
-                                                className="p-1.5 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 rounded transition-colors"
+                                                className="p-1.5 hover:bg-amber-500/10 text-muted-foreground group-hover:text-amber-500 hover:text-amber-600 rounded transition-colors"
                                                 title="Ghi nhận khảo sát"
                                             >
                                                 <ClipboardEdit className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setImageUploadItem(item)}
-                                                className="p-1.5 hover:bg-indigo-500/10 text-muted-foreground hover:text-indigo-600 rounded transition-colors"
+                                                className="p-1.5 hover:bg-indigo-500/10 text-muted-foreground group-hover:text-indigo-500 hover:text-indigo-600 rounded transition-colors"
                                                 title="Ảnh khảo sát"
                                             >
                                                 <Images className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setEditItem(item)}
-                                                className="hidden md:block p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded transition-colors"
+                                                className="hidden md:block p-1.5 hover:bg-primary/10 text-muted-foreground group-hover:text-primary hover:text-primary rounded transition-colors"
                                                 title="Sửa phiếu"
                                             >
                                                 <Pencil className="w-4 h-4" />
@@ -267,7 +285,7 @@ export default function KhaoSatList({
                                         <PermissionGuard moduleKey="khao-sat" level="delete">
                                             <button
                                                 onClick={() => setDeleteItem(item)}
-                                                className="hidden md:block p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                                                className="hidden md:block p-1.5 hover:bg-destructive/10 text-muted-foreground group-hover:text-destructive hover:text-destructive rounded transition-colors"
                                                 title="Xóa phiếu"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -276,14 +294,14 @@ export default function KhaoSatList({
                                         <div className="md:hidden flex items-center">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <button className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors">
+                                                    <button className="p-1.5 hover:bg-muted data-[state=open]:bg-primary/10 text-muted-foreground group-hover:text-foreground hover:text-foreground data-[state=open]:text-primary rounded transition-colors">
                                                         <MoreHorizontal className="w-4 h-4" />
                                                     </button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-36 rounded-xl">
                                                     <PermissionGuard moduleKey="khao-sat" level="edit">
-                                                        <DropdownMenuItem onClick={() => setEditItem(item)}>
-                                                            <Pencil className="w-4 h-4 mr-2" />Sửa
+                                                        <DropdownMenuItem onClick={() => setEditItem(item)} className="text-primary">
+                                                            <Pencil className="w-4 h-4 mr-2 text-primary" />Sửa
                                                         </DropdownMenuItem>
                                                     </PermissionGuard>
                                                     <PermissionGuard moduleKey="khao-sat" level="delete">
@@ -327,7 +345,7 @@ export default function KhaoSatList({
                             </div>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button onClick={(e) => e.stopPropagation()} className="p-1.5 -m-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors" title="Thao tác">
+                                    <button onClick={(e) => e.stopPropagation()} className="p-1.5 -m-1.5 hover:bg-muted data-[state=open]:bg-primary/10 text-muted-foreground hover:text-foreground data-[state=open]:text-primary rounded transition-colors" title="Thao tác">
                                         <MoreHorizontal className="w-5 h-5" />
                                     </button>
                                 </DropdownMenuTrigger>
@@ -371,7 +389,7 @@ export default function KhaoSatList({
                             {show("nguoi") && (
                                 <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
                                     <span className="text-muted-foreground whitespace-nowrap">Người KS:</span>
-                                    <span className="text-right line-clamp-2">{renderNguoiKS(item.NGUOI_KHAO_SAT)}</span>
+                                    <span className="text-right">{renderNguoiKSTags(item.NGUOI_KHAO_SAT, "end")}</span>
                                 </div>
                             )}
                             {show("khachHang") && (
@@ -428,7 +446,7 @@ export default function KhaoSatList({
                     isOpen={true}
                     onClose={() => {
                         setImageUploadItem(null);
-                        router.refresh();
+                        // router.refresh();
                     }}
                     item={imageUploadItem}
                 />
