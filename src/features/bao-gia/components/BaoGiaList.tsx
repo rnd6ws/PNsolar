@@ -137,7 +137,6 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
                                 </th>
                             )}
                             {show("ghiChu") && <th className={thClass}>Ghi chú</th>}
-                            {show("thoiGianLapDat") && <th className={thClass}>TG lắp đặt</th>}
                             <th className={`${thClass} text-right`}>Hành động</th>
                         </tr>
                     </thead>
@@ -195,9 +194,6 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
                                                 {item.GHI_CHU || "—"}
                                             </p>
                                         </td>
-                                    )}
-                                    {show("thoiGianLapDat") && (
-                                        <td className={tdClass}>{item.THOI_GIAN_LAP_DAT || "—"}</td>
                                     )}
                                     <td className={`${tdClass} text-right`}>
                                         <div className="flex items-center justify-end gap-1">

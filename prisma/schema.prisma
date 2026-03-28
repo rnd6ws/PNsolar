@@ -650,11 +650,11 @@ model BAO_GIA {
   TONG_TIEN  Float @default(0) // = THANH_TIEN + TT_UU_DAI
 
   GHI_CHU           String?
-  THOI_GIAN_LAP_DAT String?
   TEP_DINH_KEM      String[] // Mảng URL tệp đính kèm (ảnh, PDF, Word...)
 
-  CHI_TIETS BAO_GIA_CT[] // 1-N relation
-  DKTT_BG   DKTT_BG[] // 1-N relation: điều kiện thanh toán
+  CHI_TIETS  BAO_GIA_CT[]  // 1-N relation
+  DKTT_BG    DKTT_BG[]     // 1-N relation: điều kiện thanh toán
+  DIEU_KHOAN_BG DIEU_KHOAN_BG[]  // 1-N relation: điều khoản báo giá
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -681,6 +681,25 @@ model DKTT_BG {
 
   @@index([MA_BAO_GIA])
   @@map("DKTT_BG")
+}
+
+// ===== ĐIỀU KHOẢN BÁO GIÁ =====
+model DIEU_KHOAN_BG {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  MA_BAO_GIA  String
+  BAO_GIA_REL BAO_GIA @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA], onDelete: Cascade)
+
+  HANG_MUC String  // Tên hạng mục (VD: "Công suất tấm pin", "Xuất xứ hàng hóa"...)
+  NOI_DUNG String? // Nội dung chi tiết
+  GIA_TRI  String? // Giá trị (dùng cho "Tính khả thi của hệ thống")
+  AN_HIEN  Boolean @default(true) // true = hiện, false = ẩn (dùng khi in)
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([MA_BAO_GIA])
+  @@map("DIEU_KHOAN_BG")
 }
 
 // ===== BÁO GIÁ CHI TIẾT (Quotation Detail) =====
