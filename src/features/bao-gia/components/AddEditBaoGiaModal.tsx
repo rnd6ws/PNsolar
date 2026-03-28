@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useTransition, useRef } from "react";
-import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, ExternalLink, X, CreditCard } from "lucide-react";
+import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, ExternalLink, X, CreditCard, ScrollText, Eye, EyeOff } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
 import { useFileUpload } from "@/hooks/useFileUpload";
@@ -16,7 +16,8 @@ import {
     getGiaBanForProduct,
     getNhomHHForBaoGia,
 } from "../action";
-import type { BaoGiaChiTietRow, DkttBgRow } from "../schema";
+import type { BaoGiaChiTietRow, DkttBgRow, DkBaoGiaRow } from "../schema";
+import { DEFAULT_DIEU_KHOAN_BG } from "../schema";
 
 interface KHOption { ID: string; MA_KH: string; TEN_KH: string; TEN_VT?: string | null; HINH_ANH?: string | null; DIEN_THOAI?: string | null }
 interface CHOption { ID: string; MA_CH: string; NGAY_TAO: string; GIA_TRI_DU_KIEN: number | null; TINH_TRANG: string }
@@ -37,7 +38,14 @@ const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v)
 let _counter = 0;
 const tempId = () => `_tmp_${++_counter}_${Date.now()}`;
 
-type TabKey = "general" | "details" | "payment";
+// Auto-resize textarea theo nội dung
+const autoResizeTextarea = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+};
+
+type TabKey = "general" | "details" | "payment" | "terms";
 
 export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editData }: Props) {
     const isEdit = !!editData;
@@ -58,7 +66,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     const [ptVat, setPtVat] = useState(8);
     const [ttUuDai, setTtUuDai] = useState(0);
     const [ghiChu, setGhiChu] = useState("");
-    const [thoiGianLapDat, setThoiGianLapDat] = useState("");
+
     const [tepDinhKems, setTepDinhKems] = useState<string[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +79,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     // ═══ Chi tiết + ĐKTT state ═══
     const [chiTiets, setChiTiets] = useState<BaoGiaChiTietRow[]>([]);
     const [dkttRows, setDkttRows] = useState<DkttBgRow[]>([]);
+    const [dkBaoGiaRows, setDkBaoGiaRows] = useState<DkBaoGiaRow[]>([]);
 
     // ═══ Nhóm hàng hóa sub-tabs ═══
     const [nhomHHList, setNhomHHList] = useState<NhomHHOption[]>([]);
@@ -112,7 +121,6 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             setPtVat(editData.PT_VAT ?? 8);
             setTtUuDai(editData.TT_UU_DAI || 0);
             setGhiChu(editData.GHI_CHU || "");
-            setThoiGianLapDat(editData.THOI_GIAN_LAP_DAT || "");
             setTepDinhKems(editData.TEP_DINH_KEM || []);
 
             const rows: BaoGiaChiTietRow[] = (editData.CHI_TIETS || []).map((ct: any) => ({
@@ -145,6 +153,17 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             }));
             setDkttRows(dkttData);
 
+            // Điều khoản báo giá
+            const dkData: DkBaoGiaRow[] = (editData.DIEU_KHOAN_BG || []).map((dk: any) => ({
+                _id: tempId(),
+                _dbId: dk.ID,
+                HANG_MUC: dk.HANG_MUC,
+                NOI_DUNG: dk.NOI_DUNG || '',
+                GIA_TRI: dk.GIA_TRI || '',
+                AN_HIEN: dk.AN_HIEN ?? true,
+            }));
+            setDkBaoGiaRows(dkData.length > 0 ? dkData : DEFAULT_DIEU_KHOAN_BG.map(d => ({ ...d, _id: tempId() })));
+
             if (editData.MA_KH) {
                 getCoHoiByKhachHang(editData.MA_KH).then(setCoHois);
             }
@@ -155,8 +174,9 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             setMaCH(""); setSelectedCH(null);
             setLoaiBaoGia("Dân dụng");
             setPtVat(8); setTtUuDai(0);
-            setGhiChu(""); setThoiGianLapDat("");
+            setGhiChu("");
             setTepDinhKems([]); setChiTiets([]); setDkttRows([]); setCoHois([]);
+            setDkBaoGiaRows(DEFAULT_DIEU_KHOAN_BG.map(d => ({ ...d, _id: tempId() })));
             setActiveGroups([DEFAULT_NHOM]); setActiveNhomTab(DEFAULT_NHOM);
         }
         setKhQuery(""); setKhResults([]); setKhOpen(false);
@@ -331,7 +351,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                 }));
             }
         })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loaiBaoGia]);
 
     const removeRow = useCallback((id: string) => { setChiTiets(prev => prev.filter(row => row._id !== id)); }, []);
@@ -352,7 +372,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
         const header = {
             NGAY_BAO_GIA: ngayBaoGia, MA_KH: maKH, MA_CH: maCH || null,
             LOAI_BAO_GIA: loaiBaoGia, PT_VAT: ptVat, TT_UU_DAI: ttUuDai,
-            GHI_CHU: ghiChu || null, THOI_GIAN_LAP_DAT: thoiGianLapDat || null,
+            GHI_CHU: ghiChu || null,
             TEP_DINH_KEM: tepDinhKems,
         };
 
@@ -363,10 +383,15 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null,
         }));
 
+        const dkBaoGiaData = dkBaoGiaRows.filter(dk => dk.HANG_MUC).map(dk => ({
+            HANG_MUC: dk.HANG_MUC, NOI_DUNG: dk.NOI_DUNG || null,
+            GIA_TRI: dk.GIA_TRI || null, AN_HIEN: dk.AN_HIEN,
+        }));
+
         startTransition(async () => {
             const result = isEdit
-                ? await updateBaoGia(editData.ID, header, details, dkttRows.filter(d => d.DOT_THANH_TOAN))
-                : await createBaoGia(header, details, dkttRows.filter(d => d.DOT_THANH_TOAN));
+                ? await updateBaoGia(editData.ID, header, details, dkttRows.filter(d => d.DOT_THANH_TOAN), dkBaoGiaData)
+                : await createBaoGia(header, details, dkttRows.filter(d => d.DOT_THANH_TOAN), dkBaoGiaData);
             if (result.success) { toast.success(result.message || (isEdit ? "Cập nhật thành công!" : "Tạo báo giá thành công!")); onSuccess(); onClose(); }
             else { toast.error(result.message || "Có lỗi xảy ra"); }
         });
@@ -376,6 +401,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
         { key: "general", label: "Thông tin chung", icon: FileText },
         { key: "details", label: "Chi tiết hàng hóa", icon: Package, badge: validRows.length },
         { key: "payment", label: "Điều kiện thanh toán", icon: CreditCard, badge: dkttRows.filter(d => d.DOT_THANH_TOAN).length },
+        { key: "terms", label: "Điều khoản báo giá", icon: ScrollText, badge: dkBaoGiaRows.filter(d => d.AN_HIEN).length },
     ];
 
     return (
@@ -513,11 +539,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                             {ttUuDai < 0 && <p className="text-xs text-orange-600">Giảm {fmtMoney(Math.abs(ttUuDai))} ₫</p>}
                         </div>
 
-                        {/* TG lắp đặt */}
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-muted-foreground">Thời gian lắp đặt</label>
-                            <input type="text" value={thoiGianLapDat} onChange={e => setThoiGianLapDat(e.target.value)} className="input-modern" placeholder="VD: 7-10 ngày" />
-                        </div>
+
 
                         {/* Tệp đính kèm */}
                         <div className="space-y-1.5 md:col-span-2">
@@ -578,149 +600,149 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                 const availableNhoms = nhomHHList.filter(n => !activeGroups.includes(n.TEN_NHOM));
 
                 return (
-                <div className="space-y-4 animate-in fade-in duration-200">
-                    {/* Sub-tabs nhóm + nút thêm nhóm */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {activeGroups.map(nhom => {
-                            const count = chiTiets.filter(r => (r.NHOM_HH || DEFAULT_NHOM) === nhom && r.MA_HH).length;
-                            return (
-                                <div key={nhom} role="button" tabIndex={0} onClick={() => setActiveNhomTab(nhom)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold rounded-lg border transition-all cursor-pointer select-none ${activeNhomTab === nhom ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:border-border"}`}>
-                                    {nhom}
-                                    {count > 0 && <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">{count}</span>}
-                                    {nhom !== DEFAULT_NHOM && (
-                                        <button type="button" onClick={e => { e.stopPropagation(); setActiveGroups(prev => prev.filter(g => g !== nhom)); setChiTiets(prev => prev.filter(r => (r.NHOM_HH || DEFAULT_NHOM) !== nhom)); if (activeNhomTab === nhom) setActiveNhomTab(activeGroups[0] || DEFAULT_NHOM); }}
-                                            className="p-0.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded ml-1" title="Xóa nhóm">
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
+                    <div className="space-y-4 animate-in fade-in duration-200">
+                        {/* Sub-tabs nhóm + nút thêm nhóm */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {activeGroups.map(nhom => {
+                                const count = chiTiets.filter(r => (r.NHOM_HH || DEFAULT_NHOM) === nhom && r.MA_HH).length;
+                                return (
+                                    <div key={nhom} role="button" tabIndex={0} onClick={() => setActiveNhomTab(nhom)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold rounded-lg border transition-all cursor-pointer select-none ${activeNhomTab === nhom ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:border-border"}`}>
+                                        {nhom}
+                                        {count > 0 && <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">{count}</span>}
+                                        {nhom !== DEFAULT_NHOM && (
+                                            <button type="button" onClick={e => { e.stopPropagation(); setActiveGroups(prev => prev.filter(g => g !== nhom)); setChiTiets(prev => prev.filter(r => (r.NHOM_HH || DEFAULT_NHOM) !== nhom)); if (activeNhomTab === nhom) setActiveNhomTab(activeGroups[0] || DEFAULT_NHOM); }}
+                                                className="p-0.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded ml-1" title="Xóa nhóm">
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
 
-                        {/* Nút thêm nhóm */}
-                        <div className="relative" ref={nhomPickerRef}>
-                            <button type="button" onClick={() => setShowNhomPicker(!showNhomPicker)}
-                                className="flex items-center gap-1 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground border border-dashed border-border rounded-lg hover:border-primary/50 hover:text-primary transition-colors">
-                                <Plus className="w-3.5 h-3.5" /> Thêm nhóm
-                            </button>
-                            {showNhomPicker && (
-                                <div className="absolute top-full mt-1 left-0 z-50 bg-card border border-border rounded-xl shadow-lg min-w-[200px] animate-in fade-in zoom-in-95 duration-150">
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3 py-2 border-b">Chọn nhóm hàng hóa</p>
-                                    {availableNhoms.length === 0 ? (
-                                        <p className="px-3 py-3 text-sm text-muted-foreground text-center">Đã thêm tất cả nhóm</p>
-                                    ) : (
-                                        availableNhoms.map(n => (
-                                            <button key={n.MA_NHOM} type="button" onClick={() => { setActiveGroups(prev => [...prev, n.TEN_NHOM]); setActiveNhomTab(n.TEN_NHOM); setShowNhomPicker(false); }}
-                                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors">{n.TEN_NHOM}</button>
-                                        ))
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Header dòng + nút thêm */}
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-sm font-bold text-foreground">{activeNhomTab}</h3>
-                            <p className="text-xs text-muted-foreground mt-0.5">{groupRows.length} dòng ({groupValid.length} đã chọn HH)</p>
-                        </div>
-                        <button type="button" onClick={addEmptyRow} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors">
-                            <Plus className="w-4 h-4" /> Thêm dòng
-                        </button>
-                    </div>
-
-                    {groupRows.length === 0 ? (
-                        <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
-                            <Package className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
-                            <p className="text-sm">Chưa có hàng hóa nào trong nhóm &quot;{activeNhomTab}&quot;.</p>
-                            <p className="text-xs text-muted-foreground mt-1">Nhấn &quot;Thêm dòng&quot; để thêm.</p>
-                        </div>
-                    ) : (
-                        <div className="border border-border rounded-xl overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-[12px]">
-                                    <thead>
-                                        <tr className="bg-primary/10 border-b">
-                                            <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8">#</th>
-                                            <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[200px]">Hàng hóa</th>
-                                            <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-16">ĐVT</th>
-                                            <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Giá chưa VAT</th>
-                                            <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Giá bán</th>
-                                            <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-16">SL</th>
-                                            <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Thành tiền</th>
-                                            <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-28">Ghi chú</th>
-                                            <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {groupRows.map((row, idx) => (
-                                            <tr key={row._id} className={`border-b transition-colors ${row.MA_HH ? "hover:bg-muted/30" : "bg-yellow-50/50 dark:bg-yellow-900/5"}`}>
-                                                <td className="px-2 py-1.5 text-muted-foreground">{idx + 1}</td>
-                                                <td className="px-2 py-1.5 relative" data-hh-row-id={row._id}>
-                                                    {row.MA_HH ? (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="font-medium text-foreground" title={row._tenHH}>{row._tenHH || row.MA_HH}</p>
-                                                                <p className="text-[10px] text-muted-foreground">{row.MA_HH}</p>
-                                                            </div>
-                                                            <button type="button" onClick={() => { setHhRowId(row._id!); setHhQuery(""); }} className="p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground shrink-0" title="Đổi HH">
-                                                                <Search className="w-3 h-3" />
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="relative">
-                                                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                                                            <input type="text" value={hhRowId === row._id ? hhQuery : ""} onChange={e => { setHhRowId(row._id!); setHhQuery(e.target.value); }} onFocus={() => { setHhRowId(row._id!); setHhQuery(""); }} placeholder="Chọn hàng hóa..." className="w-full pl-7 pr-2 py-1 border border-border rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" />
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-2 py-1.5 text-muted-foreground">{row.DON_VI_TINH || "—"}</td>
-                                                <td className="px-2 py-1.5 text-right text-muted-foreground">{row.MA_HH ? fmtMoney(row.GIA_BAN_CHUA_VAT) : "—"}</td>
-                                                <td className="px-2 py-1.5">
-                                                    <input type="text" inputMode="numeric" value={row.GIA_BAN > 0 ? fmtMoney(row.GIA_BAN) : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); updateRow(row._id!, "GIA_BAN", parseInt(raw, 10) || 0); }} disabled={!row.MA_HH} className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
-                                                </td>
-                                                <td className="px-2 py-1.5">
-                                                    <input type="number" min="0" step="1" value={row.SO_LUONG || ""} onChange={e => handleSoLuongChange(row._id!, parseFloat(e.target.value) || 0)} disabled={!row.MA_HH} className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
-                                                </td>
-                                                <td className="px-2 py-1.5 text-right font-bold text-foreground">{row.MA_HH ? fmtMoney(row.THANH_TIEN) : "—"}</td>
-                                                <td className="px-2 py-1.5">
-                                                    <input type="text" value={row.GHI_CHU || ""} onChange={e => updateRow(row._id!, "GHI_CHU", e.target.value)} disabled={!row.MA_HH} placeholder="..." className="w-full px-1 py-1 border border-border rounded text-[11px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
-                                                </td>
-                                                <td className="px-2 py-1.5">
-                                                    <button type="button" onClick={() => removeRow(row._id!)} className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors">
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            {/* Nút thêm nhóm */}
+                            <div className="relative" ref={nhomPickerRef}>
+                                <button type="button" onClick={() => setShowNhomPicker(!showNhomPicker)}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground border border-dashed border-border rounded-lg hover:border-primary/50 hover:text-primary transition-colors">
+                                    <Plus className="w-3.5 h-3.5" /> Thêm nhóm
+                                </button>
+                                {showNhomPicker && (
+                                    <div className="absolute top-full mt-1 left-0 z-50 bg-card border border-border rounded-xl shadow-lg min-w-[200px] animate-in fade-in zoom-in-95 duration-150">
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3 py-2 border-b">Chọn nhóm hàng hóa</p>
+                                        {availableNhoms.length === 0 ? (
+                                            <p className="px-3 py-3 text-sm text-muted-foreground text-center">Đã thêm tất cả nhóm</p>
+                                        ) : (
+                                            availableNhoms.map(n => (
+                                                <button key={n.MA_NHOM} type="button" onClick={() => { setActiveGroups(prev => [...prev, n.TEN_NHOM]); setActiveNhomTab(n.TEN_NHOM); setShowNhomPicker(false); }}
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors">{n.TEN_NHOM}</button>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    )}
 
-                    {/* Tổng hợp TẤT CẢ nhóm */}
-                    <div className="bg-muted/30 border border-border rounded-xl px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                        <div>
-                            <p className="text-xs text-muted-foreground">Thành tiền (có VAT)</p>
-                            <p className="font-semibold">{fmtMoney(thanhTienTotal)} ₫</p>
+                        {/* Header dòng + nút thêm */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-bold text-foreground">{activeNhomTab}</h3>
+                                <p className="text-xs text-muted-foreground mt-0.5">{groupRows.length} dòng ({groupValid.length} đã chọn HH)</p>
+                            </div>
+                            <button type="button" onClick={addEmptyRow} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors">
+                                <Plus className="w-4 h-4" /> Thêm dòng
+                            </button>
                         </div>
-                        <div>
-                            <p className="text-xs text-muted-foreground">Tiền VAT ({ptVat}%)</p>
-                            <p className="font-semibold text-blue-600">{fmtMoney(Math.round(ttVat))} ₫</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-muted-foreground">Ưu đãi</p>
-                            <p className="font-semibold text-orange-600">{ttUuDai !== 0 ? `${fmtMoney(Math.abs(ttUuDai))} ₫` : "0 ₫"}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-muted-foreground font-semibold">TỔNG TIỀN</p>
-                            <p className="font-bold text-lg text-primary">{fmtMoney(Math.round(tongTien))} ₫</p>
+
+                        {groupRows.length === 0 ? (
+                            <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
+                                <Package className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+                                <p className="text-sm">Chưa có hàng hóa nào trong nhóm &quot;{activeNhomTab}&quot;.</p>
+                                <p className="text-xs text-muted-foreground mt-1">Nhấn &quot;Thêm dòng&quot; để thêm.</p>
+                            </div>
+                        ) : (
+                            <div className="border border-border rounded-xl overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-[12px]">
+                                        <thead>
+                                            <tr className="bg-primary/10 border-b">
+                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8">#</th>
+                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[200px]">Hàng hóa</th>
+                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-16">ĐVT</th>
+                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Giá chưa VAT</th>
+                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Giá bán</th>
+                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-16">SL</th>
+                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Thành tiền</th>
+                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-28">Ghi chú</th>
+                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {groupRows.map((row, idx) => (
+                                                <tr key={row._id} className={`border-b transition-colors ${row.MA_HH ? "hover:bg-muted/30" : "bg-yellow-50/50 dark:bg-yellow-900/5"}`}>
+                                                    <td className="px-2 py-1.5 text-muted-foreground">{idx + 1}</td>
+                                                    <td className="px-2 py-1.5 relative" data-hh-row-id={row._id}>
+                                                        {row.MA_HH ? (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="font-medium text-foreground" title={row._tenHH}>{row._tenHH || row.MA_HH}</p>
+                                                                    <p className="text-[10px] text-muted-foreground">{row.MA_HH}</p>
+                                                                </div>
+                                                                <button type="button" onClick={() => { setHhRowId(row._id!); setHhQuery(""); }} className="p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground shrink-0" title="Đổi HH">
+                                                                    <Search className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="relative">
+                                                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                                                                <input type="text" value={hhRowId === row._id ? hhQuery : ""} onChange={e => { setHhRowId(row._id!); setHhQuery(e.target.value); }} onFocus={() => { setHhRowId(row._id!); setHhQuery(""); }} placeholder="Chọn hàng hóa..." className="w-full pl-7 pr-2 py-1 border border-border rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-2 py-1.5 text-muted-foreground">{row.DON_VI_TINH || "—"}</td>
+                                                    <td className="px-2 py-1.5 text-right text-muted-foreground">{row.MA_HH ? fmtMoney(row.GIA_BAN_CHUA_VAT) : "—"}</td>
+                                                    <td className="px-2 py-1.5">
+                                                        <input type="text" inputMode="numeric" value={row.GIA_BAN > 0 ? fmtMoney(row.GIA_BAN) : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); updateRow(row._id!, "GIA_BAN", parseInt(raw, 10) || 0); }} disabled={!row.MA_HH} className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
+                                                    </td>
+                                                    <td className="px-2 py-1.5">
+                                                        <input type="number" min="0" step="1" value={row.SO_LUONG || ""} onChange={e => handleSoLuongChange(row._id!, parseFloat(e.target.value) || 0)} disabled={!row.MA_HH} className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
+                                                    </td>
+                                                    <td className="px-2 py-1.5 text-right font-bold text-foreground">{row.MA_HH ? fmtMoney(row.THANH_TIEN) : "—"}</td>
+                                                    <td className="px-2 py-1.5">
+                                                        <input type="text" value={row.GHI_CHU || ""} onChange={e => updateRow(row._id!, "GHI_CHU", e.target.value)} disabled={!row.MA_HH} placeholder="..." className="w-full px-1 py-1 border border-border rounded text-[11px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
+                                                    </td>
+                                                    <td className="px-2 py-1.5">
+                                                        <button type="button" onClick={() => removeRow(row._id!)} className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors">
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tổng hợp TẤT CẢ nhóm */}
+                        <div className="bg-muted/30 border border-border rounded-xl px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div>
+                                <p className="text-xs text-muted-foreground">Thành tiền (có VAT)</p>
+                                <p className="font-semibold">{fmtMoney(thanhTienTotal)} ₫</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">Tiền VAT ({ptVat}%)</p>
+                                <p className="font-semibold text-blue-600">{fmtMoney(Math.round(ttVat))} ₫</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">Ưu đãi</p>
+                                <p className="font-semibold text-orange-600">{ttUuDai !== 0 ? `${fmtMoney(Math.abs(ttUuDai))} ₫` : "0 ₫"}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground font-semibold">TỔNG TIỀN</p>
+                                <p className="font-bold text-lg text-primary">{fmtMoney(Math.round(tongTien))} ₫</p>
+                            </div>
                         </div>
                     </div>
-                </div>
                 );
             })()}
 
@@ -791,7 +813,137 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                 </div>
             )}
 
-            {/* ═══ HH Dropdown Portal ═══ */}
+            {/* ═══ TAB 4: ĐIỀU KHOẢN BÁO GIÁ ═══ */}
+            {activeTab === "terms" && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-sm font-bold text-foreground">Điều khoản báo giá</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">{dkBaoGiaRows.filter(d => d.AN_HIEN).length}/{dkBaoGiaRows.length} điều khoản hiển thị</p>
+                        </div>
+                        <button type="button" onClick={() => setDkBaoGiaRows(prev => [...prev, { _id: tempId(), HANG_MUC: '', NOI_DUNG: '', GIA_TRI: null, AN_HIEN: true }])}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors">
+                            <Plus className="w-4 h-4" /> Thêm điều khoản
+                        </button>
+                    </div>
+
+                    {dkBaoGiaRows.length === 0 ? (
+                        <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl">
+                            <ScrollText className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+                            <p className="text-sm">Chưa có điều khoản báo giá.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {dkBaoGiaRows.map((row, idx) => {
+                                const prevRow = idx > 0 ? dkBaoGiaRows[idx - 1] : null;
+                                const isNewGroup = !prevRow || prevRow.HANG_MUC !== row.HANG_MUC;
+                                return (
+                                    <div key={row._id} className={`border rounded-xl overflow-hidden transition-all ${row.AN_HIEN ? 'border-border bg-card' : 'border-border/50 bg-muted/20 opacity-60'}`}>
+                                        {/* Header row */}
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 border-b">
+                                            <span className="text-[10px] font-bold text-muted-foreground w-6 text-center">{idx + 1}</span>
+                                            <input type="text" value={row.HANG_MUC} onChange={e => setDkBaoGiaRows(prev => prev.map(r => r._id === row._id ? { ...r, HANG_MUC: e.target.value } : r))}
+                                                className="flex-1 px-2 py-1 text-[13px] font-semibold bg-transparent border-0 focus:outline-none focus:ring-0 text-foreground" placeholder="Tên hạng mục..." />
+                                            <button type="button" onClick={() => setDkBaoGiaRows(prev => prev.map(r => r._id === row._id ? { ...r, AN_HIEN: !r.AN_HIEN } : r))}
+                                                className={`p-1.5 rounded-lg transition-colors ${row.AN_HIEN ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20' : 'text-muted-foreground hover:bg-muted'}`} title={row.AN_HIEN ? 'Đang hiện (nhấn để ẩn)' : 'Đang ẩn (nhấn để hiện)'}>
+                                                {row.AN_HIEN ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                            </button>
+                                            <button type="button" onClick={() => setDkBaoGiaRows(prev => prev.filter(r => r._id !== row._id))}
+                                                className="p-1.5 hover:bg-destructive/10 text-destructive rounded-lg transition-colors" title="Xóa">
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                        {/* Content */}
+                                        <div className="px-3 py-2 space-y-2">
+                                            {(() => {
+                                                // Kiểm tra GIA_TRI có phải JSON array không
+                                                let giaTriArr: string[] | null = null;
+                                                try {
+                                                    if (row.GIA_TRI && row.GIA_TRI.startsWith('[')) {
+                                                        giaTriArr = JSON.parse(row.GIA_TRI);
+                                                    }
+                                                } catch { /* ignore */ }
+
+                                                if (giaTriArr && Array.isArray(giaTriArr)) {
+                                                    // Tách NOI_DUNG thành các dòng chính (bắt đầu bằng -)
+                                                    const lines = (row.NOI_DUNG || '').split('\n');
+                                                    const mainLines: { text: string; startIdx: number }[] = [];
+                                                    lines.forEach((line, i) => {
+                                                        if (line.startsWith('-') || mainLines.length === 0) {
+                                                            mainLines.push({ text: line, startIdx: i });
+                                                        } else {
+                                                            // Gộp dòng phụ vào dòng chính trước đó
+                                                            if (mainLines.length > 0) {
+                                                                mainLines[mainLines.length - 1].text += '\n' + line;
+                                                            }
+                                                        }
+                                                    });
+
+                                                    return (
+                                                        <div className="space-y-2">
+                                                            {/* <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Nội dung & Giá trị</label> */}
+                                                            {mainLines.map((ml, mIdx) => (
+                                                                <div key={mIdx} className="flex flex-col md:flex-row md:items-start gap-2 bg-muted/20 rounded-lg p-2">
+                                                                    <textarea value={ml.text}
+                                                                        onChange={e => {
+                                                                            const updated = [...mainLines];
+                                                                            updated[mIdx] = { ...updated[mIdx], text: e.target.value };
+                                                                            const newNoiDung = updated.map(u => u.text).join('\n');
+                                                                            setDkBaoGiaRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG: newNoiDung } : r));
+                                                                        }}
+                                                                        className="w-full md:flex-1 px-2 py-1.5 border border-border rounded-lg text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 min-h-[36px] resize-none overflow-hidden"
+                                                                        ref={el => autoResizeTextarea(el)}
+                                                                        onInput={e => autoResizeTextarea(e.currentTarget)} />
+                                                                    {mIdx < giaTriArr!.length && (
+                                                                        <input type="text" value={giaTriArr![mIdx] || ''}
+                                                                            onChange={e => {
+                                                                                const newArr = [...giaTriArr!];
+                                                                                newArr[mIdx] = e.target.value;
+                                                                                setDkBaoGiaRows(prev => prev.map(r => r._id === row._id ? { ...r, GIA_TRI: JSON.stringify(newArr) } : r));
+                                                                            }}
+                                                                            className="w-full md:w-32 md:shrink-0 px-2 py-1.5 border border-border rounded-lg text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 font-semibold text-right"
+                                                                            placeholder="Nhập giá trị..." />
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // Trường hợp thông thường: textarea + input đơn
+                                                return (
+                                                    <>
+                                                        {row.NOI_DUNG !== null && row.NOI_DUNG !== undefined && (
+                                                            <div>
+                                                                {/* <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Nội dung</label> */}
+                                                                <textarea value={row.NOI_DUNG || ''} onChange={e => setDkBaoGiaRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG: e.target.value } : r))}
+                                                                    className="w-full mt-1 px-2 py-1.5 border border-border rounded-lg text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 min-h-[42px] resize-none overflow-hidden"
+                                                                    ref={el => autoResizeTextarea(el)}
+                                                                    onInput={e => autoResizeTextarea(e.currentTarget)}
+                                                                    placeholder="Nhập nội dung..." />
+                                                            </div>
+                                                        )}
+                                                        {(row.GIA_TRI !== null && row.GIA_TRI !== undefined) && (
+                                                            <div>
+                                                                {/* <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Giá trị</label> */}
+                                                                <input type="text" value={row.GIA_TRI || ''} onChange={e => setDkBaoGiaRows(prev => prev.map(r => r._id === row._id ? { ...r, GIA_TRI: e.target.value } : r))}
+                                                                    className="w-full mt-1 px-2 py-1.5 border border-border rounded-lg text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 font-semibold text-right"
+                                                                    placeholder="Nhập giá trị..." />
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+
             {hhRowId && typeof window !== 'undefined' && createPortal(
                 <div ref={hhDropdownRef} style={hhDropdownStyle} className="bg-card border border-border rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                     {activeHhRow?.MA_HH && (
