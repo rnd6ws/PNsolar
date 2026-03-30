@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { updateTag } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 // ─── KHTN (Khách hàng) ────────────────────────────────────────
 
@@ -248,6 +249,24 @@ export async function createKhachHang(data: any) {
         }
 
         revalidatePath("/khach-hang");
+
+        // Thông báo cho sales được phân công
+        if (data.SALES_PT) {
+            prisma.dSNV.findUnique({ where: { MA_NV: data.SALES_PT }, select: { ID: true } })
+                .then((emp) => {
+                    if (emp) {
+                        createNotification({
+                            title: 'Khách hàng mới được phân công',
+                            message: `Khách hàng ${data.TEN_KH} (${maKh}) đã được phân công cho bạn.`,
+                            type: 'KHACH_HANG',
+                            recipientId: emp.ID,
+                            link: '/khach-hang',
+                        }).catch(() => {});
+                    }
+                })
+                .catch(() => {});
+        }
+
         return { success: true };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi không xác định" };

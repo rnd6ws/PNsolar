@@ -1,6 +1,10 @@
 "use client";
 // src/app/(dashboard)/DashboardLayoutClient.tsx
-import { Bell, Search, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronDown, Shield } from 'lucide-react';
+import { Bell, Search, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronDown, Shield, PlusCircle } from 'lucide-react';
+import { useNotifications } from '@/features/notifications/useNotifications';
+import { usePushSubscription } from '@/hooks/usePushSubscription';
+import { SendNotificationModal } from '@/features/notifications/components/SendNotificationModal';
+import { getEmployeeListAction } from '@/features/notifications/action';
 import { useTheme } from '@/components/ThemeProvider';
 import { PreferencesPopover } from '@/components/PreferencesPopover';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -22,9 +26,10 @@ interface Props {
     permissions: UserPermissions;
     isAdmin: boolean;
     currentUser: { HO_TEN: string; ROLE: string } | null;
+    userId: string | null;
 }
 
-export default function DashboardLayoutClient({ children, permissions, isAdmin, currentUser }: Props) {
+export default function DashboardLayoutClient({ children, permissions, isAdmin, currentUser, userId }: Props) {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -54,6 +59,43 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
     // ── Bell dropdown ────────────────────────────────────
     const [bellOpen, setBellOpen] = useState(false);
     const bellRef = useRef<HTMLDivElement>(null);
+
+    // ── Notifications ─────────────────────────────────────
+    const { notifications, unreadCount, markRead, markAllRead } = useNotifications(userId);
+    const { subscribed, supported, subscribe, unsubscribe } = usePushSubscription();
+    const [sendModalOpen, setSendModalOpen] = useState(false);
+    const [employees, setEmployees] = useState<{ ID: string; HO_TEN: string; MA_NV: string; CHUC_VU: string }[]>([]);
+
+    const isAdminOrManager = currentUser?.ROLE === 'ADMIN' || currentUser?.ROLE === 'MANAGER';
+
+    const handleOpenBell = () => {
+        if (!bellOpen && isAdminOrManager && employees.length === 0) {
+            getEmployeeListAction().then(setEmployees);
+        }
+        setBellOpen((v) => !v);
+    };
+
+    const getTypeIcon = (type: string) => {
+        switch (type) {
+            case 'BAO_GIA': return '📄';
+            case 'KHACH_HANG': return '👥';
+            case 'HOP_DONG': return '📑';
+            case 'SYSTEM': return '⚙️';
+            default: return '🔔';
+        }
+    };
+
+    const formatTime = (dateStr: string) => {
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'Vừa xong';
+        if (mins < 60) return `${mins} phút trước`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs} giờ trước`;
+        const days = Math.floor(hrs / 24);
+        if (days === 1) return 'Hôm qua';
+        return `${days} ngày trước`;
+    };
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -157,14 +199,18 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
                                 {/* Bell */}
                                 <div className="relative" ref={bellRef}>
                                     <button
-                                        onClick={() => setBellOpen((v) => !v)}
+                                        onClick={handleOpenBell}
                                         className={cn(
                                             "p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-all relative",
                                             bellOpen && "bg-accent text-foreground"
                                         )}
                                     >
                                         <Bell className="w-4 h-4" />
-                                        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-primary rounded-full border border-background" />
+                                        {unreadCount > 0 && (
+                                            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 border border-background">
+                                                {unreadCount > 99 ? '99+' : unreadCount}
+                                            </span>
+                                        )}
                                     </button>
 
                                     {/* Notification Dropdown */}
@@ -179,41 +225,75 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
                                             <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/5">
                                                 <div>
                                                     <h3 className="font-bold text-foreground text-sm">Thông báo</h3>
-                                                    <p className="text-[11px] text-muted-foreground mt-0.5">Bạn có 3 thông báo chưa đọc</p>
+                                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                        {unreadCount > 0 ? `Bạn có ${unreadCount} thông báo chưa đọc` : 'Không có thông báo mới'}
+                                                    </p>
                                                 </div>
-                                                <button className="text-[11px] font-bold text-primary hover:underline">Đánh dấu đã đọc</button>
+                                                <div className="flex items-center gap-1.5">
+                                                    {isAdminOrManager && (
+                                                        <button
+                                                            onClick={() => { setBellOpen(false); setSendModalOpen(true); }}
+                                                            className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+                                                            title="Gửi thông báo"
+                                                        >
+                                                            <PlusCircle className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                    {unreadCount > 0 && (
+                                                        <button
+                                                            onClick={markAllRead}
+                                                            className="text-[11px] font-bold text-primary hover:underline"
+                                                        >
+                                                            Đánh dấu đã đọc
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* Notification list */}
                                             <div className="max-h-[60vh] overflow-y-auto divide-y divide-border/50">
-                                                {[
-                                                    { icon: '🛒', title: 'Đơn hàng mới #DH2025031001', desc: 'Khách hàng Nguyễn Văn A vừa đặt đơn hàng.', time: '2 phút trước', unread: true },
-                                                    { icon: '⚠️', title: 'Cảnh báo tồn kho thấp', desc: 'Sản phẩm "Tấm pin 400W" còn lại < 5 cái.', time: '1 giờ trước', unread: true },
-                                                    { icon: '✅', title: 'Đơn hàng đã giao thành công', desc: 'Đơn #DH2025030912 đã giao đến khách hàng.', time: '3 giờ trước', unread: true },
-                                                    { icon: '👤', title: 'Nhân viên mới đã được thêm', desc: 'Trần Thị B đã được thêm vào hệ thống.', time: 'Hôm qua', unread: false },
-                                                    { icon: '📊', title: 'Báo cáo tháng đã sẵn sàng', desc: 'Báo cáo doanh thu tháng 2/2025 đã hoàn thành.', time: '2 ngày trước', unread: false },
-                                                ].map((n, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={cn(
-                                                            "flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-muted/40",
-                                                            n.unread && "bg-primary/5"
-                                                        )}
-                                                    >
-                                                        <span className="text-lg shrink-0 mt-0.5">{n.icon}</span>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className={cn("text-[13px] leading-tight", n.unread ? "font-bold text-foreground" : "font-medium text-foreground/80")}>{n.title}</p>
-                                                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{n.desc}</p>
-                                                            <p className="text-[10px] text-muted-foreground/70 mt-1 font-medium">{n.time}</p>
-                                                        </div>
-                                                        {n.unread && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />}
+                                                {notifications.length === 0 ? (
+                                                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                                                        Chưa có thông báo nào
                                                     </div>
-                                                ))}
+                                                ) : notifications.map((n) => {
+                                                    const content = (
+                                                        <div
+                                                            key={n.id}
+                                                            onClick={() => { if (!n.isRead) markRead(n.id); }}
+                                                            className={cn(
+                                                                "flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-muted/40",
+                                                                !n.isRead && "bg-primary/5"
+                                                            )}
+                                                        >
+                                                            <span className="text-lg shrink-0 mt-0.5">{getTypeIcon(n.type)}</span>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className={cn("text-[13px] leading-tight", !n.isRead ? "font-bold text-foreground" : "font-medium text-foreground/80")}>{n.title}</p>
+                                                                <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{n.message}</p>
+                                                                <p className="text-[10px] text-muted-foreground/70 mt-1 font-medium">{formatTime(n.createdAt)}</p>
+                                                            </div>
+                                                            {!n.isRead && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />}
+                                                        </div>
+                                                    );
+                                                    return n.link ? (
+                                                        <Link key={n.id} href={n.link} onClick={() => { setBellOpen(false); if (!n.isRead) markRead(n.id); }}>
+                                                            {content}
+                                                        </Link>
+                                                    ) : content;
+                                                })}
                                             </div>
 
                                             {/* Footer */}
-                                            <div className="px-4 py-3 border-t bg-muted/5 text-center">
-                                                <button className="text-xs font-bold text-primary hover:underline">Xem tất cả thông báo</button>
+                                            <div className="px-4 py-3 border-t bg-muted/5 flex items-center justify-between">
+                                                <span className="text-xs font-bold text-primary">Thông báo</span>
+                                                {supported && (
+                                                    <button
+                                                        onClick={subscribed ? unsubscribe : subscribe}
+                                                        className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                                                    >
+                                                        {subscribed ? '🔔 Tắt push' : '🔕 Bật thông báo đẩy'}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -318,6 +398,15 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
 
                 </SidebarInset>
             </SidebarProvider>
+
+            {/* Send Notification Modal — rendered outside layout to avoid clipping */}
+            {isAdminOrManager && (
+                <SendNotificationModal
+                    open={sendModalOpen}
+                    onClose={() => setSendModalOpen(false)}
+                    employees={employees}
+                />
+            )}
         </PermissionProvider>
     );
 }
