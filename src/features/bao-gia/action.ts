@@ -2,20 +2,36 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { baoGiaSchema, baoGiaChiTietSchema, dkttBgSchema } from './schema';
-import type { BaoGiaChiTietInput, DkttBgInput } from './schema';
+import { baoGiaSchema, baoGiaChiTietSchema, dkttBgSchema, dkBaoGiaSchema } from './schema';
+import type { BaoGiaChiTietInput, DkttBgInput, DkBaoGiaInput } from './schema';
 
 // ===== Include chuẩn cho BAO_GIA =====
 const BAO_GIA_INCLUDE = {
-    KH_REL: { select: { TEN_KH: true, MA_KH: true } },
+    KH_REL: {
+        select: {
+            TEN_KH: true, MA_KH: true, TEN_VT: true,
+            DIEN_THOAI: true, EMAIL: true, DIA_CHI: true,
+        },
+    },
+    NGUOI_GUI_REL: {
+        select: { HO_TEN: true, SO_DIEN_THOAI: true, EMAIL: true, CHUC_VU: true },
+    },
     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true, TINH_TRANG: true } },
     CHI_TIETS: {
         include: {
-            HH_REL: { select: { TEN_HH: true, MA_HH: true, DON_VI_TINH: true, NHOM_HH: true } },
+            HH_REL: {
+                select: {
+                    TEN_HH: true, MA_HH: true, DON_VI_TINH: true, NHOM_HH: true,
+                    MODEL: true, XUAT_XU: true, BAO_HANH: true, MO_TA: true,
+                },
+            },
         },
         orderBy: { CREATED_AT: 'asc' as const },
     },
     DKTT_BG: {
+        orderBy: { CREATED_AT: 'asc' as const },
+    },
+    DIEU_KHOAN_BG: {
         orderBy: { CREATED_AT: 'asc' as const },
     },
 };
@@ -192,7 +208,8 @@ export async function getBaoGiaById(id: string) {
 export async function createBaoGia(
     header: any,
     chiTiets: BaoGiaChiTietInput[],
-    dkttList: DkttBgInput[] = []
+    dkttList: DkttBgInput[] = [],
+    dkBaoGiaList: DkBaoGiaInput[] = []
 ) {
     try {
         // Validate header
@@ -224,6 +241,16 @@ export async function createBaoGia(
                 return { success: false, message: `ĐKTT đợt ${i + 1}: ${dkttParsed.error.issues[0].message}` };
             }
             validDktt.push(dkttParsed.data);
+        }
+
+        // Validate DIEU_KHOAN_BG
+        const validDkBaoGia: DkBaoGiaInput[] = [];
+        for (let i = 0; i < dkBaoGiaList.length; i++) {
+            const dkParsed = dkBaoGiaSchema.safeParse(dkBaoGiaList[i]);
+            if (!dkParsed.success) {
+                return { success: false, message: `Điều khoản ${i + 1}: ${dkParsed.error.issues[0].message}` };
+            }
+            validDkBaoGia.push(dkParsed.data);
         }
 
         // Tổng hợp header
@@ -262,10 +289,10 @@ export async function createBaoGia(
                 NGAY_BAO_GIA: new Date(parsed.data.NGAY_BAO_GIA),
                 MA_KH: parsed.data.MA_KH,
                 MA_CH: parsed.data.MA_CH || null,
+                NGUOI_GUI: parsed.data.NGUOI_GUI || null,
                 LOAI_BAO_GIA: parsed.data.LOAI_BAO_GIA,
                 PT_VAT: parsed.data.PT_VAT,
                 GHI_CHU: parsed.data.GHI_CHU || null,
-                THOI_GIAN_LAP_DAT: parsed.data.THOI_GIAN_LAP_DAT || null,
                 TEP_DINH_KEM: parsed.data.TEP_DINH_KEM || [],
                 ...totals,
                 CHI_TIETS: {
@@ -287,6 +314,14 @@ export async function createBaoGia(
                         NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || null,
                     })),
                 } : undefined,
+                DIEU_KHOAN_BG: validDkBaoGia.length > 0 ? {
+                    create: validDkBaoGia.map((dk: DkBaoGiaInput) => ({
+                        HANG_MUC: dk.HANG_MUC,
+                        NOI_DUNG: dk.NOI_DUNG || null,
+                        GIA_TRI: dk.GIA_TRI || null,
+                        AN_HIEN: dk.AN_HIEN,
+                    })),
+                } : undefined,
             },
         });
 
@@ -303,7 +338,8 @@ export async function updateBaoGia(
     id: string,
     header: any,
     chiTiets: BaoGiaChiTietInput[],
-    dkttList: DkttBgInput[] = []
+    dkttList: DkttBgInput[] = [],
+    dkBaoGiaList: DkBaoGiaInput[] = []
 ) {
     try {
         // Validate header
@@ -338,15 +374,26 @@ export async function updateBaoGia(
             validDktt.push(dkttParsed.data);
         }
 
+        // Validate DIEU_KHOAN_BG
+        const validDkBaoGia: DkBaoGiaInput[] = [];
+        for (let i = 0; i < dkBaoGiaList.length; i++) {
+            const dkParsed = dkBaoGiaSchema.safeParse(dkBaoGiaList[i]);
+            if (!dkParsed.success) {
+                return { success: false, message: `Điều khoản ${i + 1}: ${dkParsed.error.issues[0].message}` };
+            }
+            validDkBaoGia.push(dkParsed.data);
+        }
+
         const totals = calculateHeaderTotals(calculatedDetails, ptVat, parsed.data.TT_UU_DAI);
 
         // Tìm báo giá cũ
         const existing = await prisma.bAO_GIA.findUnique({ where: { ID: id }, select: { MA_BAO_GIA: true } });
         if (!existing) return { success: false, message: 'Không tìm thấy báo giá.' };
 
-        // Xóa chi tiết cũ + ĐKTT cũ rồi tạo lại
+        // Xóa chi tiết cũ + ĐKTT cũ + ĐK báo giá cũ rồi tạo lại
         await prisma.bAO_GIA_CT.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
         await prisma.dKTT_BG.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
+        await prisma.dIEU_KHOAN_BG.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
 
         // Cập nhật header + tạo chi tiết + ĐKTT mới
         await prisma.bAO_GIA.update({
@@ -355,10 +402,10 @@ export async function updateBaoGia(
                 NGAY_BAO_GIA: new Date(parsed.data.NGAY_BAO_GIA),
                 MA_KH: parsed.data.MA_KH,
                 MA_CH: parsed.data.MA_CH || null,
+                NGUOI_GUI: parsed.data.NGUOI_GUI || null,
                 LOAI_BAO_GIA: parsed.data.LOAI_BAO_GIA,
                 PT_VAT: parsed.data.PT_VAT,
                 GHI_CHU: parsed.data.GHI_CHU || null,
-                THOI_GIAN_LAP_DAT: parsed.data.THOI_GIAN_LAP_DAT || null,
                 TEP_DINH_KEM: parsed.data.TEP_DINH_KEM || [],
                 ...totals,
                 CHI_TIETS: {
@@ -380,6 +427,14 @@ export async function updateBaoGia(
                         NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || null,
                     })),
                 } : undefined,
+                DIEU_KHOAN_BG: validDkBaoGia.length > 0 ? {
+                    create: validDkBaoGia.map((dk: DkBaoGiaInput) => ({
+                        HANG_MUC: dk.HANG_MUC,
+                        NOI_DUNG: dk.NOI_DUNG || null,
+                        GIA_TRI: dk.GIA_TRI || null,
+                        AN_HIEN: dk.AN_HIEN,
+                    })),
+                } : undefined,
             },
         });
 
@@ -397,9 +452,10 @@ export async function deleteBaoGia(id: string) {
         const existing = await prisma.bAO_GIA.findUnique({ where: { ID: id }, select: { MA_BAO_GIA: true } });
         if (!existing) return { success: false, message: 'Không tìm thấy báo giá.' };
 
-        // Xóa chi tiết + ĐKTT trước
+        // Xóa chi tiết + ĐKTT + ĐK báo giá trước
         await prisma.bAO_GIA_CT.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
         await prisma.dKTT_BG.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
+        await prisma.dIEU_KHOAN_BG.deleteMany({ where: { MA_BAO_GIA: existing.MA_BAO_GIA } });
         await prisma.bAO_GIA.delete({ where: { ID: id } });
 
         revalidatePath('/bao-gia');
@@ -615,4 +671,32 @@ export async function getGiaBanForProduct(
     }
 }
 
-
+// ─── Tìm nhân viên cho selector Người gửi ──────────────────
+export async function searchNhanVienForBaoGia(query?: string) {
+    try {
+        const where: any = { IS_ACTIVE: true };
+        if (query?.trim()) {
+            where.OR = [
+                { HO_TEN: { contains: query, mode: 'insensitive' } },
+                { MA_NV: { contains: query, mode: 'insensitive' } },
+            ];
+        }
+        const data = await prisma.dSNV.findMany({
+            where,
+            select: {
+                ID: true,
+                MA_NV: true,
+                HO_TEN: true,
+                CHUC_VU: true,
+                SO_DIEN_THOAI: true,
+                EMAIL: true,
+            },
+            take: 20,
+            orderBy: { HO_TEN: 'asc' },
+        });
+        return data;
+    } catch (error) {
+        console.error('[searchNhanVienForBaoGia]', error);
+        return [];
+    }
+}

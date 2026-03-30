@@ -9,8 +9,7 @@ export type ColumnKey =
     | "coHoi"
     | "loai"
     | "tongTien"
-    | "ghiChu"
-    | "thoiGianLapDat";
+    | "ghiChu";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: "ngayBaoGia", label: "Ngày báo giá" },
@@ -19,7 +18,6 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: "loai", label: "Loại BG" },
     { key: "tongTien", label: "Tổng tiền" },
     { key: "ghiChu", label: "Ghi chú" },
-    { key: "thoiGianLapDat", label: "TG lắp đặt" },
 ];
 
 interface Props {

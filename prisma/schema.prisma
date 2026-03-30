@@ -36,6 +36,7 @@ model DSNV {
   KHTN_NV_CS    KHTN[]         @relation("NV_CS")
   KEHOACH_CSKH  KEHOACH_CSKH[] @relation("NGUOI_CS")
   KHAO_SAT      KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
+  BAO_GIA_GUI   BAO_GIA[]      @relation("NGUOI_GUI_BG")
 
   @@index([IS_ACTIVE, ROLE])
   @@fulltext([HO_TEN, USER_NAME, MA_NV])
@@ -640,6 +641,10 @@ model BAO_GIA {
   MA_CH      String?
   CO_HOI_REL CO_HOI? @relation(fields: [MA_CH], references: [MA_CH])
 
+  // Người gửi (CVKD) — lưu MA_NV, relation sang DSNV
+  NGUOI_GUI     String?
+  NGUOI_GUI_REL DSNV?   @relation("NGUOI_GUI_BG", fields: [NGUOI_GUI], references: [MA_NV])
+
   LOAI_BAO_GIA String @default("Dân dụng") // "Dân dụng" | "Công nghiệp"
 
   // Tài chính — GIÁ BÁN đã bao gồm VAT
@@ -650,11 +655,11 @@ model BAO_GIA {
   TONG_TIEN  Float @default(0) // = THANH_TIEN + TT_UU_DAI
 
   GHI_CHU           String?
-  THOI_GIAN_LAP_DAT String?
   TEP_DINH_KEM      String[] // Mảng URL tệp đính kèm (ảnh, PDF, Word...)
 
-  CHI_TIETS BAO_GIA_CT[] // 1-N relation
-  DKTT_BG   DKTT_BG[] // 1-N relation: điều kiện thanh toán
+  CHI_TIETS  BAO_GIA_CT[]  // 1-N relation
+  DKTT_BG    DKTT_BG[]     // 1-N relation: điều kiện thanh toán
+  DIEU_KHOAN_BG DIEU_KHOAN_BG[]  // 1-N relation: điều khoản báo giá
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -681,6 +686,25 @@ model DKTT_BG {
 
   @@index([MA_BAO_GIA])
   @@map("DKTT_BG")
+}
+
+// ===== ĐIỀU KHOẢN BÁO GIÁ =====
+model DIEU_KHOAN_BG {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  MA_BAO_GIA  String
+  BAO_GIA_REL BAO_GIA @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA], onDelete: Cascade)
+
+  HANG_MUC String  // Tên hạng mục (VD: "Công suất tấm pin", "Xuất xứ hàng hóa"...)
+  NOI_DUNG String? // Nội dung chi tiết
+  GIA_TRI  String? // Giá trị (dùng cho "Tính khả thi của hệ thống")
+  AN_HIEN  Boolean @default(true) // true = hiện, false = ẩn (dùng khi in)
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([MA_BAO_GIA])
+  @@map("DIEU_KHOAN_BG")
 }
 
 // ===== BÁO GIÁ CHI TIẾT (Quotation Detail) =====

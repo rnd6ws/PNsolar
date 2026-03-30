@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Building2, Target, FileText, Package, Download, ExternalLink, ImageIcon } from "lucide-react";
+import { Calendar, Building2, Target, FileText, Package, Download, ExternalLink, ImageIcon, ScrollText, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import Modal from "@/components/Modal";
 
@@ -65,9 +65,15 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                             <p className="text-sm font-medium">{data.PT_VAT || 0}%</p>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Thời gian lắp đặt</p>
-                            <p className="text-sm font-medium">{data.THOI_GIAN_LAP_DAT || "—"}</p>
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Người gửi (CVKD)</p>
+                            {data.NGUOI_GUI_REL ? (
+                                <div>
+                                    <p className="text-sm font-medium">{data.NGUOI_GUI_REL.HO_TEN}</p>
+                                    <p className="text-[11px] text-muted-foreground">{data.NGUOI_GUI_REL.CHUC_VU || data.NGUOI_GUI}{data.NGUOI_GUI_REL.SO_DIEN_THOAI ? ` • ${data.NGUOI_GUI_REL.SO_DIEN_THOAI}` : ""}</p>
+                                </div>
+                            ) : (<p className="text-sm text-muted-foreground">—</p>)}
                         </div>
+
                         <div className="space-y-1 md:col-span-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Ghi chú</p>
                             <p className="text-sm text-foreground">{data.GHI_CHU || "—"}</p>
@@ -173,6 +179,33 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                         </div>
                     )}
                 </div>
+
+                {/* Section 3: Điều khoản báo giá */}
+                {data.DIEU_KHOAN_BG && data.DIEU_KHOAN_BG.length > 0 && (
+                    <div>
+                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
+                            <ScrollText className="w-4 h-4 text-primary" /> Điều khoản báo giá
+                            <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">{data.DIEU_KHOAN_BG.filter((dk: any) => dk.AN_HIEN).length}</span>
+                        </h3>
+                        <div className="space-y-2">
+                            {data.DIEU_KHOAN_BG.map((dk: any, idx: number) => (
+                                <div key={dk.ID || idx} className={`border rounded-xl overflow-hidden ${dk.AN_HIEN ? 'border-border' : 'border-border/50 opacity-50'}`}>
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 border-b">
+                                        <span className="text-[10px] font-bold text-muted-foreground w-5 text-center">{idx + 1}</span>
+                                        <span className="text-[13px] font-semibold text-foreground flex-1">{dk.HANG_MUC}</span>
+                                        {dk.AN_HIEN ? <Eye className="w-3.5 h-3.5 text-green-600" /> : <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />}
+                                    </div>
+                                    {(dk.NOI_DUNG || dk.GIA_TRI) && (
+                                        <div className="px-3 py-2 space-y-1">
+                                            {dk.NOI_DUNG && <p className="text-[12px] text-foreground whitespace-pre-line">{dk.NOI_DUNG}</p>}
+                                            {dk.GIA_TRI && <p className="text-[12px] font-semibold text-primary text-right">{dk.GIA_TRI}</p>}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </Modal>
     );
