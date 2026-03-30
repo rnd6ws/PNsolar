@@ -30,12 +30,12 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
     }
 }
 
-export async function setAuthCookie(token: string) {
+export async function setAuthCookie(token: string, maxAge: number = 86400) {
     (await cookies()).set(COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 86400,
+        maxAge,
         path: '/',
     });
 }
