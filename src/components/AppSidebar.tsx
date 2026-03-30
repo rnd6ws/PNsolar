@@ -89,6 +89,7 @@ const navGroups: NavGroup[] = [
         defaultOpen: true,
         items: [
             { name: "Báo giá", href: "/bao-gia", icon: FileText, moduleKey: "bao-gia" },
+            { name: "Hợp đồng", href: "/hop-dong", icon: FileText, moduleKey: "hop-dong" },
             { name: "Hạng mục KS", href: "/hang-muc-ks", icon: ClipboardCheck, moduleKey: "hang-muc-ks" },
             { name: "Khảo sát CT", href: "/khao-sat", icon: MapPin, moduleKey: "khao-sat" },
         ],

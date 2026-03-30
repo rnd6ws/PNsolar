@@ -798,14 +798,49 @@ model KHAO_SAT_CT {
   @@map("KHAO_SAT_CT")
 }
 
+// ===== ĐIỀU KIỆN THANH TOÁN HỢP ĐỒNG =====
+model DKTT_HD {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
+
+  LAN_THANH_TOAN   String // Lần 1, Lần 2...
+  PT_THANH_TOAN    Float   @default(0) // % thanh toán
+  NOI_DUNG_YEU_CAU String? // Nội dung yêu cầu
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([SO_HD])
+  @@map("DKTT_HD")
+}
+
+// ===== THÔNG TIN KHÁC =====
+model THONG_TIN_KHAC {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
+
+  TIEU_DE  String? // Tiêu đề:Địa chỉ, Điện thoại, Email, CCCD, Cấp ngày, Nơi cấp, Số tài khoản, Ngân hàng, Chủ tài khoản
+  NOI_DUNG String? // Nội dung
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([SO_HD])
+  @@map("THONG_TIN_KHAC")
+}
+
 // ===== HỢP ĐỒNG =====
 model HOP_DONG {
   ID      String   @id @default(auto()) @map("_id") @db.ObjectId
-  SO_HD   String   @unique
+  SO_HD   String   @unique // DDMMYYYY-HĐSL-PNS
   LOAI_HD String // Dân dụng | Công nghiệp
   NGAY_HD DateTime @default(now())
 
-  TEN_HD String?
+  THONG_TIN_KHAC THONG_TIN_KHAC[]
 
   CONG_TRINH String? // LOAI_HD: Công nghiệp
   HANG_MUC   String? // LOAI_HD: Công nghiệp
@@ -819,18 +854,16 @@ model HOP_DONG {
   MA_BAO_GIA  String
   BAO_GIA_REL BAO_GIA @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA])
 
-  PT_VAT     Float
-  TT_VAT     Float
-  THANH_TIEN Float
-  TT_UU_DAI  Float
-  TONG_TIEN  Float
+  PT_VAT     Float // % VAT
+  TT_VAT     Float // Tổng tiền VAT
+  THANH_TIEN Float // Tổng tiền chưa VAT
+  TT_UU_DAI  Float // Tổng tiền ưu đãi
+  TONG_TIEN  Float // Tổng tiền = THANH_TIEN + TT_VAT - TT_UU_DAI
 
-  DIA_DIEM_THI_CONG String? // LOAI_HD: Công nghiệp, Dân dụng
-  VI_TRI_LAP_DAT    String? // LOAI_HD: Công nghiệp
-  THOI_GIAN_LAP_DAT String?
-  HINH_ANH          Json?
+  TEP_DINH_KEM Json?
 
   HOP_DONG_CT HOP_DONG_CT[]
+  DKTT_HD     DKTT_HD[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
