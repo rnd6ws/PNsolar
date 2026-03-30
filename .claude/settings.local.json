@@ -19,7 +19,8 @@
       "Bash(cmd /c \"tasklist 2>&1\")",
       "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, CPU | Format-Table\")",
       "Bash(powershell -Command \"Stop-Process -Name node -Force -ErrorAction SilentlyContinue; Write-Host ''done''\")",
-      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id\")"
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id\")",
+      "Bash(node -e \":*)"
     ]
   }
 }
