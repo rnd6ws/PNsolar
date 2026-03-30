@@ -15,6 +15,7 @@ import {
     searchHangHoaForBaoGia,
     getGiaBanForProduct,
     getNhomHHForBaoGia,
+    searchNhanVienForBaoGia,
 } from "../action";
 import type { BaoGiaChiTietRow, DkttBgRow, DkBaoGiaRow } from "../schema";
 import { DEFAULT_DIEU_KHOAN_BG } from "../schema";
@@ -23,6 +24,7 @@ interface KHOption { ID: string; MA_KH: string; TEN_KH: string; TEN_VT?: string 
 interface CHOption { ID: string; MA_CH: string; NGAY_TAO: string; GIA_TRI_DU_KIEN: number | null; TINH_TRANG: string }
 interface HHOption { ID: string; MA_HH: string; TEN_HH: string; MODEL: string; DON_VI_TINH: string; MA_DONG_HANG: string; NHOM_HH?: string | null }
 interface NhomHHOption { MA_NHOM: string; TEN_NHOM: string }
+interface NVOption { ID: string; MA_NV: string; HO_TEN: string; CHUC_VU?: string | null; SO_DIEN_THOAI?: string | null; EMAIL?: string | null }
 
 const DEFAULT_NHOM = 'VẬT TƯ CHÍNH';
 
@@ -66,6 +68,8 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     const [ptVat, setPtVat] = useState(8);
     const [ttUuDai, setTtUuDai] = useState(0);
     const [ghiChu, setGhiChu] = useState("");
+    const [nguoiGui, setNguoiGui] = useState("");
+    const [selectedNV, setSelectedNV] = useState<NVOption | null>(null);
 
     const [tepDinhKems, setTepDinhKems] = useState<string[]>([]);
 
@@ -95,6 +99,11 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     const [khOpen, setKhOpen] = useState(false);
     const [coHois, setCoHois] = useState<CHOption[]>([]);
     const [chOpen, setChOpen] = useState(false);
+    const [nvQuery, setNvQuery] = useState("");
+    const [nvResults, setNvResults] = useState<NVOption[]>([]);
+    const [nvLoading, setNvLoading] = useState(false);
+    const [nvOpen, setNvOpen] = useState(false);
+    const nvRef = useRef<HTMLDivElement>(null);
     const [hhRowId, setHhRowId] = useState<string | null>(null);
     const [hhQuery, setHhQuery] = useState("");
     const [hhResults, setHhResults] = useState<HHOption[]>([]);
@@ -121,6 +130,8 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             setPtVat(editData.PT_VAT ?? 8);
             setTtUuDai(editData.TT_UU_DAI || 0);
             setGhiChu(editData.GHI_CHU || "");
+            setNguoiGui(editData.NGUOI_GUI || "");
+            setSelectedNV(editData.NGUOI_GUI_REL ? { ID: '', MA_NV: editData.NGUOI_GUI, HO_TEN: editData.NGUOI_GUI_REL.HO_TEN, CHUC_VU: editData.NGUOI_GUI_REL.CHUC_VU, SO_DIEN_THOAI: editData.NGUOI_GUI_REL.SO_DIEN_THOAI, EMAIL: editData.NGUOI_GUI_REL.EMAIL } : null);
             setTepDinhKems(editData.TEP_DINH_KEM || []);
 
             const rows: BaoGiaChiTietRow[] = (editData.CHI_TIETS || []).map((ct: any) => ({
@@ -158,8 +169,8 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                 _id: tempId(),
                 _dbId: dk.ID,
                 HANG_MUC: dk.HANG_MUC,
-                NOI_DUNG: dk.NOI_DUNG || '',
-                GIA_TRI: dk.GIA_TRI || '',
+                NOI_DUNG: dk.NOI_DUNG ?? null,
+                GIA_TRI: dk.GIA_TRI ?? null,
                 AN_HIEN: dk.AN_HIEN ?? true,
             }));
             setDkBaoGiaRows(dkData.length > 0 ? dkData : DEFAULT_DIEU_KHOAN_BG.map(d => ({ ...d, _id: tempId() })));
@@ -175,11 +186,13 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             setLoaiBaoGia("Dân dụng");
             setPtVat(8); setTtUuDai(0);
             setGhiChu("");
+            setNguoiGui(""); setSelectedNV(null);
             setTepDinhKems([]); setChiTiets([]); setDkttRows([]); setCoHois([]);
             setDkBaoGiaRows(DEFAULT_DIEU_KHOAN_BG.map(d => ({ ...d, _id: tempId() })));
             setActiveGroups([DEFAULT_NHOM]); setActiveNhomTab(DEFAULT_NHOM);
         }
         setKhQuery(""); setKhResults([]); setKhOpen(false);
+        setNvQuery(""); setNvResults([]); setNvOpen(false);
         setHhRowId(null); setHhQuery(""); setHhResults([]); setShowNhomPicker(false);
     }, [isOpen, editData]);
 
@@ -189,6 +202,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
         const handler = (e: MouseEvent) => {
             if (khRef.current && !khRef.current.contains(e.target as Node)) setKhOpen(false);
             if (chRef.current && !chRef.current.contains(e.target as Node)) setChOpen(false);
+            if (nvRef.current && !nvRef.current.contains(e.target as Node)) setNvOpen(false);
             if (nhomPickerRef.current && !nhomPickerRef.current.contains(e.target as Node)) setShowNhomPicker(false);
             if (hhDropdownRef.current && !hhDropdownRef.current.contains(e.target as Node)) {
                 if (!hhTriggerRef.current || !hhTriggerRef.current.contains(e.target as Node)) {
@@ -245,6 +259,26 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
 
     const handleSelectCH = useCallback((ch: CHOption) => {
         setMaCH(ch.MA_CH); setSelectedCH(ch); setChOpen(false);
+    }, []);
+
+    // ═══ Search NV (Người gửi) ═══
+    useEffect(() => {
+        if (!nvOpen) return;
+        const timer = setTimeout(async () => {
+            setNvLoading(true);
+            const data = await searchNhanVienForBaoGia(nvQuery);
+            setNvResults(data as NVOption[]);
+            setNvLoading(false);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [nvQuery, nvOpen]);
+
+    const handleSelectNV = useCallback((nv: NVOption) => {
+        setNguoiGui(nv.MA_NV); setSelectedNV(nv); setNvOpen(false); setNvQuery("");
+    }, []);
+
+    const handleClearNV = useCallback(() => {
+        setNguoiGui(""); setSelectedNV(null);
     }, []);
 
     // ═══ Search HH (lọc theo nhóm đang active) ═══
@@ -371,6 +405,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
 
         const header = {
             NGAY_BAO_GIA: ngayBaoGia, MA_KH: maKH, MA_CH: maCH || null,
+            NGUOI_GUI: nguoiGui || null,
             LOAI_BAO_GIA: loaiBaoGia, PT_VAT: ptVat, TT_UU_DAI: ttUuDai,
             GHI_CHU: ghiChu || null,
             TEP_DINH_KEM: tepDinhKems,
@@ -515,6 +550,45 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                                 </button>
                                             ))}
                                         </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Người gửi (CVKD) */}
+                        <div className="space-y-1.5 relative" ref={nvRef}>
+                            <label className="text-sm font-semibold text-muted-foreground">Người gửi (CVKD)</label>
+                            {selectedNV ? (
+                                <div className="flex items-center gap-2 p-2.5 border border-primary/30 bg-primary/5 rounded-lg">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">{selectedNV.HO_TEN.charAt(0)}</div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-foreground truncate">{selectedNV.HO_TEN}</p>
+                                        <p className="text-xs text-muted-foreground">{selectedNV.CHUC_VU || selectedNV.MA_NV}{selectedNV.SO_DIEN_THOAI ? ` • ${selectedNV.SO_DIEN_THOAI}` : ""}</p>
+                                    </div>
+                                    <button type="button" onClick={handleClearNV} className="p-1 hover:bg-muted rounded"><X className="w-4 h-4 text-muted-foreground" /></button>
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                    <input type="text" value={nvQuery} onChange={e => setNvQuery(e.target.value)} onFocus={() => setNvOpen(true)} placeholder="Tìm nhân viên..." className="input-modern pl-10!" />
+                                </div>
+                            )}
+                            {nvOpen && !selectedNV && (
+                                <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                    {nvLoading ? (
+                                        <div className="p-4 text-center text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Đang tìm...</div>
+                                    ) : nvResults.length === 0 ? (
+                                        <div className="p-4 text-center text-sm text-muted-foreground">Không tìm thấy</div>
+                                    ) : (
+                                        nvResults.map(nv => (
+                                            <button key={nv.MA_NV} type="button" onClick={() => handleSelectNV(nv)} className="w-full text-left px-3 py-2.5 hover:bg-muted flex items-center gap-2 transition-colors">
+                                                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">{nv.HO_TEN.charAt(0)}</div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-medium truncate">{nv.HO_TEN}</p>
+                                                    <p className="text-xs text-muted-foreground">{nv.CHUC_VU || nv.MA_NV}{nv.SO_DIEN_THOAI ? ` • ${nv.SO_DIEN_THOAI}` : ""}</p>
+                                                </div>
+                                            </button>
+                                        ))
                                     )}
                                 </div>
                             )}

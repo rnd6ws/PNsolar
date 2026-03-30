@@ -7,11 +7,24 @@ import type { BaoGiaChiTietInput, DkttBgInput, DkBaoGiaInput } from './schema';
 
 // ===== Include chuẩn cho BAO_GIA =====
 const BAO_GIA_INCLUDE = {
-    KH_REL: { select: { TEN_KH: true, MA_KH: true } },
+    KH_REL: {
+        select: {
+            TEN_KH: true, MA_KH: true, TEN_VT: true,
+            DIEN_THOAI: true, EMAIL: true, DIA_CHI: true,
+        },
+    },
+    NGUOI_GUI_REL: {
+        select: { HO_TEN: true, SO_DIEN_THOAI: true, EMAIL: true, CHUC_VU: true },
+    },
     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true, TINH_TRANG: true } },
     CHI_TIETS: {
         include: {
-            HH_REL: { select: { TEN_HH: true, MA_HH: true, DON_VI_TINH: true, NHOM_HH: true } },
+            HH_REL: {
+                select: {
+                    TEN_HH: true, MA_HH: true, DON_VI_TINH: true, NHOM_HH: true,
+                    MODEL: true, XUAT_XU: true, BAO_HANH: true, MO_TA: true,
+                },
+            },
         },
         orderBy: { CREATED_AT: 'asc' as const },
     },
@@ -276,6 +289,7 @@ export async function createBaoGia(
                 NGAY_BAO_GIA: new Date(parsed.data.NGAY_BAO_GIA),
                 MA_KH: parsed.data.MA_KH,
                 MA_CH: parsed.data.MA_CH || null,
+                NGUOI_GUI: parsed.data.NGUOI_GUI || null,
                 LOAI_BAO_GIA: parsed.data.LOAI_BAO_GIA,
                 PT_VAT: parsed.data.PT_VAT,
                 GHI_CHU: parsed.data.GHI_CHU || null,
@@ -388,6 +402,7 @@ export async function updateBaoGia(
                 NGAY_BAO_GIA: new Date(parsed.data.NGAY_BAO_GIA),
                 MA_KH: parsed.data.MA_KH,
                 MA_CH: parsed.data.MA_CH || null,
+                NGUOI_GUI: parsed.data.NGUOI_GUI || null,
                 LOAI_BAO_GIA: parsed.data.LOAI_BAO_GIA,
                 PT_VAT: parsed.data.PT_VAT,
                 GHI_CHU: parsed.data.GHI_CHU || null,
@@ -656,4 +671,32 @@ export async function getGiaBanForProduct(
     }
 }
 
-
+// ─── Tìm nhân viên cho selector Người gửi ──────────────────
+export async function searchNhanVienForBaoGia(query?: string) {
+    try {
+        const where: any = { IS_ACTIVE: true };
+        if (query?.trim()) {
+            where.OR = [
+                { HO_TEN: { contains: query, mode: 'insensitive' } },
+                { MA_NV: { contains: query, mode: 'insensitive' } },
+            ];
+        }
+        const data = await prisma.dSNV.findMany({
+            where,
+            select: {
+                ID: true,
+                MA_NV: true,
+                HO_TEN: true,
+                CHUC_VU: true,
+                SO_DIEN_THOAI: true,
+                EMAIL: true,
+            },
+            take: 20,
+            orderBy: { HO_TEN: 'asc' },
+        });
+        return data;
+    } catch (error) {
+        console.error('[searchNhanVienForBaoGia]', error);
+        return [];
+    }
+}

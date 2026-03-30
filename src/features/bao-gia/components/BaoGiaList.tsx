@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -9,6 +9,8 @@ import { deleteBaoGia, getBaoGiaById } from "../action";
 import type { ColumnKey } from "./ColumnToggleButton";
 import AddEditBaoGiaModal from "./AddEditBaoGiaModal";
 import ViewBaoGiaModal from "./ViewBaoGiaModal";
+import { exportBaoGiaPDF } from "./ExportBaoGiaPDF";
+import { exportBaoGiaExcel } from "./ExportBaoGiaExcel";
 
 // ─── Format helpers ─────────────────────────────────────────
 const fmtDate = (d: string | Date) => {
@@ -31,6 +33,7 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
     const [viewModal, setViewModal] = useState(false);
     const [viewData, setViewData] = useState<any>(null);
     const [loadingView, setLoadingView] = useState(false);
+    const [exportingId, setExportingId] = useState<string | null>(null);
 
     // ═══ Sort ════════════════════════════════════════════════
     const sortedData = useMemo(() => {
@@ -100,6 +103,30 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
     const handleSuccess = () => {
         setEditModal(false);
         setEditData(null);
+    };
+
+    // ═══ Export PDF / Excel ════════════════════════════════
+    const handleExport = async (item: any, type: 'pdf' | 'excel') => {
+        setExportingId(item.ID);
+        try {
+            const result = await getBaoGiaById(item.ID);
+            if (!result.success || !result.data) {
+                toast.error('Không thể tải dữ liệu báo giá');
+                return;
+            }
+            if (type === 'pdf') {
+                await exportBaoGiaPDF(result.data);
+                toast.success('Đã xuất file PDF!');
+            } else {
+                await exportBaoGiaExcel(result.data);
+                toast.success('Đã xuất file Excel!');
+            }
+        } catch (err) {
+            console.error('[Export]', err);
+            toast.error('Lỗi khi xuất file');
+        } finally {
+            setExportingId(null);
+        }
     };
 
     // ═══ Column visibility ══════════════════════════════════
@@ -205,6 +232,22 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
+                                            <button
+                                                onClick={() => handleExport(item, 'pdf')}
+                                                disabled={exportingId === item.ID}
+                                                className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-muted-foreground hover:text-red-500"
+                                                title="Xuất PDF"
+                                            >
+                                                {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                                            </button>
+                                            <button
+                                                onClick={() => handleExport(item, 'excel')}
+                                                disabled={exportingId === item.ID}
+                                                className="p-1.5 hover:bg-green-500/10 rounded-lg transition-colors text-muted-foreground hover:text-green-600"
+                                                title="Xuất Excel"
+                                            >
+                                                {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+                                            </button>
                                             <PermissionGuard moduleKey="bao-gia" level="edit">
                                                 <button
                                                     onClick={() => handleEdit(item)}
@@ -271,6 +314,22 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
                                     title="Xem"
                                 >
                                     <Eye className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleExport(item, 'pdf')}
+                                    disabled={exportingId === item.ID}
+                                    className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-muted-foreground hover:text-red-500"
+                                    title="Xuất PDF"
+                                >
+                                    {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                                </button>
+                                <button
+                                    onClick={() => handleExport(item, 'excel')}
+                                    disabled={exportingId === item.ID}
+                                    className="p-1.5 hover:bg-green-500/10 rounded-lg transition-colors text-muted-foreground hover:text-green-600"
+                                    title="Xuất Excel"
+                                >
+                                    {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
                                 </button>
                                 <PermissionGuard moduleKey="bao-gia" level="edit">
                                     <button
