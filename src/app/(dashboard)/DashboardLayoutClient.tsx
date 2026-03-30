@@ -66,12 +66,35 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
 
     // ── Breadcrumb ───────────────────────────────────────
     const getBreadcrumb = () => {
-        if (pathname === '/dashboard') return 'Tổng quan';
-        if (pathname === '/nhan-vien') return 'Nhân viên';
-        if (pathname === '/hang-hoa') return 'Hàng hóa';
-        if (pathname === '/phan-loai-hh') return 'Phân loại hàng hóa';
-        if (pathname === '/settings') return 'Cài đặt';
-        if (pathname === '/phan-quyen') return 'Phân quyền';
+        if (pathname.includes('/dashboard')) return 'Tổng quan';
+        // CRM
+        if (pathname.includes('/khach-hang')) return 'Khách hàng';
+        if (pathname.includes('/co-hoi')) return 'Cơ hội';
+        if (pathname.includes('/ke-hoach-cs')) return 'Kế hoạch chăm sóc';
+        // Hàng hóa & Giá
+        if (pathname.includes('/phan-loai-hh')) return 'Phân loại hàng hóa';
+        if (pathname.includes('/hang-hoa')) return 'Hàng hóa';
+        if (pathname.includes('/goi-gia')) return 'Gói giá';
+        if (pathname.includes('/nha-cung-cap')) return 'Nhà cung cấp';
+        if (pathname.includes('/gia-nhap')) return 'Giá nhập';
+        if (pathname.includes('/gia-ban')) return 'Giá bán';
+        // Kinh doanh
+        if (pathname.includes('/bao-gia')) return 'Báo giá';
+        if (pathname.includes('/hang-muc-ks')) return 'Hạng mục KS';
+        if (pathname.includes('/khao-sat-ct')) return 'Khảo sát công trình';
+        if (pathname.includes('/hop-dong')) return 'Hợp đồng';
+        if (pathname.includes('/thanh-toan')) return 'Thanh toán';
+        if (pathname.includes('/xuat-nhap-kho')) return 'Xuất nhập kho';
+        // Hệ thống
+        if (pathname.includes('/nhan-vien')) return 'Nhân viên';
+        if (pathname.includes('/settings')) return 'Cài đặt';
+        if (pathname.includes('/phan-quyen')) return 'Phân quyền';
+        
+        // Fallback for missing matches
+        const path = pathname.split('/')[1];
+        if (path) {
+            return path.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        }
         return 'Dashboard';
     };
 
