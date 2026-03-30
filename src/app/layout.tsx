@@ -43,6 +43,13 @@ export const metadata: Metadata = {
   description: "Hệ thống quản trị doanh nghiệp chuyên nghiệp",
   icons: {
     icon: "/logoPN.jpg",
+    apple: "/logoPN.jpg",
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PNSolar",
   },
 };
 

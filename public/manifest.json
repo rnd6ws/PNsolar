@@ -1,0 +1,13 @@
+{
+  "name": "PNSolar CRM",
+  "short_name": "PNSolar",
+  "description": "Hệ thống CRM quản lý kinh doanh điện mặt trời",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    { "src": "/logoPN.jpg", "sizes": "192x192", "type": "image/jpeg" },
+    { "src": "/logoPN.jpg", "sizes": "512x512", "type": "image/jpeg" }
+  ]
+}

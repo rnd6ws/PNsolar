@@ -38,6 +38,10 @@ model DSNV {
   KHAO_SAT      KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
   BAO_GIA_GUI   BAO_GIA[]      @relation("NGUOI_GUI_BG")
 
+  NOTIFICATIONS_RECEIVED NOTIFICATION[]     @relation("NotificationRecipient")
+  NOTIFICATIONS_SENT     NOTIFICATION[]     @relation("NotificationSender")
+  PUSH_SUBSCRIPTIONS     PUSH_SUBSCRIPTION[] @relation("PushSubscriptions")
+
   @@index([IS_ACTIVE, ROLE])
   @@fulltext([HO_TEN, USER_NAME, MA_NV])
   @@map("DSNV")
@@ -796,4 +800,40 @@ model KHAO_SAT_CT {
   @@index([MA_KHAO_SAT])
   @@index([NHOM_KS, HANG_MUC_KS, STT_NHOM_KS, STT_HANG_MUC])
   @@map("KHAO_SAT_CT")
+}
+
+// ===== THÔNG BÁO (Notifications) =====
+model NOTIFICATION {
+  ID           String    @id @default(auto()) @map("_id") @db.ObjectId
+  TITLE        String
+  MESSAGE      String
+  TYPE         String    // "BAO_GIA" | "KHACH_HANG" | "HOP_DONG" | "SYSTEM" | "MANUAL"
+  RECIPIENT_ID String?   @db.ObjectId   // null = broadcast tất cả
+  SENDER_ID    String?   @db.ObjectId
+  IS_READ      Boolean   @default(false)
+  READ_AT      DateTime?
+  LINK         String?
+  CREATED_AT   DateTime  @default(now())
+  UPDATED_AT   DateTime  @updatedAt
+
+  RECIPIENT DSNV? @relation("NotificationRecipient", fields: [RECIPIENT_ID], references: [ID])
+  SENDER    DSNV? @relation("NotificationSender",    fields: [SENDER_ID],    references: [ID])
+
+  @@index([RECIPIENT_ID, IS_READ])
+  @@index([CREATED_AT])
+  @@map("NOTIFICATION")
+}
+
+model PUSH_SUBSCRIPTION {
+  ID         String   @id @default(auto()) @map("_id") @db.ObjectId
+  USER_ID    String   @db.ObjectId
+  USER       DSNV     @relation("PushSubscriptions", fields: [USER_ID], references: [ID])
+  ENDPOINT   String   @unique
+  P256DH     String
+  AUTH       String
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([USER_ID])
+  @@map("PUSH_SUBSCRIPTION")
 }

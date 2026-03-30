@@ -16,6 +16,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 permissions={permissions}
                 isAdmin={isAdmin}
                 currentUser={user ? { HO_TEN: user.USER_NAME, ROLE: user.ROLE } : null}
+                userId={user?.userId ?? null}
             >
                 {children}
             </DashboardLayoutClient>

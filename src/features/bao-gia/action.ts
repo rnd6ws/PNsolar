@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { baoGiaSchema, baoGiaChiTietSchema, dkttBgSchema, dkBaoGiaSchema } from './schema';
+import { createNotification } from '@/lib/notifications';
 import type { BaoGiaChiTietInput, DkttBgInput, DkBaoGiaInput } from './schema';
 
 // ===== Include chuẩn cho BAO_GIA =====
@@ -326,6 +327,24 @@ export async function createBaoGia(
         });
 
         revalidatePath('/bao-gia');
+
+        // Thông báo cho người gửi báo giá
+        if (parsed.data.NGUOI_GUI) {
+            prisma.dSNV.findUnique({ where: { MA_NV: parsed.data.NGUOI_GUI }, select: { ID: true } })
+                .then((emp) => {
+                    if (emp) {
+                        createNotification({
+                            title: 'Báo giá mới đã tạo',
+                            message: `Báo giá ${maBaoGia} cho khách hàng ${parsed.data.MA_KH} đã được tạo thành công.`,
+                            type: 'BAO_GIA',
+                            recipientId: emp.ID,
+                            link: '/bao-gia',
+                        }).catch(() => {});
+                    }
+                })
+                .catch(() => {});
+        }
+
         return { success: true, message: 'Tạo báo giá thành công!' };
     } catch (error: any) {
         console.error('[createBaoGia]', error);
