@@ -1,8 +1,9 @@
 "use client";
 // src/app/(dashboard)/DashboardLayoutClient.tsx
-import { Bell, Search, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronDown, Shield, PlusCircle } from 'lucide-react';
+import { Bell, Search, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronDown, Shield, PlusCircle, Download } from 'lucide-react';
 import { useNotifications } from '@/features/notifications/useNotifications';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { SendNotificationModal } from '@/features/notifications/components/SendNotificationModal';
 import { getEmployeeListAction } from '@/features/notifications/action';
 import { useTheme } from '@/components/ThemeProvider';
@@ -63,6 +64,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
     // ── Notifications ─────────────────────────────────────
     const { notifications, unreadCount, markRead, markAllRead } = useNotifications(userId);
     const { subscribed, supported, subscribe, unsubscribe } = usePushSubscription();
+    const { canInstall, isInstalled: _isInstalled, install } = usePWAInstall();
     const [sendModalOpen, setSendModalOpen] = useState(false);
     const [employees, setEmployees] = useState<{ ID: string; HO_TEN: string; MA_NV: string; CHUC_VU: string }[]>([]);
 
@@ -195,6 +197,18 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
 
                                 {/* Preferences (tùy chỉnh giao diện) */}
                                 <PreferencesPopover />
+
+                                {/* PWA Install */}
+                                {canInstall && (
+                                    <button
+                                        onClick={install}
+                                        title="Cài app về máy"
+                                        className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
+                                    >
+                                        <Download className="w-3.5 h-3.5" />
+                                        Cài app
+                                    </button>
+                                )}
 
                                 {/* Bell */}
                                 <div className="relative" ref={bellRef}>
