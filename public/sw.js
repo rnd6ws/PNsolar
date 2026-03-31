@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pnsolar-v3';
+const CACHE_NAME = 'pnsolar-v4';
 
 // Các tài nguyên tĩnh cần cache
 const STATIC_ASSETS = ['/manifest.json', '/logoPN-192.png', '/logoPN-512.png'];
