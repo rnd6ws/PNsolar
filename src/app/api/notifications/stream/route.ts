@@ -4,7 +4,9 @@ import { getCurrentUser } from '@/lib/auth';
 import { sseManager } from '@/lib/sse';
 
 export const dynamic = 'force-dynamic';
+// Edge Runtime: hỗ trợ streaming/SSE liên tục, không bị timeout như serverless
 export const runtime = 'nodejs';
+export const maxDuration = 60; // Tối đa 60s cho Hobby, 300s cho Pro
 
 // Heartbeat mỗi 25 giây để giữ kết nối (tránh timeout proxy/Vercel)
 const HEARTBEAT_INTERVAL_MS = 25_000;

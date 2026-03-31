@@ -14,8 +14,9 @@ export type AppNotification = {
   senderName: string | null;
 };
 
-// Fallback polling khi SSE disconnect (30 giây)
-const FALLBACK_POLL_MS = 30_000;
+// Fallback polling khi SSE disconnect
+// 10s đảm bảo iOS nhận nhanh khi SSE bị throttle
+const FALLBACK_POLL_MS = 10_000;
 
 export function useNotifications(userId: string | null) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -92,8 +93,8 @@ export function useNotifications(userId: string | null) {
       sseActiveRef.current = false;
       es.close();
       esRef.current = null;
-      // Retry sau 5 giây
-      setTimeout(() => connectSSE(), 5_000);
+      // Retry sau 3 giây (giảm từ 5s để iOS phục hồi nhanh hơn)
+      setTimeout(() => connectSSE(), 3_000);
     };
   }, [userId]);
 
