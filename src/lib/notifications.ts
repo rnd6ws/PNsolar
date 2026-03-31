@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { sseManager } from '@/lib/sse';
+import { getPusherServer, getUserChannel, PUSHER_EVENT } from '@/lib/pusher';
 
 export type NotificationType = 'BAO_GIA' | 'KHACH_HANG' | 'HOP_DONG' | 'SYSTEM' | 'MANUAL';
 
@@ -26,8 +26,8 @@ export async function createNotification(input: CreateNotificationInput) {
       },
     });
 
-    // ⚡ SSE — gửi real-time cho user đang mở app (0 trễ)
-    const ssePayload = {
+    // ⚡ Pusher — gửi real-time cho user đang mở app (hoạt động đúng trên Vercel)
+    const pusherPayload = {
       id: notification.ID,
       title: input.title,
       message: input.message,
@@ -35,7 +35,16 @@ export async function createNotification(input: CreateNotificationInput) {
       link: input.link ?? null,
       createdAt: notification.CREATED_AT,
     };
-    sseManager.send('notification', ssePayload, input.recipientId ?? null);
+
+    try {
+      const pusher = getPusherServer();
+      const channel = input.recipientId
+        ? getUserChannel(input.recipientId)
+        : 'private-broadcast'; // broadcast cho tất cả nếu không có recipientId
+      await pusher.trigger(channel, PUSHER_EVENT.NOTIFICATION, pusherPayload);
+    } catch (pusherErr) {
+      console.error('[Pusher trigger error]', pusherErr);
+    }
 
     // 📱 Web Push — gửi cho user đã bật push (kể cả khi tắt app)
     sendPushForNotification(notification.ID, input).catch((err) => {
@@ -85,8 +94,8 @@ async function sendPushForNotification(
           },
           payload,
           {
-            urgency: 'high',  // Buộc FCM/APNs giao ngay, không batch lại
-            TTL: 60,          // Hết hạn sau 60s nếu không giao được (tránh spam cũ)
+            urgency: 'high',    // Buộc FCM/APNs giao ngay, không batch lại
+            TTL: 86400,         // Hết hạn sau 24h — đủ thời gian điện thoại bật lại nhận được
           }
         );
       } catch (err: unknown) {
