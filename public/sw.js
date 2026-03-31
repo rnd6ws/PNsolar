@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pnsolar-v2';
+const CACHE_NAME = 'pnsolar-v3';
 
 // Các tài nguyên tĩnh cần cache
 const STATIC_ASSETS = ['/manifest.json', '/logoPN-192.png', '/logoPN-512.png'];
@@ -46,14 +46,38 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'PNSolar';
   const options = {
     body: data.message || '',
-    icon: '/logoPN.jpg',
-    badge: '/logoPN.jpg',
+    icon: '/logoPN-192.png',   // ✅ Dùng PNG chuẩn thay vì .jpg
+    badge: '/logoPN-192.png',  // ✅ Badge cần PNG nhỏ (thường 72x72)
     tag: data.notificationId || 'pnsolar-notification',
-    data: { link: data.link || '/dashboard' },
+    renotify: true,            // ✅ Thông báo mới cùng tag vẫn rung/âm thanh
+    data: { link: data.link || '/dashboard', notificationId: data.notificationId },
     requireInteraction: false,
+    vibrate: [200, 100, 200],  // ✅ Rung pattern cho Android
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    // Kiểm tra xem có tab/cửa sổ nào đang mở và focused không
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const hasVisibleClient = clients.some(
+        (c) => c.visibilityState === 'visible'
+      );
+
+      if (hasVisibleClient) {
+        // ✅ App đang mở → gửi message vào app để hiện in-app toast
+        // (trình duyệt tự ẩn popup hệ thống khi app focused)
+        clients.forEach((c) => {
+          if (c.visibilityState === 'visible') {
+            c.postMessage({ type: 'PUSH_NOTIFICATION', payload: data });
+          }
+        });
+        // Vẫn show notification để đảm bảo (Chrome yêu cầu phải gọi showNotification)
+        return self.registration.showNotification(title, options);
+      } else {
+        // ✅ App đang tắt/nền → hiện notification hệ thống bình thường
+        return self.registration.showNotification(title, options);
+      }
+    })
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
