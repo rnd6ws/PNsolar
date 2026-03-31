@@ -15,8 +15,9 @@ export type AppNotification = {
 };
 
 // Fallback polling khi SSE disconnect
-// 10s đảm bảo iOS nhận nhanh khi SSE bị throttle
-const FALLBACK_POLL_MS = 10_000;
+// 5s: Vercel serverless mỗi instance riêng → SSE không share được
+// → polling là cơ chế chính trên production, 5s là đủ nhanh
+const FALLBACK_POLL_MS = 5_000;
 
 export function useNotifications(userId: string | null) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
