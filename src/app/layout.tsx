@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from 'sonner';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
@@ -42,8 +43,8 @@ export const metadata: Metadata = {
   title: "PNSolar CRM",
   description: "Hệ thống quản trị doanh nghiệp chuyên nghiệp",
   icons: {
-    icon: "/logoPN.jpg",
-    apple: "/logoPN.jpg",
+    icon: "/logoPN-192.png",
+    apple: "/logoPN-192.png",
   },
   manifest: "/manifest.json",
   appleWebApp: {
@@ -66,6 +67,7 @@ export default function RootLayout({
       jakarta.variable
     )}>
       <body suppressHydrationWarning className="antialiased selection:bg-primary/20 selection:text-primary font-sans">
+        <ServiceWorkerRegister />
         <ThemeProvider>
           <Toaster position="top-right" richColors closeButton />
           {children}

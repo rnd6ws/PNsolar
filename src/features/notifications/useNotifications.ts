@@ -14,7 +14,8 @@ export type AppNotification = {
   senderName: string | null;
 };
 
-const POLL_INTERVAL_MS = 10_000;
+// 30 giây — đủ real-time cho CRM nội bộ, giảm 3x tải so với 10s
+const POLL_INTERVAL_MS = 30_000;
 
 export function useNotifications(userId: string | null) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -22,9 +23,10 @@ export function useNotifications(userId: string | null) {
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchNotifications = useCallback(async () => {
+  // silent=true → poll nền, không show loading spinner
+  const fetchNotifications = useCallback(async (silent = false) => {
     if (!userId) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/notifications?limit=15', { cache: 'no-store' });
       if (!res.ok) return;
@@ -34,17 +36,46 @@ export function useNotifications(userId: string | null) {
     } catch (e) {
       console.error('[useNotifications]', e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [userId]);
 
-  useEffect(() => {
-    fetchNotifications();
-    intervalRef.current = setInterval(fetchNotifications, POLL_INTERVAL_MS);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+  const startPolling = useCallback(() => {
+    if (intervalRef.current) return; // tránh double interval
+    intervalRef.current = setInterval(() => {
+      // Dừng poll khi tab bị ẩn (tiết kiệm tài nguyên)
+      if (document.visibilityState === 'hidden') return;
+      fetchNotifications(true); // silent poll
+    }, POLL_INTERVAL_MS);
   }, [fetchNotifications]);
+
+  const stopPolling = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // Fetch ngay lúc mount
+    fetchNotifications(false);
+    startPolling();
+
+    // Khi user quay lại tab → fetch ngay thay vì chờ hết interval
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [userId, fetchNotifications, startPolling, stopPolling]);
 
   const markRead = useCallback(async (id: string) => {
     await fetch('/api/notifications/mark-read', {
@@ -68,3 +99,4 @@ export function useNotifications(userId: string | null) {
 
   return { notifications, unreadCount, loading, markRead, markAllRead, refresh: fetchNotifications };
 }
+
