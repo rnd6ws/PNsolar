@@ -83,7 +83,11 @@ async function sendPushForNotification(
             endpoint: sub.ENDPOINT,
             keys: { p256dh: sub.P256DH, auth: sub.AUTH },
           },
-          payload
+          payload,
+          {
+            urgency: 'high',  // Buộc FCM/APNs giao ngay, không batch lại
+            TTL: 60,          // Hết hạn sau 60s nếu không giao được (tránh spam cũ)
+          }
         );
       } catch (err: unknown) {
         const httpErr = err as { statusCode?: number };
