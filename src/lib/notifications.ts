@@ -26,7 +26,9 @@ export async function createNotification(input: CreateNotificationInput) {
       },
     });
 
-    // ⚡ Pusher — gửi real-time cho user đang mở app (hoạt động đúng trên Vercel)
+    // ⚡ Chạy Pusher + Web Push SONG SONG, await cả 2 trước khi return
+    // (quan trọng trên Vercel: serverless kill process ngay khi function return,
+    //  nếu fire-and-forget thì Web Push bị chết giữa chừng → không gửi được)
     const pusherPayload = {
       id: notification.ID,
       title: input.title,
@@ -36,20 +38,25 @@ export async function createNotification(input: CreateNotificationInput) {
       createdAt: notification.CREATED_AT,
     };
 
-    try {
-      const pusher = getPusherServer();
-      const channel = input.recipientId
-        ? getUserChannel(input.recipientId)
-        : 'private-broadcast'; // broadcast cho tất cả nếu không có recipientId
-      await pusher.trigger(channel, PUSHER_EVENT.NOTIFICATION, pusherPayload);
-    } catch (pusherErr) {
-      console.error('[Pusher trigger error]', pusherErr);
-    }
+    await Promise.allSettled([
+      // Pusher — real-time cho user đang mở app
+      (async () => {
+        try {
+          const pusher = getPusherServer();
+          const channel = input.recipientId
+            ? getUserChannel(input.recipientId)
+            : 'private-broadcast';
+          await pusher.trigger(channel, PUSHER_EVENT.NOTIFICATION, pusherPayload);
+        } catch (pusherErr) {
+          console.error('[Pusher trigger error]', pusherErr);
+        }
+      })(),
 
-    // 📱 Web Push — gửi cho user đã bật push (kể cả khi tắt app)
-    sendPushForNotification(notification.ID, input).catch((err) => {
-      console.error('[Push notification send error]', err);
-    });
+      // Web Push (VAPID) — thông báo điện thoại khi app tắt màn hình
+      sendPushForNotification(notification.ID, input).catch((err) => {
+        console.error('[Push notification send error]', err);
+      }),
+    ]);
 
     return { success: true, notificationId: notification.ID };
   } catch (error) {
