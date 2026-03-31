@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pnsolar-v1';
+const CACHE_NAME = 'pnsolar-v2';
 
 // Các tài nguyên tĩnh cần cache
 const STATIC_ASSETS = ['/manifest.json', '/logoPN-192.png', '/logoPN-512.png'];
@@ -6,7 +6,7 @@ const STATIC_ASSETS = ['/manifest.json', '/logoPN-192.png', '/logoPN-512.png'];
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => {}))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => { }))
   );
 });
 
