@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { sseManager } from '@/lib/sse';
 
 export type NotificationType = 'BAO_GIA' | 'KHACH_HANG' | 'HOP_DONG' | 'SYSTEM' | 'MANUAL';
 
@@ -25,6 +26,18 @@ export async function createNotification(input: CreateNotificationInput) {
       },
     });
 
+    // ⚡ SSE — gửi real-time cho user đang mở app (0 trễ)
+    const ssePayload = {
+      id: notification.ID,
+      title: input.title,
+      message: input.message,
+      type: input.type,
+      link: input.link ?? null,
+      createdAt: notification.CREATED_AT,
+    };
+    sseManager.send('notification', ssePayload, input.recipientId ?? null);
+
+    // 📱 Web Push — gửi cho user đã bật push (kể cả khi tắt app)
     sendPushForNotification(notification.ID, input).catch((err) => {
       console.error('[Push notification send error]', err);
     });
