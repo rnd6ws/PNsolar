@@ -2,12 +2,12 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { hopDongSchema, hopDongChiTietSchema, dkttHdSchema } from './schema';
-import type { HopDongChiTietInput, DkttHdInput, ThongTinKhacInput } from './schema';
+import { hopDongSchema, hopDongChiTietSchema, dkttHdSchema, dkHdSchema } from './schema';
+import type { HopDongChiTietInput, DkttHdInput, ThongTinKhacInput, DkHdInput } from './schema';
 
 // ===== Include chuẩn cho HOP_DONG =====
 const HOP_DONG_INCLUDE = {
-    KHTN_REL: { select: { TEN_KH: true, MA_KH: true } },
+    KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIA_CHI: true, EMAIL: true, MST: true, DIEN_THOAI: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, CHUC_VU: true } } } },
     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true, TINH_TRANG: true } },
     BAO_GIA_REL: { select: { MA_BAO_GIA: true, NGAY_BAO_GIA: true, TONG_TIEN: true } },
     HOP_DONG_CT: {
@@ -22,10 +22,13 @@ const HOP_DONG_INCLUDE = {
     THONG_TIN_KHAC: {
         orderBy: { CREATED_AT: 'asc' as const },
     },
+    DK_HD: {
+        orderBy: { CREATED_AT: 'asc' as const },
+    },
 };
 
 // ─── Sinh số hợp đồng tự động ───────────────────────────────
-async function generateSoHD(): Promise<string> {
+async function generateSoHD(maKH: string): Promise<string> {
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -33,18 +36,31 @@ async function generateSoHD(): Promise<string> {
     const datePrefix = `${dd}${mm}${yyyy}`;
     const prefix = `${datePrefix}-HĐSL-PNS`;
 
-    // Đếm số HĐ trong ngày hôm nay
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
+    let seqOrVt = '';
+    if (maKH) {
+        const kh = await prisma.kHTN.findUnique({
+            where: { MA_KH: maKH },
+            select: { TEN_VT: true }
+        });
+        if (kh?.TEN_VT?.trim()) {
+            seqOrVt = kh.TEN_VT.trim();
+        }
+    }
 
-    const count = await prisma.hOP_DONG.count({
-        where: {
-            CREATED_AT: { gte: startOfDay, lte: endOfDay },
-        },
-    });
+    if (!seqOrVt) {
+        // Đếm số HĐ trong ngày hôm nay nếu không có tên viết tắt
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
 
-    const seq = String(count + 1).padStart(2, '0');
-    return `${prefix}-${seq}`;
+        const count = await prisma.hOP_DONG.count({
+            where: {
+                CREATED_AT: { gte: startOfDay, lte: endOfDay },
+            },
+        });
+        seqOrVt = String(count + 1).padStart(2, '0');
+    }
+
+    return `${prefix}-${seqOrVt}`;
 }
 
 // ─── Tính toán chi tiết ────────────────────────────────────
@@ -115,7 +131,7 @@ export async function getHopDongList(filters: {
                 },
                 skip: (page - 1) * limit,
                 take: limit,
-                orderBy: { CREATED_AT: 'desc' },
+                orderBy: { NGAY_HD: 'desc' },
             }),
             prisma.hOP_DONG.count({ where }),
         ]);
@@ -201,7 +217,8 @@ export async function createHopDong(
     header: any,
     chiTiets: HopDongChiTietInput[],
     dkttList: DkttHdInput[] = [],
-    thongTinKhacList: ThongTinKhacInput[] = []
+    thongTinKhacList: ThongTinKhacInput[] = [],
+    dkHdList: DkHdInput[] = []
 ) {
     try {
         const parsed = hopDongSchema.safeParse(header);
@@ -231,6 +248,16 @@ export async function createHopDong(
                 return { success: false, message: `ĐKTT lần ${i + 1}: ${dkttParsed.error.issues[0].message}` };
             }
             validDktt.push(dkttParsed.data);
+        }
+
+        // Validate DK_HD
+        const validDkHd: DkHdInput[] = [];
+        for (let i = 0; i < dkHdList.length; i++) {
+            const dkParsed = dkHdSchema.safeParse(dkHdList[i]);
+            if (!dkParsed.success) {
+                return { success: false, message: `Điều khoản ${i + 1}: ${dkParsed.error.issues[0].message}` };
+            }
+            validDkHd.push(dkParsed.data);
         }
 
         const totals = calculateHeaderTotals(calculatedDetails, ptVat, parsed.data.TT_UU_DAI);
@@ -265,15 +292,15 @@ export async function createHopDong(
             }
         }
 
-        const soHD = await generateSoHD();
+        const soHD = await generateSoHD(parsed.data.MA_KH);
 
         await prisma.hOP_DONG.create({
             data: {
                 SO_HD: soHD,
                 NGAY_HD: new Date(parsed.data.NGAY_HD),
                 MA_KH: parsed.data.MA_KH,
-                MA_CH: parsed.data.MA_CH || '',
-                MA_BAO_GIA: maBaoGia || '',
+                MA_CH: parsed.data.MA_CH || null,
+                MA_BAO_GIA: maBaoGia || null,
                 LOAI_HD: parsed.data.LOAI_HD,
                 CONG_TRINH: parsed.data.CONG_TRINH || null,
                 HANG_MUC: parsed.data.HANG_MUC || null,
@@ -305,6 +332,13 @@ export async function createHopDong(
                         NOI_DUNG: t.NOI_DUNG || null,
                     })),
                 } : undefined,
+                DK_HD: validDkHd.length > 0 ? {
+                    create: validDkHd.map(d => ({
+                        HANG_MUC: d.HANG_MUC,
+                        NOI_DUNG: d.NOI_DUNG || null,
+                        AN_HIEN: d.AN_HIEN,
+                    })),
+                } : undefined,
             },
         });
 
@@ -322,7 +356,8 @@ export async function updateHopDong(
     header: any,
     chiTiets: HopDongChiTietInput[],
     dkttList: DkttHdInput[] = [],
-    thongTinKhacList: ThongTinKhacInput[] = []
+    thongTinKhacList: ThongTinKhacInput[] = [],
+    dkHdList: DkHdInput[] = []
 ) {
     try {
         const parsed = hopDongSchema.safeParse(header);
@@ -353,6 +388,16 @@ export async function updateHopDong(
             validDktt.push(dkttParsed.data);
         }
 
+        // Validate DK_HD
+        const validDkHd: DkHdInput[] = [];
+        for (let i = 0; i < dkHdList.length; i++) {
+            const dkParsed = dkHdSchema.safeParse(dkHdList[i]);
+            if (!dkParsed.success) {
+                return { success: false, message: `Điều khoản ${i + 1}: ${dkParsed.error.issues[0].message}` };
+            }
+            validDkHd.push(dkParsed.data);
+        }
+
         const totals = calculateHeaderTotals(calculatedDetails, ptVat, parsed.data.TT_UU_DAI);
 
         const existing = await prisma.hOP_DONG.findUnique({ where: { ID: id }, select: { SO_HD: true } });
@@ -364,18 +409,19 @@ export async function updateHopDong(
             if (!bg) return { success: false, message: 'Báo giá không tồn tại.' };
         }
 
-        // Xóa chi tiết + DKTT + THONG_TIN_KHAC cũ
+        // Xóa chi tiết + DKTT + THONG_TIN_KHAC + DK_HD cũ
         await prisma.hOP_DONG_CT.deleteMany({ where: { SO_HD: existing.SO_HD } });
         await prisma.dKTT_HD.deleteMany({ where: { SO_HD: existing.SO_HD } });
         await prisma.tHONG_TIN_KHAC.deleteMany({ where: { SO_HD: existing.SO_HD } });
+        await prisma.dK_HD.deleteMany({ where: { SO_HD: existing.SO_HD } });
 
         await prisma.hOP_DONG.update({
             where: { ID: id },
             data: {
                 NGAY_HD: new Date(parsed.data.NGAY_HD),
                 MA_KH: parsed.data.MA_KH,
-                MA_CH: parsed.data.MA_CH || '',
-                MA_BAO_GIA: maBaoGia || '',
+                MA_CH: parsed.data.MA_CH || null,
+                MA_BAO_GIA: maBaoGia || null,
                 LOAI_HD: parsed.data.LOAI_HD,
                 CONG_TRINH: parsed.data.CONG_TRINH || null,
                 HANG_MUC: parsed.data.HANG_MUC || null,
@@ -407,6 +453,13 @@ export async function updateHopDong(
                         NOI_DUNG: t.NOI_DUNG || null,
                     })),
                 } : undefined,
+                DK_HD: validDkHd.length > 0 ? {
+                    create: validDkHd.map(d => ({
+                        HANG_MUC: d.HANG_MUC,
+                        NOI_DUNG: d.NOI_DUNG || null,
+                        AN_HIEN: d.AN_HIEN,
+                    })),
+                } : undefined,
             },
         });
 
@@ -427,6 +480,7 @@ export async function deleteHopDong(id: string) {
         await prisma.hOP_DONG_CT.deleteMany({ where: { SO_HD: existing.SO_HD } });
         await prisma.dKTT_HD.deleteMany({ where: { SO_HD: existing.SO_HD } });
         await prisma.tHONG_TIN_KHAC.deleteMany({ where: { SO_HD: existing.SO_HD } });
+        await prisma.dK_HD.deleteMany({ where: { SO_HD: existing.SO_HD } });
         await prisma.hOP_DONG.delete({ where: { ID: id } });
 
         revalidatePath('/hop-dong');
@@ -451,7 +505,7 @@ export async function searchKhachHangForHopDong(query?: string) {
             : {};
         const data = await prisma.kHTN.findMany({
             where,
-            select: { ID: true, MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true, DIEN_THOAI: true },
+            select: { ID: true, MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true, DIEN_THOAI: true, DIA_CHI: true, EMAIL: true, MST: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, CHUC_VU: true } } },
             take: 20,
             orderBy: { TEN_KH: 'asc' },
         });
@@ -484,13 +538,64 @@ export async function getBaoGiaByKhachHang(maKH: string) {
         if (!maKH) return [];
         const data = await prisma.bAO_GIA.findMany({
             where: { MA_KH: maKH },
-            select: { ID: true, MA_BAO_GIA: true, NGAY_BAO_GIA: true, TONG_TIEN: true, LOAI_BAO_GIA: true },
+            select: { 
+                ID: true, MA_BAO_GIA: true, NGAY_BAO_GIA: true, TONG_TIEN: true, LOAI_BAO_GIA: true, MA_CH: true,
+                CO_HOI_REL: { select: { ID: true, MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true, TINH_TRANG: true } }
+            },
             orderBy: { NGAY_BAO_GIA: 'desc' },
             take: 20,
         });
-        return data.map(bg => ({ ...bg, NGAY_BAO_GIA: bg.NGAY_BAO_GIA.toISOString() }));
+        return data.map(bg => ({
+            ...bg,
+            NGAY_BAO_GIA: bg.NGAY_BAO_GIA.toISOString(),
+            CO_HOI_REL: bg.CO_HOI_REL ? {
+                ...bg.CO_HOI_REL,
+                NGAY_TAO: bg.CO_HOI_REL.NGAY_TAO.toISOString()
+            } : null
+        }));
     } catch (error) {
         console.error('[getBaoGiaByKhachHang]', error);
+        return [];
+    }
+}
+
+// ─── Điều kiện thanh toán Báo giá ─────────────────────────────────────
+export async function getBaoGiaDkttForHopDong(maBaoGia: string) {
+    try {
+        if (!maBaoGia) return [];
+        const data = await prisma.dKTT_BG.findMany({
+            where: { MA_BAO_GIA: maBaoGia },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+        return data.map(d => ({
+            ...d,
+            CREATED_AT: d.CREATED_AT.toISOString(),
+            UPDATED_AT: d.UPDATED_AT.toISOString(),
+        }));
+    } catch (error) {
+        console.error('[getBaoGiaDkttForHopDong]', error);
+        return [];
+    }
+}
+
+// ─── Chi tiết Báo giá ─────────────────────────────────────
+export async function getBaoGiaDetailsForHopDong(maBaoGia: string) {
+    try {
+        if (!maBaoGia) return [];
+        const data = await prisma.bAO_GIA_CT.findMany({
+            where: { MA_BAO_GIA: maBaoGia },
+            include: {
+                HH_REL: { select: { MA_HH: true, TEN_HH: true, DON_VI_TINH: true, NHOM_HH: true } },
+            },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+        return data.map(ct => ({
+            ...ct,
+            CREATED_AT: ct.CREATED_AT.toISOString(),
+            UPDATED_AT: ct.UPDATED_AT.toISOString(),
+        }));
+    } catch (error) {
+        console.error('[getBaoGiaDetailsForHopDong]', error);
         return [];
     }
 }
@@ -590,5 +695,24 @@ export async function getGiaBanForProductHD(maHH: string, soLuong: number, ngayH
     } catch (error) {
         console.error('[getGiaBanForProductHD]', error);
         return { success: false, giaBan: 0 };
+    }
+}
+
+// ─── Lấy điều khoản báo giá để import vào hợp đồng ─────────────────────
+export async function getBaoGiaDieuKhoanForHopDong(maBaoGia: string) {
+    try {
+        if (!maBaoGia) return [];
+        const data = await prisma.dIEU_KHOAN_BG.findMany({
+            where: { MA_BAO_GIA: maBaoGia },
+            orderBy: { CREATED_AT: 'asc' },
+        });
+        return data.map(d => ({
+            ...d,
+            CREATED_AT: d.CREATED_AT.toISOString(),
+            UPDATED_AT: d.UPDATED_AT.toISOString(),
+        }));
+    } catch (error) {
+        console.error('[getBaoGiaDieuKhoanForHopDong]', error);
+        return [];
     }
 }

@@ -73,8 +73,8 @@ export default function HopDongList({ data, visibleColumns }: Props) {
     };
 
     const show = (key: ColumnKey) => visibleColumns.includes(key);
-    const thClass = "h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px] cursor-pointer group hover:text-foreground";
-    const tdClass = "px-4 py-3 align-middle text-[13px]";
+    const thClass = "h-9 px-2 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[12px] cursor-pointer group hover:text-foreground";
+    const tdClass = "px-2 py-1.5 align-middle text-[12px]";
 
     return (
         <>
