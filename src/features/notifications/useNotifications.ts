@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getPusherClient, getUserChannel, PUSHER_EVENT } from '@/lib/pusher';
 
 export type AppNotification = {
   id: string;
@@ -14,19 +15,16 @@ export type AppNotification = {
   senderName: string | null;
 };
 
-// Fallback polling khi SSE disconnect
-// 5s: Vercel serverless mỗi instance riêng → SSE không share được
-// → polling là cơ chế chính trên production, 5s là đủ nhanh
-const FALLBACK_POLL_MS = 5_000;
+// Polling fallback 10s — chỉ dùng khi Pusher mất kết nối
+const FALLBACK_POLL_MS = 10_000;
 
 export function useNotifications(userId: string | null) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const esRef = useRef<EventSource | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sseActiveRef = useRef(false);
+  const channelRef = useRef<ReturnType<ReturnType<typeof getPusherClient>['subscribe']> | null>(null);
+  const pusherActiveRef = useRef(false);
 
   // ── Fetch đầy đủ danh sách từ REST API ──────────────────────────
   const fetchNotifications = useCallback(async (silent = false) => {
@@ -45,12 +43,14 @@ export function useNotifications(userId: string | null) {
     }
   }, [userId]);
 
-  // ── Fallback polling khi SSE không hoạt động ────────────────────
+  // ── Fallback polling khi Pusher mất kết nối ─────────────────────
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const startFallbackPolling = useCallback(() => {
     if (pollRef.current) return;
     pollRef.current = setInterval(() => {
       if (document.visibilityState === 'hidden') return;
-      if (sseActiveRef.current) return; // SSE đang chạy → không cần poll
+      if (pusherActiveRef.current) return; // Pusher đang chạy → không cần poll
       fetchNotifications(true);
     }, FALLBACK_POLL_MS);
   }, [fetchNotifications]);
@@ -62,41 +62,42 @@ export function useNotifications(userId: string | null) {
     }
   }, []);
 
-  // ── Kết nối SSE ─────────────────────────────────────────────────
-  const connectSSE = useCallback(() => {
-    if (!userId || esRef.current) return;
+  // ── Kết nối Pusher ───────────────────────────────────────────────
+  const connectPusher = useCallback(() => {
+    if (!userId || channelRef.current) return;
 
-    const es = new EventSource('/api/notifications/stream');
-    esRef.current = es;
+    try {
+      const pusher = getPusherClient();
+      const channelName = getUserChannel(userId);
+      const channel = pusher.subscribe(channelName);
+      channelRef.current = channel;
 
-    es.addEventListener('connected', () => {
-      console.log('[SSE] Connected ✅');
-      sseActiveRef.current = true;
-    });
+      channel.bind('pusher:subscription_succeeded', () => {
+        console.log('[Pusher] Subscribed ✅', channelName);
+        pusherActiveRef.current = true;
+      });
 
-    // Nhận notification mới → thêm vào đầu danh sách ngay lập tức
-    es.addEventListener('notification', (e) => {
-      try {
-        const newNotif = JSON.parse(e.data) as AppNotification;
+      channel.bind('pusher:subscription_error', (err: unknown) => {
+        console.warn('[Pusher] Subscription error', err);
+        pusherActiveRef.current = false;
+      });
+
+      // Nhận notification mới → cập nhật state ngay lập tức
+      channel.bind(PUSHER_EVENT.NOTIFICATION, (data: {
+        id: string; title: string; message: string; type: string; link: string | null; createdAt: string;
+      }) => {
         setNotifications((prev) => {
-          // Tránh duplicate nếu polling cũng chạy
-          if (prev.some((n) => n.id === newNotif.id)) return prev;
-          return [{ ...newNotif, isRead: false, recipientId: null, senderName: null }, ...prev.slice(0, 14)];
+          if (prev.some((n) => n.id === data.id)) return prev;
+          return [
+            { ...data, isRead: false, recipientId: userId, senderName: null },
+            ...prev.slice(0, 14),
+          ];
         });
         setUnreadCount((prev) => prev + 1);
-      } catch {
-        // ignore parse error
-      }
-    });
-
-    es.onerror = () => {
-      console.warn('[SSE] Disconnected, will retry...');
-      sseActiveRef.current = false;
-      es.close();
-      esRef.current = null;
-      // Retry sau 3 giây (giảm từ 5s để iOS phục hồi nhanh hơn)
-      setTimeout(() => connectSSE(), 3_000);
-    };
+      });
+    } catch (err) {
+      console.error('[Pusher] Connect error', err);
+    }
   }, [userId]);
 
   // ── Mount / Unmount ──────────────────────────────────────────────
@@ -106,30 +107,59 @@ export function useNotifications(userId: string | null) {
     // Fetch ngay lần đầu
     fetchNotifications(false);
 
-    // Kết nối SSE
-    connectSSE();
+    // Kết nối Pusher
+    connectPusher();
 
-    // Fallback polling (dự phòng)
+    // Fallback polling (dự phòng khi Pusher mất kết nối)
     startFallbackPolling();
 
     // Fetch lại khi user quay lại tab
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         fetchNotifications(true);
-        // Reconnect SSE nếu đã bị ngắt
-        if (!esRef.current) connectSSE();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
+    // Lắng nghe push message từ Service Worker (khi app đang mở)
+    const handleSWMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'PUSH_NOTIFICATION') {
+        const newNotif = event.data.payload;
+        setNotifications((prev) => {
+          if (prev.some((n) => n.id === newNotif.notificationId)) return prev;
+          return [
+            {
+              id: newNotif.notificationId || Date.now().toString(),
+              title: newNotif.title,
+              message: newNotif.message,
+              type: newNotif.type || 'SYSTEM',
+              isRead: false,
+              link: newNotif.link || null,
+              createdAt: new Date().toISOString(),
+              recipientId: null,
+              senderName: null,
+            },
+            ...prev.slice(0, 14),
+          ];
+        });
+        setUnreadCount((prev) => prev + 1);
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', handleSWMessage);
+
     return () => {
-      esRef.current?.close();
-      esRef.current = null;
-      sseActiveRef.current = false;
+      // Unsubscribe Pusher channel
+      if (channelRef.current) {
+        channelRef.current.unbind_all();
+        channelRef.current.unsubscribe();
+        channelRef.current = null;
+      }
+      pusherActiveRef.current = false;
       stopFallbackPolling();
       document.removeEventListener('visibilitychange', handleVisibility);
+      navigator.serviceWorker?.removeEventListener('message', handleSWMessage);
     };
-  }, [userId, fetchNotifications, connectSSE, startFallbackPolling, stopFallbackPolling]);
+  }, [userId, fetchNotifications, connectPusher, startFallbackPolling, stopFallbackPolling]);
 
   // ── Actions ─────────────────────────────────────────────────────
   const markRead = useCallback(async (id: string) => {
