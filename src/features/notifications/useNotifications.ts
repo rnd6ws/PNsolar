@@ -14,16 +14,20 @@ export type AppNotification = {
   senderName: string | null;
 };
 
-// 30 giây — đủ real-time cho CRM nội bộ, giảm 3x tải so với 10s
-const POLL_INTERVAL_MS = 30_000;
+// Fallback polling khi SSE disconnect
+// 10s đảm bảo iOS nhận nhanh khi SSE bị throttle
+const FALLBACK_POLL_MS = 10_000;
 
 export function useNotifications(userId: string | null) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // silent=true → poll nền, không show loading spinner
+  const esRef = useRef<EventSource | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sseActiveRef = useRef(false);
+
+  // ── Fetch đầy đủ danh sách từ REST API ──────────────────────────
   const fetchNotifications = useCallback(async (silent = false) => {
     if (!userId) return;
     if (!silent) setLoading(true);
@@ -40,43 +44,93 @@ export function useNotifications(userId: string | null) {
     }
   }, [userId]);
 
-  const startPolling = useCallback(() => {
-    if (intervalRef.current) return; // tránh double interval
-    intervalRef.current = setInterval(() => {
-      // Dừng poll khi tab bị ẩn (tiết kiệm tài nguyên)
+  // ── Fallback polling khi SSE không hoạt động ────────────────────
+  const startFallbackPolling = useCallback(() => {
+    if (pollRef.current) return;
+    pollRef.current = setInterval(() => {
       if (document.visibilityState === 'hidden') return;
-      fetchNotifications(true); // silent poll
-    }, POLL_INTERVAL_MS);
+      if (sseActiveRef.current) return; // SSE đang chạy → không cần poll
+      fetchNotifications(true);
+    }, FALLBACK_POLL_MS);
   }, [fetchNotifications]);
 
-  const stopPolling = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+  const stopFallbackPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
     }
   }, []);
 
+  // ── Kết nối SSE ─────────────────────────────────────────────────
+  const connectSSE = useCallback(() => {
+    if (!userId || esRef.current) return;
+
+    const es = new EventSource('/api/notifications/stream');
+    esRef.current = es;
+
+    es.addEventListener('connected', () => {
+      console.log('[SSE] Connected ✅');
+      sseActiveRef.current = true;
+    });
+
+    // Nhận notification mới → thêm vào đầu danh sách ngay lập tức
+    es.addEventListener('notification', (e) => {
+      try {
+        const newNotif = JSON.parse(e.data) as AppNotification;
+        setNotifications((prev) => {
+          // Tránh duplicate nếu polling cũng chạy
+          if (prev.some((n) => n.id === newNotif.id)) return prev;
+          return [{ ...newNotif, isRead: false, recipientId: null, senderName: null }, ...prev.slice(0, 14)];
+        });
+        setUnreadCount((prev) => prev + 1);
+      } catch {
+        // ignore parse error
+      }
+    });
+
+    es.onerror = () => {
+      console.warn('[SSE] Disconnected, will retry...');
+      sseActiveRef.current = false;
+      es.close();
+      esRef.current = null;
+      // Retry sau 3 giây (giảm từ 5s để iOS phục hồi nhanh hơn)
+      setTimeout(() => connectSSE(), 3_000);
+    };
+  }, [userId]);
+
+  // ── Mount / Unmount ──────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
 
-    // Fetch ngay lúc mount
+    // Fetch ngay lần đầu
     fetchNotifications(false);
-    startPolling();
 
-    // Khi user quay lại tab → fetch ngay thay vì chờ hết interval
-    const handleVisibilityChange = () => {
+    // Kết nối SSE
+    connectSSE();
+
+    // Fallback polling (dự phòng)
+    startFallbackPolling();
+
+    // Fetch lại khi user quay lại tab
+    const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         fetchNotifications(true);
+        // Reconnect SSE nếu đã bị ngắt
+        if (!esRef.current) connectSSE();
       }
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      stopPolling();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      esRef.current?.close();
+      esRef.current = null;
+      sseActiveRef.current = false;
+      stopFallbackPolling();
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [userId, fetchNotifications, startPolling, stopPolling]);
+  }, [userId, fetchNotifications, connectSSE, startFallbackPolling, stopFallbackPolling]);
 
+  // ── Actions ─────────────────────────────────────────────────────
   const markRead = useCallback(async (id: string) => {
     await fetch('/api/notifications/mark-read', {
       method: 'POST',
@@ -99,4 +153,3 @@ export function useNotifications(userId: string | null) {
 
   return { notifications, unreadCount, loading, markRead, markAllRead, refresh: fetchNotifications };
 }
-
