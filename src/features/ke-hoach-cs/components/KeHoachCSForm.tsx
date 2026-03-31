@@ -261,8 +261,9 @@ export default function KeHoachCSForm({
     };
 
     return (
-        <Modal
-            isOpen={true}
+        <>
+            <Modal
+                isOpen={true}
             onClose={onClose}
             title={isEdit ? "Chỉnh sửa kế hoạch chăm sóc" : "Tạo kế hoạch chăm sóc"}
             size="xl"
@@ -635,17 +636,18 @@ export default function KeHoachCSForm({
                     </button>
                 </div>
             </form>
-
-            {showNLHModal && selectedKH && (
-                <NguoiLienHeModal
-                    isOpen={showNLHModal}
-                    onClose={() => {
-                        setShowNLHModal(false);
-                        refreshNguoiLienHe();
-                    }}
-                    khachHang={{ ID: selectedKH.ID, TEN_KH: selectedKH.TEN_KH }}
-                />
-            )}
         </Modal>
+
+        {showNLHModal && selectedKH && (
+            <NguoiLienHeModal
+                isOpen={showNLHModal}
+                onClose={() => {
+                    setShowNLHModal(false);
+                    refreshNguoiLienHe();
+                }}
+                khachHang={selectedKH}
+            />
+        )}
+        </>
     );
 }

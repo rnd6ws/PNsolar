@@ -35,10 +35,12 @@ export async function getKhaoSatList(params?: {
     query?: string;
     loai?: string;
     nguoi?: string;
+    page?: number;
+    limit?: number;
 }) {
     try {
-        const { query, loai, nguoi } = params || {};
-        
+        const { query, loai, nguoi, page = 1, limit = 50 } = params || {};
+
         // --- STAFF Filtering Rule ---
         const user = await getCurrentUser();
         let staffMaNv = null;
@@ -48,34 +50,58 @@ export async function getKhaoSatList(params?: {
                 staffMaNv = nv.MA_NV;
             }
         }
-        
-        const data = await prisma.kHAO_SAT.findMany({
-            where: {
-                AND: [
-                    query ? {
-                        OR: [
-                            { MA_KHAO_SAT: { contains: query, mode: "insensitive" } },
-                            { DIA_CHI_CONG_TRINH: { contains: query, mode: "insensitive" } },
-                            { LOAI_CONG_TRINH: { contains: query, mode: "insensitive" } },
-                        ]
-                    } : {},
-                    loai && loai !== "all" ? { LOAI_CONG_TRINH: loai } : {},
-                    nguoi && nguoi !== "all" ? { NGUOI_KHAO_SAT: { contains: nguoi } } : {},
-                    staffMaNv ? { NGUOI_KHAO_SAT: { contains: staffMaNv } } : {},
-                ],
+
+        const whereClause = {
+            AND: [
+                query ? {
+                    OR: [
+                        { MA_KHAO_SAT: { contains: query, mode: "insensitive" as const } },
+                        { DIA_CHI_CONG_TRINH: { contains: query, mode: "insensitive" as const } },
+                        { LOAI_CONG_TRINH: { contains: query, mode: "insensitive" as const } },
+                    ]
+                } : {},
+                loai && loai !== "all" && loai !== "month" ? { LOAI_CONG_TRINH: loai } : {},
+                loai === "month" ? {
+                    NGAY_KHAO_SAT: {
+                        gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                    }
+                } : {},
+                nguoi && nguoi !== "all" ? { NGUOI_KHAO_SAT: { contains: nguoi } } : {},
+                staffMaNv ? { NGUOI_KHAO_SAT: { contains: staffMaNv } } : {},
+            ],
+        };
+
+        const skip = (page - 1) * limit;
+
+        const [data, total] = await Promise.all([
+            prisma.kHAO_SAT.findMany({
+                where: whereClause,
+                include: {
+                    NGUOI_KHAO_SAT_REL: { select: { HO_TEN: true, MA_NV: true } },
+                    KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIA_CHI: true, DIEN_THOAI: true, EMAIL: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, SDT: true, EMAIL: true } } } },
+                    CO_HOI_REL: { select: { MA_CH: true } },
+                    NGUOI_LIEN_HE_REL: { select: { TENNGUOI_LIENHE: true } },
+                    KHAO_SAT_CT: true,
+                },
+                orderBy: { NGAY_KHAO_SAT: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma.kHAO_SAT.count({ where: whereClause }),
+        ]);
+
+        return {
+            success: true,
+            data,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
             },
-            include: {
-                NGUOI_KHAO_SAT_REL: { select: { HO_TEN: true, MA_NV: true } },
-                KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIA_CHI: true, DIEN_THOAI: true, EMAIL: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, SDT: true, EMAIL: true } } } },
-                CO_HOI_REL: { select: { MA_CH: true } },
-                NGUOI_LIEN_HE_REL: { select: { TENNGUOI_LIENHE: true } },
-                KHAO_SAT_CT: true,
-            },
-            orderBy: { NGAY_KHAO_SAT: "desc" },
-        });
-        return { success: true, data };
+        };
     } catch (e: any) {
-        return { success: false, data: [], message: e.message };
+        return { success: false, data: [], pagination: null, message: e.message };
     }
 }
 

@@ -62,6 +62,7 @@ interface Props {
         STT: number | null;
         HIEU_LUC: boolean;
     }[];
+    viewMode?: "table" | "card" | "auto";
 }
 
 type SortDir = "asc" | "desc";
@@ -88,6 +89,7 @@ export default function KhaoSatList({
     visibleColumns,
     nhomKSData,
     hangMucData,
+    viewMode = "auto",
 }: Props) {
     const router = useRouter();
     const [sortKey, setSortKey] = useState<string | null>(null);
@@ -112,11 +114,29 @@ export default function KhaoSatList({
         }
     };
 
-    const renderNguoiKS = (nguoiKS: string | null) => {
-        if (!nguoiKS) return "—";
+    const renderNguoiKSArray = (nguoiKS: string | null) => {
+        if (!nguoiKS) return [];
         const arr = nguoiKS.split(",").map((s) => s.trim()).filter(Boolean);
+        return arr.map((ma) => nhanVienOptions.find((o) => o.value === ma)?.label || ma);
+    };
+
+    const renderNguoiKS = (nguoiKS: string | null) => {
+        const arr = renderNguoiKSArray(nguoiKS);
+        return arr.length > 0 ? arr.join(", ") : "—";
+    };
+
+    const renderNguoiKSTags = (nguoiKS: string | null, align: "center" | "end" = "center") => {
+        const arr = renderNguoiKSArray(nguoiKS);
         if (arr.length === 0) return "—";
-        return arr.map((ma) => nhanVienOptions.find((o) => o.value === ma)?.label || ma).join(", ");
+        return (
+            <div className={`flex flex-wrap gap-1 ${align === "center" ? "justify-center" : "justify-end"}`}>
+                {arr.map((name, i) => (
+                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400 border border-cyan-200/50 dark:border-cyan-500/20">
+                        {name}
+                    </span>
+                ))}
+            </div>
+        );
     };
 
     const handleSort = (key: string) => {
@@ -138,42 +158,45 @@ export default function KhaoSatList({
     return (
         <>
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto ${viewMode === "table" ? "block" :
+                viewMode === "card" ? "hidden" :
+                    "hidden md:block"
+                }`}>
                 <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-10 text-center">#</th>
+                            <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-10 text-center">#</th>
                             {show("ma") && (
-                                <th onClick={() => handleSort("MA_KHAO_SAT")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
+                                <th onClick={() => handleSort("MA_KHAO_SAT")} className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
                                     Mã KS <SortIcon col="MA_KHAO_SAT" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("ngay") && (
-                                <th onClick={() => handleSort("NGAY_KHAO_SAT")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
+                                <th onClick={() => handleSort("NGAY_KHAO_SAT")} className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
                                     Ngày KS <SortIcon col="NGAY_KHAO_SAT" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("loai") && (
-                                <th onClick={() => handleSort("LOAI_CONG_TRINH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
+                                <th onClick={() => handleSort("LOAI_CONG_TRINH")} className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center">
                                     Loại công trình <SortIcon col="LOAI_CONG_TRINH" sortKey={sortKey} dir={sortDir} />
                                 </th>
                             )}
                             {show("nguoi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
+                                <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Người KS
                                 </th>
                             )}
                             {show("khachHang") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
+                                <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Khách hàng
                                 </th>
                             )}
                             {show("diaChi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
+                                <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Địa điểm lắp đặt
                                 </th>
                             )}
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">
+                            <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">
                                 Thao tác
                             </th>
                         </tr>
@@ -187,112 +210,103 @@ export default function KhaoSatList({
                             </tr>
                         )}
                         {sorted.map((item, idx) => (
-                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setDetailItem(item)}>
-                                <td className="px-4 py-3 align-middle text-muted-foreground text-xs text-center font-mono">{idx + 1}</td>
+                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors cursor-pointer group" onClick={() => setDetailItem(item)}>
+                                <td className="px-2 py-3 align-middle text-muted-foreground group-hover:text-primary transition-colors text-xs text-center font-mono font-medium">{idx + 1}</td>
                                 {show("ma") && (
-                                    <td className="px-4 py-3 align-middle text-center">
+                                    <td className="px-2 py-3 align-middle text-center">
                                         <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
                                             {item.MA_KHAO_SAT}
                                         </span>
                                     </td>
                                 )}
                                 {show("ngay") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs text-muted-foreground font-medium whitespace-nowrap">{formatDate(item.NGAY_KHAO_SAT)}</td>
+                                    <td className="px-2 py-3 align-middle text-center text-xs text-muted-foreground font-medium whitespace-nowrap">{formatDate(item.NGAY_KHAO_SAT)}</td>
                                 )}
                                 {show("loai") && (
-                                    <td className="px-4 py-3 align-middle text-center font-medium text-xs text-foreground">{item.LOAI_CONG_TRINH}</td>
+                                    <td className="px-2 py-3 align-middle text-center font-medium text-xs text-foreground">{item.LOAI_CONG_TRINH}</td>
                                 )}
                                 {show("nguoi") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs">
-                                        {renderNguoiKS(item.NGUOI_KHAO_SAT)}
+                                    <td className="px-2 py-3 align-middle text-center text-xs">
+                                        {renderNguoiKSTags(item.NGUOI_KHAO_SAT, "center")}
                                     </td>
                                 )}
                                 {show("khachHang") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs">
+                                    <td className="px-2 py-3 align-middle text-center text-xs">
                                         {item.KHTN_REL?.TEN_KH || "—"}
                                     </td>
                                 )}
                                 {show("diaChi") && (
-                                    <td className="px-4 py-3 align-middle text-center text-xs min-w-[200px] max-w-[250px] md:max-w-[350px] whitespace-normal wrap-break-word">
+                                    <td className="px-2 py-3 align-middle text-center text-xs min-w-[200px] max-w-[250px] md:max-w-[350px] whitespace-normal wrap-break-word">
                                         {item.DIA_CHI_CONG_TRINH || item.DIA_CHI || "—"}
                                     </td>
                                 )}
-                                <td className="px-4 py-3 align-middle text-right" onClick={(e) => e.stopPropagation()}>
+                                <td className="px-2 py-3 align-middle text-right" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-end gap-1 items-center">
                                         <button
                                             onClick={() => setDetailItem(item)}
-                                            className="p-1.5 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-600 rounded transition-colors"
+                                            className="p-1.5 hover:bg-blue-500/10 text-muted-foreground group-hover:text-blue-500 hover:text-blue-600 rounded transition-colors"
                                             title="Xem chi tiết"
                                         >
-                                            <Eye className="w-3.5 h-3.5" />
+                                            <Eye className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={(e) => handleExport(item, e)}
                                             disabled={exportingId === item.ID}
-                                            className="p-1.5 hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-600 rounded transition-colors disabled:opacity-50"
+                                            className="p-1.5 hover:bg-emerald-500/10 text-muted-foreground group-hover:text-emerald-500 hover:text-emerald-600 rounded transition-colors disabled:opacity-50"
                                             title="Xuất báo cáo Word"
                                         >
                                             {exportingId === item.ID
-                                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                : <FileDown className="w-3.5 h-3.5" />}
+                                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                                : <FileDown className="w-4 h-4" />}
                                         </button>
                                         <PermissionGuard moduleKey="khao-sat" level="edit">
                                             <button
                                                 onClick={() => setChiTietEditItem(item)}
-                                                className="p-1.5 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 rounded transition-colors"
+                                                className="p-1.5 hover:bg-amber-500/10 text-muted-foreground group-hover:text-amber-500 hover:text-amber-600 rounded transition-colors"
                                                 title="Ghi nhận khảo sát"
                                             >
-                                                <ClipboardEdit className="w-3.5 h-3.5" />
+                                                <ClipboardEdit className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setImageUploadItem(item)}
-                                                className="p-1.5 hover:bg-indigo-500/10 text-muted-foreground hover:text-indigo-600 rounded transition-colors"
+                                                className="p-1.5 hover:bg-indigo-500/10 text-muted-foreground group-hover:text-indigo-500 hover:text-indigo-600 rounded transition-colors"
                                                 title="Ảnh khảo sát"
                                             >
-                                                <Images className="w-3.5 h-3.5" />
+                                                <Images className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setEditItem(item)}
-                                                className="hidden md:block p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded transition-colors"
+                                                className="hidden md:block p-1.5 hover:bg-primary/10 text-muted-foreground group-hover:text-primary hover:text-primary rounded transition-colors"
                                                 title="Sửa phiếu"
                                             >
-                                                <Pencil className="w-3.5 h-3.5" />
+                                                <Pencil className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="khao-sat" level="delete">
                                             <button
                                                 onClick={() => setDeleteItem(item)}
-                                                className="hidden md:block p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                                                className="hidden md:block p-1.5 hover:bg-destructive/10 text-muted-foreground group-hover:text-destructive hover:text-destructive rounded transition-colors"
                                                 title="Xóa phiếu"
                                             >
-                                                <Trash2 className="w-3.5 h-3.5" />
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
                                         <div className="md:hidden flex items-center">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <button className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors">
+                                                    <button className="p-1.5 hover:bg-muted data-[state=open]:bg-primary/10 text-muted-foreground group-hover:text-foreground hover:text-foreground data-[state=open]:text-primary rounded transition-colors">
                                                         <MoreHorizontal className="w-4 h-4" />
                                                     </button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-36 rounded-xl">
-                                                    <DropdownMenuItem onClick={(e) => handleExport(item, e as any)} disabled={exportingId === item.ID}>
-                                                        {exportingId === item.ID
-                                                            ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                                                            : <FileDown className="w-3.5 h-3.5 mr-2" />}
-                                                        Xuất Word
-                                                    </DropdownMenuItem>
                                                     <PermissionGuard moduleKey="khao-sat" level="edit">
-                                                        <DropdownMenuItem onClick={() => setEditItem(item)}>
-                                                            <Pencil className="w-3.5 h-3.5 mr-2" />Sửa
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => setImageUploadItem(item)}>
-                                                            <Images className="w-3.5 h-3.5 mr-2" />Ảnh KS
+                                                        <DropdownMenuItem onClick={() => setEditItem(item)} className="text-primary">
+                                                            <Pencil className="w-4 h-4 mr-2 text-primary" />Sửa
                                                         </DropdownMenuItem>
                                                     </PermissionGuard>
                                                     <PermissionGuard moduleKey="khao-sat" level="delete">
                                                         <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
-                                                            <Trash2 className="w-3.5 h-3.5 mr-2" />Xóa
+                                                            <Trash2 className="w-4 h-4 mr-2 text-destructive" />Xóa
                                                         </DropdownMenuItem>
                                                     </PermissionGuard>
                                                 </DropdownMenuContent>
@@ -304,6 +318,95 @@ export default function KhaoSatList({
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Card View */}
+            <div className={`grid grid-cols-1 gap-2 p-1 ${viewMode === "card" ? "block" :
+                viewMode === "table" ? "hidden" :
+                    "block md:hidden"
+                }`}>
+                {sorted.length === 0 && (
+                    <div className="text-center py-16 text-muted-foreground text-sm italic border rounded-xl border-dashed">
+                        Chưa có phiếu khảo sát nào
+                    </div>
+                )}
+                {sorted.map((item, idx) => (
+                    <div key={item.ID} className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setDetailItem(item)}>
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
+                                    {show("ma") ? item.MA_KHAO_SAT : `#${idx + 1}`}
+                                </span>
+                                {show("ngay") && (
+                                    <span className="text-sm text-primary bg-primary/10 px-2 py-0.5 rounded-md font-medium">
+                                        {formatDate(item.NGAY_KHAO_SAT)}
+                                    </span>
+                                )}
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button onClick={(e) => e.stopPropagation()} className="p-1.5 -m-1.5 hover:bg-muted data-[state=open]:bg-primary/10 text-muted-foreground hover:text-foreground data-[state=open]:text-primary rounded transition-colors" title="Thao tác">
+                                        <MoreHorizontal className="w-5 h-5" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                                    <DropdownMenuItem className="text-blue-600 focus:text-blue-700 dark:text-blue-400 dark:focus:text-blue-300 cursor-pointer focus:bg-blue-50 dark:focus:bg-blue-900/20" onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}>
+                                        <Eye className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />Xem chi tiết
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="text-emerald-600 focus:text-emerald-700 dark:text-emerald-400 dark:focus:text-emerald-300 cursor-pointer focus:bg-emerald-50 dark:focus:bg-emerald-900/20" onClick={(e) => { e.stopPropagation(); handleExport(item, e as any); }} disabled={exportingId === item.ID}>
+                                        {exportingId === item.ID
+                                            ? <Loader2 className="w-4 h-4 mr-2 animate-spin text-emerald-600 dark:text-emerald-400" />
+                                            : <FileDown className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />}
+                                        Xuất Word
+                                    </DropdownMenuItem>
+                                    <PermissionGuard moduleKey="khao-sat" level="edit">
+                                        <DropdownMenuItem className="text-orange-600 focus:text-orange-700 dark:text-orange-400 dark:focus:text-orange-300 cursor-pointer focus:bg-orange-50 dark:focus:bg-orange-900/20" onClick={(e) => { e.stopPropagation(); setChiTietEditItem(item); }}>
+                                            <ClipboardEdit className="w-4 h-4 mr-2 text-orange-600 dark:text-orange-400" />Ghi nhận KS
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-purple-600 focus:text-purple-700 dark:text-purple-400 dark:focus:text-purple-300 cursor-pointer focus:bg-purple-50 dark:focus:bg-purple-900/20" onClick={(e) => { e.stopPropagation(); setImageUploadItem(item); }}>
+                                            <Images className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />Ảnh KS
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-sky-600 focus:text-sky-700 dark:text-sky-400 dark:focus:text-sky-300 cursor-pointer focus:bg-sky-50 dark:focus:bg-sky-900/20" onClick={(e) => { e.stopPropagation(); setEditItem(item); }}>
+                                            <Pencil className="w-4 h-4 mr-2 text-sky-600 dark:text-sky-400" />Sửa
+                                        </DropdownMenuItem>
+                                    </PermissionGuard>
+                                    <PermissionGuard moduleKey="khao-sat" level="delete">
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                            <Trash2 className="w-4 h-4 mr-2 text-destructive" />Xóa
+                                        </DropdownMenuItem>
+                                    </PermissionGuard>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+
+                        <div className="space-y-2 text-sm mt-4">
+                            {show("loai") && (
+                                <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                    <span className="text-muted-foreground whitespace-nowrap">Loại công trình:</span>
+                                    <span className="font-medium text-right line-clamp-2">{item.LOAI_CONG_TRINH}</span>
+                                </div>
+                            )}
+                            {show("nguoi") && (
+                                <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                    <span className="text-muted-foreground whitespace-nowrap">Người KS:</span>
+                                    <span className="text-right">{renderNguoiKSTags(item.NGUOI_KHAO_SAT, "end")}</span>
+                                </div>
+                            )}
+                            {show("khachHang") && (
+                                <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                    <span className="text-muted-foreground whitespace-nowrap">Khách hàng:</span>
+                                    <span className="text-right line-clamp-2">{item.KHTN_REL?.TEN_KH || "—"}</span>
+                                </div>
+                            )}
+                            {show("diaChi") && (
+                                <div className="flex justify-between items-start pt-1 gap-4">
+                                    <span className="text-muted-foreground whitespace-nowrap">Địa điểm:</span>
+                                    <span className="text-right line-clamp-3">{item.DIA_CHI_CONG_TRINH || item.DIA_CHI || "—"}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
             </div>
 
             {/* Edit Modal (Info) */}
@@ -343,7 +446,7 @@ export default function KhaoSatList({
                     isOpen={true}
                     onClose={() => {
                         setImageUploadItem(null);
-                        router.refresh();
+                        // router.refresh();
                     }}
                     item={imageUploadItem}
                 />
