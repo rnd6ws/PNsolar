@@ -55,9 +55,13 @@ export interface HopDongFull {
     TT_UU_DAI: number;
     TONG_TIEN: number;
     TEP_DINH_KEM: string[];
+    DUYET?: string | null;
+    NGUOI_DUYET?: string | null;
+    NGAY_DUYET?: string | null;
     CREATED_AT: string;
     // Relations
     KHTN_REL?: { TEN_KH: string; MA_KH: string };
+    NGUOI_DUYET_REL?: { HO_TEN: string; MA_NV: string } | null;
     CO_HOI_REL?: { MA_CH: string; NGAY_TAO: string; GIA_TRI_DU_KIEN: number | null } | null;
     BAO_GIA_REL?: { MA_BAO_GIA: string; NGAY_BAO_GIA: string; TONG_TIEN: number } | null;
     HOP_DONG_CT?: any[];

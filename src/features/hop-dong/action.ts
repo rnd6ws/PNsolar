@@ -2,12 +2,14 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getCurrentUser } from '@/lib/auth';
 import { hopDongSchema, hopDongChiTietSchema, dkttHdSchema, dkHdSchema } from './schema';
 import type { HopDongChiTietInput, DkttHdInput, ThongTinKhacInput, DkHdInput } from './schema';
 
 // ===== Include chuẩn cho HOP_DONG =====
 const HOP_DONG_INCLUDE = {
     KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIA_CHI: true, EMAIL: true, MST: true, DIEN_THOAI: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, CHUC_VU: true } } } },
+    NGUOI_DUYET_REL: { select: { HO_TEN: true, MA_NV: true } },
     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true, TINH_TRANG: true } },
     BAO_GIA_REL: { select: { MA_BAO_GIA: true, NGAY_BAO_GIA: true, TONG_TIEN: true } },
     HOP_DONG_CT: {
@@ -125,6 +127,7 @@ export async function getHopDongList(filters: {
                 where,
                 include: {
                     KHTN_REL: { select: { TEN_KH: true, MA_KH: true } },
+                    NGUOI_DUYET_REL: { select: { HO_TEN: true, MA_NV: true } },
                     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true } },
                     BAO_GIA_REL: { select: { MA_BAO_GIA: true, TONG_TIEN: true } },
                     _count: { select: { HOP_DONG_CT: true } },
@@ -306,6 +309,7 @@ export async function createHopDong(
                 HANG_MUC: parsed.data.HANG_MUC || null,
                 PT_VAT: parsed.data.PT_VAT,
                 TEP_DINH_KEM: parsed.data.TEP_DINH_KEM || [],
+                DUYET: "Chờ duyệt",
                 ...totals,
                 HOP_DONG_CT: {
                     create: calculatedDetails.map(ct => ({
@@ -538,7 +542,7 @@ export async function getBaoGiaByKhachHang(maKH: string) {
         if (!maKH) return [];
         const data = await prisma.bAO_GIA.findMany({
             where: { MA_KH: maKH },
-            select: { 
+            select: {
                 ID: true, MA_BAO_GIA: true, NGAY_BAO_GIA: true, TONG_TIEN: true, LOAI_BAO_GIA: true, MA_CH: true,
                 CO_HOI_REL: { select: { ID: true, MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true, TINH_TRANG: true } }
             },
@@ -714,5 +718,31 @@ export async function getBaoGiaDieuKhoanForHopDong(maBaoGia: string) {
     } catch (error) {
         console.error('[getBaoGiaDieuKhoanForHopDong]', error);
         return [];
+    }
+}
+
+// ─── Duyệt hợp đồng ───────────────────────────────────────
+export async function duyetHopDong(id: string, trangThai: "Đã duyệt" | "Chờ duyệt" | "Không duyệt") {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { success: false, message: 'Vui lòng đăng nhập' };
+
+        const nv = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (!nv) return { success: false, message: 'Nhân viên không tồn tại' };
+
+        await prisma.hOP_DONG.update({
+            where: { ID: id },
+            data: {
+                DUYET: trangThai,
+                NGUOI_DUYET: trangThai === "Chờ duyệt" ? null : nv.MA_NV,
+                NGAY_DUYET: trangThai === "Chờ duyệt" ? null : new Date(),
+            }
+        });
+
+        revalidatePath('/hop-dong');
+        return { success: true, message: `Thao tác hợp đồng: ${trangThai} thành công!` };
+    } catch (error: any) {
+        console.error('[duyetHopDong]', error);
+        return { success: false, message: error.message || 'Lỗi server khi duyệt hợp đồng' };
     }
 }
