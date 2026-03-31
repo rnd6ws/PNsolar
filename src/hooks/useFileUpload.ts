@@ -22,6 +22,8 @@ export interface UseFileUploadOptions {
     onSuccess?: (file: UploadedFile) => void;
     /** Callback khi upload thất bại */
     onError?: (message: string) => void;
+    /** Callback khi 1 item upload thành công (cho hook multiple) */
+    onSuccessItem?: (file: UploadedFile) => void;
 }
 
 export function useFileUpload({
@@ -104,6 +106,7 @@ export function useMultipleFileUpload({
     folder = 'pnsolar/uploads',
     type = 'any',
     onError,
+    onSuccessItem,
 }: UseFileUploadOptions = {}) {
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -114,42 +117,73 @@ export function useMultipleFileUpload({
         setError(null);
 
         try {
-            const uploadPromises = items.map(async ({ file, customName }) => {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('folder', folder);
-                formData.append('type', type);
-                
-                if (customName) {
-                    formData.append('public_id', customName);
+            const results: UploadedFile[] = [];
+            let hasError = false;
+            let firstError: any = null;
+
+            // Xử lý đa luồng với Concurrency Limit (vd: 3 file cùng lúc)
+            // Giúp tránh nghẽn cổ chai mạng (browser giới hạn 6 request/domain)
+            // và giảm tải cho backend, đồng thời cho phép hiển thị kết quả dần dần.
+            const CONCURRENCY_LIMIT = 3;
+            const queue = [...items];
+            
+            const workers = Array(Math.min(CONCURRENCY_LIMIT, queue.length)).fill(null).map(async () => {
+                while (queue.length > 0 && !hasError) {
+                    const item = queue.shift();
+                    if (!item) break;
+                    
+                    const { file, customName } = item;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('folder', folder);
+                    formData.append('type', type);
+                    
+                    if (customName) {
+                        formData.append('public_id', customName);
+                    }
+
+                    try {
+                        const res = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: formData,
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                            throw new Error(`[${file.name}] ${data.message || 'Upload thất bại'}`);
+                        }
+
+                        const uploadedFile = {
+                            url: data.url,
+                            public_id: data.public_id,
+                            format: data.format,
+                            bytes: data.bytes,
+                            resource_type: data.resource_type,
+                            original_filename: data.original_filename,
+                            name: data.original_filename || file.name,
+                        } as UploadedFile;
+
+                        results.push(uploadedFile);
+                        
+                        // Callback để UI cập nhật ngay lập tức từng file
+                        if (onSuccessItem) {
+                            onSuccessItem(uploadedFile);
+                        }
+                    } catch (err) {
+                        hasError = true;
+                        firstError = err;
+                    }
                 }
-
-                const res = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                const data = await res.json();
-
-                if (!res.ok || !data.success) {
-                    throw new Error(`[${file.name}] ${data.message || 'Upload thất bại'}`);
-                }
-
-                return {
-                    url: data.url,
-                    public_id: data.public_id,
-                    format: data.format,
-                    bytes: data.bytes,
-                    resource_type: data.resource_type,
-                    original_filename: data.original_filename,
-                    name: data.original_filename || file.name,
-                } as UploadedFile;
             });
 
-            // Chạy API call đồng thời (Parallel execution)
-            const uploadedFiles = await Promise.all(uploadPromises);
+            await Promise.all(workers);
+
+            if (hasError && firstError) {
+                throw firstError;
+            }
             
-            return uploadedFiles;
+            return results;
 
         } catch (err: any) {
             const msg = err.message || 'Lỗi kết nối, vui lòng kiểm tra lại mạng';
@@ -159,7 +193,7 @@ export function useMultipleFileUpload({
         } finally {
             setUploading(false);
         }
-    }, [folder, type, onError]);
+    }, [folder, type, onError, onSuccessItem]);
 
     const reset = useCallback(() => {
         setError(null);

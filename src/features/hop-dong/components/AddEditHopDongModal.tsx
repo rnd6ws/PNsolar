@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { createHopDong, updateHopDong, searchKhachHangForHopDong, getCoHoiByKhachHangForHD, getBaoGiaByKhachHang, getBaoGiaDetailsForHopDong, getBaoGiaDkttForHopDong, searchHangHoaForHopDong, getGiaBanForProductHD, getNhomHHForHopDong } from "../action";
 import type { HopDongChiTietRow, DkttHdRow, ThongTinKhacRow, DkHdRow } from "../schema";
 import { DEFAULT_THONG_TIN_KHAC, DEFAULT_DK_HD } from "../schema";
+import { useMultipleFileUpload } from "@/hooks/useFileUpload";
 
 interface KHOption { ID: string; MA_KH: string; TEN_KH: string; DIEN_THOAI?: string | null; DIA_CHI?: string | null; EMAIL?: string | null; MST?: string | null; NGUOI_DAI_DIEN?: { NGUOI_DD: string; CHUC_VU: string | null }[]; }
 interface CHOption { ID: string; MA_CH: string; NGAY_TAO: string; GIA_TRI_DU_KIEN: number | null; TINH_TRANG: string }
@@ -58,6 +59,14 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const [isPending, startTransition] = useTransition();
     const [activeTab, setActiveTab] = useState<TabKey>("general");
 
+    const { uploadMultiple, uploading: fileUploading } = useMultipleFileUpload({ 
+        folder: 'pnsolar/hop-dong',
+        onSuccessItem: (uploadedFile) => {
+            setTepDinhKems(prev => [...prev, uploadedFile.url]);
+        }
+    });
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     // Header state
     const [ngayHD, setNgayHD] = useState("");
     const [maKH, setMaKH] = useState("");
@@ -106,6 +115,21 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const bgRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => { chiTietsRef.current = chiTiets; }, [chiTiets]);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const items = files.map(file => ({ file }));
+        try {
+            await uploadMultiple(items);
+            // Các url đính kèm được cập nhật liên tục qua onSuccessItem
+        } catch (error) {
+            toast.error("Lỗi khi tải lên file đính kèm");
+        } finally {
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
 
     useEffect(() => {
         if (!isOpen) return;
@@ -469,6 +493,64 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                     </div>
                                 </>
                             )}
+
+                            {/* Tệp đính kèm */}
+                            <div className="space-y-1.5 md:col-span-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Tệp đính kèm (Hình ảnh, PDF, Excel...)</label>
+                                <div className="border border-dashed border-border rounded-xl p-4 transition-colors hover:border-primary/50 bg-muted/10">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="file"
+                                                multiple
+                                                className="hidden"
+                                                ref={fileInputRef}
+                                                onChange={handleFileChange}
+                                                disabled={fileUploading}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={fileUploading}
+                                                className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
+                                            >
+                                                {fileUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                                {fileUploading ? "Đang tải lên..." : "Chọn tệp tải lên"}
+                                            </button>
+                                            <span className="text-xs text-muted-foreground">Có thể chọn nhiều file cùng lúc</span>
+                                        </div>
+
+                                        {tepDinhKems.length > 0 && (
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                                                {tepDinhKems.map((url, idx) => {
+                                                    const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url) || url.includes('image/upload');
+                                                    return (
+                                                        <div key={idx} className="relative group border rounded-lg overflow-hidden bg-background">
+                                                            {isImage ? (
+                                                                <a href={url} target="_blank" rel="noreferrer" className="block h-20 w-full hover:opacity-80 transition-opacity">
+                                                                    <img src={url} alt={`Đính kèm ${idx + 1}`} className="w-full h-full object-cover" />
+                                                                </a>
+                                                            ) : (
+                                                                <a href={url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center h-20 w-full bg-muted/30 hover:bg-muted/50 transition-colors p-2 text-center text-muted-foreground hover:text-foreground">
+                                                                    <FileText className="w-6 h-6 mb-1" />
+                                                                    <span className="text-[10px] w-full truncate px-1">Tài liệu {idx + 1}</span>
+                                                                </a>
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setTepDinhKems(prev => prev.filter((_, i) => i !== idx))}
+                                                                className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-destructive text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
