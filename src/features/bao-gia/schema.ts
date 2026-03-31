@@ -17,6 +17,7 @@ export const baoGiaSchema = z.object({
     NGAY_BAO_GIA: z.string().min(1, 'Ngày báo giá không được trống'),
     MA_KH: z.string().min(1, 'Vui lòng chọn khách hàng'),
     MA_CH: z.string().optional().nullable(),
+    NGUOI_GUI: z.string().optional().nullable(), // MA_NV người gửi
     LOAI_BAO_GIA: z.enum(['Dân dụng', 'Công nghiệp']).default('Dân dụng'),
     PT_VAT: z.number().min(0).max(100).default(8),
     TT_UU_DAI: z.number().default(0), // Nhập tay, số âm = giảm giá
@@ -42,6 +43,7 @@ export interface BaoGiaFull {
     NGAY_BAO_GIA: string;
     MA_KH: string;
     MA_CH: string | null;
+    NGUOI_GUI: string | null;
     LOAI_BAO_GIA: string;
     PT_VAT: number;
     TT_VAT: number;
@@ -52,7 +54,8 @@ export interface BaoGiaFull {
     TEP_DINH_KEM: string[];
     CREATED_AT: string;
     // Relations
-    KH_REL?: { TEN_KH: string; MA_KH: string };
+    KH_REL?: { TEN_KH: string; MA_KH: string; DIEN_THOAI?: string | null; EMAIL?: string | null; DIA_CHI?: string | null; TEN_VT?: string | null };
+    NGUOI_GUI_REL?: { HO_TEN: string; SO_DIEN_THOAI?: string | null; EMAIL?: string | null; CHUC_VU?: string | null } | null;
     CO_HOI_REL?: { MA_CH: string; NGAY_TAO: string; GIA_TRI_DU_KIEN: number | null } | null;
     CHI_TIETS?: any[];
     DKTT_BG?: any[];

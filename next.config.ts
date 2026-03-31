@@ -10,6 +10,23 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  headers: async () => [
+    {
+      source: '/sw.js',
+      headers: [
+        { key: 'Content-Type', value: 'application/javascript' },
+        { key: 'Service-Worker-Allowed', value: '/' },
+        { key: 'Cache-Control', value: 'no-cache' },
+      ],
+    },
+    {
+      source: '/manifest.json',
+      headers: [
+        { key: 'Content-Type', value: 'application/manifest+json' },
+        { key: 'Cache-Control', value: 'no-cache' },
+      ],
+    },
+  ],
 };
 
 export default nextConfig;

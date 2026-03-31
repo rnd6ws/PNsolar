@@ -64,6 +64,15 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">% VAT</p>
                             <p className="text-sm font-medium">{data.PT_VAT || 0}%</p>
                         </div>
+                        <div className="space-y-1">
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Người gửi (CVKD)</p>
+                            {data.NGUOI_GUI_REL ? (
+                                <div>
+                                    <p className="text-sm font-medium">{data.NGUOI_GUI_REL.HO_TEN}</p>
+                                    <p className="text-[11px] text-muted-foreground">{data.NGUOI_GUI_REL.CHUC_VU || data.NGUOI_GUI}{data.NGUOI_GUI_REL.SO_DIEN_THOAI ? ` • ${data.NGUOI_GUI_REL.SO_DIEN_THOAI}` : ""}</p>
+                                </div>
+                            ) : (<p className="text-sm text-muted-foreground">—</p>)}
+                        </div>
 
                         <div className="space-y-1 md:col-span-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Ghi chú</p>

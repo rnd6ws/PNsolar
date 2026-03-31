@@ -13,11 +13,11 @@ export interface JWTPayload {
     tokenVersion: number;
 }
 
-export async function signToken(payload: JWTPayload): Promise<string> {
+export async function signToken(payload: JWTPayload, expiresIn = '30d'): Promise<string> {
     return new SignJWT(payload as any)
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
-        .setExpirationTime('1d')
+        .setExpirationTime(expiresIn)
         .sign(SECRET);
 }
 
@@ -30,12 +30,16 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
     }
 }
 
-export async function setAuthCookie(token: string) {
+// 30 ngày mặc định — PWA cần session dài để không phải đăng nhập lại
+const DEFAULT_MAX_AGE = 60 * 60 * 24 * 30; // 30 ngày
+
+export async function setAuthCookie(token: string, maxAge: number = DEFAULT_MAX_AGE) {
     (await cookies()).set(COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 86400,
+        // 'lax' thay vì 'strict' — bắt buộc để PWA standalone không bị mất cookie
+        sameSite: 'lax',
+        maxAge,
         path: '/',
     });
 }

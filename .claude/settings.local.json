@@ -3,7 +3,24 @@
     "allow": [
       "WebSearch",
       "Bash(npx prisma:*)",
-      "Bash(npm config:*)"
+      "Bash(npm config:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"const wp=require\\(''web-push''\\); const k=wp.generateVAPIDKeys\\(\\); console.log\\(JSON.stringify\\(k,null,2\\)\\)\")",
+      "Bash(npx tsc:*)",
+      "Bash(tasklist)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(cmd /c \"taskkill /F /IM node.exe & echo done\")",
+      "Bash(cmd /c taskkill /F /IM node.exe)",
+      "Bash(findstr /i node)",
+      "Bash(cmd /c \"tasklist | findstr node\")",
+      "Bash(cmd /c \"del /F /Q \"\"D:\\\\Project_Next\\\\PNsolar\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node\"\" 2>&1 && echo deleted\")",
+      "Bash(cmd /c \"tasklist | findstr /i \"\"code\"\"\")",
+      "Bash(cmd /c \"tasklist 2>&1\")",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, CPU | Format-Table\")",
+      "Bash(powershell -Command \"Stop-Process -Name node -Force -ErrorAction SilentlyContinue; Write-Host ''done''\")",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id\")",
+      "Bash(node -e \":*)"
     ]
   }
 }

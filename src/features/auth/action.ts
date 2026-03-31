@@ -9,10 +9,12 @@ import { redirect } from 'next/navigation';
 export async function loginUserAction(prevState: any, formData: FormData) {
     const USER_NAME = formData.get('USER_NAME') as string;
     const PASSWORD = formData.get('PASSWORD') as string;
+    const REMEMBER_ME = formData.get('REMEMBER_ME') === 'true';
 
     const parsed = loginSchema.safeParse({ USER_NAME, PASSWORD });
     if (!parsed.success) {
-        return { success: false, errors: { form: (parsed.error as any).errors[0].message } };
+        const msg = parsed.error.issues?.[0]?.message || 'Dữ liệu không hợp lệ';
+        return { success: false, errors: { form: msg } };
     }
 
     try {
@@ -31,7 +33,9 @@ export async function loginUserAction(prevState: any, formData: FormData) {
             tokenVersion: 0,
         });
 
-        await setAuthCookie(token);
+        // Remember me: 30 ngày, không thì 1 ngày
+        const maxAge = REMEMBER_ME ? 30 * 86400 : 86400;
+        await setAuthCookie(token, maxAge);
     } catch (error) {
         if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
             throw error;
@@ -40,7 +44,7 @@ export async function loginUserAction(prevState: any, formData: FormData) {
         return { success: false, errors: { form: 'Đã có lỗi xảy ra. Vui lòng thử lại sau.' } };
     }
 
-    redirect('/dashboard');
+    return { success: true, errors: { form: '' } };
 }
 
 export async function logoutUser() {
