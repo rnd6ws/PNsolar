@@ -28,6 +28,7 @@ export const MODULES: ModuleDefinition[] = [
     { key: 'gia-nhap', label: 'Giá nhập', href: '/gia-nhap', group: 'main' },
     { key: 'gia-ban', label: 'Giá bán', href: '/gia-ban', group: 'main' },
     { key: 'bao-gia', label: 'Báo giá', href: '/bao-gia', group: 'main' },
+    { key: 'hop-dong', label: 'Hợp đồng', href: '/hop-dong', group: 'main' },
     { key: 'hang-muc-ks', label: 'Hạng mục khảo sát', href: '/hang-muc-ks', group: 'main' },
     { key: 'khao-sat', label: 'Khảo sát công trình', href: '/khao-sat', group: 'main' },
     // Nhóm Hệ thống

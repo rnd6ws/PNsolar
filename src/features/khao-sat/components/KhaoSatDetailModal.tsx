@@ -53,6 +53,24 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
     const [activeTab, setActiveTab] = useState<"info" | "images">("info");
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+    const finalNguoiKSName = nguoiKhaoSatName || item.NGUOI_KHAO_SAT_REL?.HO_TEN || "—";
+
+    const renderNguoiKSTags = (nameStr: string) => {
+        if (!nameStr || nameStr === "—") return "—";
+        const arr = nameStr.split(",").map(s => s.trim()).filter(Boolean);
+        if (arr.length === 0) return "—";
+
+        return (
+            <div className="flex flex-wrap gap-1 mt-0.5">
+                {arr.map((name, i) => (
+                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400 border border-cyan-200/50 dark:border-cyan-500/20">
+                        {name}
+                    </span>
+                ))}
+            </div>
+        );
+    };
+
     return (
         <Modal
             isOpen={true}
@@ -65,9 +83,9 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
             bodyClassName="p-0 md:p-0"
             footer={
                 <>
-                    <span className="text-xs text-muted-foreground mr-auto">
-                        Người KS: <span className="font-semibold text-foreground">{nguoiKhaoSatName || item.NGUOI_KHAO_SAT_REL?.HO_TEN || "—"}</span>
-                    </span>
+                    <div className="text-xs text-muted-foreground mr-auto flex flex-wrap items-center gap-2">
+                        Người KS: {renderNguoiKSTags(finalNguoiKSName)}
+                    </div>
                     <button onClick={onClose} className="btn-premium-secondary">Đóng</button>
                 </>
             }
@@ -120,7 +138,7 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 <InfoCard icon={Building2} label="Loại công trình" value={item.LOAI_CONG_TRINH} />
                                 <InfoCard icon={Calendar} label="Ngày khảo sát" value={formatDate(item.NGAY_KHAO_SAT)} />
-                                <InfoCard icon={User} label="Nhân viên khảo sát" value={nguoiKhaoSatName || item.NGUOI_KHAO_SAT_REL?.HO_TEN || "—"} className="md:col-span-2 lg:col-span-1" />
+                                <InfoCard icon={User} label="Nhân viên khảo sát" value={renderNguoiKSTags(finalNguoiKSName)} className="md:col-span-2 lg:col-span-1" />
                                 <InfoCard icon={User} label="Khách hàng" value={item.KHTN_REL?.TEN_KH || "—"} className="md:col-span-2 lg:col-span-3" />
                                 <InfoCard icon={MapPin} label="Địa chỉ" value={item.DIA_CHI || "—"} className="md:col-span-2 lg:col-span-3" />
                                 <InfoCard icon={MapPin} label="Địa điểm lắp đặt" value={item.DIA_CHI_CONG_TRINH || "—"} className="md:col-span-2 lg:col-span-3" />
@@ -146,13 +164,15 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                                             <button
                                                 type="button"
                                                 onClick={() => setCollapsed((p) => ({ ...p, [nhom]: !isCollapsed }))}
-                                                className="w-full flex items-center justify-between px-4 py-2.5 bg-primary/10 hover:bg-primary/15 transition-colors"
+                                                className="w-full flex items-center justify-between px-4 py-2.5 bg-primary/10 hover:bg-primary/15 transition-colors gap-3"
                                             >
-                                                <span className="font-semibold text-sm text-primary">
-                                                    {isCollapsed ? <ChevronRight className="w-4 h-4 inline mr-1.5" /> : <ChevronDown className="w-4 h-4 inline mr-1.5" />}
-                                                    {nhom}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-primary/20">
+                                                <div className="flex items-start gap-2 flex-1 min-w-0">
+                                                    {isCollapsed ? <ChevronRight className="w-4 h-4 text-primary shrink-0 mt-0.5" /> : <ChevronDown className="w-4 h-4 text-primary shrink-0 mt-0.5" />}
+                                                    <span className="font-semibold text-sm text-primary text-left wrap-break-word">
+                                                        {nhom}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-primary/20 whitespace-nowrap shrink-0">
                                                     {totalCt} chi tiết
                                                 </span>
                                             </button>
@@ -244,13 +264,13 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
     );
 }
 
-function InfoCard({ icon: Icon, label, value, className = "" }: { icon: any; label: string; value: string; className?: string }) {
+function InfoCard({ icon: Icon, label, value, className = "" }: { icon: any; label: string; value: React.ReactNode; className?: string }) {
     return (
         <div className={`bg-muted/30 rounded-lg p-3 flex items-start gap-2.5 ${className}`}>
             <Icon className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex flex-col justify-center">
                 <p className="text-[11px] text-muted-foreground font-semibold tracking-wide">{label}</p>
-                <p className="text-sm font-medium text-foreground mt-0.5 wrap-break-word leading-relaxed">{value}</p>
+                <div className="text-sm font-medium text-foreground mt-0.5 wrap-break-word leading-relaxed">{value}</div>
             </div>
         </div>
     );

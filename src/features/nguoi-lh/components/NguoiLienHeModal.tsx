@@ -1,22 +1,15 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { UserPlus, Edit2, Trash2, Phone, Mail, Briefcase, CheckCircle2, XCircle, Plus, X, Save, Loader2, Contact } from "lucide-react";
-import FormSelect from "@/components/FormSelect";
+import { UserPlus, Edit2, Trash2, Phone, Mail, Briefcase, CheckCircle2, XCircle, Plus, Loader2, Contact } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "@/components/Modal";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
-import { getNguoiLienHe, createNguoiLienHe, updateNguoiLienHe, deleteNguoiLienHe } from "../action";
+import { getNguoiLienHe, updateNguoiLienHe, deleteNguoiLienHe } from "../action";
+import NguoiLienHeFormModal, { NguoiLienHeEditItem } from "./NguoiLienHeFormModal";
 
-interface NguoiLienHe {
-    ID: string;
+interface NguoiLienHe extends NguoiLienHeEditItem {
     ID_KH: string;
-    TENNGUOI_LIENHE: string;
-    CHUC_VU?: string | null;
-    SDT?: string | null;
-    EMAIL?: string | null;
-    GHI_CHU?: string | null;
-    HIEU_LUC: string;
 }
 
 interface Props {
@@ -26,19 +19,9 @@ interface Props {
     onCreated?: () => void;
 }
 
-const EMPTY_FORM = {
-    TENNGUOI_LIENHE: "",
-    CHUC_VU: "",
-    SDT: "",
-    EMAIL: "",
-    GHI_CHU: "",
-    HIEU_LUC: "Đang hiệu lực",
-};
-
 export default function NguoiLienHeModal({ isOpen, onClose, khachHang, onCreated }: Props) {
     const [list, setList] = useState<NguoiLienHe[]>([]);
     const [loadingList, setLoadingList] = useState(false);
-    const [form, setForm] = useState(EMPTY_FORM);
     const [editItem, setEditItem] = useState<NguoiLienHe | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -61,54 +44,23 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang, onCreated
 
     function openAdd() {
         setEditItem(null);
-        setForm(EMPTY_FORM);
         setShowForm(true);
     }
 
     function openEdit(item: NguoiLienHe) {
         setEditItem(item);
-        setForm({
-            TENNGUOI_LIENHE: item.TENNGUOI_LIENHE,
-            CHUC_VU: item.CHUC_VU || "",
-            SDT: item.SDT || "",
-            EMAIL: item.EMAIL || "",
-            GHI_CHU: item.GHI_CHU || "",
-            HIEU_LUC: item.HIEU_LUC,
-        });
         setShowForm(true);
     }
 
     function cancelForm() {
         setShowForm(false);
         setEditItem(null);
-        setForm(EMPTY_FORM);
     }
 
-    function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
-        setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    }
-
-    function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        if (!khachHang) return;
-
-        startTransition(async () => {
-            let res;
-            if (editItem) {
-                res = await updateNguoiLienHe(editItem.ID, form);
-            } else {
-                res = await createNguoiLienHe({ ...form, ID_KH: khachHang.ID });
-            }
-
-            if (res.success) {
-                toast.success(editItem ? "Cập nhật người liên hệ thành công" : "Đã thêm người liên hệ mới");
-                if (!editItem && onCreated) onCreated();
-                cancelForm();
-                loadList();
-            } else {
-                toast.error((res as any).message || "Lỗi thao tác");
-            }
-        });
+    function handleFormSuccess() {
+        if (!editItem) onCreated?.();
+        cancelForm();
+        loadList();
     }
 
     const handleToggleHieuLuc = (e: React.MouseEvent, item: NguoiLienHe) => {
@@ -166,121 +118,15 @@ export default function NguoiLienHeModal({ isOpen, onClose, khachHang, onCreated
                     </div>
                 )}
 
-                {/* Modal Form thêm / sửa */}
-                <Modal
+                {/* Modal Form thêm / sửa — tách riêng để tái sử dụng */}
+                <NguoiLienHeFormModal
+                    key={editItem?.ID ?? "new"}
                     isOpen={showForm}
                     onClose={cancelForm}
-                    title={editItem ? "Cập nhật người liên hệ" : "Thêm người liên hệ mới"}
-                    icon={UserPlus}
-                >
-                    <form onSubmit={handleSubmit} className="px-1 py-1 space-y-4">
-                        {/* Tên */}
-                        <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">
-                                Tên người liên hệ <span className="text-destructive">*</span>
-                            </label>
-                            <input
-                                name="TENNGUOI_LIENHE"
-                                value={form.TENNGUOI_LIENHE}
-                                onChange={handleChange}
-                                required
-                                placeholder="Nguyễn Văn A"
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            {/* Chức vụ */}
-                            <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">Chức vụ</label>
-                                <input
-                                    name="CHUC_VU"
-                                    value={form.CHUC_VU}
-                                    onChange={handleChange}
-                                    placeholder="Giám đốc"
-                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                />
-                            </div>
-                            {/* Số điện thoại */}
-                            <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">Số điện thoại</label>
-                                <input
-                                    name="SDT"
-                                    value={form.SDT}
-                                    onChange={handleChange}
-                                    placeholder="09xx xxx xxx"
-                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            {/* Email */}
-                            <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">Email</label>
-                                <input
-                                    name="EMAIL"
-                                    value={form.EMAIL}
-                                    onChange={handleChange}
-                                    type="email"
-                                    placeholder="email@company.com"
-                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                />
-                            </div>
-                            {/* Hiệu lực */}
-                            <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">Hiệu lực</label>
-                                <button
-                                    type="button"
-                                    onClick={() => setForm(prev => ({ ...prev, HIEU_LUC: prev.HIEU_LUC === "Đang hiệu lực" ? "Hết hiệu lực" : "Đang hiệu lực" }))}
-                                    className={`w-full h-[38px] flex items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
-                                        form.HIEU_LUC === "Đang hiệu lực"
-                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50 dark:hover:bg-emerald-900/50"
-                                            : "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50 dark:hover:bg-rose-900/50"
-                                    }`}
-                                >
-                                    {form.HIEU_LUC === "Đang hiệu lực" ? (
-                                        <><CheckCircle2 className="w-4 h-4" /> Đang hiệu lực</>
-                                    ) : (
-                                        <><XCircle className="w-4 h-4" /> Hết hiệu lực</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Ghi chú */}
-                        <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">Ghi chú</label>
-                            <textarea
-                                name="GHI_CHU"
-                                value={form.GHI_CHU}
-                                onChange={handleChange}
-                                rows={2}
-                                placeholder="Ghi chú thêm..."
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-                            />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-4 border-t border-border mt-2">
-                            <button
-                                type="button"
-                                onClick={cancelForm}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                                Hủy
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isPending}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
-                            >
-                                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                {editItem ? "Cập nhật" : "Lưu"}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
+                    idKhachHang={khachHang?.ID}
+                    editItem={editItem}
+                    onSuccess={handleFormSuccess}
+                />
 
                 {/* Danh sách */}
                 {loadingList ? (

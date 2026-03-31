@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Settings2, Download } from "lucide-react";
+import { Settings2, Download, LayoutGrid, TableProperties } from "lucide-react";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
 import KhaoSatColumnToggle, { type KhaoSatColumnKey, KS_ALL_COLUMNS } from "./KhaoSatColumnToggle";
@@ -40,6 +40,19 @@ export default function KhaoSatPageClient({
 }: Props) {
     const [showFilters, setShowFilters] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<KhaoSatColumnKey[]>(DEFAULT_COLS);
+    const [viewMode, setViewMode] = useState<"table" | "card" | "auto">("auto");
+
+    const getCardBtnClasses = () => {
+        if (viewMode === "card") return "bg-background shadow-sm text-foreground";
+        if (viewMode === "table") return "text-muted-foreground hover:text-foreground";
+        return "max-md:bg-background max-md:shadow-sm max-md:text-foreground md:text-muted-foreground md:hover:text-foreground";
+    };
+
+    const getTableBtnClasses = () => {
+        if (viewMode === "table") return "bg-background shadow-sm text-foreground";
+        if (viewMode === "card") return "text-muted-foreground hover:text-foreground";
+        return "md:bg-background md:shadow-sm md:text-foreground max-md:text-muted-foreground max-md:hover:text-foreground";
+    };
 
     return (
         <>
@@ -65,6 +78,25 @@ export default function KhaoSatPageClient({
                     <div className="hidden lg:flex items-center gap-3 w-auto">
                         <FilterSelect paramKey="LOAI_CONG_TRINH" options={loaiCongTrinhOptions} placeholder="Tất cả loại CT" />
                         <FilterSelect paramKey="NGUOI_KHAO_SAT" options={nhanVienOptions} placeholder="Tất cả nhân viên" />
+                        
+                        {/* View Mode Toggle Desktop */}
+                        <div className="bg-muted p-1 rounded-lg flex items-center gap-1 border border-border">
+                            <button
+                                onClick={() => setViewMode("card")}
+                                className={`p-1.5 rounded-md transition-colors flex items-center justify-center ${getCardBtnClasses()}`}
+                                title="Chế độ thẻ"
+                            >
+                                <LayoutGrid className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode("table")}
+                                className={`p-1.5 rounded-md transition-colors flex items-center justify-center ${getTableBtnClasses()}`}
+                                title="Chế độ bảng"
+                            >
+                                <TableProperties className="w-4 h-4" />
+                            </button>
+                        </div>
+
                         <KhaoSatColumnToggle visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                         <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0" title="Xuất Excel">
                             <Download className="w-4 h-4" />
@@ -80,6 +112,24 @@ export default function KhaoSatPageClient({
                             <FilterSelect paramKey="NGUOI_KHAO_SAT" options={nhanVienOptions} placeholder="Tất cả nhân viên" />
                         </div>
                         <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-border w-full">
+                            {/* View Mode Toggle Mobile */}
+                            <div className="bg-muted p-1 rounded-lg flex items-center gap-1 border border-border mr-auto">
+                                <button
+                                    onClick={() => setViewMode("card")}
+                                    className={`p-1.5 px-3 rounded-md transition-colors flex items-center gap-2 text-xs font-medium ${getCardBtnClasses()}`}
+                                    title="Chế độ thẻ"
+                                >
+                                    <LayoutGrid className="w-4 h-4" /> <span className="hidden sm:inline">Card</span>
+                                </button>
+                                <button
+                                    onClick={() => setViewMode("table")}
+                                    className={`p-1.5 px-3 rounded-md transition-colors flex items-center gap-2 text-xs font-medium ${getTableBtnClasses()}`}
+                                    title="Chế độ bảng"
+                                >
+                                    <TableProperties className="w-4 h-4" /> <span className="hidden sm:inline">Table</span>
+                                </button>
+                            </div>
+
                             <KhaoSatColumnToggle visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                             <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex" title="Xuất Excel">
                                 <Download className="w-4 h-4" />
@@ -100,6 +150,7 @@ export default function KhaoSatPageClient({
                 visibleColumns={visibleColumns}
                 nhomKSData={nhomKSData}
                 hangMucData={hangMucData}
+                viewMode={viewMode}
             />
         </>
     );

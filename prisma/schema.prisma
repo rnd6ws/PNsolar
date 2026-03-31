@@ -75,9 +75,10 @@ model DMHH {
   GHI_CHU     String?
   HIEU_LUC    Boolean @default(true)
 
-  GIA_BANS    GIA_BAN[] // Relation ngược từ GIA_BAN
-  GIA_NHAPS   GIA_NHAP[] // Relation ngược từ GIA_NHAP
-  BAO_GIA_CTS BAO_GIA_CT[] // Relation ngược từ BAO_GIA_CT
+  GIA_BANS     GIA_BAN[] // Relation ngược từ GIA_BAN
+  GIA_NHAPS    GIA_NHAP[] // Relation ngược từ GIA_NHAP
+  BAO_GIA_CTS  BAO_GIA_CT[] // Relation ngược từ BAO_GIA_CT
+  HOP_DONG_CTS HOP_DONG_CT[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -286,6 +287,7 @@ model KHTN {
   KEHOACH_CSKH   KEHOACH_CSKH[]
   BAO_GIAS       BAO_GIA[]
   KHAO_SAT       KHAO_SAT[]
+  HOP_DONG       HOP_DONG[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -483,6 +485,7 @@ model CO_HOI {
   KEHOACH_CSKH KEHOACH_CSKH[]
   BAO_GIAS     BAO_GIA[]
   KHAO_SAT     KHAO_SAT[]
+  HOP_DONG     HOP_DONG[]
 
   @@index([MA_KH])
   @@index([TINH_TRANG])
@@ -652,18 +655,20 @@ model BAO_GIA {
   LOAI_BAO_GIA String @default("Dân dụng") // "Dân dụng" | "Công nghiệp"
 
   // Tài chính — GIÁ BÁN đã bao gồm VAT
-  PT_VAT    Float @default(8) // % VAT (mặc định 8%)
-  TT_VAT    Float @default(0) // Tổng tiền VAT (tính tự động)
+  PT_VAT     Float @default(8) // % VAT (mặc định 8%)
+  TT_VAT     Float @default(0) // Tổng tiền VAT (tính tự động)
   THANH_TIEN Float @default(0) // Tổng thành tiền (sum từ chi tiết)
   TT_UU_DAI  Float @default(0) // Tiền ưu đãi (nhập tay, số âm = giảm giá)
   TONG_TIEN  Float @default(0) // = THANH_TIEN + TT_UU_DAI
 
-  GHI_CHU           String?
-  TEP_DINH_KEM      String[] // Mảng URL tệp đính kèm (ảnh, PDF, Word...)
+  GHI_CHU      String?
+  TEP_DINH_KEM String[] // Mảng URL tệp đính kèm (ảnh, PDF, Word...)
 
-  CHI_TIETS  BAO_GIA_CT[]  // 1-N relation
-  DKTT_BG    DKTT_BG[]     // 1-N relation: điều kiện thanh toán
-  DIEU_KHOAN_BG DIEU_KHOAN_BG[]  // 1-N relation: điều khoản báo giá
+  CHI_TIETS     BAO_GIA_CT[] // 1-N relation
+  DKTT_BG       DKTT_BG[] // 1-N relation: điều kiện thanh toán
+  DIEU_KHOAN_BG DIEU_KHOAN_BG[] // 1-N relation: điều khoản báo giá
+
+  HOP_DONG HOP_DONG[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -699,7 +704,7 @@ model DIEU_KHOAN_BG {
   MA_BAO_GIA  String
   BAO_GIA_REL BAO_GIA @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA], onDelete: Cascade)
 
-  HANG_MUC String  // Tên hạng mục (VD: "Công suất tấm pin", "Xuất xứ hàng hóa"...)
+  HANG_MUC String // Tên hạng mục (VD: "Công suất tấm pin", "Xuất xứ hàng hóa"...)
   NOI_DUNG String? // Nội dung chi tiết
   GIA_TRI  String? // Giá trị (dùng cho "Tính khả thi của hệ thống")
   AN_HIEN  Boolean @default(true) // true = hiện, false = ẩn (dùng khi in)
@@ -722,12 +727,12 @@ model BAO_GIA_CT {
   MA_HH  String
   HH_REL DMHH   @relation(fields: [MA_HH], references: [MA_HH])
 
-  NHOM_HH         String? // Nhóm hàng hóa
-  DON_VI_TINH     String
-  GIA_BAN_CHUA_VAT Float  @default(0) // Giá bán chưa VAT (tính tự động)
-  GIA_BAN         Float  @default(0) // Giá bán đã bao gồm VAT
-  SO_LUONG        Float  @default(1)
-  THANH_TIEN      Float  @default(0) // = GIA_BAN * SO_LUONG
+  NHOM_HH          String? // Nhóm hàng hóa
+  DON_VI_TINH      String
+  GIA_BAN_CHUA_VAT Float   @default(0) // Giá bán chưa VAT (tính tự động)
+  GIA_BAN          Float   @default(0) // Giá bán đã bao gồm VAT
+  SO_LUONG         Float   @default(1)
+  THANH_TIEN       Float   @default(0) // = GIA_BAN * SO_LUONG
 
   GHI_CHU String?
 
@@ -836,4 +841,125 @@ model PUSH_SUBSCRIPTION {
 
   @@index([USER_ID])
   @@map("PUSH_SUBSCRIPTION")
+}
+
+// ===== ĐIỀU KIỆN THANH TOÁN HỢP ĐỒNG =====
+model DKTT_HD {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
+
+  LAN_THANH_TOAN   String // Lần 1, Lần 2...
+  PT_THANH_TOAN    Float   @default(0) // % thanh toán
+  NOI_DUNG_YEU_CAU String? // Nội dung yêu cầu
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([SO_HD])
+  @@map("DKTT_HD")
+}
+
+// ===== THÔNG TIN KHÁC =====
+model THONG_TIN_KHAC {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
+
+  TIEU_DE  String? // Tiêu đề: Địa chỉ, SĐT, Email, CCCD, Số tài khoản, Ngân hàng, Chủ tài khoản
+  NOI_DUNG String? // Nội dung
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([SO_HD])
+  @@map("THONG_TIN_KHAC")
+}
+
+// ===== ĐIỀU KHOẢN HỢP ĐỒNG =====
+model DK_HD {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
+
+  HANG_MUC String  // Tên hạng mục (VD: "Chế độ bảo hành",...)
+  NOI_DUNG String? // Nội dung chi tiết
+  AN_HIEN  Boolean @default(true) // true = hiện, false = ẩn (dùng khi in)
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([SO_HD])
+  @@map("DK_HD")
+}
+
+// ===== HỢP ĐỒNG =====
+model HOP_DONG {
+  ID      String   @id @default(auto()) @map("_id") @db.ObjectId
+  SO_HD   String   @unique // DDMMYYYY-HĐSL-PNS-TEN_VT
+  LOAI_HD String   // Dân dụng | Công nghiệp
+  NGAY_HD DateTime @default(now())
+
+  THONG_TIN_KHAC THONG_TIN_KHAC[]
+
+  CONG_TRINH String? // LOAI_HD: Công nghiệp
+  HANG_MUC   String? // LOAI_HD: Công nghiệp
+
+  MA_KH    String
+  KHTN_REL KHTN   @relation(fields: [MA_KH], references: [MA_KH])
+
+  MA_CH      String?
+  CO_HOI_REL CO_HOI? @relation(fields: [MA_CH], references: [MA_CH])
+
+  MA_BAO_GIA  String?
+  BAO_GIA_REL BAO_GIA? @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA])
+
+  PT_VAT     Float // % VAT
+  TT_VAT     Float // Tổng tiền VAT
+  THANH_TIEN Float // Tổng tiền chưa VAT
+  TT_UU_DAI  Float // Tổng tiền ưu đãi
+  TONG_TIEN  Float // = THANH_TIEN + TT_VAT - TT_UU_DAI
+
+  TEP_DINH_KEM Json?
+
+  HOP_DONG_CT HOP_DONG_CT[]
+  DKTT_HD     DKTT_HD[]
+  DK_HD       DK_HD[]
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([MA_KH, MA_CH, MA_BAO_GIA])
+  @@fulltext([SO_HD, MA_KH, MA_CH, MA_BAO_GIA])
+  @@map("HOP_DONG")
+}
+
+// ===== HỢP ĐỒNG CHI TIẾT =====
+model HOP_DONG_CT {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
+
+  MA_HH  String
+  HH_REL DMHH   @relation(fields: [MA_HH], references: [MA_HH])
+
+  NHOM_HH          String? // Nhóm hàng hóa
+  DON_VI_TINH      String
+  GIA_BAN_CHUA_VAT Float   @default(0) // Giá bán chưa VAT (tính tự động)
+  GIA_BAN          Float   @default(0) // Giá bán đã bao gồm VAT
+  SO_LUONG         Float   @default(1)
+  THANH_TIEN       Float   @default(0) // = GIA_BAN * SO_LUONG
+
+  GHI_CHU String?
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([SO_HD])
+  @@index([MA_HH])
+  @@map("HOP_DONG_CT")
 }
