@@ -19,6 +19,13 @@ const nextConfig: NextConfig = {
         { key: 'Cache-Control', value: 'no-cache' },
       ],
     },
+    {
+      source: '/manifest.json',
+      headers: [
+        { key: 'Content-Type', value: 'application/manifest+json' },
+        { key: 'Cache-Control', value: 'no-cache' },
+      ],
+    },
   ],
 };
 
