@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
-type Font = 'be-vietnam' | 'inter' | 'roboto' | 'jakarta';
+type Font = 'roboto' | 'inter' | 'jakarta';
 type FontSize = 'small' | 'medium' | 'large';
 type Preset = 'default' | 'green' | 'orange' | 'purple' | 'rose';
 type PageLayout = 'centered' | 'full';
@@ -37,7 +37,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setTheme] = useState<Theme>('light');
-    const [font, setFont] = useState<Font>('be-vietnam');
+    const [font, setFont] = useState<Font>('roboto');
     const [fontSize, setFontSize] = useState<FontSize>('medium');
     const [preset, setPreset] = useState<Preset>('default');
     const [pageLayout, setPageLayout] = useState<PageLayout>('full');
@@ -50,7 +50,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('pnsolar-theme') as Theme || 'light';
-        const savedFont = localStorage.getItem('pnsolar-font') as Font || 'be-vietnam';
+        const savedFont = localStorage.getItem('pnsolar-font') as Font || 'roboto';
         const savedFontSize = localStorage.getItem('pnsolar-font-size') as FontSize || 'medium';
         const savedPreset = localStorage.getItem('pnsolar-preset') as Preset || 'default';
         const savedLayout = localStorage.getItem('pnsolar-layout') as PageLayout || 'full';
@@ -126,7 +126,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const resetDefaults = () => {
         setTheme('light');
-        setFont('be-vietnam');
+        setFont('roboto');
         setFontSize('medium');
         setPreset('default');
         setPageLayout('full');

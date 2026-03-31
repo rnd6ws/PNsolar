@@ -11,7 +11,6 @@ async function generateIdCh(tenVt: string, offset: number = 0): Promise<string> 
     const dd = String(now.getDate()).padStart(2, "0");
     const dateStr = `${yy}${mm}${dd}`;
 
-    // Chuẩn hóa TEN_VT: bỏ dấu, thay khoảng trắng bằng ""
     const slug = (tenVt || "KH")
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
@@ -22,7 +21,6 @@ async function generateIdCh(tenVt: string, offset: number = 0): Promise<string> 
 
     const prefix = `OP-${slug}-${dateStr}-`;
 
-    // Đếm số cơ hội trong ngày để sinh số thứ tự
     const count = await prisma.cO_HOI.count({
         where: { MA_CH: { startsWith: prefix } },
     });
@@ -40,7 +38,7 @@ export async function getDmDichVu() {
         });
         const mapped = data.map(d => ({ ...d, ID: d.MA_DV }));
         return { success: true, data: mapped };
-    } catch (error) {
+    } catch {
         return { success: false, data: [] };
     }
 }
@@ -53,11 +51,11 @@ export async function createDmDichVu(nhomDv: string, dichVu: string, giaTri: num
 
         let created = false;
         let attempts = 0;
-        
+
         while (!created && attempts < 20) {
             const count = await prisma.dM_DICH_VU.count();
             const maDv = `DV-${String(count + 1 + attempts).padStart(3, '0')}`;
-            
+
             try {
                 await prisma.dM_DICH_VU.create({
                     data: { MA_DV: maDv, NHOM_DV: nhomDv.trim(), DICH_VU: dichVu.trim(), GIA_TRI_TB: giaTri },
@@ -85,10 +83,44 @@ export async function deleteDmDichVu(id: string) {
         await prisma.dM_DICH_VU.delete({ where: { MA_DV: id } });
         revalidatePath("/co-hoi");
         return { success: true };
-    } catch (error: any) {
+    } catch {
         return { success: false, message: "Lỗi xóa danh mục" };
     }
 }
+
+// ─── Include bảng con để compute trạng thái ảo ─────────────────
+const CO_HOI_INCLUDE = {
+    KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true, SALES_PT: true } },
+    HOP_DONG: {
+        select: {
+            SO_HD: true,
+            DUYET: true,
+            NGAY_HD: true,
+            NGAY_DUYET: true,
+            NGUOI_DUYET: true,
+            TONG_TIEN: true,
+        },
+        orderBy: { NGAY_HD: "desc" as const },
+        take: 10,
+    },
+    BAO_GIAS: {
+        select: {
+            MA_BAO_GIA: true,
+            NGAY_BAO_GIA: true,
+            TONG_TIEN: true,
+        },
+        orderBy: { NGAY_BAO_GIA: "asc" as const },
+    },
+    KEHOACH_CSKH: {
+        // Không filter để lấy ALL — dùng toàn bộ để hiển thị timeline
+        select: {
+            TRANG_THAI: true,
+            TG_DEN: true,
+            LOAI_CS: true,
+        },
+        orderBy: { TG_DEN: "asc" as const },
+    },
+} as const;
 
 // ─── CO_HOI ────────────────────────────────────────────────────
 
@@ -97,8 +129,12 @@ export async function getCoHois(filters: {
     page?: number;
     limit?: number;
     TINH_TRANG?: string;
+    TRANG_THAI_AO?: string;   // trạng thái ảo: "Đang tư vấn", "Đã gửi đề xuất",...
+    SALES_PT?: string;         // mã nhân viên phụ trách
+    DK_CHOT_TU?: string;       // NGAY_DK_CHOT >= (ISO date)
+    DK_CHOT_DEN?: string;      // NGAY_DK_CHOT <= (ISO date)
 } = {}) {
-    const { page = 1, limit = 10, query, TINH_TRANG } = filters;
+    const { page = 1, limit = 10, query, TINH_TRANG, TRANG_THAI_AO, SALES_PT, DK_CHOT_TU, DK_CHOT_DEN } = filters;
 
     const where: any = {};
     const andConditions: any[] = [];
@@ -112,31 +148,72 @@ export async function getCoHois(filters: {
         });
     }
 
-    if (TINH_TRANG && TINH_TRANG !== "all") andConditions.push({ TINH_TRANG });
+    // Filter TINH_TRANG DB (chỉ lọc "0 gốc" khi không có trạng thái ảo)
+    if (TINH_TRANG && TINH_TRANG !== "all" && !TRANG_THAI_AO) {
+        if (TINH_TRANG === "Đã đóng") {
+            andConditions.push({ TINH_TRANG: "Đã đóng" });
+        } else if (TINH_TRANG === "Đang mở") {
+            andConditions.push({ TINH_TRANG: { not: "Đã đóng" } });
+        }
+    }
+    // Nếu có TRANG_THAI_AO → chỉ lấy có TINH_TRANG = "Đang mở" (trạng thái ảo chỉ áp dụng cho đang mở)
+    if (TRANG_THAI_AO && TRANG_THAI_AO !== "all") {
+        if (TRANG_THAI_AO === "Thành công" || TRANG_THAI_AO === "Không thành công") {
+            andConditions.push({ TINH_TRANG: { not: "Đã đóng" } });
+        } else {
+            andConditions.push({ TINH_TRANG: { not: "Đã đóng" } });
+        }
+    }
+
+    // Filter SALES_PT (nhân viên phụ trách theo KH)
+    if (SALES_PT && SALES_PT !== "all") {
+        andConditions.push({ KH_REL: { SALES_PT: SALES_PT } });
+    }
+
+    // Filter DK chốt
+    if (DK_CHOT_TU || DK_CHOT_DEN) {
+        const dateFilter: any = {};
+        if (DK_CHOT_TU) dateFilter.gte = new Date(DK_CHOT_TU);
+        if (DK_CHOT_DEN) dateFilter.lte = new Date(DK_CHOT_DEN + "T23:59:59.999Z");
+        andConditions.push({ NGAY_DK_CHOT: dateFilter });
+    }
+
     if (andConditions.length > 0) where.AND = andConditions;
 
     try {
-        const [data, total] = await Promise.all([
+        const [allData, total] = await Promise.all([
             prisma.cO_HOI.findMany({
                 where,
-                skip: (page - 1) * limit,
-                take: limit,
                 orderBy: { NGAY_TAO: "desc" },
-                include: { KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true } } },
+                include: CO_HOI_INCLUDE,
             }),
             prisma.cO_HOI.count({ where }),
         ]);
 
-        const mapped = data.map(d => ({ ...d, KH: d.KH_REL, ID_CH: d.MA_CH, ID_KH: d.MA_KH }));
+        let mapped = allData.map(d => ({
+            ...d,
+            KH: d.KH_REL,
+            ID_CH: d.MA_CH,
+            ID_KH: d.MA_KH,
+        }));
+
+        // Filter trạng thái ảo sau khi compute (in-memory)
+        if (TRANG_THAI_AO && TRANG_THAI_AO !== "all") {
+            const { computeCoHoiStatus } = await import("@/lib/co-hoi-status");
+            mapped = mapped.filter(item => computeCoHoiStatus(item).label === TRANG_THAI_AO);
+        }
+
+        const filteredTotal = TRANG_THAI_AO && TRANG_THAI_AO !== "all" ? mapped.length : total;
+        const paginated = mapped.slice((page - 1) * limit, page * limit);
 
         return {
             success: true,
-            data: mapped,
+            data: TRANG_THAI_AO && TRANG_THAI_AO !== "all" ? paginated : mapped,
             pagination: {
                 page,
                 limit,
-                total,
-                totalPages: Math.ceil(total / limit),
+                total: filteredTotal,
+                totalPages: Math.ceil(filteredTotal / limit),
             },
         };
     } catch (error) {
@@ -156,40 +233,98 @@ export async function getCoHoiByKH(khId: string) {
         const data = await prisma.cO_HOI.findMany({
             where: { MA_KH: maKh },
             orderBy: { NGAY_TAO: "desc" },
-            include: { KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true } } },
+            include: CO_HOI_INCLUDE,
         });
         const mapped = data.map(d => ({ ...d, KH: d.KH_REL, ID_CH: d.MA_CH, ID_KH: d.MA_KH }));
         return { success: true, data: mapped };
-    } catch (error) {
+    } catch {
         return { success: false, data: [] };
     }
 }
 
 export async function getCoHoiStats() {
     try {
-        const total = await prisma.cO_HOI.count();
-        const grouped = await prisma.cO_HOI.groupBy({
-            by: ["TINH_TRANG"],
-            _count: { _all: true },
-            _sum: { GIA_TRI_DU_KIEN: true },
-        });
+        const [total, daDong, allOpen, hdDaDuyet] = await Promise.all([
+            prisma.cO_HOI.count(),
+            prisma.cO_HOI.count({ where: { TINH_TRANG: "Đã đóng" } }),
+            prisma.cO_HOI.findMany({
+                where: { TINH_TRANG: { not: "Đã đóng" } },
+                select: {
+                    MA_CH: true, GIA_TRI_DU_KIEN: true,
+                    HOP_DONG: { select: { DUYET: true, NGAY_HD: true, NGAY_DUYET: true } },
+                    BAO_GIAS: { select: { NGAY_BAO_GIA: true } },
+                    KEHOACH_CSKH: { select: { TRANG_THAI: true, TG_DEN: true } },
+                    NGAY_TAO: true, TINH_TRANG: true, NGAY_DONG: true,
+                },
+            }),
+            // Lấy TONG_TIEN từ HĐ đã duyệt để tính doanh thu đã ký
+            prisma.hOP_DONG.findMany({
+                where: { DUYET: "Đã duyệt", MA_CH: { not: null } },
+                select: { TONG_TIEN: true, MA_CH: true },
+            }),
+        ]);
 
-        let dangMo = 0, dangMoGT = 0;
-        let thanhCong = 0, thanhCongGT = 0;
-        let thatBai = 0;
+        const { computeCoHoiStatus } = await import("@/lib/co-hoi-status");
 
-        for (const g of grouped) {
-            const tt = (g.TINH_TRANG || "").toLowerCase();
-            const cnt = g._count._all;
-            const gt = g._sum.GIA_TRI_DU_KIEN || 0;
-            if (tt.includes("mở")) { dangMo += cnt; dangMoGT += gt; }
-            else if (tt.includes("thành công") || tt.includes("thanh cong")) { thanhCong += cnt; thanhCongGT += gt; }
-            else if (tt.includes("thất bại") || tt.includes("that bai") || tt.includes("đóng")) { thatBai += cnt; }
+        let tongSoCHDangMo = 0, dangTuVan = 0, daGuiDeXuat = 0, choQuyetDinh = 0, thanhCong = 0, khongThanhCong = 0;
+        let tongGiatriDangMo = 0; // tổng GIA_TRI_DU_KIEN của cơ hội đang mở (pipeline)
+
+        for (const item of allOpen) {
+            const st = computeCoHoiStatus({ ...item, NGAY_TAO: item.NGAY_TAO });
+            switch (st.label) {
+                case "Đang mở":           tongSoCHDangMo++; tongGiatriDangMo += item.GIA_TRI_DU_KIEN || 0; break;
+                case "Đang tư vấn":        dangTuVan++;       tongGiatriDangMo += item.GIA_TRI_DU_KIEN || 0; break;
+                case "Đã gửi đề xuất":  daGuiDeXuat++;     tongGiatriDangMo += item.GIA_TRI_DU_KIEN || 0; break;
+                case "Chờ quyết định":  choQuyetDinh++;    tongGiatriDangMo += item.GIA_TRI_DU_KIEN || 0; break;
+                case "Thành công":          thanhCong++; break;
+                case "Không thành công":   khongThanhCong++; break;
+            }
         }
 
-        return { total, dangMo, dangMoGT, thanhCong, thanhCongGT, thatBai };
-    } catch (error) {
-        return { total: 0, dangMo: 0, dangMoGT: 0, thanhCong: 0, thanhCongGT: 0, thatBai: 0 };
+        // Tổng số cơ hội đang mở (4 bước đầu pipeline)
+        const soCoHoiDangMo = tongSoCHDangMo + dangTuVan + daGuiDeXuat + choQuyetDinh;
+
+        // Tổng doanh thu dự kiến = tổng giá trị cơ hội còn trong pipeline (đang mở)
+        const tongDoanhThuDuKien = tongGiatriDangMo;
+
+        // Tổng doanh thu đã ký = tổng TONG_TIEN từ HĐ đã duyệt
+        const tongDoanhThuDaKy = hdDaDuyet.reduce((sum: number, hd: any) => sum + (hd.TONG_TIEN || 0), 0);
+
+        return {
+            total,
+            soCoHoiDangMo,
+            tongGiatriDangMo,
+            tongDoanhThuDuKien,
+            tongDoanhThuDaKy,
+            // Chi tiết pipeline (dùng cho các nơi khác nếu cần)
+            dangTuVan, daGuiDeXuat, choQuyetDinh, thanhCong, khongThanhCong, daDong,
+        };
+    } catch {
+        return {
+            total: 0, soCoHoiDangMo: 0, tongGiatriDangMo: 0,
+            tongDoanhThuDuKien: 0, tongDoanhThuDaKy: 0,
+            dangTuVan: 0, daGuiDeXuat: 0, choQuyetDinh: 0, thanhCong: 0, khongThanhCong: 0, daDong: 0,
+        };
+    }
+}
+
+// ─── Lấy danh sách Sales phụ trách (cho filter dropdown) ────────
+export async function getCoHoiSalesList() {
+    try {
+        // Lấy distinct SALES_PT từ KH có cơ hội
+        const khs = await prisma.kHTN.findMany({
+            where: { SALES_PT: { not: null } },
+            select: { SALES_PT: true, SALES_PT_REL: { select: { HO_TEN: true, MA_NV: true } } },
+            distinct: ["SALES_PT"],
+        });
+        return khs
+            .filter((k: any) => k.SALES_PT && k.SALES_PT_REL)
+            .map((k: any) => ({
+                value: k.SALES_PT as string,
+                label: k.SALES_PT_REL?.HO_TEN || k.SALES_PT,
+            }));
+    } catch {
+        return [];
     }
 }
 
@@ -201,14 +336,11 @@ export async function createCoHoi(data: any) {
         let kh = null;
         if (/^[0-9a-fA-F]{24}$/.test(data.ID_KH)) {
             const khtn = await prisma.kHTN.findUnique({ where: { ID: data.ID_KH }, select: { MA_KH: true, TEN_VT: true } });
-            if (khtn) {
-                maKh = khtn.MA_KH;
-                kh = khtn;
-            }
+            if (khtn) { maKh = khtn.MA_KH; kh = khtn; }
         } else {
             kh = await prisma.kHTN.findUnique({ where: { MA_KH: maKh }, select: { TEN_VT: true } });
         }
-        
+
         let created = false;
         let attempts = 0;
 
@@ -224,9 +356,9 @@ export async function createCoHoi(data: any) {
                         GHI_CHU_NC: data.GHI_CHU_NC || null,
                         GIA_TRI_DU_KIEN: data.GIA_TRI_DU_KIEN ? parseFloat(data.GIA_TRI_DU_KIEN) : null,
                         NGAY_DK_CHOT: data.NGAY_DK_CHOT ? new Date(data.NGAY_DK_CHOT) : null,
-                        TINH_TRANG: data.TINH_TRANG || "Đang mở",
-                        NGAY_DONG: data.NGAY_DONG ? new Date(data.NGAY_DONG) : null,
-                        LY_DO: data.LY_DO || null,
+                        TINH_TRANG: "Đang mở", // Luôn mặc định khi tạo mới
+                        NGAY_DONG: null,
+                        LY_DO: null,
                     },
                 });
                 created = true;
@@ -256,15 +388,48 @@ export async function updateCoHoi(id: string, data: any) {
                 GHI_CHU_NC: data.GHI_CHU_NC || null,
                 GIA_TRI_DU_KIEN: data.GIA_TRI_DU_KIEN ? parseFloat(data.GIA_TRI_DU_KIEN) : null,
                 NGAY_DK_CHOT: data.NGAY_DK_CHOT ? new Date(data.NGAY_DK_CHOT) : null,
-                TINH_TRANG: data.TINH_TRANG || "Đang mở",
-                NGAY_DONG: data.NGAY_DONG ? new Date(data.NGAY_DONG) : null,
-                LY_DO: data.LY_DO || null,
             },
         });
         revalidatePath("/co-hoi");
         return { success: true };
     } catch (error: any) {
         return { success: false, message: error.message || "Lỗi cập nhật cơ hội" };
+    }
+}
+
+// ─── Đóng cơ hội (vĩnh viễn - không thể mở lại) ───────────────
+export async function closeCoHoi(id: string, lyDo?: string) {
+    try {
+        const coHoi = await prisma.cO_HOI.findUnique({
+            where: { ID: id },
+            select: { TINH_TRANG: true, MA_CH: true },
+        });
+
+        if (!coHoi) return { success: false, message: "Không tìm thấy cơ hội" };
+        if (coHoi.TINH_TRANG === "Đã đóng") return { success: false, message: "Cơ hội đã được đóng trước đó" };
+
+        // Không cho đóng nếu đã có hợp đồng thành công
+        const hdThanhCong = await prisma.hOP_DONG.findFirst({
+            where: { MA_CH: coHoi.MA_CH, DUYET: "Đã duyệt" },
+            select: { SO_HD: true },
+        } as any);
+        if (hdThanhCong) {
+            return { success: false, message: "Không thể đóng cơ hội đã có hợp đồng thành công" };
+        }
+
+        await prisma.cO_HOI.update({
+            where: { ID: id },
+            data: {
+                TINH_TRANG: "Đã đóng",
+                NGAY_DONG: new Date(),
+                LY_DO: lyDo?.trim() || null,
+            },
+        });
+
+        revalidatePath("/co-hoi");
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, message: error.message || "Lỗi đóng cơ hội" };
     }
 }
 
@@ -297,7 +462,7 @@ export async function searchKhachHang(query?: string) {
         });
         const mapped = data.map(d => ({ ID: d.MA_KH, TEN_KH: d.TEN_KH, TEN_VT: d.TEN_VT, HINH_ANH: d.HINH_ANH }));
         return { success: true, data: mapped };
-    } catch (error) {
+    } catch {
         return { success: false, data: [] };
     }
 }

@@ -3,9 +3,9 @@
 import React from "react";
 
 import { useState, useMemo, useEffect } from "react";
-import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users, CalendarPlus2, Target } from "lucide-react";
+import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users, CalendarPlus2, Target, Lock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { deleteCoHoi, updateCoHoi, createCoHoi } from "../action";
+import { deleteCoHoi, updateCoHoi, closeCoHoi } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import Modal from "@/components/Modal";
@@ -15,12 +15,15 @@ import type { ColumnKey } from "./ColumnToggleButton";
 import { getNVList } from "@/features/khach-hang/action";
 import { getLoaiCS } from "@/features/ke-hoach-cs/action";
 import KeHoachCSForm from "@/features/ke-hoach-cs/components/KeHoachCSForm";
+import CoHoiStatusBadge, { PctChotBadge, computeCoHoiStatus } from "./CoHoiStatusBadge";
+import CoHoiDetailModal from "./CoHoiDetailModal";
 
 interface Props {
     data: any[];
     dmDichVu: { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }[];
     visibleColumns?: ColumnKey[];
     groupByKH?: boolean;
+    groupByStatus?: boolean;
     currentUserId?: string;
 }
 
@@ -34,15 +37,7 @@ function formatCurrency(val: any) {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(val);
 }
 
-function getTinhTrangBadge(tt: string) {
-    if (!tt) return <span className="text-xs text-muted-foreground">—</span>;
-    const low = tt.toLowerCase();
-    let cls = "bg-muted text-muted-foreground border-transparent";
-    if (low.includes("mở")) cls = "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800";
-    else if (low.includes("thành công") || low.includes("thanh cong")) cls = "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
-    else if (low.includes("thất bại") || low.includes("that bai")) cls = "bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800";
-    return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${cls}`}>{tt}</span>;
-}
+
 
 // ─── Chi tiết Cơ hội ──────────────────────────────────────────
 function CoHoiDetail({ item, dmDichVu, onClose }: { item: any; dmDichVu: any[]; onClose: () => void }) {
@@ -191,13 +186,17 @@ function NhuCauDetail({ item, dmDichVu, onClose }: { item: any; dmDichVu: any[];
 }
 
 // ─── Component chính ──────────────────────────────────────────
-export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = false, currentUserId }: Props) {
-    const cols = visibleColumns ?? ["ngayTao", "nhuCau", "giaTriDK", "dkChot", "tinhTrang"] as ColumnKey[];
+export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = false, groupByStatus = false, currentUserId }: Props) {
+    const cols = visibleColumns ?? ["ngayTao", "nhuCau", "giaTriDK", "dkChot", "pctChot", "tinhTrang"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
+    const [viewDrawerItem, setViewDrawerItem] = useState<any>(null);
+    const [scrollToStatus, setScrollToStatus] = useState<string | null>(null);
     const [viewNhuCauItem, setViewNhuCauItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<{ ID: string; ID_CH: string } | null>(null);
+    const [closeItem, setCloseItem] = useState<{ ID: string; ID_CH: string; TEN_KH: string } | null>(null);
+    const [closeLyDo, setCloseLyDo] = useState("");
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -214,16 +213,19 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
     const sortedData = useMemo(() => {
         if (!sortConfig) return data;
         return [...data].sort((a, b) => {
-            let aVal = a[sortConfig.key];
-            let bVal = b[sortConfig.key];
-            if (["NGAY_TAO", "NGAY_DK_CHOT"].includes(sortConfig.key)) {
-                aVal = aVal ? new Date(aVal).getTime() : 0;
-                bVal = bVal ? new Date(bVal).getTime() : 0;
+            let aVal: any;
+            let bVal: any;
+            if (sortConfig.key === "PCT_CHOT") {
+                aVal = computeCoHoiStatus(a).pctChot ?? 0;
+                bVal = computeCoHoiStatus(b).pctChot ?? 0;
+            } else if (["NGAY_TAO", "NGAY_DK_CHOT"].includes(sortConfig.key)) {
+                aVal = a[sortConfig.key] ? new Date(a[sortConfig.key]).getTime() : 0;
+                bVal = b[sortConfig.key] ? new Date(b[sortConfig.key]).getTime() : 0;
             } else if (sortConfig.key === "GIA_TRI_DU_KIEN") {
-                aVal = aVal || 0; bVal = bVal || 0;
+                aVal = a[sortConfig.key] || 0; bVal = b[sortConfig.key] || 0;
             } else {
-                aVal = (aVal || "").toString().toLowerCase();
-                bVal = (bVal || "").toString().toLowerCase();
+                aVal = (a[sortConfig.key] || "").toString().toLowerCase();
+                bVal = (b[sortConfig.key] || "").toString().toLowerCase();
             }
             if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
             if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
@@ -246,6 +248,20 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
         }
         return map;
     }, [sortedData, groupByKH]);
+
+    // Nhóm theo trạng thái pipeline
+    const groupedByStatus = useMemo(() => {
+        if (!groupByStatus) return null;
+        const ORDER = ["Đang mở", "Đang tư vấn", "Đã gửi đề xuất", "Chờ quyết định", "Thành công", "Không thành công", "Đã đóng"];
+        const map = new Map<string, { label: string; items: any[]; totalGiaTri: number }>();
+        ORDER.forEach(label => map.set(label, { label, items: [], totalGiaTri: 0 }));
+        for (const item of sortedData) {
+            const label = computeCoHoiStatus(item).label;
+            const group = map.get(label);
+            if (group) { group.items.push(item); group.totalGiaTri += item.GIA_TRI_DU_KIEN || 0; }
+        }
+        return new Map([...map.entries()].filter(([, g]) => g.items.length > 0));
+    }, [sortedData, groupByStatus]);
 
     const toggleGroup = (khId: string) => {
         setExpandedGroups(prev => {
@@ -332,14 +348,25 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                     {formatDate(item.NGAY_DK_CHOT)}
                 </td>
             )}
+            {show("pctChot") && (
+                <td className="px-4 py-3 align-middle text-center">
+                    <PctChotBadge pct={computeCoHoiStatus(item).pctChot} />
+                </td>
+            )}
             {show("tinhTrang") && (
                 <td className="px-4 py-3 align-middle">
-                    {getTinhTrangBadge(item.TINH_TRANG)}
+                    <button
+                        className="cursor-pointer text-left hover:opacity-75 transition-opacity"
+                        onClick={() => { setScrollToStatus(computeCoHoiStatus(item).label); setViewDrawerItem(item); }}
+                        title="Xem lịch sử theo trạng thái này"
+                    >
+                        <CoHoiStatusBadge item={item} showWarning={true} />
+                    </button>
                 </td>
             )}
             <td className="px-4 py-3 align-middle text-right">
                 <div className="flex justify-end gap-1 items-center">
-                    <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem chi tiết">
+                    <button onClick={() => { setScrollToStatus(null); setViewDrawerItem(item); }} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem chi tiết">
                         <Eye className="w-4 h-4" />
                     </button>
                     <PermissionGuard moduleKey="ke-hoach-cs" level="add">
@@ -352,6 +379,17 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                             <Edit2 className="w-4 h-4" />
                         </button>
                     </PermissionGuard>
+                    {item.TINH_TRANG !== "Đã đóng" && (
+                        <PermissionGuard moduleKey="co-hoi" level="edit">
+                            <button
+                                onClick={() => { setCloseItem({ ID: item.ID, ID_CH: item.ID_CH, TEN_KH: item.KH?.TEN_KH || item.ID_CH }); setCloseLyDo(""); }}
+                                className="p-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 rounded-lg transition-colors"
+                                title="Đóng cơ hội"
+                            >
+                                <Lock className="w-4 h-4" />
+                            </button>
+                        </PermissionGuard>
+                    )}
                     <PermissionGuard moduleKey="co-hoi" level="delete">
                         <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa">
                             <Trash2 className="w-4 h-4" />
@@ -373,7 +411,13 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                         {!groupByKH && <p className="text-sm font-semibold text-foreground mt-0.5">{item.KH?.TEN_KH}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                        {getTinhTrangBadge(item.TINH_TRANG)}
+                        <button
+                            className="cursor-pointer text-left hover:opacity-75 transition-opacity"
+                            onClick={() => { setScrollToStatus(computeCoHoiStatus(item).label); setViewDrawerItem(item); }}
+                            title="Xem lịch sử"
+                        >
+                            <CoHoiStatusBadge item={item} showWarning={true} />
+                        </button>
                     </div>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -396,13 +440,18 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                     </div>
                 )}
                 <div className="flex justify-end gap-1 pt-1">
-                    <button onClick={() => setViewItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem"><Eye className="w-4 h-4" /></button>
+                    <button onClick={() => { setScrollToStatus(null); setViewDrawerItem(item); }} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem"><Eye className="w-4 h-4" /></button>
                     <PermissionGuard moduleKey="ke-hoach-cs" level="add">
                         <button onClick={() => setKeHoachCSItem({ ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT, ID_CH: item.ID_CH })} className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors" title="Lên kế hoạch CSKH"><CalendarPlus2 className="w-4 h-4" /></button>
                     </PermissionGuard>
                     <PermissionGuard moduleKey="co-hoi" level="edit">
                         <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa"><Edit2 className="w-4 h-4" /></button>
                     </PermissionGuard>
+                    {item.TINH_TRANG !== "Đã đóng" && (
+                        <PermissionGuard moduleKey="co-hoi" level="edit">
+                            <button onClick={() => { setCloseItem({ ID: item.ID, ID_CH: item.ID_CH, TEN_KH: item.KH?.TEN_KH || item.ID_CH }); setCloseLyDo(""); }} className="p-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-muted-foreground hover:text-amber-600 rounded-lg transition-colors" title="Đóng cơ hội"><Lock className="w-4 h-4" /></button>
+                        </PermissionGuard>
+                    )}
                     <PermissionGuard moduleKey="co-hoi" level="delete">
                         <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa"><Trash2 className="w-4 h-4" /></button>
                     </PermissionGuard>
@@ -440,6 +489,11 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                                     DK chốt <SortIcon columnKey="NGAY_DK_CHOT" />
                                 </th>
                             )}
+                            {show("pctChot") && (
+                                <th onClick={() => handleSort("PCT_CHOT")} className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px] text-center cursor-pointer group hover:text-foreground">
+                                    % Chốt đơn <SortIcon columnKey="PCT_CHOT" />
+                                </th>
+                            )}
                             {show("tinhTrang") && (
                                 <th onClick={() => handleSort("TINH_TRANG")} className="h-11 px-4 align-middle font-bold text-muted-foreground text-[11px] cursor-pointer group hover:text-foreground">
                                     Tình trạng <SortIcon columnKey="TINH_TRANG" />
@@ -449,11 +503,40 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {groupByKH && groupedByKH ? (
+                        {groupByStatus && groupedByStatus ? (
+                            /* ── Grouped by Status ── */
+                            Array.from(groupedByStatus.entries()).map(([stLabel, group]) => {
+                                const isCollapsed = !expandedGroups.has(stLabel);
+                                const colCount = 3 + (show("ngayTao") ? 1 : 0) + (show("nhuCau") ? 1 : 0) + (show("giaTriDK") ? 1 : 0) + (show("dkChot") ? 1 : 0) + (show("pctChot") ? 1 : 0) + (show("tinhTrang") ? 1 : 0);
+                                return (
+                                    <React.Fragment key={stLabel}>
+                                        <tr onClick={() => toggleGroup(stLabel)} className="bg-muted/40 hover:bg-muted/60 cursor-pointer transition-colors">
+                                            <td colSpan={colCount} className="px-4 py-2.5">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-bold text-foreground">{stLabel}</span>
+                                                        <span className="text-[11px] text-muted-foreground">({group.items.length} cơ hội)</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xs font-semibold text-primary">{formatCurrency(group.totalGiaTri)}</span>
+                                                        {isCollapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {!isCollapsed && group.items.map((item: any, idx: number) => {
+                                            const nhuCauIds: string[] = item.NHU_CAU || [];
+                                            const selectedDv = dmDichVu.filter(d => nhuCauIds.includes(d.ID));
+                                            return renderDesktopRow(item, idx, nhuCauIds, selectedDv);
+                                        })}
+                                    </React.Fragment>
+                                );
+                            })
+                        ) : groupByKH && groupedByKH ? (
                             /* ── Grouped by KH ── */
                             Array.from(groupedByKH.entries()).map(([khId, group]) => {
                                 const isCollapsed = !expandedGroups.has(khId);
-                                const colCount = 3 + (show("ngayTao") ? 1 : 0) + (show("nhuCau") ? 1 : 0) + (show("giaTriDK") ? 1 : 0) + (show("dkChot") ? 1 : 0) + (show("tinhTrang") ? 1 : 0);
+                                const colCount = 3 + (show("ngayTao") ? 1 : 0) + (show("nhuCau") ? 1 : 0) + (show("giaTriDK") ? 1 : 0) + (show("dkChot") ? 1 : 0) + (show("pctChot") ? 1 : 0) + (show("tinhTrang") ? 1 : 0);
                                 return (
                                     <React.Fragment key={khId}>
                                         {/* Header nhóm */}
@@ -561,24 +644,14 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                 )}
             </div>
 
-            {/* Modal: Xem chi tiết */}
-            <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title={viewItem ? `Chi tiết · ${viewItem.ID_CH}` : "Chi tiết cơ hội"} size="lg" icon={Target}
-                footer={
-                    <>
-                        <div />
-                        <button onClick={() => setViewItem(null)} className="btn-premium-secondary px-6 h-10 text-sm">Đóng</button>
-                    </>
-                }
-            >
-                {viewItem && (
-                    <>
-                        <div className="flex items-center justify-between -mt-2 mb-3">
-                            {getTinhTrangBadge(viewItem.TINH_TRANG)}
-                        </div>
-                        <CoHoiDetail item={viewItem} dmDichVu={dmDichVu} onClose={() => setViewItem(null)} />
-                    </>
-                )}
-            </Modal>
+            {/* Modal: Xem chi tiết & lịch sử */}
+            {viewDrawerItem && (
+                <CoHoiDetailModal
+                    item={viewDrawerItem}
+                    scrollToStatus={scrollToStatus}
+                    onClose={() => { setViewDrawerItem(null); setScrollToStatus(null); }}
+                />
+            )}
 
             {/* Modal: Xem chi tiết nhu cầu */}
             <Modal isOpen={!!viewNhuCauItem} onClose={() => setViewNhuCauItem(null)} title={viewNhuCauItem ? `Nhu cầu · ${viewNhuCauItem.KH?.TEN_KH || viewNhuCauItem.ID_CH}` : "Chi tiết nhu cầu"} size="md" icon={Target}
@@ -641,6 +714,59 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                 itemName={deleteItem?.ID_CH}
                 confirmText="Xóa cơ hội"
             />
+
+            {/* Modal: Đóng cơ hội (VĨNH VIỄN) */}
+            <Modal
+                isOpen={!!closeItem}
+                onClose={() => setCloseItem(null)}
+                title="Đóng cơ hội"
+                icon={Lock}
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setCloseItem(null)} className="btn-premium-secondary">Hủy</button>
+                            <button
+                                type="button"
+                                disabled={loading}
+                                onClick={async () => {
+                                    if (!closeItem) return;
+                                    setLoading(true);
+                                    const res = await closeCoHoi(closeItem.ID, closeLyDo);
+                                    if (res.success) { toast.success("Đã đóng cơ hội"); setCloseItem(null); }
+                                    else toast.error((res as any).message || "Lỗi đóng cơ hội");
+                                    setLoading(false);
+                                }}
+                                className="btn-premium-primary bg-amber-600 hover:bg-amber-700 border-amber-600"
+                            >
+                                {loading ? "Đang xử lý..." : "🔒 Xác nhận đóng"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Thao tác không thể hoàn tác</p>
+                            <p className="text-xs text-amber-700 dark:text-amber-400">
+                                Cơ hội <span className="font-bold">{closeItem?.ID_CH}</span> của khách hàng <span className="font-bold">{closeItem?.TEN_KH}</span> sẽ bị đóng vĩnh viễn và không thể mở lại.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-foreground">Lý do đóng (tùy chọn)</label>
+                        <textarea
+                            value={closeLyDo}
+                            onChange={e => setCloseLyDo(e.target.value)}
+                            placeholder="Nhập lý do đóng cơ hội..."
+                            rows={3}
+                            className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 }
