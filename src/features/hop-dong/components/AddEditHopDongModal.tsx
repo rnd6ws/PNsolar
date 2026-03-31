@@ -524,6 +524,21 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                                                 {tepDinhKems.map((url, idx) => {
                                                     const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url) || url.includes('image/upload');
+                                                    
+                                                    // Hàm giúp lấy tên file từ URL Cloudinary
+                                                    const getFileName = (u: string) => {
+                                                        try {
+                                                            const parts = u.split('/');
+                                                            let lastPart = parts.pop() || `Tài liệu ${idx + 1}`;
+                                                            lastPart = lastPart.split('?')[0]; // bỏ query params
+                                                            return decodeURIComponent(lastPart);
+                                                        } catch {
+                                                            return `Tài liệu ${idx + 1}`;
+                                                        }
+                                                    };
+                                                    
+                                                    const fileName = getFileName(url);
+                                                    
                                                     return (
                                                         <div key={idx} className="relative group border rounded-lg overflow-hidden bg-background">
                                                             {isImage ? (
@@ -531,9 +546,9 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                                     <img src={url} alt={`Đính kèm ${idx + 1}`} className="w-full h-full object-cover" />
                                                                 </a>
                                                             ) : (
-                                                                <a href={url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center h-20 w-full bg-muted/30 hover:bg-muted/50 transition-colors p-2 text-center text-muted-foreground hover:text-foreground">
-                                                                    <FileText className="w-6 h-6 mb-1" />
-                                                                    <span className="text-[10px] w-full truncate px-1">Tài liệu {idx + 1}</span>
+                                                                <a href={url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 h-20 w-full bg-muted/30 hover:bg-muted/50 transition-colors text-center text-muted-foreground hover:text-foreground">
+                                                                    <FileText className="w-8 h-8 mb-2 shrink-0 text-primary/70" />
+                                                                    <span className="text-[11px] w-full truncate px-1 font-medium" title={fileName}>{fileName}</span>
                                                                 </a>
                                                             )}
                                                             <button
