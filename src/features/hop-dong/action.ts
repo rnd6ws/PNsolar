@@ -14,7 +14,7 @@ const HOP_DONG_INCLUDE = {
     BAO_GIA_REL: { select: { MA_BAO_GIA: true, NGAY_BAO_GIA: true, TONG_TIEN: true } },
     HOP_DONG_CT: {
         include: {
-            HH_REL: { select: { TEN_HH: true, MA_HH: true, DON_VI_TINH: true, NHOM_HH: true } },
+            HH_REL: { select: { TEN_HH: true, MA_HH: true, DON_VI_TINH: true, NHOM_HH: true, MODEL: true, MO_TA: true, XUAT_XU: true, BAO_HANH: true } },
         },
         orderBy: { CREATED_AT: 'asc' as const },
     },

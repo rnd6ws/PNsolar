@@ -41,7 +41,8 @@ const generateCustomerInfoRows = (kh: Partial<KHOption>) => {
         ttTemplate.splice(1, 0, { _id: tempId(), TIEU_DE: 'Chức vụ', NOI_DUNG: chucVuDD });
         ttTemplate.push({ _id: tempId(), TIEU_DE: 'Số tài khoản', NOI_DUNG: '' });
         ttTemplate.push({ _id: tempId(), TIEU_DE: 'Ngân hàng', NOI_DUNG: '' });
-        ttTemplate.push({ _id: tempId(), TIEU_DE: 'Chủ tài khoản', NOI_DUNG: '' });
+        ttTemplate.push({ _id: tempId(), TIEU_DE: 'Chủ TK', NOI_DUNG: '' });
+        ttTemplate.push({ _id: tempId(), TIEU_DE: 'Mã số thuế', NOI_DUNG: kh.MST || '' });
     } else {
         ttTemplate.push({ _id: tempId(), TIEU_DE: 'CCCD', NOI_DUNG: '' });
         ttTemplate.push({ _id: tempId(), TIEU_DE: 'Cấp ngày', NOI_DUNG: '' });
@@ -59,7 +60,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const [isPending, startTransition] = useTransition();
     const [activeTab, setActiveTab] = useState<TabKey>("general");
 
-    const { uploadMultiple, uploading: fileUploading } = useMultipleFileUpload({ 
+    const { uploadMultiple, uploading: fileUploading } = useMultipleFileUpload({
         folder: 'pnsolar/hop-dong',
         onSuccessItem: (uploadedFile) => {
             setTepDinhKems(prev => [...prev, uploadedFile.url]);
@@ -524,7 +525,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                                                 {tepDinhKems.map((url, idx) => {
                                                     const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url) || url.includes('image/upload');
-                                                    
+
                                                     // Hàm giúp lấy tên file từ URL Cloudinary
                                                     const getFileName = (u: string) => {
                                                         try {
@@ -536,9 +537,9 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                             return `Tài liệu ${idx + 1}`;
                                                         }
                                                     };
-                                                    
+
                                                     const fileName = getFileName(url);
-                                                    
+
                                                     return (
                                                         <div key={idx} className="relative group border rounded-lg overflow-hidden bg-background">
                                                             {isImage ? (
@@ -606,7 +607,54 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                 ))}
                                         </datalist>
                                     </div>
-                                    <input type="text" value={row.NOI_DUNG || ""} onChange={e => setThongTinRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG: e.target.value } : r))} className="input-modern w-full" placeholder="Nội dung..." />
+                                    {row.TIEU_DE?.trim() === "Đại diện" ? (() => {
+                                        const val = row.NOI_DUNG || "";
+                                        let danhXung = "";
+                                        let ten = val;
+                                        if (val.startsWith("Ông ")) {
+                                            danhXung = "Ông";
+                                            ten = val.substring(4);
+                                        } else if (val.startsWith("Bà ")) {
+                                            danhXung = "Bà";
+                                            ten = val.substring(3);
+                                        } else if (val === "Ông" || val === "Bà") {
+                                            danhXung = val;
+                                            ten = "";
+                                        }
+                                        return (
+                                            <div className="flex gap-2 w-full">
+                                                <div className="w-[100px] shrink-0">
+                                                    <FormSelect
+                                                        name={`danhXung_${row._id}`}
+                                                        value={danhXung}
+                                                        onChange={(val) => {
+                                                            const newNoiDung = val ? `${val} ${ten}` : ten;
+                                                            setThongTinRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG: newNoiDung } : r));
+                                                        }}
+                                                        options={[
+                                                            { label: "Ông", value: "Ông" },
+                                                            { label: "Bà", value: "Bà" }
+                                                        ]}
+                                                        placeholder="--"
+                                                        className="w-full bg-transparent border-0 ring-0 focus:ring-0 shadow-none px-2"
+                                                    />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={ten}
+                                                    onChange={e => {
+                                                        const newTen = e.target.value;
+                                                        const newNoiDung = danhXung ? (newTen ? `${danhXung} ${newTen}` : danhXung) : newTen;
+                                                        setThongTinRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG: newNoiDung } : r));
+                                                    }}
+                                                    className="input-modern flex-1"
+                                                    placeholder="Họ và tên..."
+                                                />
+                                            </div>
+                                        );
+                                    })() : (
+                                        <input type="text" value={row.NOI_DUNG || ""} onChange={e => setThongTinRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG: e.target.value } : r))} className="input-modern w-full" placeholder="Nội dung..." />
+                                    )}
                                     <button type="button" onClick={() => setThongTinRows(prev => prev.filter(r => r._id !== row._id))} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
                                         <X className="w-4 h-4" />
                                     </button>

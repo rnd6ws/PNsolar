@@ -123,7 +123,8 @@ export const DEFAULT_THONG_TIN_KHAC: Omit<ThongTinKhacRow, '_id'>[] = [
     { TIEU_DE: 'Nơi cấp', NOI_DUNG: '' }, // Nơi cấp KHTN không có mst
     { TIEU_DE: 'Số tài khoản', NOI_DUNG: '' }, // Số tài khoản KHTN có mst
     { TIEU_DE: 'Ngân hàng', NOI_DUNG: '' }, // Ngân hàng KHTN có mst
-    { TIEU_DE: 'Chủ tài khoản', NOI_DUNG: '' }, // Chủ tài khoản KHTN có mst
+    { TIEU_DE: 'Chủ TK', NOI_DUNG: '' }, // Chủ tài khoản KHTN có mst
+    { TIEU_DE: 'Mã số thuế', NOI_DUNG: '' }, // Mã số thuế KHTN có mst
 ];
 
 // ===== Giá trị mặc định cho DK_HD (Điều khoản hợp đồng) =====

@@ -1,0 +1,244 @@
+/**
+ * Xuất hợp đồng dân dụng ra file Word (.docx)
+ * Template: /public/templates/HOP_DONG_DAN_DUNG.docx
+ *
+ * Placeholders trong template:
+ *   {SO_HD}
+ *   NGAY_HD: {NGAY}, {THANG}, {NAM} — HOP_DONG.NGAY_HD
+ *   {TEN_KH}: KHTN.TEN_KH
+ *   {TEN_NDD}: THONG_TIN_KHAC.NOI_DUNG (TIEU_DE = "Đại diện")
+ *   {CHUC_VU}: "Chức Vụ: " + THONG_TIN_KHAC.NOI_DUNG (TIEU_DE = "Chức vụ")
+ *   {#THONG_TIN_KH} {TIEU_DE} {NOI_DUNG} {/THONG_TIN_KH} các phần còn lại trừ "Đại diện" và "Chức vụ"
+ *   {BAO_HANH}: DK_HD.NOI_DUNG (TIEU_DE = "- Chế độ bảo hành:")
+ *   {TT_HD}: TONG_TIEN vd: 100.000.000 VNĐ (Bằng chữ: Một trăm triệu đồng)
+ *   {#DK_TT} {LAN_TT} {PT_TT} {ND_TT} {ST_TT} {BANG_CHU} {/DK_TT}
+ *   LAN_TT: lần thanh toán DKTT_HD.LAN_THANH_TOAN
+ *   PT_TT: phần trăm thanh toán DKTT_HD.PT_THANH_TOAN
+ *   ND_TT: nội dung thanh toán DKTT_HD.NOI_DUNG_YEU_CAU
+ *   ST_TT: số tiền thanh toán HD.TONG_TIEN * (DKTT_HD.PT_THANH_TOAN / 100)
+ *   BANG_CHU: số tiền bằng chữ dựa vào ST_TT vd: (Bằng chữ: Một trăm triệu đồng)
+ *   {#DK_HD} {TIEU_DE} {NOI_DUNG} {/DK_HD} tất cả các điều khoản trong DK_HD trừ TIEU_DE = "- Chế độ bảo hành:"
+ *   {BEN_A}: THONG_TIN_KHAC.NOI_DUNG (TIEU_DE = "Đại diện") bỏ "Ông" hoặc "Bà" ở trước UPPERCASE
+ */
+
+import PizZip from "pizzip";
+import Docxtemplater from "docxtemplater";
+import { saveAs } from "file-saver";
+
+// ─── Số tiền bằng chữ tiếng Việt ──────────────────────────────────────────
+const DVN = ["", "nghìn", "triệu", "tỷ"];
+const CHU_SO = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+
+function readGroup(n: number, isFirst: boolean): string {
+    const tram = Math.floor(n / 100);
+    const chuc = Math.floor((n % 100) / 10);
+    const donvi = n % 10;
+    let result = "";
+
+    if (tram > 0) {
+        result += CHU_SO[tram] + " trăm";
+        if (chuc === 0 && donvi > 0) result += " linh";
+    } else if (!isFirst) {
+        if (chuc > 0 || donvi > 0) result += "không trăm";
+        if (chuc === 0 && donvi > 0) result += " linh";
+    }
+
+    if (chuc > 1) {
+        result += (result ? " " : "") + CHU_SO[chuc] + " mươi";
+        if (donvi === 1) result += " mốt";
+        else if (donvi === 5) result += " lăm";
+        else if (donvi > 0) result += " " + CHU_SO[donvi];
+    } else if (chuc === 1) {
+        result += (result ? " " : "") + "mười";
+        if (donvi === 5) result += " lăm";
+        else if (donvi > 0) result += " " + CHU_SO[donvi];
+    } else {
+        if (donvi > 0) result += (result ? " " : "") + CHU_SO[donvi];
+    }
+
+    return result;
+}
+
+export function soThanhChu(so: number): string {
+    if (so === 0) return "Không đồng";
+    if (!isFinite(so) || isNaN(so)) return "—";
+
+    const isNegative = so < 0;
+    so = Math.round(Math.abs(so));
+
+    const groups: number[] = [];
+    while (so > 0) {
+        groups.push(so % 1000);
+        so = Math.floor(so / 1000);
+    }
+
+    // Xử lý trường hợp tỷ lớn
+    let result = "";
+    for (let i = groups.length - 1; i >= 0; i--) {
+        const g = groups[i];
+        if (g === 0) continue;
+        const isFirst = result === "";
+        const groupStr = readGroup(g, isFirst && i === groups.length - 1);
+        result += (result ? " " : "") + groupStr;
+        if (DVN[i]) result += " " + DVN[i];
+    }
+
+    // Capitalize first letter
+    if (result) result = result.charAt(0).toUpperCase() + result.slice(1);
+    result += " đồng";
+    if (isNegative) result = "Âm " + result;
+    return result;
+}
+
+// ─── Format tiền tệ hiển thị ──────────────────────────────────────────────
+function fmtMoney(v: number): string {
+    return new Intl.NumberFormat("vi-VN").format(v) + " đồng";
+}
+
+// ─── Loại bỏ "Ông"/"Bà" ở đầu tên ─────────────────────────────────────────
+function stripHonorific(name: string): string {
+    return name.replace(/^(Ông|Bà|ông|bà)\s+/i, "").trim();
+}
+
+// ─── Type dữ liệu đầu vào ─────────────────────────────────────────────────
+interface ThongTinKhacItem {
+    TIEU_DE: string | null;
+    NOI_DUNG: string | null;
+}
+
+interface DkttHdItem {
+    LAN_THANH_TOAN: string;
+    PT_THANH_TOAN: number;
+    NOI_DUNG_YEU_CAU: string | null;
+}
+
+interface DkHdItem {
+    HANG_MUC: string;
+    NOI_DUNG: string | null;
+    AN_HIEN?: boolean;
+}
+
+export interface HopDongExportData {
+    SO_HD: string;
+    NGAY_HD: string | Date;
+    TONG_TIEN: number;
+    KHTN_REL?: { TEN_KH: string } | null;
+    THONG_TIN_KHAC?: ThongTinKhacItem[];
+    DKTT_HD?: DkttHdItem[];
+    DK_HD?: DkHdItem[];
+}
+
+// ─── Hàm xuất chính ───────────────────────────────────────────────────────
+export async function exportHopDongDocx(item: HopDongExportData): Promise<void> {
+    // 1. Fetch template
+    const response = await fetch("/templates/HOP_DONG_DAN_DUNG.docx");
+    if (!response.ok) {
+        throw new Error("Không tìm thấy file template hợp đồng. Vui lòng kiểm tra /public/templates/HOP_DONG_DAN_DUNG.docx");
+    }
+    const arrayBuffer = await response.arrayBuffer();
+
+    // 2. Parse ngày hợp đồng
+    const ngayHD = new Date(item.NGAY_HD);
+    const NGAY = String(ngayHD.getDate()).padStart(2, "0");
+    const THANG = String(ngayHD.getMonth() + 1).padStart(2, "0");
+    const NAM = String(ngayHD.getFullYear());
+
+    // 3. Lấy thông tin khách hàng từ THONG_TIN_KHAC
+    const ttk = item.THONG_TIN_KHAC || [];
+
+    const getDaiDien = () => ttk.find(t => t.TIEU_DE === "Đại diện")?.NOI_DUNG || "";
+    const getChucVu = () => ttk.find(t => t.TIEU_DE === "Chức vụ")?.NOI_DUNG || "";
+
+    const TEN_NDD = getDaiDien();
+    const rawChucVu = getChucVu();
+    const CHUC_VU = rawChucVu ? `Chức Vụ: ${rawChucVu}` : "";
+    const BEN_A = stripHonorific(TEN_NDD).toUpperCase();
+
+    // Các thông tin KH còn lại (trừ "Đại diện" và "Chức vụ")
+    const SKIP_TIEU_DE = new Set(["Đại diện", "Chức vụ"]);
+    const THONG_TIN_KH = ttk
+        .filter(t => t.TIEU_DE && !SKIP_TIEU_DE.has(t.TIEU_DE))
+        .map(t => ({
+            TIEU_DE: t.TIEU_DE || "",
+            NOI_DUNG: t.NOI_DUNG || "",
+        }));
+
+    // 4. Bảo hành từ DK_HD
+    const BAO_HANH_KEY = "- Chế độ bảo hành:";
+    const baoHanhItem = (item.DK_HD || []).find(d => d.HANG_MUC === BAO_HANH_KEY);
+    const BAO_HANH = baoHanhItem?.NOI_DUNG || "";
+
+    // 5. Tổng tiền hợp đồng — format: "100.000.000 VNĐ (Bằng chữ: Một trăm triệu đồng)"
+    const tongTien = item.TONG_TIEN || 0;
+    const TT_HD = `${new Intl.NumberFormat("vi-VN").format(tongTien)} VNĐ (Bằng chữ: ${soThanhChu(tongTien)})`;
+
+    // 6. Điều kiện thanh toán
+    const DK_TT = (item.DKTT_HD || []).map(d => {
+        const soTien = Math.round(tongTien * (d.PT_THANH_TOAN / 100));
+        return {
+            LAN_TT: d.LAN_THANH_TOAN || "",
+            PT_TT: `${d.PT_THANH_TOAN}%`,
+            ND_TT: d.NOI_DUNG_YEU_CAU || "",
+            ST_TT: new Intl.NumberFormat("vi-VN").format(soTien),
+            BANG_CHU: `(Bằng chữ: ${soThanhChu(soTien)})`
+        };
+    });
+
+    // 7. Điều khoản hợp đồng (trừ bảo hành)
+    const DK_HD = (item.DK_HD || [])
+        .filter(d => d.HANG_MUC !== BAO_HANH_KEY && d.AN_HIEN !== false)
+        .map(d => ({
+            TIEU_DE: d.HANG_MUC || "",
+            NOI_DUNG: d.NOI_DUNG || "",
+        }));
+
+    // 8. Tổng hợp dữ liệu template
+    const templateData = {
+        SO_HD: item.SO_HD || "",
+        NGAY,
+        THANG,
+        NAM,
+        TEN_KH: item.KHTN_REL?.TEN_KH || "",
+        TEN_NDD,
+        CHUC_VU,
+        THONG_TIN_KH,
+        BAO_HANH,
+        TT_HD,
+        DK_TT,
+        DK_HD,
+        BEN_A,
+    };
+
+    // 9. Render template
+    const zip = new PizZip(arrayBuffer);
+    const doc = new Docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
+        delimiters: { start: "{", end: "}" },
+        nullGetter() {
+            return "";
+        },
+    });
+
+    try {
+        doc.render(templateData);
+    } catch (err: any) {
+        if (err.properties?.errors?.length) {
+            const details = err.properties.errors
+                .map((e: any) => e.properties?.explanation || e.message)
+                .join(" | ");
+            throw new Error(`Lỗi template hợp đồng: ${details}`);
+        }
+        throw err;
+    }
+
+    // 10. Lưu file
+    const output = doc.getZip().generate({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    const dateStr = `${NGAY}-${THANG}-${NAM}`;
+    const fileName = `HopDong_${item.SO_HD}_${dateStr}.docx`;
+    saveAs(output, fileName);
+}
