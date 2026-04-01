@@ -935,8 +935,9 @@ model HOP_DONG {
   DKTT_HD     DKTT_HD[]
   DK_HD       DK_HD[]
 
-  CREATED_AT DateTime @default(now())
-  UPDATED_AT DateTime @updatedAt
+  CREATED_AT DateTime      @default(now())
+  UPDATED_AT DateTime      @updatedAt
+  banGiaoHds BAN_GIAO_HD[]
 
   @@index([MA_KH, MA_CH, MA_BAO_GIA])
   @@fulltext([SO_HD, MA_KH, MA_CH, MA_BAO_GIA])
@@ -968,4 +969,24 @@ model HOP_DONG_CT {
   @@index([SO_HD])
   @@index([MA_HH])
   @@map("HOP_DONG_CT")
+}
+
+// ===== BÀN GIAO VÀ NGHIỆM THU HỢP ĐỒNG =====
+model BAN_GIAO_HD {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
+
+  NGAY_BAN_GIAO DateTime @default(now())
+  SO_BAN_GIAO   String // BG-SO_HD-01
+
+  FILE_DINH_KEM      Json?
+  THOI_GIAN_BAO_HANH DateTime? // mặc định 1 năm kể từ ngày bàn giao
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([SO_HD, SO_BAN_GIAO])
+  @@map("BAN_GIAO_HD")
 }
