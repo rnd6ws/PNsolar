@@ -6,7 +6,7 @@ import {
     LayoutDashboard, Users, Package, Settings, HelpCircle,
     LogOut, EllipsisVertical, Shield, UserRound, DollarSign, Truck, Target,
     CalendarCheck2, ClipboardCheck, FileText, CreditCard, MapPin,
-    ChevronRight,
+    ChevronRight, PackageCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutUser } from "@/features/auth/action";
@@ -90,6 +90,7 @@ const navGroups: NavGroup[] = [
         items: [
             { name: "Báo giá", href: "/bao-gia", icon: FileText, moduleKey: "bao-gia" },
             { name: "Hợp đồng", href: "/hop-dong", icon: FileText, moduleKey: "hop-dong" },
+            { name: "Bàn giao", href: "/ban-giao", icon: PackageCheck, moduleKey: "ban-giao" },
             { name: "Hạng mục KS", href: "/hang-muc-ks", icon: ClipboardCheck, moduleKey: "hang-muc-ks" },
             { name: "Khảo sát CT", href: "/khao-sat", icon: MapPin, moduleKey: "khao-sat" },
         ],

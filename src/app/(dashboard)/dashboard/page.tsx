@@ -10,7 +10,7 @@ import {
     Truck, ShoppingCart, CreditCard, Bell,
     UserCheck, Calendar, Shield, HelpCircle,
     Archive, DollarSign, Target,
-    CalendarCheck2, ClipboardCheck, MapPin,
+    CalendarCheck2, ClipboardCheck, MapPin, PackageCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/features/phan-quyen/PermissionContext";
@@ -145,6 +145,26 @@ const moduleGroups: ModuleGroup[] = [
                 bgColor: "bg-amber-50 dark:bg-amber-950/50",
                 available: true,
                 moduleKey: "bao-gia",
+            },
+            {
+                name: "Hợp đồng",
+                description: "Quản lý hợp đồng ký kết với khách hàng.",
+                href: "/hop-dong",
+                icon: FileText,
+                color: "text-blue-600",
+                bgColor: "bg-blue-50 dark:bg-blue-950/50",
+                available: true,
+                moduleKey: "hop-dong",
+            },
+            {
+                name: "Bàn giao & Nghiệm thu",
+                description: "Lập biên bản bàn giao và theo dõi bảo hành công trình.",
+                href: "/ban-giao",
+                icon: PackageCheck,
+                color: "text-green-600",
+                bgColor: "bg-green-50 dark:bg-green-950/50",
+                available: true,
+                moduleKey: "ban-giao",
             },
             {
                 name: "Hạng mục KS",
