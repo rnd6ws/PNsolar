@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Settings2, Download, Calendar, Grid3x3, Users, LayoutList, X, ChevronDown, Target } from "lucide-react";
+import { Settings2, Download, Calendar, Grid3x3, Users, LayoutList, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
-import FilterSelect from "@/components/FilterSelect";
+import FilterMultiSelect from "@/components/FilterMultiSelect";
 import CoHoiList from "./CoHoiList";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -72,19 +72,21 @@ export default function CoHoiPageClient({ data, dmDichVu, salesList, currentUser
     // ─── Toolbar filters (dùng chung Desktop + Mobile) ──────────
     const FilterRow = (
         <>
-            {/* Trạng thái */}
-            <FilterSelect
+            {/* Trạng thái — chọn nhiều */}
+            <FilterMultiSelect
                 paramKey="TRANG_THAI_AO"
                 options={TRANG_THAI_OPTIONS}
                 placeholder="Trạng thái"
+                width="w-[160px]"
             />
 
-            {/* Sales phụ trách */}
+            {/* Sales phụ trách — chọn nhiều */}
             {salesOptions.length > 1 && (
-                <FilterSelect
+                <FilterMultiSelect
                     paramKey="SALES_PT"
                     options={salesOptions}
                     placeholder="Sales PT"
+                    width="w-[150px]"
                 />
             )}
 
@@ -224,9 +226,9 @@ export default function CoHoiPageClient({ data, dmDichVu, salesList, currentUser
                 {showFilters && (
                     <div className="flex lg:hidden flex-col gap-3 w-full bg-muted/30 p-4 rounded-xl border border-border animate-in slide-in-from-top-2 fade-in duration-200">
                         <div className="flex flex-col gap-3">
-                            <FilterSelect paramKey="TRANG_THAI_AO" options={TRANG_THAI_OPTIONS} placeholder="Trạng thái" />
+                            <FilterMultiSelect paramKey="TRANG_THAI_AO" options={TRANG_THAI_OPTIONS} placeholder="Trạng thái" width="w-full" />
                             {salesOptions.length > 1 && (
-                                <FilterSelect paramKey="SALES_PT" options={salesOptions} placeholder="Sales PT" />
+                                <FilterMultiSelect paramKey="SALES_PT" options={salesOptions} placeholder="Sales PT" width="w-full" />
                             )}
                             <div className="grid grid-cols-2 gap-2">
                                 <div>

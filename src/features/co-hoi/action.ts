@@ -129,12 +129,16 @@ export async function getCoHois(filters: {
     page?: number;
     limit?: number;
     TINH_TRANG?: string;
-    TRANG_THAI_AO?: string;   // trạng thái ảo: "Đang tư vấn", "Đã gửi đề xuất",...
-    SALES_PT?: string;         // mã nhân viên phụ trách
-    DK_CHOT_TU?: string;       // NGAY_DK_CHOT >= (ISO date)
-    DK_CHOT_DEN?: string;      // NGAY_DK_CHOT <= (ISO date)
+    TRANG_THAI_AO?: string;   // có thể là 1 giá trị hoặc nhiều, phân cách bằng dấu phẩy
+    SALES_PT?: string;         // có thể nhiều mã NV phân cách bằng dấu phẩy
+    DK_CHOT_TU?: string;
+    DK_CHOT_DEN?: string;
 } = {}) {
     const { page = 1, limit = 10, query, TINH_TRANG, TRANG_THAI_AO, SALES_PT, DK_CHOT_TU, DK_CHOT_DEN } = filters;
+
+    // Parse multi-value
+    const trangThaiAoList = TRANG_THAI_AO ? TRANG_THAI_AO.split(",").map(s => s.trim()).filter(Boolean) : [];
+    const salesPtList = SALES_PT ? SALES_PT.split(",").map(s => s.trim()).filter(Boolean) : [];
 
     const where: any = {};
     const andConditions: any[] = [];
@@ -148,26 +152,27 @@ export async function getCoHois(filters: {
         });
     }
 
-    // Filter TINH_TRANG DB (chỉ lọc "0 gốc" khi không có trạng thái ảo)
-    if (TINH_TRANG && TINH_TRANG !== "all" && !TRANG_THAI_AO) {
+    // Filter TINH_TRANG DB (chỉ lọc khi không có trạng thái ảo)
+    if (TINH_TRANG && TINH_TRANG !== "all" && trangThaiAoList.length === 0) {
         if (TINH_TRANG === "Đã đóng") {
             andConditions.push({ TINH_TRANG: "Đã đóng" });
         } else if (TINH_TRANG === "Đang mở") {
             andConditions.push({ TINH_TRANG: { not: "Đã đóng" } });
         }
     }
-    // Nếu có TRANG_THAI_AO → chỉ lấy có TINH_TRANG = "Đang mở" (trạng thái ảo chỉ áp dụng cho đang mở)
-    if (TRANG_THAI_AO && TRANG_THAI_AO !== "all") {
-        if (TRANG_THAI_AO === "Thành công" || TRANG_THAI_AO === "Không thành công") {
-            andConditions.push({ TINH_TRANG: { not: "Đã đóng" } });
-        } else {
-            andConditions.push({ TINH_TRANG: { not: "Đã đóng" } });
-        }
+
+    // Nếu có trạng thái ảo → chỉ lấy có TINH_TRANG != "Đã đóng"
+    if (trangThaiAoList.length > 0) {
+        andConditions.push({ TINH_TRANG: { not: "Đã đóng" } });
     }
 
-    // Filter SALES_PT (nhân viên phụ trách theo KH)
-    if (SALES_PT && SALES_PT !== "all") {
-        andConditions.push({ KH_REL: { SALES_PT: SALES_PT } });
+    // Filter SALES_PT (hỗ trợ nhiều giá trị)
+    if (salesPtList.length > 0) {
+        if (salesPtList.length === 1) {
+            andConditions.push({ KH_REL: { SALES_PT: salesPtList[0] } });
+        } else {
+            andConditions.push({ KH_REL: { SALES_PT: { in: salesPtList } } });
+        }
     }
 
     // Filter DK chốt
@@ -197,18 +202,20 @@ export async function getCoHois(filters: {
             ID_KH: d.MA_KH,
         }));
 
-        // Filter trạng thái ảo sau khi compute (in-memory)
-        if (TRANG_THAI_AO && TRANG_THAI_AO !== "all") {
+        // Filter trạng thái ảo sau khi compute (in-memory, hỗ trợ nhiều giá trị)
+        if (trangThaiAoList.length > 0) {
             const { computeCoHoiStatus } = await import("@/lib/co-hoi-status");
-            mapped = mapped.filter(item => computeCoHoiStatus(item).label === TRANG_THAI_AO);
+            const labelSet = new Set(trangThaiAoList);
+            mapped = mapped.filter(item => labelSet.has(computeCoHoiStatus(item).label));
         }
 
-        const filteredTotal = TRANG_THAI_AO && TRANG_THAI_AO !== "all" ? mapped.length : total;
+        const hasFilter = trangThaiAoList.length > 0;
+        const filteredTotal = hasFilter ? mapped.length : total;
         const paginated = mapped.slice((page - 1) * limit, page * limit);
 
         return {
             success: true,
-            data: TRANG_THAI_AO && TRANG_THAI_AO !== "all" ? paginated : mapped,
+            data: hasFilter ? paginated : mapped,
             pagination: {
                 page,
                 limit,
