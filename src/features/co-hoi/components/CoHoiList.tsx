@@ -25,6 +25,7 @@ interface Props {
     groupByKH?: boolean;
     groupByStatus?: boolean;
     currentUserId?: string;
+    viewMode?: "list" | "card";
 }
 
 function formatDate(val: any) {
@@ -186,7 +187,7 @@ function NhuCauDetail({ item, dmDichVu, onClose }: { item: any; dmDichVu: any[];
 }
 
 // ─── Component chính ──────────────────────────────────────────
-export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = false, groupByStatus = false, currentUserId }: Props) {
+export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = false, groupByStatus = false, currentUserId, viewMode = "list" }: Props) {
     const cols = visibleColumns ?? ["ngayTao", "nhuCau", "giaTriDK", "dkChot", "pctChot", "tinhTrang"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
     const [editItem, setEditItem] = useState<any>(null);
@@ -463,7 +464,7 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
     return (
         <>
             {/* ── Desktop Table ── */}
-            <div className="hidden lg:block overflow-x-auto">
+            <div className={`overflow-x-auto ${viewMode === "card" ? "hidden lg:block" : ""}`}>
                 <table className="w-full text-center border-collapse text-sm">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -600,6 +601,7 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
             </div>
 
             {/* ── Mobile Cards ── */}
+            {viewMode === "card" && (
             <div className="lg:hidden divide-y divide-border">
                 {groupByKH && groupedByKH ? (
                     Array.from(groupedByKH.entries()).map(([khId, group]) => {
@@ -643,6 +645,7 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                     </div>
                 )}
             </div>
+            )}
 
             {/* Modal: Xem chi tiết & lịch sử */}
             {viewDrawerItem && (

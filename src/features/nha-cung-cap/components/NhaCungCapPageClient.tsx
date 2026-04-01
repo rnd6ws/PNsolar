@@ -4,7 +4,7 @@ import { useState } from "react";
 import SearchInput from "@/components/SearchInput";
 import NhaCungCapList from "./NhaCungCapList";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
-import { Download, Settings2 } from "lucide-react";
+import { Download, Settings2, LayoutList, LayoutGrid } from "lucide-react";
 
 interface Props {
     data: any[];
@@ -17,18 +17,27 @@ const DEFAULT_COLUMNS: ColumnKey[] = [
 export default function NhaCungCapPageClient({ data }: Props) {
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
+    const [viewMode, setViewMode] = useState<"list" | "card">("list");
 
     return (
         <>
             {/* Toolbar */}
-            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
+            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8">
                 <div className="flex items-center justify-between gap-3 w-full">
                     <div className="flex-1 w-full lg:max-w-[400px]">
                         <SearchInput placeholder="Tìm theo tên/mã NCC/SĐT/MST..." />
                     </div>
 
                     {/* Nút toggle - CHỈ mobile */}
-                    <div className="flex lg:hidden shrink-0">
+                    <div className="flex lg:hidden shrink-0 gap-2">
+                        <div className="flex border border-border rounded-lg overflow-hidden shadow-sm">
+                            <button onClick={() => setViewMode("list")} className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`} title="Dạng bảng">
+                                <LayoutList className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setViewMode("card")} className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`} title="Dạng thẻ">
+                                <LayoutGrid className="w-4 h-4" />
+                            </button>
+                        </div>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
                             className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${showFilters ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted text-muted-foreground'}`}
@@ -71,6 +80,7 @@ export default function NhaCungCapPageClient({ data }: Props) {
                 <NhaCungCapList
                     data={data}
                     visibleColumns={visibleColumns}
+                    viewMode={viewMode}
                 />
             </div>
         </>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Settings2, Download, Calendar, Grid3x3, Users, LayoutList, X, ChevronDown } from "lucide-react";
+import { Settings2, Download, Calendar, Grid3x3, Users, LayoutList, LayoutGrid, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
 import FilterMultiSelect from "@/components/FilterMultiSelect";
@@ -40,6 +40,7 @@ export default function CoHoiPageClient({ data, dmDichVu, salesList, currentUser
 
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
+    const [viewMode, setViewMode] = useState<"list" | "card">("list");
     const [groupBy, setGroupBy] = useState<GroupByKey>("none");
 
     // ─── URL params ─────────────────────────────────────────────
@@ -191,15 +192,32 @@ export default function CoHoiPageClient({ data, dmDichVu, salesList, currentUser
     return (
         <>
             {/* ── Toolbar ── */}
-            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
+            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8">
                 <div className="flex items-center justify-between gap-3 w-full">
                     {/* Search */}
                     <div className="flex-1 w-full lg:max-w-[360px]">
                         <SearchInput placeholder="Tìm theo mã hoặc tên khách hàng..." />
                     </div>
 
-                    {/* Mobile: nút mở filter */}
-                    <div className="flex lg:hidden shrink-0">
+                    {/* Mobile: toggle view + filter */}
+                    <div className="flex lg:hidden shrink-0 gap-2">
+                        {/* Toggle List/Card */}
+                        <div className="flex border border-border rounded-lg overflow-hidden shadow-sm">
+                            <button
+                                onClick={() => setViewMode("list")}
+                                className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                                title="Dạng bảng"
+                            >
+                                <LayoutList className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode("card")}
+                                className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                                title="Dạng thẻ"
+                            >
+                                <LayoutGrid className="w-4 h-4" />
+                            </button>
+                        </div>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
                             className={cn(
@@ -277,6 +295,7 @@ export default function CoHoiPageClient({ data, dmDichVu, salesList, currentUser
                     groupByKH={groupBy === "kh"}
                     groupByStatus={groupBy === "status"}
                     currentUserId={currentUserId}
+                    viewMode={viewMode}
                 />
             </div>
         </>

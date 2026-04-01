@@ -20,6 +20,7 @@ import type { ColumnKey } from "./ColumnToggleButton";
 interface Props {
     data: any[];
     visibleColumns?: ColumnKey[];
+    viewMode?: "list" | "card";
 }
 
 function formatDate(val: any) {
@@ -250,7 +251,7 @@ function NhaCungCapDetail({ ncc, onClose }: { ncc: any; onClose: () => void }) {
 }
 
 // ─── Component chính ──────────────────────────────────────────
-export default function NhaCungCapList({ data, visibleColumns }: Props) {
+export default function NhaCungCapList({ data, visibleColumns, viewMode = "list" }: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
@@ -325,7 +326,7 @@ export default function NhaCungCapList({ data, visibleColumns }: Props) {
     return (
         <>
             {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
+            <div className={`overflow-x-auto ${viewMode === "card" ? "hidden lg:block" : ""}`}>
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -477,6 +478,7 @@ export default function NhaCungCapList({ data, visibleColumns }: Props) {
             </div>
 
             {/* Mobile Cards */}
+            {viewMode === "card" && (
             <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
                 {sortedData.length === 0 && (
                     <p className="text-center text-muted-foreground italic py-10">Chưa có nhà cung cấp nào.</p>
@@ -534,6 +536,7 @@ export default function NhaCungCapList({ data, visibleColumns }: Props) {
                     </div>
                 ))}
             </div>
+            )}
 
             {/* Modal: Sửa */}
             <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật nhà cung cấp" icon={Truck}>

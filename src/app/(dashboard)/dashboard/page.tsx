@@ -364,7 +364,7 @@ export default function HomePage() {
     );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-4 md:space-y-6 animate-in fade-in duration-500">
 
             {/* ── Hero Welcome Banner ─────────────────── */}
             <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-primary/8 via-primary/4 to-transparent border border-primary/10">
@@ -383,7 +383,7 @@ export default function HomePage() {
                                 {getGreeting()} 👋
                             </h1>
                             <p className="text-sm text-muted-foreground max-w-md">
-                                Quản lý hệ thống PNsolar • <span className="font-semibold text-foreground/70">{totalModules} module</span> đang hoạt động
+                                Hệ thống PNsolar • <span className="font-semibold text-foreground/70">{totalModules} module</span> đang hoạt động
                             </p>
                         </div>
                         <div className="flex items-center gap-4">
@@ -428,7 +428,7 @@ export default function HomePage() {
                     <p className="text-sm text-muted-foreground mt-1">Thử tìm với từ khóa khác</p>
                 </div>
             ) : (
-                <div className="space-y-6">
+                <div className="space-y-3 md:space-y-5">
                     {filtered.map((group, groupIdx) => (
                         <GroupSection
                             key={group.label}
@@ -458,26 +458,80 @@ function GroupSection({
 }) {
     const [collapsed, setCollapsed] = useState(false);
 
+    // Use inline hex colors to avoid Tailwind purge issues with dynamic classes
+    const accentMap: Record<string, { headerBg: string; contentBg: string; borderColor: string; iconBg: string; badgeBg: string }> = {
+        "from-indigo-500 to-purple-500": {
+            headerBg: "#eef2ff",   // indigo-50
+            contentBg: "rgba(99, 102, 241, 0.04)",  // indigo rất nhẹ
+            borderColor: "#c7d2fe99",
+            iconBg: "#6366f1",
+            badgeBg: "#6366f1",
+        },
+        "from-emerald-500 to-teal-500": {
+            headerBg: "#ecfdf5",   // emerald-50
+            contentBg: "rgba(16, 185, 129, 0.04)",  // emerald rất nhẹ
+            borderColor: "#a7f3d099",
+            iconBg: "#10b981",
+            badgeBg: "#10b981",
+        },
+        "from-amber-500 to-orange-500": {
+            headerBg: "#fffbeb",   // amber-50
+            contentBg: "rgba(245, 158, 11, 0.04)",  // amber rất nhẹ
+            borderColor: "#fde68a99",
+            iconBg: "#f59e0b",
+            badgeBg: "#f59e0b",
+        },
+        "from-violet-500 to-purple-500": {
+            headerBg: "#f5f3ff",   // violet-50
+            contentBg: "rgba(139, 92, 246, 0.04)",  // violet rất nhẹ
+            borderColor: "#c4b5fd99",
+            iconBg: "#8b5cf6",
+            badgeBg: "#8b5cf6",
+        },
+        "from-slate-500 to-zinc-500": {
+            headerBg: "#f8fafc",   // slate-50
+            contentBg: "rgba(100, 116, 139, 0.04)", // slate rất nhẹ
+            borderColor: "#e2e8f099",
+            iconBg: "#64748b",
+            badgeBg: "#64748b",
+        },
+    };
+
+    const accent = accentMap[group.accentColor] ?? {
+        headerBg: "#f8fafc",
+        contentBg: "rgba(100, 116, 139, 0.03)",
+        borderColor: "#e2e8f099",
+        iconBg: "#6366f1",
+        badgeBg: "#6366f1",
+    };
+
     return (
         <section
-            className="animate-in fade-in slide-in-from-bottom-3 duration-500"
+            className="animate-in fade-in slide-in-from-bottom-3 duration-500 rounded-xl md:rounded-2xl overflow-hidden border border-border/60"
             style={{ animationDelay: `${groupIdx * 80}ms` }}
         >
             {/* ── Group Header ─────────────────── */}
             <button
                 type="button"
                 onClick={() => setCollapsed(v => !v)}
-                className="group/header w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-3 transition-all duration-200 cursor-pointer select-none bg-primary/8 border border-primary/15 hover:bg-primary/12 hover:border-primary/25 hover:shadow-sm"
+                className="group/header w-full flex items-center gap-2.5 px-3 py-2.5 md:px-5 md:py-3.5 transition-all duration-200 cursor-pointer select-none border-b hover:brightness-[0.97]"
+                style={{ backgroundColor: accent.headerBg, borderColor: accent.borderColor }}
             >
-                <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0">
-                    <group.icon className="w-4 h-4 text-primary" />
+                <div
+                    className="w-8 h-8 md:w-9 md:h-9 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                    style={{ backgroundColor: accent.iconBg }}
+                >
+                    <group.icon className="w-4 h-4 md:w-4.5 md:h-4.5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2.5">
-                        <h2 className="font-extrabold text-foreground text-sm tracking-widest uppercase">
+                        <h2 className="font-extrabold text-foreground text-sm tracking-wide uppercase">
                             {group.label}
                         </h2>
-                        <span className="text-[11px] font-bold text-muted-foreground bg-muted/80 px-2 py-0.5 rounded-full">
+                        <span
+                            className="text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm text-white"
+                            style={{ backgroundColor: accent.badgeBg }}
+                        >
                             {group.modules.length}
                         </span>
                     </div>
@@ -491,26 +545,31 @@ function GroupSection({
                 )} />
             </button>
 
-            {/* ── Module Cards Grid (collapsible) ─────────────── */}
-            <div className={cn(
-                "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 min-[1800px]:grid-cols-6 gap-3",
-                collapsed && "hidden"
-            )}>
-                {group.modules.map((mod, modIdx) => (
-                    <ModuleCard
-                        key={mod.name}
-                        module={mod}
-                        isFav={favorites.has(mod.name)}
-                        onToggleFav={() => onToggleFav(mod.name)}
-                        delay={modIdx * 40}
-                    />
-                ))}
+            {/* ── Module Icons (collapsible) ─────────────── */}
+            <div
+                className={cn(
+                    "px-3 py-3 md:px-5 md:py-5",
+                    collapsed && "hidden"
+                )}
+                style={{ backgroundColor: accent.contentBg }}
+            >
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-y-4 gap-x-2 md:gap-x-4 md:gap-y-5">
+                    {group.modules.map((mod, modIdx) => (
+                        <ModuleCard
+                            key={mod.name}
+                            module={mod}
+                            isFav={favorites.has(mod.name)}
+                            onToggleFav={() => onToggleFav(mod.name)}
+                            delay={modIdx * 40}
+                        />
+                    ))}
+                </div>
             </div>
         </section>
     );
 }
 
-// ===================== MODULE CARD (compact) =====================
+// ===================== MODULE CARD (Icon + Label style) =====================
 function ModuleCard({
     module: mod,
     isFav,
@@ -528,69 +587,43 @@ function ModuleCard({
         <CardWrapper
             href={mod.available ? mod.href : "#"}
             className={cn(
-                "group relative flex items-center gap-3 p-3 bg-card border border-border rounded-xl transition-all duration-200 overflow-hidden",
+                "group relative flex flex-col items-center gap-1.5 md:gap-2 transition-all duration-200",
                 mod.available
-                    ? "hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer"
-                    : "opacity-50 cursor-default"
+                    ? "cursor-pointer"
+                    : "opacity-40 cursor-default"
             )}
         >
+            {/* Favorite indicator */}
+            {isFav && (
+                <div className="absolute -top-1 -right-1 z-10">
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                </div>
+            )}
+
             {/* Icon */}
             <div
                 className={cn(
-                    "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200",
+                    "w-11 h-11 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center transition-all duration-200 shadow-sm",
                     mod.bgColor,
-                    mod.available && "group-hover:scale-110"
+                    mod.available && "group-hover:scale-110 group-hover:shadow-md"
                 )}
             >
-                <mod.icon className={cn("w-4 h-4", mod.color)} />
+                <mod.icon className={cn("w-5 h-5 md:w-5.5 md:h-5.5", mod.color)} />
             </div>
 
-            {/* Content */}
-            <div className="min-w-0 flex-1">
-                <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors leading-tight truncate">
-                    {mod.name}
-                </h3>
-                <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                    {mod.description}
-                </p>
-            </div>
+            {/* Label */}
+            <span className={cn(
+                "text-[11px] md:text-xs font-semibold text-center leading-tight text-foreground/80 transition-colors line-clamp-2",
+                mod.available && "group-hover:text-primary"
+            )}>
+                {mod.name}
+            </span>
 
-            {/* Right side */}
-            <div className="flex items-center gap-1 shrink-0">
-                {/* Favorite button */}
-                {mod.available && (
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onToggleFav();
-                        }}
-                        className={cn(
-                            "p-1 rounded-md transition-all",
-                            isFav
-                                ? "text-amber-500 hover:text-amber-600"
-                                : "text-muted-foreground/20 hover:text-muted-foreground opacity-0 group-hover:opacity-100"
-                        )}
-                        title={isFav ? "Bỏ yêu thích" : "Thêm yêu thích"}
-                    >
-                        <Star className={cn("w-3.5 h-3.5", isFav && "fill-current")} />
-                    </button>
-                )}
-
-                {mod.available && (
-                    <div className="flex items-center gap-0.5 text-[11px] font-semibold text-primary/70 group-hover:text-primary transition-colors">
-                        <span>Mở</span>
-                        <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
-                    </div>
-                )}
-
-                {!mod.available && (
-                    <span className="text-[10px] font-medium text-muted-foreground/50">
-                        Sắp ra mắt
-                    </span>
-                )}
-            </div>
+            {!mod.available && (
+                <span className="text-[9px] font-medium text-muted-foreground/50 italic">
+                    Sắp có
+                </span>
+            )}
         </CardWrapper>
     );
 }

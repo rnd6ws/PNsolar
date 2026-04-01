@@ -69,51 +69,51 @@ export default async function CoHoiPage({
                     </div>
 
                     {/* Stat Cards — 4 KPI chính */}
-                    <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
                         {/* 1. Tổng số cơ hội */}
-                        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
-                                <Target className="w-5 h-5 text-primary" />
+                        <div className="group rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border border-transparent" style={{ backgroundColor: "rgba(99, 102, 241, 0.06)" }}>
+                            <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: "#6366f1" }}>
+                                <Target className="w-5 h-5 text-white" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-sm text-muted-foreground">Tổng số cơ hội</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stats.total}</p>
+                                <p className="text-xs md:text-sm text-muted-foreground leading-tight">Tổng số cơ hội</p>
+                                <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1">{stats.total}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">Đang mở: <span className="font-semibold text-foreground">{stats.soCoHoiDangMo}</span></p>
                             </div>
                         </div>
 
                         {/* 2. Tổng giá trị cơ hội đang mở */}
-                        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-blue-500/10">
-                                <TrendingUp className="w-5 h-5 text-blue-500" />
+                        <div className="group rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border border-transparent" style={{ backgroundColor: "rgba(16, 185, 129, 0.06)" }}>
+                            <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: "#10b981" }}>
+                                <TrendingUp className="w-5 h-5 text-white" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-sm text-muted-foreground">Giá trị đang mở</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1 truncate">{formatCurrency(stats.tongGiatriDangMo)}</p>
+                                <p className="text-xs md:text-sm text-muted-foreground leading-tight">Giá trị đang mở</p>
+                                <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1 truncate">{formatCurrency(stats.tongGiatriDangMo)}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">Pipeline đang hoạt động</p>
                             </div>
                         </div>
 
                         {/* 3. Tổng doanh thu dự kiến */}
-                        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-orange-500/10">
-                                <Clock className="w-5 h-5 text-orange-500" />
+                        <div className="group rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border border-transparent" style={{ backgroundColor: "rgba(245, 158, 11, 0.06)" }}>
+                            <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: "#f59e0b" }}>
+                                <Clock className="w-5 h-5 text-white" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-sm text-muted-foreground">Doanh thu dự kiến</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1 truncate">{formatCurrency(stats.tongDoanhThuDuKien)}</p>
+                                <p className="text-xs md:text-sm text-muted-foreground leading-tight">Doanh thu dự kiến</p>
+                                <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1 truncate">{formatCurrency(stats.tongDoanhThuDuKien)}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">Từ cơ hội đang mở</p>
                             </div>
                         </div>
 
                         {/* 4. Tổng doanh thu đã ký HĐ */}
-                        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/10">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        <div className="group rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border border-transparent" style={{ backgroundColor: "rgba(139, 92, 246, 0.06)" }}>
+                            <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: "#8b5cf6" }}>
+                                <CheckCircle2 className="w-5 h-5 text-white" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-sm text-muted-foreground">Doanh thu đã ký HĐ</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1 truncate">{formatCurrency(stats.tongDoanhThuDaKy)}</p>
+                                <p className="text-xs md:text-sm text-muted-foreground leading-tight">Doanh thu đã ký HĐ</p>
+                                <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1 truncate">{formatCurrency(stats.tongDoanhThuDaKy)}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">Hợp đồng đã duyệt</p>
                             </div>
                         </div>

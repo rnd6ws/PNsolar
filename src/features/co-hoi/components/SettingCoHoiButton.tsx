@@ -106,7 +106,7 @@ export default function SettingCoHoiButton({ dmDichVu }: Props) {
         <>
             <button onClick={() => setIsOpen(true)} className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex items-center gap-2 text-sm">
                 <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline text-sm font-medium transition-all">Danh mục</span>
+                <span className="text-sm font-medium transition-all">Cài đặt danh mục</span>
             </button>
 
             <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục dịch vụ" size="lg" icon={Settings}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Settings2, Download, LayoutGrid, TableProperties } from "lucide-react";
+import { Settings2, Download, LayoutGrid, LayoutList, TableProperties } from "lucide-react";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
 import KhaoSatColumnToggle, { type KhaoSatColumnKey, KS_ALL_COLUMNS } from "./KhaoSatColumnToggle";
@@ -41,6 +41,8 @@ export default function KhaoSatPageClient({
     const [showFilters, setShowFilters] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<KhaoSatColumnKey[]>(DEFAULT_COLS);
     const [viewMode, setViewMode] = useState<"table" | "card" | "auto">("auto");
+    // Normalize for list component: auto -> table on desktop, card on mobile
+    const effectiveViewMode = viewMode === "auto" ? "list" : viewMode === "table" ? "list" : "card";
 
     const getCardBtnClasses = () => {
         if (viewMode === "card") return "bg-background shadow-sm text-foreground";
@@ -57,14 +59,22 @@ export default function KhaoSatPageClient({
     return (
         <>
             {/* Toolbar */}
-            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
+            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8">
                 <div className="flex items-center justify-between gap-3 w-full">
                     <div className="flex-1 w-full lg:max-w-[400px]">
                         <SearchInput placeholder="Tìm mã KS, loại công trình, địa chỉ..." />
                     </div>
 
                     {/* Mobile toggle */}
-                    <div className="flex lg:hidden shrink-0">
+                    <div className="flex lg:hidden shrink-0 gap-2">
+                        <div className="flex border border-border rounded-lg overflow-hidden shadow-sm">
+                            <button onClick={() => setViewMode("table")} className={`p-2 transition-colors ${viewMode === 'table' || viewMode === 'auto' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`} title="Dạng bảng">
+                                <LayoutList className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setViewMode("card")} className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`} title="Dạng thẻ">
+                                <LayoutGrid className="w-4 h-4" />
+                            </button>
+                        </div>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
                             className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${showFilters ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted text-muted-foreground"}`}

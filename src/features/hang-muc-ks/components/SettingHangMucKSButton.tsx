@@ -74,11 +74,11 @@ export default function SettingHangMucKSButton({ cdLoaiCongTrinhs, cdNhomKSs }: 
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="btn-premium-secondary text-sm font-medium shadow-sm transition-all"
+                className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex items-center gap-2 text-sm"
                 title="Cài đặt danh mục"
             >
                 <Settings2 className="w-4 h-4" />
-                Cài đặt
+                Cài đặt danh mục
             </button>
 
             <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục" icon={Settings2}>
@@ -88,11 +88,10 @@ export default function SettingHangMucKSButton({ cdLoaiCongTrinhs, cdNhomKSs }: 
                         <button
                             key={t.key}
                             onClick={() => setActiveTab(t.key)}
-                            className={`flex-1 text-sm font-medium py-1.5 px-3 rounded-md transition-all ${
-                                activeTab === t.key
-                                    ? "bg-background text-foreground shadow-sm"
-                                    : "text-muted-foreground hover:text-foreground"
-                            }`}
+                            className={`flex-1 text-sm font-medium py-1.5 px-3 rounded-md transition-all ${activeTab === t.key
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                                }`}
                         >
                             {t.label}
                         </button>
