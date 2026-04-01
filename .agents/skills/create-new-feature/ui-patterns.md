@@ -5,18 +5,19 @@ Lấy module **Khách hàng** (`src/features/khach-hang/`) làm chuẩn mẫu th
 
 ---
 
-## 1. Toolbar & Mobile Filter Toggle
+## 1. Toolbar & Mobile Filter Toggle + View Toggle
 
 ### Nguyên tắc
 - Desktop: Thanh tìm kiếm + các filter + nút chức năng hiển thị trên cùng một dòng.
-- Mobile (< lg): Chỉ hiển thị **thanh tìm kiếm** + **nút toggle Settings2**. Các filter và nút chức năng ẩn trong panel mở rộng.
+- Mobile (< lg): Chỉ hiển thị **thanh tìm kiếm** + **nút toggle List/Card** + **nút toggle Settings2**. Các filter và nút chức năng ẩn trong panel mở rộng.
+- **Toolbar gradient**: Nền chuyển màu dọc `bg-linear-to-b from-primary/3 to-primary/8`, border `border-primary/10`.
 
 ### Cấu trúc JSX chuẩn (PageClient)
 
 ```tsx
 // Import bắt buộc
 import { useState } from "react";
-import { Download, Settings2 } from "lucide-react";
+import { Download, Settings2, LayoutList, LayoutGrid } from "lucide-react";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
@@ -24,17 +25,35 @@ import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
 // State bắt buộc
 const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
 const [showFilters, setShowFilters] = useState(false);
+const [viewMode, setViewMode] = useState<"list" | "card">("list");
 
-// JSX Toolbar
-<div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
+// JSX Toolbar — nền gradient dọc
+<div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8">
     <div className="flex items-center justify-between gap-3 w-full">
         {/* Search - luôn hiển thị */}
         <div className="flex-1 w-full lg:max-w-[400px]">
             <SearchInput placeholder="Tìm..." />
         </div>
-        
-        {/* Nút toggle - CHỈ mobile */}
-        <div className="flex lg:hidden shrink-0">
+
+        {/* Mobile: Toggle View + Toggle Filter */}
+        <div className="flex lg:hidden shrink-0 gap-2">
+            {/* Toggle List/Card */}
+            <div className="flex border border-border rounded-lg overflow-hidden shadow-sm">
+                <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                    title="Dạng bảng"
+                >
+                    <LayoutList className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => setViewMode("card")}
+                    className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                    title="Dạng thẻ"
+                >
+                    <LayoutGrid className="w-4 h-4" />
+                </button>
+            </div>
             <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${showFilters ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted text-muted-foreground'}`}
@@ -69,6 +88,9 @@ const [showFilters, setShowFilters] = useState(false);
         </div>
     )}
 </div>
+
+// Truyền viewMode prop xuống List component
+<[Tên]List ... viewMode={viewMode} />
 ```
 
 ---
@@ -140,15 +162,15 @@ const SortIcon = ({ columnKey }: { columnKey: string }) => {
 ## 3. Table Header & Row Styling
 
 ### Nguyên tắc
-- Header row: `bg-primary/10`, hover: `bg-primary/15`
-- Header text: `font-bold text-muted-foreground uppercase tracking-widest text-[11px]`
-- Data row: `hover:bg-muted/30 transition-all`
+- Header row: `bg-primary/10` (solid, KHÔNG dùng gradient ngang — bị lỗi trên mobile khi scroll)
+- Header text: `font-bold text-muted-foreground tracking-widest text-[12px]`
+- Data row: `hover:bg-muted/30 transition-colors`
 - Cột STT (#) luôn hiển thị nếu có
 - Cột "Hành động" luôn ở cuối, căn phải
 
 ```tsx
-<tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-    <th className="h-11 px-4 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[11px]">
+<tr className="border-b border-border bg-primary/10">
+    <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px]">
         ...
     </th>
 </tr>
@@ -156,30 +178,92 @@ const SortIcon = ({ columnKey }: { columnKey: string }) => {
 
 ---
 
-## 4. Desktop/Mobile Dual Layout
+## 4. Desktop/Mobile Dual Layout + Toggle View Mode
 
 ### Nguyên tắc
-- Desktop (`hidden lg:block`): Hiển thị dạng bảng `<table>`
-- Mobile (`lg:hidden`): Hiển thị dạng card list
+- Desktop (≥lg): **Luôn hiện bảng** `<table>` bất kể viewMode
+- Mobile (<lg): **Người dùng chọn** giữa List (bảng) hoặc Card qua toggle buttons
+- Card view trên mobile phải có **ĐẦY ĐỦ tất cả nút hành động** giống bảng (Xem, Tạo cơ hội, Kế hoạch, Người liên hệ, Sửa, Xóa)
 - Cả hai layout phải hiển thị cùng dữ liệu (đã sort/filter)
 
-```tsx
-{/* Desktop Table */}
-<div className="hidden lg:block overflow-x-auto">
-    <table className="w-full text-left border-collapse text-[13px]">
-        ...
-    </table>
-</div>
+### List component nhận prop viewMode
 
-{/* Mobile Cards */}
-<div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-    {sortedData.map((item) => (
-        <div key={item.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-3">
-            ...
-        </div>
-    ))}
-</div>
+```tsx
+interface Props {
+    // ... các props khác
+    viewMode?: "list" | "card";
+}
+
+export default function List({ ..., viewMode = "list" }: Props) {
+    return (
+        <>
+            {/* Card View - Mobile only, khi viewMode === "card" */}
+            {viewMode === "card" && (
+                <div className="p-4 space-y-3 lg:hidden">
+                    {sortedData.map((item) => (
+                        <div
+                            key={item.ID}
+                            onClick={() => setViewItem(item)}
+                            className="rounded-xl border border-border bg-card p-4 space-y-3 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
+                        >
+                            {/* Header: Avatar + Tên + Badge */}
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    {/* Avatar/Icon */}
+                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                        <UserCircle className="w-5 h-5 text-primary/60" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-semibold text-sm text-foreground truncate">{item.TEN}</p>
+                                        {/* Nhóm/Tag */}
+                                    </div>
+                                </div>
+                                <div className="shrink-0">{/* Badge phân loại */}</div>
+                            </div>
+
+                            {/* Info rows: grid 2 cột */}
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                                {/* Các thông tin: SĐT, Email, Ngày, NV phụ trách... */}
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                    <Phone className="w-3 h-3 shrink-0 text-primary/50" />
+                                    <span>{item.DIEN_THOAI}</span>
+                                </div>
+                            </div>
+
+                            {/* Footer: Actions - ĐẦY ĐỦ NÚT */}
+                            <div className="flex items-center justify-between pt-2 border-t border-border">
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                    {/* Nguồn/Info phụ */}
+                                </div>
+                                <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+                                    {/* TẤT CẢ nút hành động: Eye, Target, CalendarPlus2, UserPlus, Edit2, Trash2 */}
+                                    {/* Mỗi nút: p-1.5 hover:bg-muted rounded-lg transition-colors */}
+                                    {/* BỌC bằng PermissionGuard tương ứng */}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Table View - ẩn trên mobile khi đang xem card */}
+            <div className={viewMode === "card" ? "hidden lg:block" : ""}>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
+                        ...
+                    </table>
+                </div>
+            </div>
+        </>
+    );
+}
 ```
+
+### ⚠️ Quy tắc quan trọng cho Card View:
+- **KHÔNG được cắt bớt nút hành động** — Card view phải có ĐẦY ĐỦ các nút giống bảng
+- Nút hành động trong card dùng `p-1.5` (nhỏ hơn bảng) + icon `w-3.5 h-3.5`
+- Mỗi nút phải bọc `PermissionGuard` đúng moduleKey/level
+- Click vào card body → mở chi tiết; click vào nút → thực hiện action (dùng `e.stopPropagation()`)
 
 ---
 
@@ -359,7 +443,7 @@ import { Tags } from 'lucide-react';
 
 ---
 
-## 9. Stat Cards (Thẻ thống kê) — Client Component + useTransition
+## 9. Stat Cards (Thẻ thống kê) — Multi-Color System + Client Component
 
 ### Nguyên tắc
 - Mỗi trang quản lý **phải có stat cards** dạng grid nằm giữa header và bảng.
@@ -367,20 +451,27 @@ import { Tags } from 'lucide-react';
 - **KHÔNG ĐƯỢC** dùng `<Link>` cho stat cards — gây delay do full server re-render.
 - Dùng `useTransition` + `router.replace` để navigate nhanh, non-blocking.
 - Hiển thị `Loader2 animate-spin` trên card active khi đang loading.
-- Layout: `grid grid-cols-2 md:grid-cols-4 gap-4`
-- Mỗi card gồm: **icon** (trái) + **label text-sm** (trên) + **số đậm text-xl** (dưới).
-- **KHÔNG** dùng gradient card, **KHÔNG** dùng card lớn padding-6.
-- 4 màu chuẩn: `text-primary bg-primary/10`, `text-orange-500 bg-orange-500/10`, `text-green-600 bg-green-500/10`, `text-purple-600 bg-purple-500/10`.
+- Layout: `grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4` (hoặc `lg:grid-cols-4` nếu 4 cards)
+- **Multi-color accent system**: Mỗi card dùng MÀU CỐ ĐỊNH (inline style) để luôn nhất quán qua các theme:
+  - 🟣 Card 1: **Indigo** `#6366f1` (Tổng)
+  - 🟢 Card 2: **Emerald** `#10b981`
+  - 🟡 Card 3: **Amber** `#f59e0b`
+  - 🟣 Card 4: **Violet** `#8b5cf6`
+  - 🔴 Card 5: **Red** `#ef4444` (nếu có 5 cards)
+- **Icon**: Nền solid color + icon trắng (`w-10 h-10 md:w-11 md:h-11 rounded-xl`)
+- **Card background**: Luôn có tint nhẹ `rgba(color, 0.06)`
+- **Active state**: Border đậm + shadow `0 4px 12px ${color}20`
+- **Text label KHÔNG dùng `truncate`** — cho phép xuống dòng
 
-### Code chuẩn — StatCards Client Component
+### Code chuẩn — StatCards Client Component (Multi-Color)
 
 ```tsx
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { Loader2 } from "lucide-react";
-// Import 4 icon phù hợp với module
+import { Users2, UserCheck, UserX, UserCog, Loader2, UserPlus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
     stats: {
@@ -389,6 +480,45 @@ interface Props {
     };
 }
 
+const statCards = [
+    {
+        label: "Tổng số",
+        key: "total" as const,
+        icon: Users2,
+        iconBg: "#6366f1",       // indigo-500
+        cardBg: "rgba(99, 102, 241, 0.06)",
+        borderActive: "#6366f1",
+        filterVal: "all",
+    },
+    {
+        label: "Thống kê 2",
+        key: "val2" as const,
+        icon: UserPlus,
+        iconBg: "#10b981",       // emerald-500
+        cardBg: "rgba(16, 185, 129, 0.06)",
+        borderActive: "#10b981",
+        filterVal: "Filter2",
+    },
+    {
+        label: "Thống kê 3",
+        key: "val3" as const,
+        icon: UserCog,
+        iconBg: "#f59e0b",       // amber-500
+        cardBg: "rgba(245, 158, 11, 0.06)",
+        borderActive: "#f59e0b",
+        filterVal: "Filter3",
+    },
+    {
+        label: "Thống kê 4",
+        key: "val4" as const,
+        icon: UserCheck,
+        iconBg: "#8b5cf6",       // violet-500
+        cardBg: "rgba(139, 92, 246, 0.06)",
+        borderActive: "#8b5cf6",
+        filterVal: "Filter4",
+    },
+];
+
 export default function StatCards({ stats }: Props) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -396,33 +526,18 @@ export default function StatCards({ stats }: Props) {
 
     const currentFilter = searchParams.get("TRANG_THAI") || "all";
 
-    const statCards = [
-        { label: "Tổng [tên]", key: "total", icon: Icon1, color: "text-primary bg-primary/10", filterVal: "all" },
-        { label: "Thống kê 2", key: "val2", icon: Icon2, color: "text-orange-500 bg-orange-500/10", filterVal: "Filter2" },
-        { label: "Thống kê 3", key: "val3", icon: Icon3, color: "text-green-600 bg-green-500/10", filterVal: "Filter3" },
-        { label: "Thống kê 4", key: "val4", icon: Icon4, color: "text-purple-600 bg-purple-500/10", filterVal: "Filter4" },
-    ];
-
     const handleCardClick = (filterVal: string) => {
         const params = new URLSearchParams(searchParams.toString());
-
-        if (filterVal === "all") {
-            params.delete("TRANG_THAI"); // hoặc PHAN_LOAI tùy module
-        } else {
-            params.set("TRANG_THAI", filterVal);
-        }
-        params.delete("page"); // Reset page khi đổi filter
-
+        if (filterVal === "all") { params.delete("TRANG_THAI"); }
+        else { params.set("TRANG_THAI", filterVal); }
+        params.delete("page");
         const queryStr = params.toString();
         const href = `/[ten-tinh-nang]${queryStr ? `?${queryStr}` : ""}`;
-
-        startTransition(() => {
-            router.replace(href);
-        });
+        startTransition(() => { router.replace(href); });
     };
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {statCards.map((stat) => {
                 const isActive = stat.filterVal === "all"
                     ? (!currentFilter || currentFilter === "all")
@@ -433,20 +548,35 @@ export default function StatCards({ stats }: Props) {
                         key={stat.label}
                         onClick={() => handleCardClick(stat.filterVal)}
                         disabled={isPending}
-                        className={`bg-card border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer text-left ${
-                            isActive ? "border-primary ring-1 ring-primary/20" : "border-border"
-                        } ${isPending ? "opacity-70" : ""}`}
+                        className={cn(
+                            "group relative rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 cursor-pointer text-left overflow-hidden border",
+                            isActive
+                                ? "shadow-md scale-[1.02]"
+                                : "hover:shadow-md hover:-translate-y-0.5",
+                            isPending && "opacity-70"
+                        )}
+                        style={{
+                            backgroundColor: stat.cardBg,
+                            borderColor: isActive ? stat.borderActive : "transparent",
+                            boxShadow: isActive ? `0 4px 12px ${stat.borderActive}20` : undefined,
+                        }}
                     >
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stat.color}`}>
+                        {/* Icon — nền solid color, icon trắng */}
+                        <div
+                            className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105"
+                            style={{ backgroundColor: stat.iconBg }}
+                        >
                             {isPending && isActive ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loader2 className="w-5 h-5 text-white animate-spin" />
                             ) : (
-                                <stat.icon className="w-5 h-5" />
+                                <stat.icon className="w-5 h-5 text-white" />
                             )}
                         </div>
+
+                        {/* Content — KHÔNG truncate, cho phép xuống dòng */}
                         <div className="min-w-0">
-                            <p className="text-sm text-muted-foreground truncate">{stat.label}</p>
-                            <p className="text-xl font-bold text-foreground leading-none mt-1 truncate">{stats[stat.key]}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground leading-tight">{stat.label}</p>
+                            <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1">{stats[stat.key]}</p>
                         </div>
                     </button>
                 );

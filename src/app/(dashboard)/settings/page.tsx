@@ -178,9 +178,8 @@ export default function SettingsPage() {
                                     </div>
                                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {[
-                                            { id: 'be-vietnam', name: 'Be Vietnam Pro', desc: 'Chuẩn tiếng Việt, hiện đại' },
-                                            { id: 'inter', name: 'Inter', desc: 'Chuyên nghiệp, tinh tế' },
                                             { id: 'roboto', name: 'Roboto', desc: 'Phổ biến, rõ ràng' },
+                                            { id: 'inter', name: 'Inter', desc: 'Chuyên nghiệp, tinh tế' },
                                             { id: 'jakarta', name: 'Jakarta Sans', desc: 'Năng động, cao cấp' },
                                         ].map((f) => (
                                             <button

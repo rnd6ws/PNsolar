@@ -71,7 +71,7 @@
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.708 0 0);
 
-  --font-sans: "Be Vietnam Pro", sans-serif;
+  --font-sans: var(--font-roboto), "Roboto", sans-serif;
 }
 
 /* Theme Presets - Light Mode */
@@ -254,12 +254,12 @@
 
 
 /* Font Families */
-[data-font="inter"] {
-  --font-sans: "Inter", sans-serif;
-}
-
 [data-font="roboto"] {
   --font-sans: "Roboto", sans-serif;
+}
+
+[data-font="inter"] {
+  --font-sans: "Inter", sans-serif;
 }
 
 [data-font="jakarta"] {
@@ -309,6 +309,7 @@
 
 /* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
 @media screen and (max-width: 768px) {
+
   input,
   select,
   textarea {
@@ -358,6 +359,15 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 @layer utilities {
   .shadow-xs {
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  /* Ẩn thanh cuộn nhưng vẫn scroll được */
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
   }
 
   .card-premium {

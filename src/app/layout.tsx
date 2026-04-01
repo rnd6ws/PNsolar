@@ -1,28 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, Inter, Roboto, Plus_Jakarta_Sans } from "next/font/google";
+import { Roboto, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from 'sonner';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
-const beVietnam = Be_Vietnam_Pro({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-be-vietnam",
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-roboto",
   display: "swap",
 });
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: "swap",
-});
-
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-roboto",
   display: "swap",
 });
 
@@ -61,7 +55,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning className={cn(
-      beVietnam.variable,
       inter.variable,
       roboto.variable,
       jakarta.variable

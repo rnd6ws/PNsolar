@@ -3,13 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
-export type ColumnKey = "ngayTao" | "nhuCau" | "giaTriDK" | "dkChot" | "tinhTrang";
+export type ColumnKey = "ngayTao" | "nhuCau" | "giaTriDK" | "dkChot" | "tinhTrang" | "pctChot";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: "ngayTao", label: "Ngày tạo" },
     { key: "nhuCau", label: "Nhu cầu" },
     { key: "giaTriDK", label: "Giá trị DK" },
     { key: "dkChot", label: "DK chốt" },
+    { key: "pctChot", label: "% Chốt đơn" },
     { key: "tinhTrang", label: "Tình trạng" },
 ];
 

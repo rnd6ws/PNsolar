@@ -55,9 +55,9 @@ export default async function KhachHangPage({
 
     return (
         <PermissionGuard moduleKey="khach-hang" level="view" showNoAccess>
-            <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+            <div className="space-y-5 animate-in fade-in duration-500 pb-10">
                 {/* Header */}
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-5">
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
                             <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Khách hàng</h1>
@@ -90,7 +90,7 @@ export default async function KhachHangPage({
                 </div>
 
                 {/* Content Card */}
-                <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col mt-2 relative">
+                <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col relative overflow-hidden">
                     <KhachHangPageClient
                         data={data as any}
                         phanLoais={phanLoais as any}

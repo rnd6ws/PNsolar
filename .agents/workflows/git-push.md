@@ -25,9 +25,9 @@ git status --short
 git add -A
 ```
 
-### 3. Commit với message tiếng Anh ngắn gọn
+### 3. Commit với message tiếng Việt không dấu ngắn gọn
 ```
-git commit -m "type: short english description"
+git commit -m "type: mo ta ngan gon bang tieng vietnam khong dau"
 ```
 
 **Quy tắc commit message:**

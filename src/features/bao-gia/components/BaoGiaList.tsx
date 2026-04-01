@@ -22,9 +22,10 @@ const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v)
 interface Props {
     data: any[];
     visibleColumns: ColumnKey[];
+    viewMode?: "list" | "card";
 }
 
-export default function BaoGiaList({ data, visibleColumns }: Props) {
+export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: Props) {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
     const [editModal, setEditModal] = useState(false);
@@ -138,7 +139,7 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
     return (
         <>
             {/* ═══ Desktop Table ═══ */}
-            <div className="hidden lg:block overflow-x-auto">
+            <div className={`overflow-x-auto ${viewMode === "card" ? "hidden lg:block" : ""}`}>
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -277,6 +278,7 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
             </div>
 
             {/* ═══ Mobile Cards ═══ */}
+            {viewMode === "card" && (
             <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
                 {sortedData.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">Không có dữ liệu</div>
@@ -355,6 +357,7 @@ export default function BaoGiaList({ data, visibleColumns }: Props) {
                     ))
                 )}
             </div>
+            )}
 
             {/* ═══ Delete Dialog ═══ */}
             <DeleteConfirmDialog

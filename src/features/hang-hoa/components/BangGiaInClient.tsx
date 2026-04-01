@@ -106,7 +106,7 @@ export default function BangGiaInClient() {
     let globalSTT = 0;
 
     return (
-        <div className="bg-gray-100 min-h-screen" style={{ fontFamily: "'Be Vietnam Pro', sans-serif" }}>
+        <div className="bg-gray-100 min-h-screen" style={{ fontFamily: "'Roboto', sans-serif" }}>
             {/* Print Control Bar - Hidden when printing */}
             <div className="print:hidden sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
                 <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center justify-between gap-3">

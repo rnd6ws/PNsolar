@@ -49,7 +49,7 @@ export default function SettingNhomHHButton({
         <>
             <button
                 onClick={() => setIsModalOpen(true)}
-                className="btn-premium-secondary text-sm font-medium shadow-sm transition-all"
+                className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex items-center gap-2 text-sm"
                 title="Cài đặt Nhóm hàng hóa"
             >
                 <Settings className="w-4 h-4" />

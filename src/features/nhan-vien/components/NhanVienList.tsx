@@ -16,11 +16,13 @@ export default function NhanVienList({
     chucVus = [],
     phongBans = [],
     visibleColumns,
+    viewMode = 'list',
 }: {
     employees: any[];
     chucVus?: { ID: string; CHUC_VU: string }[];
     phongBans?: { ID: string; PHONG_BAN: string }[];
     visibleColumns?: ColumnKey[];
+    viewMode?: "list" | "card";
 }) {
     const [editingEmp, setEditingEmp] = useState<any>(null);
     const [editAvatarUrl, setEditAvatarUrl] = useState('');
@@ -147,7 +149,7 @@ export default function NhanVienList({
     return (
         <div className="w-full">
             {/* Desktop View */}
-            <div className="hidden lg:block overflow-x-auto">
+            <div className={`overflow-x-auto ${viewMode === "card" ? "hidden lg:block" : ""}`}>
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -254,6 +256,7 @@ export default function NhanVienList({
             </div>
 
             {/* Mobile View (Cards) */}
+            {viewMode === "card" && (
             <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
                 {employees.map((emp) => (
                     <div key={emp.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-4">
@@ -299,6 +302,7 @@ export default function NhanVienList({
                     <div className="p-8 text-center text-muted-foreground italic text-sm">Chưa có nhân viên nào được thêm.</div>
                 )}
             </div>
+            )}
 
             {/* Modal Đổi mật khẩu */}
             <Modal

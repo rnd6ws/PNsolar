@@ -35,9 +35,8 @@ export function PreferencesPopover() {
     ];
 
     const fonts = [
-        { id: 'be-vietnam', name: 'Be Vietnam Pro' },
-        { id: 'inter', name: 'Inter' },
         { id: 'roboto', name: 'Roboto' },
+        { id: 'inter', name: 'Inter' },
         { id: 'jakarta', name: 'Jakarta Sans' },
     ];
 

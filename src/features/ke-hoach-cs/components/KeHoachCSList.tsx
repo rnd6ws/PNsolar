@@ -31,6 +31,7 @@ interface Props {
     currentUserId?: string;
     visibleColumns: ColumnKey[];
     groupBy?: string;
+    viewMode?: "list" | "card";
 }
 
 const TRANG_THAI_COLORS: Record<string, string> = {
@@ -59,7 +60,7 @@ const getNVName = (id: string, nhanViens: any[]) => {
 };
 
 export default function KeHoachCSList({
-    data, nhanViens, loaiCSList, ketQuaList, lyDoList, currentUserId, visibleColumns, groupBy,
+    data, nhanViens, loaiCSList, ketQuaList, lyDoList, currentUserId, visibleColumns, groupBy, viewMode = "list",
 }: Props) {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [editItem, setEditItem] = useState<any>(null);
@@ -231,7 +232,61 @@ export default function KeHoachCSList({
 
     return (
         <>
-            {/* Desktop & Mobile Table (User Request: Use table for all devices) */}
+            {/* Card View - Mobile */}
+            {viewMode === "card" && (
+                <div className="p-4 space-y-3 lg:hidden">
+                    {sortedData.length === 0 && (
+                        <div className="px-6 py-16 text-center text-muted-foreground italic">
+                            Chưa có kế hoạch nào.
+                        </div>
+                    )}
+                    {sortedData.map((item) => (
+                        <div
+                            key={item.ID}
+                            onClick={() => setViewItem(item)}
+                            className="rounded-xl border border-border bg-card p-4 space-y-3 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
+                        >
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-semibold text-sm text-foreground truncate">{item.KH?.TEN_KH || '—'}</p>
+                                    {item.LOAI_CS && <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 mt-0.5">{item.LOAI_CS}</span>}
+                                </div>
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border shrink-0 ${TRANG_THAI_COLORS[item.TRANG_THAI] || 'bg-muted text-muted-foreground border-border'}`}>
+                                    {item.TRANG_THAI === 'Đã báo cáo' ? <CheckCircle2 className="w-3 h-3" /> : (item.TRANG_THAI === 'Đã hủy' || item.TRANG_THAI === 'Hủy') ? <XCircle className="w-3 h-3" /> : <TimerOff className="w-3 h-3" />}
+                                    {item.TRANG_THAI}
+                                </span>
+                            </div>
+
+                            {/* Info */}
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                    <Clock className="w-3 h-3 shrink-0 text-primary/50" />
+                                    <span>{formatDate(item.TG_TU)}</span>
+                                </div>
+                                {item.HINH_THUC && (
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <MapPin className="w-3 h-3 shrink-0 text-primary/50" />
+                                        <span>{item.HINH_THUC}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                    <User className="w-3 h-3 shrink-0 text-primary/50" />
+                                    <span className="truncate">{getNVName(item.NGUOI_CS, nhanViens)}</span>
+                                </div>
+                            </div>
+
+                            {/* Footer: Actions */}
+                            <div className="flex items-center justify-end pt-2 border-t border-border gap-0.5" onClick={e => e.stopPropagation()}>
+                                <ActionButtons item={item} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Table View */}
+            <div className={viewMode === "card" ? "hidden lg:block" : ""}>
             <div className="w-full overflow-x-auto">
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
@@ -437,6 +492,7 @@ export default function KeHoachCSList({
                         })}
                     </tbody>
                 </table>
+            </div>
             </div>
 
             {/* Modals */}
