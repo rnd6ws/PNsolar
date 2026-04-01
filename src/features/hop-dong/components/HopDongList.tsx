@@ -15,9 +15,9 @@ import { exportPLHopDongDocx } from "../utils/exportPLHopDong";
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString("vi-VN");
 const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
 
-interface Props { data: any[]; visibleColumns: ColumnKey[]; }
+interface Props { data: any[]; visibleColumns: ColumnKey[]; viewMode?: "list" | "card"; }
 
-export default function HopDongList({ data, visibleColumns }: Props) {
+export default function HopDongList({ data, visibleColumns, viewMode = "list" }: Props) {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
     const [editModal, setEditModal] = useState(false);
@@ -143,8 +143,8 @@ export default function HopDongList({ data, visibleColumns }: Props) {
 
     return (
         <>
-            {/* Desktop */}
-            <div className="hidden lg:block overflow-x-auto">
+            {/* Table View */}
+            <div className={viewMode === "card" ? "hidden lg:block overflow-x-auto" : "overflow-x-auto"}>
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -231,8 +231,9 @@ export default function HopDongList({ data, visibleColumns }: Props) {
                 </table>
             </div>
 
-            {/* Mobile Cards */}
-            <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
+            {/* Card View - Mobile */}
+            {viewMode === "card" && (
+            <div className="flex flex-col gap-4 p-4 bg-muted/10 lg:hidden">
                 {sortedData.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">Không có dữ liệu</div>
                 ) : sortedData.map((item: any) => (
@@ -297,6 +298,7 @@ export default function HopDongList({ data, visibleColumns }: Props) {
                     </div>
                 ))}
             </div>
+            )}
 
             <DeleteConfirmDialog
                 isOpen={!!deleteItem} onClose={() => setDeleteItem(null)}

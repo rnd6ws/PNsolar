@@ -36,7 +36,7 @@ export default async function HopDongPage({ searchParams }: { searchParams: Prom
                     </div>
                     <HopDongStatCards stats={stats} />
                 </div>
-                <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col mt-2 relative">
+                <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative overflow-hidden">
                     <HopDongPageClient data={data as any} />
                     {(pagination as any) && (
                         <div className="p-4 border-t flex justify-center items-center bg-transparent">

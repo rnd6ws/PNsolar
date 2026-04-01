@@ -75,9 +75,9 @@ export default async function CoHoiPage({
                             <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: "#6366f1" }}>
                                 <Target className="w-5 h-5 text-white" />
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                                 <p className="text-xs md:text-sm text-muted-foreground leading-tight">Tổng số cơ hội</p>
-                                <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1">{stats.total}</p>
+                                <p className="text-base md:text-2xl font-bold text-foreground leading-tight mt-1">{stats.total}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">Đang mở: <span className="font-semibold text-foreground">{stats.soCoHoiDangMo}</span></p>
                             </div>
                         </div>
@@ -87,9 +87,9 @@ export default async function CoHoiPage({
                             <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: "#10b981" }}>
                                 <TrendingUp className="w-5 h-5 text-white" />
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                                 <p className="text-xs md:text-sm text-muted-foreground leading-tight">Giá trị đang mở</p>
-                                <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1 truncate">{formatCurrency(stats.tongGiatriDangMo)}</p>
+                                <p className="text-base md:text-2xl font-bold text-foreground leading-tight mt-1">{formatCurrency(stats.tongGiatriDangMo)}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">Pipeline đang hoạt động</p>
                             </div>
                         </div>
@@ -99,9 +99,9 @@ export default async function CoHoiPage({
                             <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: "#f59e0b" }}>
                                 <Clock className="w-5 h-5 text-white" />
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                                 <p className="text-xs md:text-sm text-muted-foreground leading-tight">Doanh thu dự kiến</p>
-                                <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1 truncate">{formatCurrency(stats.tongDoanhThuDuKien)}</p>
+                                <p className="text-base md:text-2xl font-bold text-foreground leading-tight mt-1">{formatCurrency(stats.tongDoanhThuDuKien)}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">Từ cơ hội đang mở</p>
                             </div>
                         </div>
@@ -111,9 +111,9 @@ export default async function CoHoiPage({
                             <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: "#8b5cf6" }}>
                                 <CheckCircle2 className="w-5 h-5 text-white" />
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                                 <p className="text-xs md:text-sm text-muted-foreground leading-tight">Doanh thu đã ký HĐ</p>
-                                <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1 truncate">{formatCurrency(stats.tongDoanhThuDaKy)}</p>
+                                <p className="text-base md:text-2xl font-bold text-foreground leading-tight mt-1">{formatCurrency(stats.tongDoanhThuDaKy)}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">Hợp đồng đã duyệt</p>
                             </div>
                         </div>
@@ -122,7 +122,7 @@ export default async function CoHoiPage({
                 </div>
 
                 {/* Content Card */}
-                <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col mt-2 relative">
+                <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative overflow-hidden">
                     <CoHoiPageClient
                         data={data as any}
                         dmDichVu={dmDichVu as any}

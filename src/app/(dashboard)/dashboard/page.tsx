@@ -183,6 +183,18 @@ const moduleGroups: ModuleGroup[] = [
                 moduleKey: "bao-gia",
             },
             {
+                name: "Hợp đồng",
+                description: "Quản lý hợp đồng, duyệt và xuất file hợp đồng.",
+                href: "/hop-dong",
+                icon: ClipboardList,
+                color: "text-violet-600 dark:text-violet-400",
+                bgColor: "bg-violet-50 dark:bg-violet-950/50",
+                gradientFrom: "from-violet-500/10",
+                gradientTo: "to-purple-500/10",
+                available: true,
+                moduleKey: "hop-dong",
+            },
+            {
                 name: "Hạng mục KS",
                 description: "Quản lý loại công trình, nhóm và hạng mục khảo sát.",
                 href: "/hang-muc-ks",
