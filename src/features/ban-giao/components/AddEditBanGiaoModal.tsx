@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { PackageCheck, Search, CalendarDays, FileText } from "lucide-react";
+import { PackageCheck, Search, CalendarDays, FileText, Upload, X, Loader2 } from "lucide-react";
+import { useMultipleFileUpload } from "@/hooks/useFileUpload";
 import Modal from "@/components/Modal";
 import { createBanGiao, updateBanGiao, searchHopDongForBanGiao } from "../action";
 
@@ -20,12 +21,36 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
     const [soHD, setSoHD] = useState("");
     const [ngayBanGiao, setNgayBanGiao] = useState("");
     const [thoiGianBaoHanh, setThoiGianBaoHanh] = useState("");
+    const [tepDinhKems, setTepDinhKems] = useState<string[]>([]);
+
+    const { uploadMultiple, uploading: fileUploading } = useMultipleFileUpload({
+        folder: 'pnsolar/ban-giao',
+        onSuccessItem: (uploadedFile) => {
+            setTepDinhKems(prev => [...prev, uploadedFile.url]);
+        }
+    });
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const items = files.map(file => ({ file }));
+        try {
+            await uploadMultiple(items);
+        } catch (error) {
+            toast.error("Lỗi khi tải lên file đính kèm");
+        } finally {
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
 
     // HD search
     const [hdQuery, setHDQuery] = useState("");
     const [hdResults, setHDResults] = useState<any[]>([]);
     const [selectedHD, setSelectedHD] = useState<any | null>(null);
     const [showHDDropdown, setShowHDDropdown] = useState(false);
+    const [isHDLoading, setIsHDLoading] = useState(false);
     const hdSearchRef = useRef<HTMLDivElement>(null);
     const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -38,6 +63,7 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                 setThoiGianBaoHanh(editData.THOI_GIAN_BAO_HANH ? editData.THOI_GIAN_BAO_HANH.slice(0, 10) : "");
                 setSelectedHD({ SO_HD: editData.SO_HD, ...editData.HD_REL });
                 setHDQuery(editData.SO_HD || "");
+                setTepDinhKems(editData.FILE_DINH_KEM || []);
             } else {
                 setSoHD("");
                 setNgayBanGiao(new Date().toISOString().slice(0, 10));
@@ -47,24 +73,28 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                 setThoiGianBaoHanh(oneYear.toISOString().slice(0, 10));
                 setSelectedHD(null);
                 setHDQuery("");
+                setTepDinhKems([]);
             }
         }
     }, [isOpen, editData]);
 
-    // HD search debounce
+    // HD search debounce & fetch initial
     useEffect(() => {
-        if (isEdit) return;
-        clearTimeout(searchTimer.current);
-        if (!hdQuery.trim()) {
-            setHDResults([]);
+        if (isEdit || !isOpen) return;
+
+        // Skip exact match re-fetching when option is selected
+        if (selectedHD && hdQuery === selectedHD.SO_HD) {
             return;
         }
+
+        clearTimeout(searchTimer.current);
         searchTimer.current = setTimeout(async () => {
+            setIsHDLoading(true);
             const results = await searchHopDongForBanGiao(hdQuery);
-            setHDResults(results);
-            setShowHDDropdown(true);
+            setHDResults(results || []);
+            setIsHDLoading(false);
         }, 300);
-    }, [hdQuery, isEdit]);
+    }, [hdQuery, isEdit, isOpen, selectedHD]);
 
     // Click outside
     useEffect(() => {
@@ -86,12 +116,14 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                 result = await updateBanGiao(editData.ID, {
                     NGAY_BAN_GIAO: ngayBanGiao,
                     THOI_GIAN_BAO_HANH: thoiGianBaoHanh || null,
+                    FILE_DINH_KEM: tepDinhKems,
                 });
             } else {
                 result = await createBanGiao({
                     SO_HD: soHD,
                     NGAY_BAN_GIAO: ngayBanGiao,
                     THOI_GIAN_BAO_HANH: thoiGianBaoHanh || null,
+                    FILE_DINH_KEM: tepDinhKems,
                 });
             }
 
@@ -138,63 +170,90 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                     <div className="space-y-2" ref={hdSearchRef}>
                         <label className="text-sm font-semibold text-muted-foreground">Hợp đồng <span className="text-destructive">*</span></label>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <input
                                 type="text"
-                                className="input-modern pl-9"
+                                className="input-modern w-full"
+                                style={{ paddingLeft: "2.5rem" }}
                                 placeholder="Tìm hợp đồng đã duyệt..."
                                 value={hdQuery}
                                 onChange={(e) => {
                                     setHDQuery(e.target.value);
-                                    setSoHD("");
-                                    setSelectedHD(null);
+                                    if (e.target.value !== selectedHD?.SO_HD) {
+                                        setSoHD("");
+                                        setSelectedHD(null);
+                                    }
+                                    setShowHDDropdown(true);
                                 }}
-                                onFocus={() => hdResults.length > 0 && setShowHDDropdown(true)}
+                                onClick={() => setShowHDDropdown(true)}
+                                onFocus={() => setShowHDDropdown(true)}
                                 required={!soHD}
+                                autoComplete="off"
                             />
-                            {showHDDropdown && hdResults.length > 0 && (
-                                <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-60 overflow-y-auto">
-                                    {hdResults.map((hd) => (
-                                        <button
-                                            key={hd.ID}
-                                            type="button"
-                                            className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted transition-colors text-left"
-                                            onClick={() => {
-                                                setSelectedHD(hd);
-                                                setSoHD(hd.SO_HD);
-                                                setHDQuery(hd.SO_HD);
-                                                setShowHDDropdown(false);
-                                            }}
-                                        >
-                                            <FileText className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                                            <div className="min-w-0">
-                                                <p className="font-semibold text-foreground text-sm truncate">{hd.SO_HD}</p>
-                                                <p className="text-xs text-muted-foreground truncate">
-                                                    {hd.KHTN_REL?.TEN_KH} — {hd.LOAI_HD}
-                                                </p>
-                                                {hd.BAN_GIAO_HD?.length > 0 && (
-                                                    <p className="text-[11px] text-orange-500 mt-0.5">
-                                                        Đã có {hd.BAN_GIAO_HD.length} biên bản bàn giao
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </button>
-                                    ))}
+                            {showHDDropdown && (
+                                <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-60 flex flex-col">
+                                    {isHDLoading ? (
+                                        <div className="p-4 text-center text-sm text-muted-foreground">Đang tải danh sách...</div>
+                                    ) : hdResults.length > 0 ? (
+                                        <div className="overflow-y-auto">
+                                            {hdResults.map((hd) => (
+                                                <button
+                                                    key={hd.ID}
+                                                    type="button"
+                                                    className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted transition-colors text-left"
+                                                    onClick={() => {
+                                                        setSelectedHD(hd);
+                                                        setSoHD(hd.SO_HD);
+                                                        setHDQuery(hd.SO_HD);
+                                                        setShowHDDropdown(false);
+                                                    }}
+                                                >
+                                                    <FileText className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-semibold text-foreground text-sm truncate">Số HĐ: {hd.SO_HD}</p>
+                                                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                                                            <p className="truncate">Cty/KH: {hd.KHTN_REL?.TEN_KH}</p>
+                                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                                                {hd.NGAY_HD && <p>Ngày HĐ: {new Date(hd.NGAY_HD).toLocaleDateString('vi-VN')}</p>}
+                                                                {hd.TONG_TIEN !== undefined && <p>Tiền HĐ: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(hd.TONG_TIEN || 0)}</p>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 text-center text-sm text-muted-foreground bg-muted/20">
+                                            Không có hợp đồng chưa bàn giao nào.
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
                         {selectedHD && (
                             <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm">
-                                <p className="font-semibold text-primary">{selectedHD.SO_HD}</p>
-                                <p className="text-muted-foreground text-xs mt-0.5">{selectedHD.KHTN_REL?.TEN_KH}</p>
+                                <p className="font-semibold text-primary">Số HĐ: {selectedHD.SO_HD}</p>
+                                <div className="text-muted-foreground text-xs mt-1 space-y-0.5">
+                                    <p>Cty/KH: {selectedHD.KHTN_REL?.TEN_KH}</p>
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        {selectedHD.NGAY_HD && <p>Ngày HĐ: {new Date(selectedHD.NGAY_HD).toLocaleDateString('vi-VN')}</p>}
+                                        {selectedHD.TONG_TIEN !== undefined && <p>Tiền HĐ: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedHD.TONG_TIEN || 0)}</p>}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
                 ) : (
                     <div className="bg-muted/40 border border-border rounded-lg p-3 text-sm">
                         <p className="text-xs text-muted-foreground mb-1">Hợp đồng</p>
-                        <p className="font-semibold text-foreground">{editData?.SO_HD}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{editData?.HD_REL?.KHTN_REL?.TEN_KH}</p>
+                        <p className="font-semibold text-foreground">Số HĐ: {editData?.SO_HD}</p>
+                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                            <p>Cty/KH: {editData?.HD_REL?.KHTN_REL?.TEN_KH}</p>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                {editData?.HD_REL?.NGAY_HD && <p>Ngày HĐ: {new Date(editData.HD_REL.NGAY_HD).toLocaleDateString('vi-VN')}</p>}
+                                {editData?.HD_REL?.TONG_TIEN !== undefined && <p>Tiền HĐ: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(editData.HD_REL.TONG_TIEN || 0)}</p>}
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -204,30 +263,94 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                         <label className="text-sm font-semibold text-muted-foreground">
                             Ngày bàn giao <span className="text-destructive">*</span>
                         </label>
-                        <div className="relative">
-                            <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <input
-                                type="date"
-                                className="input-modern pl-9"
-                                value={ngayBanGiao}
-                                onChange={(e) => setNgayBanGiao(e.target.value)}
-                                required
-                            />
-                        </div>
+                        <input
+                            type="date"
+                            className="input-modern w-full"
+                            value={ngayBanGiao}
+                            onChange={(e) => setNgayBanGiao(e.target.value)}
+                            required
+                        />
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-sm font-semibold text-muted-foreground">Bảo hành đến</label>
-                        <div className="relative">
-                            <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <input
-                                type="date"
-                                className="input-modern pl-9"
-                                value={thoiGianBaoHanh}
-                                onChange={(e) => setThoiGianBaoHanh(e.target.value)}
-                            />
-                        </div>
+                        <input
+                            type="date"
+                            className="input-modern w-full"
+                            value={thoiGianBaoHanh}
+                            onChange={(e) => setThoiGianBaoHanh(e.target.value)}
+                        />
                         <p className="text-xs text-muted-foreground">Để trống nếu không có bảo hành</p>
+                    </div>
+                </div>
+
+                {/* Tệp đính kèm */}
+                <div className="space-y-2">
+                    <label className="text-sm font-semibold text-muted-foreground">Tệp đính kèm (Hình ảnh, PDF, Excel...)</label>
+                    <div className="border border-dashed border-border rounded-xl p-4 transition-colors hover:border-primary/50 bg-muted/10">
+                        <div className="flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="file"
+                                    multiple
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    disabled={fileUploading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={fileUploading}
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
+                                >
+                                    {fileUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                    {fileUploading ? "Đang tải lên..." : "Chọn tệp tải lên"}
+                                </button>
+                                <span className="text-xs text-muted-foreground">Có thể tải nhiều file/hình ảnh cùng lúc</span>
+                            </div>
+
+                            {tepDinhKems.length > 0 && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                                    {tepDinhKems.map((url, idx) => {
+                                        const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url) || url.includes('image/upload');
+                                        const getFileName = (u: string) => {
+                                            try {
+                                                const parts = u.split('/');
+                                                let lastPart = parts.pop() || `Tài liệu ${idx + 1}`;
+                                                lastPart = lastPart.split('?')[0];
+                                                return decodeURIComponent(lastPart);
+                                            } catch {
+                                                return `Tài liệu ${idx + 1}`;
+                                            }
+                                        };
+                                        const fileName = getFileName(url);
+
+                                        return (
+                                            <div key={idx} className="relative group border rounded-lg overflow-hidden bg-background">
+                                                {isImage ? (
+                                                    <a href={url} target="_blank" rel="noreferrer" className="block h-20 w-full hover:opacity-80 transition-opacity">
+                                                        <img src={url} alt={`Đính kèm ${idx + 1}`} className="w-full h-full object-cover" />
+                                                    </a>
+                                                ) : (
+                                                    <a href={url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 h-20 w-full bg-muted/30 hover:bg-muted/50 transition-colors text-center text-muted-foreground hover:text-foreground">
+                                                        <FileText className="w-8 h-8 mb-2 shrink-0 text-primary/70" />
+                                                        <span className="text-[11px] w-full truncate px-1 font-medium" title={fileName}>{fileName}</span>
+                                                    </a>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTepDinhKems(prev => prev.filter((_, i) => i !== idx))}
+                                                    className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-destructive text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </form>

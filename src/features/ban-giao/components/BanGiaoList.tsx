@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import {
-    ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Pencil, Trash2,
+    ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Pencil, Trash2, Eye,
     FileText, ShieldCheck, ShieldOff, ShieldAlert, Paperclip, CalendarDays, PackageCheck,
 } from "lucide-react";
 import {
@@ -14,7 +14,7 @@ import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { deleteBanGiao } from "../action";
 import type { ColumnKey } from "./ColumnToggleButton";
 import AddEditBanGiaoModal from "./AddEditBanGiaoModal";
-
+import ViewBanGiaoModal from "./ViewBanGiaoModal";
 interface Props {
     data: any[];
     visibleColumns: ColumnKey[];
@@ -53,6 +53,7 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [editItem, setEditItem] = useState<any | null>(null);
     const [deleteItem, setDeleteItem] = useState<any | null>(null);
+    const [viewItem, setViewItem] = useState<any | null>(null);
 
     // ─── Sort ─────────────────────────────────────────────────
     const sortedData = useMemo(() => {
@@ -196,6 +197,13 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
                                 )}
                                 <td className="px-4 py-3 text-right">
                                     <div className="flex items-center justify-end gap-1">
+                                        <button
+                                            onClick={() => setViewItem(item)}
+                                            className="p-1.5 rounded-lg hover:bg-blue-500/10 text-muted-foreground hover:text-blue-600 transition-colors"
+                                            title="Xem chi tiết"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
                                         <PermissionGuard moduleKey="ban-giao" level="edit">
                                             <button
                                                 onClick={() => setEditItem(item)}
@@ -241,6 +249,9 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-36 rounded-xl">
+                                    <DropdownMenuItem onClick={() => setViewItem(item)} className="gap-2 cursor-pointer">
+                                        <Eye className="w-4 h-4" /> Xem
+                                    </DropdownMenuItem>
                                     <PermissionGuard moduleKey="ban-giao" level="edit">
                                         <DropdownMenuItem onClick={() => setEditItem(item)} className="gap-2 cursor-pointer">
                                             <Pencil className="w-4 h-4" /> Sửa
@@ -291,6 +302,12 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
             </div>
 
             {/* ─── Modals ─── */}
+            <ViewBanGiaoModal 
+                isOpen={!!viewItem}
+                onClose={() => setViewItem(null)}
+                data={viewItem} 
+            />
+
             {editItem && (
                 <AddEditBanGiaoModal
                     isOpen={!!editItem}

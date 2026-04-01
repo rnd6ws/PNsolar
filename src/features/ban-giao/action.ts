@@ -58,6 +58,7 @@ export async function getBanGiaoList(filters: {
                         select: {
                             SO_HD: true,
                             LOAI_HD: true,
+                            NGAY_HD: true,
                             TONG_TIEN: true,
                             KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIEN_THOAI: true, DIA_CHI: true } },
                         },
@@ -113,7 +114,10 @@ export async function getBanGiaoStats() {
 // ─── Tìm hợp đồng đã duyệt để bàn giao ─────────────────────
 export async function searchHopDongForBanGiao(query?: string) {
     try {
-        const where: any = { DUYET: 'Đã duyệt' };
+        const where: any = { 
+            DUYET: 'Đã duyệt',
+            BAN_GIAO_HD: { none: {} } // Chỉ lấy hợp đồng chưa bàn giao
+        };
         if (query?.trim()) {
             where.OR = [
                 { SO_HD: { contains: query, mode: 'insensitive' } },
