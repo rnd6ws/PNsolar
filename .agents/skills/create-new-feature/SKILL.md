@@ -22,14 +22,15 @@ Bạn được trang bị kỹ năng này để đảm bảo mỗi khi User yêu
 
 File này chứa TẤT CẢ các quy chuẩn UI/UX đã được chuẩn hóa trong dự án, bao gồm:
 - ✅ Mobile Toolbar Toggle (nút Settings2 ẩn/hiện filter)
+- ✅ **Toolbar Gradient**: Nền chuyển màu dọc `from-primary/3 to-primary/8`
 - ✅ Sort trên tiêu đề bảng (ArrowUpDown/ArrowUp/ArrowDown)
-- ✅ Table Header & Row Styling (bg-primary/10, uppercase tracking-widest)
-- ✅ Desktop/Mobile Dual Layout (table + card list)
+- ✅ Table Header & Row Styling (bg-primary/10, tracking-widest)
+- ✅ **Toggle List/Card View** (mobile chọn dạng bảng hoặc thẻ)
 - ✅ ColumnToggleButton (ẩn/hiện cột)
 - ✅ Modal & Form Styling (label không uppercase, viết hoa chữ đầu)
 - ✅ Mobile Action Dropdown (DropdownMenu + MoreHorizontal)
 - ✅ Filter qua URL (useSearchParams, KHÔNG useState)
-- ✅ **Stat Cards** (Client Component + `useTransition`, KHÔNG dùng `<Link>`)
+- ✅ **Stat Cards đa màu** (Multi-Color System: Indigo, Emerald, Amber, Violet, Red — inline style)
 - ✅ **Loading Skeleton** (`loading.tsx` bắt buộc cho mỗi trang)
 - ✅ **Label viết hoa chữ đầu** (Ngày hiệu lực, KHÔNG ngày hiệu lực)
 - ✅ **Format tiền tệ** (dấu phân cách hàng nghìn, type="text" + inputMode="numeric")
@@ -73,14 +74,17 @@ Khi code `[Tên]PageClient.tsx` và `[Tên]List.tsx`:
 
 **PageClient** phải có đủ:
 - `showFilters` state + nút `Settings2` toggle cho mobile
+- `viewMode` state (`"list" | "card"`) + nút `LayoutList`/`LayoutGrid` toggle cho mobile
 - Desktop toolbar (`hidden lg:flex`) hiển thị filter + ColumnToggle + Download
 - Mobile expanded filters panel (`lg:hidden`) với animation `animate-in slide-in-from-top-2`
+- **Toolbar gradient**: `bg-linear-to-b from-primary/3 to-primary/8`, border `border-primary/10`
 
 **List** phải có đủ:
 - `sortConfig` state + `sortedData` (useMemo) + `handleSort` + `SortIcon`
-- Desktop table (`hidden lg:block`) với header sortable
-- Mobile cards (`lg:hidden`) dùng cùng `sortedData`
-- Mobile action dropdown (`MoreHorizontal` + `DropdownMenu`)
+- Nhận prop `viewMode?: "list" | "card"`
+- **Card view** (khi `viewMode === "card"`): hiện `lg:hidden`, đầy đủ nút hành động
+- **Table view**: `viewMode === "card" ? "hidden lg:block" : ""`
+- Mobile action dropdown (`MoreHorizontal` + `DropdownMenu`) trong table view
 - Desktop action buttons (hiện riêng lẻ khi hover group)
 
 **Toast thông báo (BẮT BUỘC):**
@@ -147,9 +151,10 @@ Khi code `[Tên]PageClient.tsx` và `[Tên]List.tsx`:
 - **KHÔNG ĐƯỢC** dùng `<Link>` cho stat cards — gây delay khi click do full server re-render
 - Grid `grid-cols-2 md:grid-cols-4 gap-4` — luôn đủ **4 cards**
 - Mỗi card: icon (w-10 h-10 rounded-lg) + label `text-sm` ở **trên** + số `text-xl font-bold` ở **dưới**
-- 4 màu chuẩn: primary, orange, green, purple
+- 4–5 màu cố định (inline style): Indigo `#6366f1`, Emerald `#10b981`, Amber `#f59e0b`, Violet `#8b5cf6`, Red `#ef4444`
 - Khi đang loading: hiển thị `Loader2 animate-spin` trên card đang active
-- **KHÔNG gradient**, **KHÔNG padding-6**
+- **KHÔNG** dùng `truncate` cho label — cho phép xuống dòng
+- **KHÔNG** dùng màu theme-dependent (`bg-primary/10`) cho cards — dùng màu cố định inline style
 
 **Loading Skeleton** (`loading.tsx`) bắt buộc:
 - Mỗi trang **PHẢI** có file `loading.tsx` trong thư mục route để Next.js hiển thị skeleton ngay khi URL thay đổi
@@ -235,9 +240,13 @@ Khớp tên `moduleKey` và cho `available: true`.
 - CẤM dùng `useState` cho filter — phải dùng URL params qua `useSearchParams`.
 - CẤM dùng `uppercase` cho label trong modal/form.
 - CẤM viết label chữ thường (phải viết hoa chữ đầu: "Ngày hiệu lực" không phải "ngày hiệu lực").
-- CẤM dùng gradient card hoặc card chỉ có 1-3 cái — phải đúng 4 stat cards kiểu chuẩn.
+- CẤM dùng gradient card hoặc màu theme-dependent cho stat cards — phải dùng **màu cố định inline style** (Indigo, Emerald, Amber, Violet, Red).
+- CẤM dùng `truncate` cho label stat cards — cho phép xuống dòng.
 - CẤM dùng `<Link>` cho stat cards — phải dùng Client Component + `useTransition` + `router.replace` để tránh delay.
+- CẤM toolbar không có gradient — phải dùng `bg-linear-to-b from-primary/3 to-primary/8`.
 - CẤM tạo trang mà KHÔNG có `loading.tsx` — mỗi route PHẢI có file loading skeleton.
+- CẤM card view mobile thiếu nút hành động — phải có ĐẦY ĐỦ các nút giống bảng.
+- CẤM dùng gradient **ngang** cho table header — bị lỗi trên mobile khi scroll ngang.
 - CẤM dùng `type="number"` cho trường tiền tệ — phải dùng `type="text"` + format dấu phân cách.
 - CẤM dùng **xóa mềm** (Soft Delete / `DELETED_AT`) — toàn bộ dự án đã chuyển sang **xóa cứng** (`prisma.[model].delete()`). KHÔNG thêm field `DELETED_AT` vào schema, KHÔNG dùng `update({ data: { DELETED_AT: new Date() } })`.
 - CẤM bỏ sót **toast thông báo** — mọi thao tác Thêm/Sửa/Xóa **phải** có `toast.success()` khi thành công và `toast.error()` khi thất bại. Import từ `sonner`.

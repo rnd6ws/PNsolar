@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { FileText, Home, Factory, DollarSign, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
     stats: {
@@ -18,28 +19,36 @@ const statCards = [
         label: "Tổng báo giá",
         key: "total" as const,
         icon: FileText,
-        color: "text-primary bg-primary/10",
+        iconBg: "#6366f1",       // indigo-500
+        cardBg: "rgba(99, 102, 241, 0.06)",
+        borderActive: "#6366f1",
         filterVal: "all",
     },
     {
         label: "Dân dụng",
         key: "danDung" as const,
         icon: Home,
-        color: "text-orange-500 bg-orange-500/10",
+        iconBg: "#10b981",       // emerald-500
+        cardBg: "rgba(16, 185, 129, 0.06)",
+        borderActive: "#10b981",
         filterVal: "Dân dụng",
     },
     {
         label: "Công nghiệp",
         key: "congNghiep" as const,
         icon: Factory,
-        color: "text-green-600 bg-green-500/10",
+        iconBg: "#f59e0b",       // amber-500
+        cardBg: "rgba(245, 158, 11, 0.06)",
+        borderActive: "#f59e0b",
         filterVal: "Công nghiệp",
     },
     {
         label: "Tổng giá trị",
         key: "tongGiaTri" as const,
         icon: DollarSign,
-        color: "text-purple-600 bg-purple-500/10",
+        iconBg: "#8b5cf6",       // violet-500
+        cardBg: "rgba(139, 92, 246, 0.06)",
+        borderActive: "#8b5cf6",
         filterVal: "__value__", // Không filter, chỉ hiển thị
     },
 ];
@@ -79,7 +88,7 @@ export default function BaoGiaStatCards({ stats }: Props) {
     };
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {statCards.map((stat) => {
                 const isActive = stat.filterVal === "all"
                     ? (!currentFilter || currentFilter === "all")
@@ -92,22 +101,36 @@ export default function BaoGiaStatCards({ stats }: Props) {
                         key={stat.label}
                         onClick={() => handleCardClick(stat.filterVal)}
                         disabled={isPending || !isClickable}
-                        className={`bg-card border rounded-xl p-4 flex items-center gap-3 transition-all text-left ${
-                            isClickable ? "hover:shadow-md cursor-pointer" : "cursor-default"
-                        } ${
-                            isActive && isClickable ? "border-primary ring-1 ring-primary/20" : "border-border"
-                        } ${isPending ? "opacity-70" : ""}`}
+                        className={cn(
+                            "group relative rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 text-left overflow-hidden border",
+                            isClickable ? "cursor-pointer" : "cursor-default",
+                            isActive && isClickable
+                                ? "shadow-md scale-[1.02]"
+                                : isClickable ? "hover:shadow-md hover:-translate-y-0.5" : "",
+                            isPending && "opacity-70"
+                        )}
+                        style={{
+                            backgroundColor: stat.cardBg,
+                            borderColor: isActive && isClickable ? stat.borderActive : "transparent",
+                            boxShadow: isActive && isClickable ? `0 4px 12px ${stat.borderActive}20` : undefined,
+                        }}
                     >
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stat.color}`}>
+                        {/* Icon */}
+                        <div
+                            className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105"
+                            style={{ backgroundColor: stat.iconBg }}
+                        >
                             {isPending && isActive ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loader2 className="w-5 h-5 text-white animate-spin" />
                             ) : (
-                                <stat.icon className="w-5 h-5" />
+                                <stat.icon className="w-5 h-5 text-white" />
                             )}
                         </div>
+
+                        {/* Content */}
                         <div className="min-w-0">
-                            <p className="text-sm text-muted-foreground truncate">{stat.label}</p>
-                            <p className="text-xl font-bold text-foreground leading-none mt-1 truncate">
+                            <p className="text-xs md:text-sm text-muted-foreground leading-tight">{stat.label}</p>
+                            <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1">
                                 {formatValue(stat.key, stats[stat.key])}
                             </p>
                         </div>

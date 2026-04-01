@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Settings2, Grid, CalendarDays, FileText, Building2, X, ChevronDown } from "lucide-react";
+import { Download, Settings2, Grid, CalendarDays, FileText, Building2, X, ChevronDown, LayoutList, LayoutGrid } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -40,6 +40,7 @@ export default function KeHoachCSPageClient({
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [groupBy, setGroupBy] = useState<string>("TG_TU");
     const [showFilters, setShowFilters] = useState(false);
+    const [viewMode, setViewMode] = useState<"list" | "card">("list");
     const [showAddForm, setShowAddForm] = useState(false);
     const [formKey, setFormKey] = useState(0);
 
@@ -57,14 +58,31 @@ export default function KeHoachCSPageClient({
     return (
         <>
             {/* Toolbar */}
-            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
+            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8">
                 <div className="flex items-center justify-between gap-3 w-full">
                     <div className="flex-1 w-full lg:max-w-[400px]">
                         <SearchInput placeholder="Tìm tên khách hàng..." />
                     </div>
 
                     {/* Mobile toggle */}
-                    <div className="flex lg:hidden shrink-0">
+                    <div className="flex lg:hidden shrink-0 gap-2">
+                        {/* Toggle List/Card */}
+                        <div className="flex border border-border rounded-lg overflow-hidden shadow-sm">
+                            <button
+                                onClick={() => setViewMode("list")}
+                                className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                                title="Dạng bảng"
+                            >
+                                <LayoutList className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode("card")}
+                                className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                                title="Dạng thẻ"
+                            >
+                                <LayoutGrid className="w-4 h-4" />
+                            </button>
+                        </div>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
                             className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${
@@ -191,6 +209,7 @@ export default function KeHoachCSPageClient({
                     currentUserId={currentUserId}
                     visibleColumns={visibleColumns}
                     groupBy={groupBy}
+                    viewMode={viewMode}
                 />
             </div>
 

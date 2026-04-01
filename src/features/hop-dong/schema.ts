@@ -55,9 +55,13 @@ export interface HopDongFull {
     TT_UU_DAI: number;
     TONG_TIEN: number;
     TEP_DINH_KEM: string[];
+    DUYET?: string | null;
+    NGUOI_DUYET?: string | null;
+    NGAY_DUYET?: string | null;
     CREATED_AT: string;
     // Relations
     KHTN_REL?: { TEN_KH: string; MA_KH: string };
+    NGUOI_DUYET_REL?: { HO_TEN: string; MA_NV: string } | null;
     CO_HOI_REL?: { MA_CH: string; NGAY_TAO: string; GIA_TRI_DU_KIEN: number | null } | null;
     BAO_GIA_REL?: { MA_BAO_GIA: string; NGAY_BAO_GIA: string; TONG_TIEN: number } | null;
     HOP_DONG_CT?: any[];
@@ -119,7 +123,8 @@ export const DEFAULT_THONG_TIN_KHAC: Omit<ThongTinKhacRow, '_id'>[] = [
     { TIEU_DE: 'Nơi cấp', NOI_DUNG: '' }, // Nơi cấp KHTN không có mst
     { TIEU_DE: 'Số tài khoản', NOI_DUNG: '' }, // Số tài khoản KHTN có mst
     { TIEU_DE: 'Ngân hàng', NOI_DUNG: '' }, // Ngân hàng KHTN có mst
-    { TIEU_DE: 'Chủ tài khoản', NOI_DUNG: '' }, // Chủ tài khoản KHTN có mst
+    { TIEU_DE: 'Chủ TK', NOI_DUNG: '' }, // Chủ tài khoản KHTN có mst
+    { TIEU_DE: 'Mã số thuế', NOI_DUNG: '' }, // Mã số thuế KHTN có mst
 ];
 
 // ===== Giá trị mặc định cho DK_HD (Điều khoản hợp đồng) =====

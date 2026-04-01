@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Settings, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Settings2, ChevronDown } from "lucide-react";
 import {
     createLoaiCS, deleteLoaiCS,
     createKetQuaCS, deleteKetQuaCS,
@@ -61,12 +61,11 @@ export default function SettingKeHoachButton({ loaiCSList, ketQuaList }: Props) 
                 onClick={() => setIsOpen(true)}
                 className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex items-center gap-1.5 text-sm font-medium"
             >
-                <Settings className="w-4 h-4" />
-                <span className="hidden lg:inline">Cài đặt</span>
-                <ChevronDown className="w-3 h-3 hidden lg:inline" />
+                <Settings2 className="w-4 h-4" />
+                <span className="text-sm font-medium transition-all">Cài đặt danh mục</span>
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục" size="md" icon={Settings}>
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Cài đặt danh mục" size="md" icon={Settings2}>
                 <div className="flex border-b border-border mb-4">
                     <button
                         onClick={() => setTab("loai")}

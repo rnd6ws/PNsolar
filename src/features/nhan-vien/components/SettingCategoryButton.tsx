@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Trash2, Plus } from 'lucide-react';
+import { Settings2, Trash2, Plus } from 'lucide-react';
 import Modal from '@/components/Modal';
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
 import { createChucVuAction, deleteChucVuAction, createPhongBanAction, deletePhongBanAction } from '@/features/nhan-vien/action';
@@ -51,14 +51,14 @@ export default function SettingCategoryButton({
         <>
             <button
                 onClick={() => setIsModalOpen(true)}
-                className="btn-premium-secondary text-sm font-medium shadow-sm transition-all"
+                className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex items-center gap-2 text-sm"
                 title="Cài đặt phòng ban, chức vụ"
             >
-                <Settings className="w-4 h-4" />
+                <Settings2 className="w-4 h-4" />
                 Cài đặt danh mục
             </button>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Cài đặt Phòng ban & Chức vụ" icon={Settings}>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Cài đặt Phòng ban & Chức vụ" icon={Settings2}>
                 <div className="flex border-b border-border mb-4">
                     <button
                         className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'phong-ban' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}

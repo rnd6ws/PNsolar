@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { Users2, UserCheck, UserX, UserCog, Loader2 } from "lucide-react";
+import { Users2, UserCheck, UserX, UserCog, Loader2, UserPlus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
     stats: {
@@ -19,35 +20,45 @@ const statCards = [
         label: "Tổng số khách hàng",
         key: "total" as const,
         icon: Users2,
-        color: "text-primary bg-primary/10",
+        iconBg: "#6366f1",       // indigo-500
+        cardBg: "rgba(99, 102, 241, 0.06)",
+        borderActive: "#6366f1",
         filterVal: "all",
     },
     {
         label: "Khách tiềm năng",
         key: "tiemNang" as const,
-        icon: UserCheck,
-        color: "text-green-600 bg-green-500/10",
+        icon: UserPlus,
+        iconBg: "#10b981",       // emerald-500
+        cardBg: "rgba(16, 185, 129, 0.06)",
+        borderActive: "#10b981",
         filterVal: "Khách tiềm năng",
     },
     {
         label: "Khách đang triển khai",
         key: "dangTrienKhai" as const,
         icon: UserCog,
-        color: "text-orange-500 bg-orange-500/10",
+        iconBg: "#f59e0b",       // amber-500
+        cardBg: "rgba(245, 158, 11, 0.06)",
+        borderActive: "#f59e0b",
         filterVal: "Khách đang triển khai",
     },
     {
         label: "Đang sử dụng/ Duy trì",
         key: "duyTri" as const,
         icon: UserCheck,
-        color: "text-purple-600 bg-purple-500/10",
+        iconBg: "#8b5cf6",       // violet-500
+        cardBg: "rgba(139, 92, 246, 0.06)",
+        borderActive: "#8b5cf6",
         filterVal: "Khách đang sử dụng/ Duy trì",
     },
     {
         label: "Không hoạt động",
         key: "khongHoatDong" as const,
         icon: UserX,
-        color: "text-red-500 bg-red-500/10",
+        iconBg: "#ef4444",       // red-500
+        cardBg: "rgba(239, 68, 68, 0.06)",
+        borderActive: "#ef4444",
         filterVal: "Khách không hoạt động",
     },
 ];
@@ -80,7 +91,7 @@ export default function KhachHangStatCards({ stats }: Props) {
     };
 
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
             {statCards.map((stat) => {
                 const isActive = stat.filterVal === "all"
                     ? (!currentPhanLoai || currentPhanLoai === "all")
@@ -91,20 +102,35 @@ export default function KhachHangStatCards({ stats }: Props) {
                         key={stat.label}
                         onClick={() => handleCardClick(stat.filterVal)}
                         disabled={isPending}
-                        className={`bg-card border rounded-xl p-4 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer text-left ${
-                            isActive ? "border-primary ring-1 ring-primary/20" : "border-border"
-                        } ${isPending ? "opacity-70" : ""}`}
+                        className={cn(
+                            "group relative rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 cursor-pointer text-left overflow-hidden border",
+                            isActive
+                                ? "shadow-md scale-[1.02]"
+                                : "hover:shadow-md hover:-translate-y-0.5",
+                            isPending && "opacity-70"
+                        )}
+                        style={{
+                            backgroundColor: stat.cardBg,
+                            borderColor: isActive ? stat.borderActive : "transparent",
+                            boxShadow: isActive ? `0 4px 12px ${stat.borderActive}20` : undefined,
+                        }}
                     >
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stat.color}`}>
+                        {/* Icon */}
+                        <div
+                            className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105"
+                            style={{ backgroundColor: stat.iconBg }}
+                        >
                             {isPending && isActive ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loader2 className="w-5 h-5 text-white animate-spin" />
                             ) : (
-                                <stat.icon className="w-5 h-5" />
+                                <stat.icon className="w-5 h-5 text-white" />
                             )}
                         </div>
+
+                        {/* Content */}
                         <div className="min-w-0">
-                            <p className="text-sm text-muted-foreground truncate">{stat.label}</p>
-                            <p className="text-xl font-bold text-foreground leading-none mt-1 truncate">{stats[stat.key]}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground leading-tight">{stat.label}</p>
+                            <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1">{stats[stat.key]}</p>
                         </div>
                     </button>
                 );

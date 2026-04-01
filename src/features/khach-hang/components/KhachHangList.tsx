@@ -29,6 +29,7 @@ interface Props {
     lyDoTuChois?: { ID: string; LY_DO: string }[];
     visibleColumns?: ColumnKey[];
     currentUserId?: string;
+    viewMode?: "list" | "card";
 }
 
 function formatDate(val: any) {
@@ -49,7 +50,7 @@ import KhachHangDetail from "./KhachHangDetail";
 
 
 // ─── Component chính ──────────────────────────────────────────
-export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois = [], visibleColumns, currentUserId }: Props) {
+export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois = [], visibleColumns, currentUserId, viewMode = "list" }: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -214,278 +215,395 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
 
     return (
         <>
-            {/* Table */}
-            <div className="overflow-x-auto">
-                <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
-                    <thead>
-                        {/* Header dùng bg-primary/10 giống phan-loai-hh */}
-                        <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-10 text-center">#</th>
-                            {show("ngayGhiNhan") && (
-                                <th onClick={() => handleSort("NGAY_GHI_NHAN")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell w-28 whitespace-nowrap cursor-pointer group hover:text-foreground text-center">
-                                    Ngày GN <SortIcon columnKey="NGAY_GHI_NHAN" />
-                                </th>
-                            )}
-                            <th onClick={() => handleSort("TEN_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-left">
-                                Khách hàng <SortIcon columnKey="TEN_KH" />
-                            </th>
-                            {show("lienHe") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden md:table-cell text-center">Liên hệ</th>
-                            )}
-                            {show("nhom") && (
-                                <th onClick={() => handleSort("NHOM_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground text-center">
-                                    Nhóm KH <SortIcon columnKey="NHOM_KH" />
-                                </th>
-                            )}
-                            {show("phanLoai") && (
-                                <th onClick={() => handleSort("PHAN_LOAI")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground text-center">
-                                    Phân loại <SortIcon columnKey="PHAN_LOAI" />
-                                </th>
-                            )}
-                            {show("nhanVienPT") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell text-center">NV chăm sóc</th>
-                            )}
-                            {show("nguonSales") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">Nguồn / Sales</th>
-                            )}
-                            {show("diaChi") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">Địa chỉ</th>
-                            )}
-                            {show("mst") && (
-                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">MST</th>
-                            )}
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                        {sortedData.map((item, idx) => (
-                            <tr key={item.ID} className="hover:bg-muted/30 transition-colors group/row">
-                                <td className="px-4 py-3 align-middle text-muted-foreground text-xs text-center">{idx + 1}</td>
-                                {show("ngayGhiNhan") && (
-                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground font-medium whitespace-nowrap text-center">
-                                        {formatDate(item.NGAY_GHI_NHAN)}
-                                    </td>
-                                )}
-                                <td
-                                    className="px-4 py-3 align-middle text-left cursor-pointer group/name transition-colors"
-                                    onClick={() => setViewItem(item)}
-                                    title="Xem chi tiết"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        {item.HINH_ANH ? (
-                                            <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-border shrink-0">
-                                                <Image src={item.HINH_ANH} alt={item.TEN_KH} fill className="object-cover" />
-                                            </div>
-                                        ) : (
-                                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                                <UserCircle className="w-5 h-5 text-primary/50" />
-                                            </div>
-                                        )}
-                                        <div>
-                                            <p className="font-normal text-foreground group-hover/name:text-primary transition-colors text-xs leading-tight">{item.TEN_KH}</p>
+            {/* Card View - Mobile */}
+            {viewMode === "card" && (
+                <div className="p-4 space-y-3 lg:hidden">
+                    {sortedData.length === 0 && (
+                        <div className="px-6 py-16 text-center text-muted-foreground italic">
+                            Chưa có khách hàng nào. Hãy thêm mới!
+                        </div>
+                    )}
+                    {sortedData.map((item, idx) => (
+                        <div
+                            key={item.ID}
+                            onClick={() => setViewItem(item)}
+                            className="rounded-xl border border-border bg-card p-4 space-y-3 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
+                        >
+                            {/* Header: Avatar + Name + Badge */}
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    {item.HINH_ANH ? (
+                                        <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-border shrink-0">
+                                            <Image src={item.HINH_ANH} alt={item.TEN_KH} fill className="object-cover" />
                                         </div>
-                                    </div>
-                                </td>
-                                {show("lienHe") && (
-                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden md:table-cell text-center">
-                                        <div className="space-y-0.5 flex flex-col items-center">
-                                            {item.DIEN_THOAI && (
-                                                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                                                    <Phone className="w-3 h-3 shrink-0" /> {item.DIEN_THOAI}
-                                                </p>
-                                            )}
-                                            {item.EMAIL && (
-                                                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                                                    <Mail className="w-3 h-3 shrink-0" /> <span className="truncate max-w-[160px]">{item.EMAIL}</span>
-                                                </p>
-                                            )}
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                            <UserCircle className="w-5 h-5 text-primary/60" />
                                         </div>
-                                    </td>
-                                )}
-                                {show("nhom") && (
-                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell text-center">
-                                        {item.NHOM_KH ? (
-                                            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                    )}
+                                    <div className="min-w-0">
+                                        <p className="font-semibold text-sm text-foreground truncate">{item.TEN_KH}</p>
+                                        {item.NHOM_KH && (
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 mt-0.5">
                                                 {item.NHOM_KH}
                                             </span>
-                                        ) : <span className="text-xs text-muted-foreground">—</span>}
-                                    </td>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="shrink-0">
+                                    {getPhanLoaiBadge(item.PHAN_LOAI)}
+                                </div>
+                            </div>
+
+                            {/* Info rows */}
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                                {item.DIEN_THOAI && (
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Phone className="w-3 h-3 shrink-0 text-primary/50" />
+                                        <span>{item.DIEN_THOAI}</span>
+                                    </div>
+                                )}
+                                {item.EMAIL && (
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Mail className="w-3 h-3 shrink-0 text-primary/50" />
+                                        <span className="truncate">{item.EMAIL}</span>
+                                    </div>
+                                )}
+                                {item.NGAY_GHI_NHAN && (
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <CalendarPlus2 className="w-3 h-3 shrink-0 text-primary/50" />
+                                        <span>{formatDate(item.NGAY_GHI_NHAN)}</span>
+                                    </div>
+                                )}
+                                {item.NV_CS && (
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <UserCheck className="w-3 h-3 shrink-0 text-primary/50" />
+                                        <span className="truncate">{nhanViens.find((n: any) => n.ID === item.NV_CS)?.HO_TEN || item.NV_CS}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer: Actions */}
+                            <div className="flex items-center justify-between pt-2 border-t border-border">
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                    {item.NGUON && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{item.NGUON}</span>}
+                                    {item.SALES_PT && <span className="text-[10px]">• {nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN}</span>}
+                                </div>
+                                <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+                                    <button onClick={() => setViewItem(item)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem">
+                                        <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                    <PermissionGuard moduleKey="co-hoi" level="add">
+                                        <button onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-orange-500 rounded-lg transition-colors" title="Tạo cơ hội">
+                                            <Target className="w-3.5 h-3.5" />
+                                        </button>
+                                    </PermissionGuard>
+                                    <PermissionGuard moduleKey="ke-hoach-cs" level="add">
+                                        <button onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors" title="Lên kế hoạch CSKH">
+                                            <CalendarPlus2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </PermissionGuard>
+                                    <PermissionGuard moduleKey="khach-hang" level="add">
+                                        <button onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors relative" title="Người liên hệ">
+                                            <UserPlus className="w-3.5 h-3.5" />
+                                            {item._count?.NGUOI_LIENHE > 0 && (
+                                                <span className="absolute top-0 right-0 text-[9px] font-bold text-emerald-600">
+                                                    {item._count.NGUOI_LIENHE}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </PermissionGuard>
+                                    <PermissionGuard moduleKey="khach-hang" level="edit">
+                                        <button onClick={() => setEditItem(item)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
+                                            <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </PermissionGuard>
+                                    <PermissionGuard moduleKey="khach-hang" level="delete">
+                                        <button onClick={() => setDeleteItem({ ID: item.ID, TEN_KH: item.TEN_KH })} className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa">
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </PermissionGuard>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Table View */}
+            <div className={viewMode === "card" ? "hidden lg:block" : ""}>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
+                        <thead>
+                            {/* Header dùng bg-primary/10 giống phan-loai-hh */}
+                            <tr className="border-b border-border bg-primary/10">
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-10 text-center">#</th>
+                                {show("ngayGhiNhan") && (
+                                    <th onClick={() => handleSort("NGAY_GHI_NHAN")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell w-28 whitespace-nowrap cursor-pointer group hover:text-foreground text-center">
+                                        Ngày GN <SortIcon columnKey="NGAY_GHI_NHAN" />
+                                    </th>
+                                )}
+                                <th onClick={() => handleSort("TEN_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-left">
+                                    Khách hàng <SortIcon columnKey="TEN_KH" />
+                                </th>
+                                {show("lienHe") && (
+                                    <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden md:table-cell text-center">Liên hệ</th>
+                                )}
+                                {show("nhom") && (
+                                    <th onClick={() => handleSort("NHOM_KH")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground text-center">
+                                        Nhóm KH <SortIcon columnKey="NHOM_KH" />
+                                    </th>
                                 )}
                                 {show("phanLoai") && (
-                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell text-center">
-                                        <div className="flex flex-col gap-1.5 min-w-[130px] items-center">
-                                            <div className="flex items-center justify-center gap-1.5">
-                                                {getPhanLoaiBadge(item.PHAN_LOAI)}
-                                                {item.PHAN_LOAI === "Chưa thẩm định" && (
-                                                    <PermissionGuard moduleKey="khach-hang" level="edit">
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <button className="p-1 hover:bg-muted text-muted-foreground hover:text-indigo-600 rounded-md transition-colors shadow-sm border border-border bg-background" title="Thẩm định khách hàng">
-                                                                    <KeyRound className="w-3.5 h-3.5 text-indigo-500/80" />
-                                                                </button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="start" className="w-48 rounded-xl shadow-md border-border">
-                                                                <DropdownMenuItem
-                                                                    onClick={(e) => { e.stopPropagation(); setConfirmTiemNangItem({ ID: item.ID, TEN_KH: item.TEN_KH }); }}
-                                                                    className="cursor-pointer gap-2 text-foreground hover:text-emerald-600 focus:text-emerald-600 focus:bg-emerald-50 rounded-lg font-medium"
-                                                                >
-                                                                    <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                                                                    Khách tiềm năng
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    onClick={(e) => { e.stopPropagation(); setThamDinhItem({ ID: item.ID, TEN_KH: item.TEN_KH }); }}
-                                                                    className="cursor-pointer gap-2 text-foreground hover:text-destructive focus:text-destructive focus:bg-destructive/10 rounded-lg mt-1 font-medium"
-                                                                    variant="destructive"
-                                                                >
-                                                                    <UserX className="w-4 h-4 shrink-0" />
-                                                                    Không phù hợp
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </PermissionGuard>
-                                                )}
-                                            </div>
-                                            {item.LY_DO_TU_CHOI && item.PHAN_LOAI === "Không phù hợp" && (
-                                                <p className="text-[10px] text-destructive italic max-w-[150px] whitespace-normal leading-tight opacity-90 wrap-break-word">
-                                                    {item.LY_DO_TU_CHOI}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </td>
+                                    <th onClick={() => handleSort("PHAN_LOAI")} className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell cursor-pointer group hover:text-foreground text-center">
+                                        Phân loại <SortIcon columnKey="PHAN_LOAI" />
+                                    </th>
                                 )}
                                 {show("nhanVienPT") && (
-                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell text-xs text-muted-foreground text-center">
-                                        {item.NV_CS
-                                            ? <span className="font-medium text-foreground">{nhanViens.find((n: any) => n.ID === item.NV_CS)?.HO_TEN || item.NV_CS}</span>
-                                            : <span>—</span>}
-                                    </td>
+                                    <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell text-center">NV chăm sóc</th>
                                 )}
                                 {show("nguonSales") && (
-                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground text-center">
-                                        <div className="flex flex-col items-center space-y-0.5">
-                                            {item.NGUON && <p>{item.NGUON}</p>}
-                                            {item.SALES_PT && <p className="font-medium text-foreground text-[11px] opacity-80">{nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT}</p>}
-                                        </div>
-                                    </td>
+                                    <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">Nguồn / Sales</th>
                                 )}
                                 {show("diaChi") && (
-                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground max-w-[180px] truncate text-center mx-auto">
-                                        {item.DIA_CHI || "—"}
-                                    </td>
+                                    <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">Địa chỉ</th>
                                 )}
                                 {show("mst") && (
-                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground font-mono text-center">
-                                        {item.MST || "—"}
-                                    </td>
+                                    <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">MST</th>
                                 )}
-                                <td className="px-4 py-3 align-middle text-right">
-                                    <div className="flex justify-end gap-1 items-center">
-                                        <button
-                                            onClick={() => setViewItem(item)}
-                                            className="p-2 hover:bg-muted text-muted-foreground hover:text-primary group-hover/row:text-primary rounded-lg transition-colors"
-                                            title="Xem chi tiết"
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                        </button>
-                                        <PermissionGuard moduleKey="co-hoi" level="add">
-                                            <button
-                                                onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })}
-                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-orange-500 group-hover/row:text-orange-500 rounded-lg transition-colors"
-                                                title="Tạo cơ hội"
-                                            >
-                                                <Target className="w-4 h-4" />
-                                            </button>
-                                        </PermissionGuard>
-                                        <PermissionGuard moduleKey="ke-hoach-cs" level="add">
-                                            <button
-                                                onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })}
-                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 group-hover/row:text-violet-600 rounded-lg transition-colors"
-                                                title="Lên kế hoạch CSKH"
-                                            >
-                                                <CalendarPlus2 className="w-4 h-4" />
-                                            </button>
-                                        </PermissionGuard>
-                                        <PermissionGuard moduleKey="khach-hang" level="add">
-                                            <button
-                                                onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
-                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 group-hover/row:text-emerald-600 rounded-lg transition-colors relative group"
-                                                title="Người liên hệ"
-                                            >
-                                                <UserPlus className="w-4 h-4" />
-                                                {item._count?.NGUOI_LIENHE > 0 && (
-                                                    <span className="absolute top-1 right-0.5 text-[10px] font-bold text-emerald-600">
-                                                        {item._count.NGUOI_LIENHE}
-                                                    </span>
+                                <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {sortedData.map((item, idx) => (
+                                <tr key={item.ID} className="hover:bg-muted/30 transition-colors group/row">
+                                    <td className="px-4 py-3 align-middle text-muted-foreground text-xs text-center">{idx + 1}</td>
+                                    {show("ngayGhiNhan") && (
+                                        <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground font-medium whitespace-nowrap text-center">
+                                            {formatDate(item.NGAY_GHI_NHAN)}
+                                        </td>
+                                    )}
+                                    <td
+                                        className="px-4 py-3 align-middle text-left cursor-pointer group/name transition-colors"
+                                        onClick={() => setViewItem(item)}
+                                        title="Xem chi tiết"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {item.HINH_ANH ? (
+                                                <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-border shrink-0">
+                                                    <Image src={item.HINH_ANH} alt={item.TEN_KH} fill className="object-cover" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                                    <UserCircle className="w-5 h-5 text-primary/50" />
+                                                </div>
+                                            )}
+                                            <div>
+                                                <p className="font-normal text-foreground group-hover/name:text-primary transition-colors text-xs leading-tight">{item.TEN_KH}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {show("lienHe") && (
+                                        <td className="px-4 py-3 align-middle max-md:table-cell hidden md:table-cell text-center">
+                                            <div className="space-y-0.5 flex flex-col items-center">
+                                                {item.DIEN_THOAI && (
+                                                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                        <Phone className="w-3 h-3 shrink-0" /> {item.DIEN_THOAI}
+                                                    </p>
                                                 )}
+                                                {item.EMAIL && (
+                                                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                        <Mail className="w-3 h-3 shrink-0" /> <span className="truncate max-w-[160px]">{item.EMAIL}</span>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
+                                    {show("nhom") && (
+                                        <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell text-center">
+                                            {item.NHOM_KH ? (
+                                                <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                                    {item.NHOM_KH}
+                                                </span>
+                                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                                        </td>
+                                    )}
+                                    {show("phanLoai") && (
+                                        <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell text-center">
+                                            <div className="flex flex-col gap-1.5 min-w-[130px] items-center">
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    {getPhanLoaiBadge(item.PHAN_LOAI)}
+                                                    {item.PHAN_LOAI === "Chưa thẩm định" && (
+                                                        <PermissionGuard moduleKey="khach-hang" level="edit">
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <button className="p-1 hover:bg-muted text-muted-foreground hover:text-indigo-600 rounded-md transition-colors shadow-sm border border-border bg-background" title="Thẩm định khách hàng">
+                                                                        <KeyRound className="w-3.5 h-3.5 text-indigo-500/80" />
+                                                                    </button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="start" className="w-48 rounded-xl shadow-md border-border">
+                                                                    <DropdownMenuItem
+                                                                        onClick={(e) => { e.stopPropagation(); setConfirmTiemNangItem({ ID: item.ID, TEN_KH: item.TEN_KH }); }}
+                                                                        className="cursor-pointer gap-2 text-foreground hover:text-emerald-600 focus:text-emerald-600 focus:bg-emerald-50 rounded-lg font-medium"
+                                                                    >
+                                                                        <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                                                                        Khách tiềm năng
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        onClick={(e) => { e.stopPropagation(); setThamDinhItem({ ID: item.ID, TEN_KH: item.TEN_KH }); }}
+                                                                        className="cursor-pointer gap-2 text-foreground hover:text-destructive focus:text-destructive focus:bg-destructive/10 rounded-lg mt-1 font-medium"
+                                                                        variant="destructive"
+                                                                    >
+                                                                        <UserX className="w-4 h-4 shrink-0" />
+                                                                        Không phù hợp
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </PermissionGuard>
+                                                    )}
+                                                </div>
+                                                {item.LY_DO_TU_CHOI && item.PHAN_LOAI === "Không phù hợp" && (
+                                                    <p className="text-[10px] text-destructive italic max-w-[150px] whitespace-normal leading-tight opacity-90 wrap-break-word">
+                                                        {item.LY_DO_TU_CHOI}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
+                                    {show("nhanVienPT") && (
+                                        <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell text-xs text-muted-foreground text-center">
+                                            {item.NV_CS
+                                                ? <span className="font-medium text-foreground">{nhanViens.find((n: any) => n.ID === item.NV_CS)?.HO_TEN || item.NV_CS}</span>
+                                                : <span>—</span>}
+                                        </td>
+                                    )}
+                                    {show("nguonSales") && (
+                                        <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground text-center">
+                                            <div className="flex flex-col items-center space-y-0.5">
+                                                {item.NGUON && <p>{item.NGUON}</p>}
+                                                {item.SALES_PT && <p className="font-medium text-foreground text-[11px] opacity-80">{nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT}</p>}
+                                            </div>
+                                        </td>
+                                    )}
+                                    {show("diaChi") && (
+                                        <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground max-w-[180px] truncate text-center mx-auto">
+                                            {item.DIA_CHI || "—"}
+                                        </td>
+                                    )}
+                                    {show("mst") && (
+                                        <td className="px-4 py-3 align-middle max-md:table-cell hidden xl:table-cell text-xs text-muted-foreground font-mono text-center">
+                                            {item.MST || "—"}
+                                        </td>
+                                    )}
+                                    <td className="px-4 py-3 align-middle text-right">
+                                        <div className="flex justify-end gap-1 items-center">
+                                            <button
+                                                onClick={() => setViewItem(item)}
+                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-primary group-hover/row:text-primary rounded-lg transition-colors"
+                                                title="Xem chi tiết"
+                                            >
+                                                <Eye className="w-4 h-4" />
                                             </button>
-                                        </PermissionGuard>
-
-                                        {/* Desktop Actions */}
-                                        <div className="hidden 2xl:flex gap-1">
-                                            <PermissionGuard moduleKey="khach-hang" level="edit">
+                                            <PermissionGuard moduleKey="co-hoi" level="add">
                                                 <button
-                                                    onClick={() => setEditItem(item)}
-                                                    className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 group-hover/row:text-blue-600 rounded-lg transition-colors"
-                                                    title="Sửa"
+                                                    onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })}
+                                                    className="p-2 hover:bg-muted text-muted-foreground hover:text-orange-500 group-hover/row:text-orange-500 rounded-lg transition-colors"
+                                                    title="Tạo cơ hội"
                                                 >
-                                                    <Edit2 className="w-4 h-4" />
+                                                    <Target className="w-4 h-4" />
                                                 </button>
                                             </PermissionGuard>
-                                            <PermissionGuard moduleKey="khach-hang" level="delete">
+                                            <PermissionGuard moduleKey="ke-hoach-cs" level="add">
                                                 <button
-                                                    onClick={() => setDeleteItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
-                                                    className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive group-hover/row:text-destructive rounded-lg transition-colors"
-                                                    title="Xóa"
+                                                    onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })}
+                                                    className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 group-hover/row:text-violet-600 rounded-lg transition-colors"
+                                                    title="Lên kế hoạch CSKH"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                    <CalendarPlus2 className="w-4 h-4" />
                                                 </button>
                                             </PermissionGuard>
-                                        </div>
+                                            <PermissionGuard moduleKey="khach-hang" level="add">
+                                                <button
+                                                    onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
+                                                    className="p-2 hover:bg-muted text-muted-foreground hover:text-emerald-600 group-hover/row:text-emerald-600 rounded-lg transition-colors relative group"
+                                                    title="Người liên hệ"
+                                                >
+                                                    <UserPlus className="w-4 h-4" />
+                                                    {item._count?.NGUOI_LIENHE > 0 && (
+                                                        <span className="absolute top-1 right-0.5 text-[10px] font-bold text-emerald-600">
+                                                            {item._count.NGUOI_LIENHE}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </PermissionGuard>
 
-                                        {/* Mobile Actions Dropdown */}
-                                        <div className="2xl:hidden">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground group-hover/row:text-foreground rounded-lg transition-colors">
-                                                        <MoreHorizontal className="w-4 h-4" />
+                                            {/* Desktop Actions */}
+                                            <div className="hidden 2xl:flex gap-1">
+                                                <PermissionGuard moduleKey="khach-hang" level="edit">
+                                                    <button
+                                                        onClick={() => setEditItem(item)}
+                                                        className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 group-hover/row:text-blue-600 rounded-lg transition-colors"
+                                                        title="Sửa"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
                                                     </button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-32 rounded-xl">
-                                                    <PermissionGuard moduleKey="khach-hang" level="edit">
-                                                        <DropdownMenuItem
-                                                            onClick={(e) => { e.stopPropagation(); setEditItem(item); }}
-                                                            className="cursor-pointer gap-2 text-blue-600"
-                                                        >
-                                                            <Edit2 className="w-3.5 h-3.5 text-blue-600" />
-                                                            Sửa
-                                                        </DropdownMenuItem>
-                                                    </PermissionGuard>
-                                                    <PermissionGuard moduleKey="khach-hang" level="delete">
-                                                        <DropdownMenuItem
-                                                            onClick={(e) => { e.stopPropagation(); setDeleteItem({ ID: item.ID, TEN_KH: item.TEN_KH }); }}
-                                                            variant="destructive"
-                                                            className="cursor-pointer gap-2 rounded-lg"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                            Xóa
-                                                        </DropdownMenuItem>
-                                                    </PermissionGuard>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                </PermissionGuard>
+                                                <PermissionGuard moduleKey="khach-hang" level="delete">
+                                                    <button
+                                                        onClick={() => setDeleteItem({ ID: item.ID, TEN_KH: item.TEN_KH })}
+                                                        className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive group-hover/row:text-destructive rounded-lg transition-colors"
+                                                        title="Xóa"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </PermissionGuard>
+                                            </div>
+
+                                            {/* Mobile Actions Dropdown */}
+                                            <div className="2xl:hidden">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground group-hover/row:text-foreground rounded-lg transition-colors">
+                                                            <MoreHorizontal className="w-4 h-4" />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-32 rounded-xl">
+                                                        <PermissionGuard moduleKey="khach-hang" level="edit">
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => { e.stopPropagation(); setEditItem(item); }}
+                                                                className="cursor-pointer gap-2 text-blue-600"
+                                                            >
+                                                                <Edit2 className="w-3.5 h-3.5 text-blue-600" />
+                                                                Sửa
+                                                            </DropdownMenuItem>
+                                                        </PermissionGuard>
+                                                        <PermissionGuard moduleKey="khach-hang" level="delete">
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => { e.stopPropagation(); setDeleteItem({ ID: item.ID, TEN_KH: item.TEN_KH }); }}
+                                                                variant="destructive"
+                                                                className="cursor-pointer gap-2 rounded-lg"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                Xóa
+                                                            </DropdownMenuItem>
+                                                        </PermissionGuard>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {data.length === 0 && (
-                            <tr>
-                                <td colSpan={10} className="px-6 py-16 text-center text-muted-foreground italic">
-                                    Chưa có khách hàng nào. Hãy thêm mới!
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                                    </td>
+                                </tr>
+                            ))}
+                            {data.length === 0 && (
+                                <tr>
+                                    <td colSpan={10} className="px-6 py-16 text-center text-muted-foreground italic">
+                                        Chưa có khách hàng nào. Hãy thêm mới!
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Modal: Thêm */}

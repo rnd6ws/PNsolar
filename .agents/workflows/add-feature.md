@@ -8,7 +8,9 @@ Dự án này tuân thủ cấu trúc **Feature-Based Architecture**. Bất cứ
 
 ## 0. ⚠️ BẮT BUỘC: Đọc Quy Chuẩn UI/UX
 **TRƯỚC KHI bắt đầu**, đọc file `.agents/skills/create-new-feature/ui-patterns.md` để nắm TẤT CẢ các pattern UI đã chuẩn hóa:
-- Mobile toolbar toggle (Settings2), Sort trên header bảng, Desktop/Mobile dual layout, ColumnToggle, Modal styling, v.v.
+- Toolbar gradient (`from-primary/3 to-primary/8`), Toggle List/Card View, Sort trên header bảng
+- Stat Cards đa màu (Indigo, Emerald, Amber, Violet, Red — inline style)
+- Card view mobile phải có đầy đủ nút hành động giống bảng
 - **Không đọc = Giao diện thiếu chuẩn = THẤT BẠI.**
 
 ## 1. Cập nhật Database & Prisma Schema
@@ -58,18 +60,23 @@ Bên trong `src/features/[tên-tính-năng]/components/`:
 
 ### Checklist UI bắt buộc cho `[Tên]PageClient.tsx`:
 - [ ] `showFilters` state + nút `Settings2` toggle cho mobile
+- [ ] `viewMode` state (`"list" | "card"`) + nút `LayoutList`/`LayoutGrid` toggle cho mobile
 - [ ] Desktop toolbar (`hidden lg:flex`) hiển thị filter + ColumnToggle + Download
 - [ ] Mobile expanded filters (`lg:hidden`) với animation `animate-in slide-in-from-top-2`
+- [ ] **Toolbar gradient**: `bg-linear-to-b from-primary/3 to-primary/8`, border `border-primary/10`
+- [ ] Truyền `viewMode` prop xuống List component
 - [ ] Sử dụng `<SearchInput>` và `<FilterSelect>` (đã có sẵn)
 
 ### Checklist UI bắt buộc cho `[Tên]List.tsx`:
 - [ ] `sortConfig` state + `sortedData` (useMemo) + `handleSort` + `SortIcon`
+- [ ] Nhận prop `viewMode?: "list" | "card"`
 - [ ] Desktop table header sortable (click → ASC → DESC, icon ArrowUpDown/Up/Down)
-- [ ] Desktop table (`hidden lg:block`) + Mobile cards (`lg:hidden`)
+- [ ] **Card view** (`viewMode === "card"`): `lg:hidden`, đầy đủ nút hành động
+- [ ] **Table view**: `viewMode === "card" ? "hidden lg:block" : ""`
 - [ ] Cả desktop và mobile dùng cùng `sortedData`
-- [ ] Mobile action dropdown (MoreHorizontal + DropdownMenu)
+- [ ] Mobile action dropdown (MoreHorizontal + DropdownMenu) trong table view
 - [ ] Label trong modal/form: `text-sm font-semibold` (KHÔNG uppercase)
-- [ ] Table header: `bg-primary/10`, `font-bold text-muted-foreground uppercase tracking-widest text-[11px]`
+- [ ] Table header: `bg-primary/10`, `font-bold text-muted-foreground tracking-widest text-[12px]`
 
 ### Checklist Toast thông báo (BẮT BUỘC):
 - [ ] Import `import { toast } from 'sonner';` trong mọi component có thao tác CRUD

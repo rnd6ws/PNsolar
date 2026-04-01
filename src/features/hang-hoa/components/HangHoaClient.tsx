@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, startTransition, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Box, Tag, Package, Search, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronRight, Download, Settings2, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, History, X, Eye, Printer, Grid, Layers } from 'lucide-react';
+import { Plus, Pencil, Trash2, Box, Tag, Package, Search, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronRight, Download, Settings2, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, History, X, Eye, Printer, Grid, Layers, LayoutList, LayoutGrid } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -566,6 +566,7 @@ export default function HangHoaClient({
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+    const [viewMode, setViewMode] = useState<"list" | "card">("list");
     const [groupBy, setGroupBy] = useState<string>('none');
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [giaNhapHistory, setGiaNhapHistory] = useState<GiaNhapHistoryItem[]>([]);
@@ -706,20 +707,20 @@ export default function HangHoaClient({
                 </div>
 
                 {/* Stats Bar */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                     {[
-                        { label: 'Tổng hàng hóa', value: initialPagination?.total ?? 0, icon: Package, color: 'text-primary bg-primary/10' },
-                        { label: 'Phân loại', value: [...new Set(initialProducts.map((p: Product) => p.MA_PHAN_LOAI))].length, icon: Tag, color: 'text-orange-500 bg-orange-500/10' },
-                        { label: 'Dòng hàng', value: [...new Set(initialProducts.map((p: Product) => p.MA_DONG_HANG))].length, icon: Box, color: 'text-green-600 bg-green-500/10' },
-                        { label: 'Tổng trang', value: initialPagination?.totalPages ?? 1, icon: Search, color: 'text-purple-600 bg-purple-500/10' },
+                        { label: 'Tổng hàng hóa', value: initialPagination?.total ?? 0, icon: Package, iconBg: '#6366f1', cardBg: 'rgba(99, 102, 241, 0.06)' },
+                        { label: 'Phân loại', value: [...new Set(initialProducts.map((p: Product) => p.MA_PHAN_LOAI))].length, icon: Tag, iconBg: '#10b981', cardBg: 'rgba(16, 185, 129, 0.06)' },
+                        { label: 'Dòng hàng', value: [...new Set(initialProducts.map((p: Product) => p.MA_DONG_HANG))].length, icon: Box, iconBg: '#f59e0b', cardBg: 'rgba(245, 158, 11, 0.06)' },
+                        { label: 'Tổng trang', value: initialPagination?.totalPages ?? 1, icon: Search, iconBg: '#8b5cf6', cardBg: 'rgba(139, 92, 246, 0.06)' },
                     ].map((stat) => (
-                        <div key={stat.label} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-                            <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", stat.color)}>
-                                <stat.icon className="w-5 h-5" />
+                        <div key={stat.label} className="group rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border border-transparent" style={{ backgroundColor: stat.cardBg }}>
+                            <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: stat.iconBg }}>
+                                <stat.icon className="w-5 h-5 text-white" />
                             </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                                <p className="text-xl font-bold text-foreground leading-none mt-1">{stat.value}</p>
+                            <div className="min-w-0">
+                                <p className="text-xs md:text-sm text-muted-foreground leading-tight">{stat.label}</p>
+                                <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1">{stat.value}</p>
                             </div>
                         </div>
                     ))}
@@ -728,14 +729,22 @@ export default function HangHoaClient({
                 {/* Table Card */}
                 <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
                     {/* Toolbar */}
-                    <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b bg-transparent">
+                    <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8">
                         <div className="flex items-center justify-between gap-3 w-full">
                             <div className="flex-1 w-full lg:max-w-[400px]">
                                 <SearchInput placeholder="Tìm theo tên, MODEL, mã HH..." />
                             </div>
 
                             {/* Nút Lọc cho Mobile */}
-                            <div className="flex lg:hidden shrink-0">
+                            <div className="flex lg:hidden shrink-0 gap-2">
+                                <div className="flex border border-border rounded-lg overflow-hidden shadow-sm">
+                                    <button onClick={() => setViewMode("list")} className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`} title="Dạng bảng">
+                                        <LayoutList className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => setViewMode("card")} className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`} title="Dạng thẻ">
+                                        <LayoutGrid className="w-4 h-4" />
+                                    </button>
+                                </div>
                                 <button
                                     onClick={() => setShowFilters(!showFilters)}
                                     className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${showFilters ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted text-muted-foreground'}`}
@@ -873,7 +882,7 @@ export default function HangHoaClient({
                     </div>
 
                     {/* Desktop Table */}
-                    <div className="hidden lg:block overflow-x-auto">
+                    <div className={`overflow-x-auto ${viewMode === "card" ? "hidden lg:block" : ""}`}>
                         <table className="w-full text-left border-collapse text-[13px]">
                             <thead>
                                 <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -1134,6 +1143,7 @@ export default function HangHoaClient({
                     </div>
 
                     {/* Mobile View (Cards) */}
+                    {viewMode === "card" && (
                     <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
                         {sortedProducts.map((prod: Product) => (
                             <div key={prod.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-3">
@@ -1233,6 +1243,7 @@ export default function HangHoaClient({
                             <div className="p-8 text-center text-muted-foreground italic text-sm">Chưa có hàng hóa nào được thêm.</div>
                         )}
                     </div>
+                    )}
 
                     {/* Pagination */}
                     {initialPagination && (

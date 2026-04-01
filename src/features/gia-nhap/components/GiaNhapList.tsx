@@ -31,6 +31,7 @@ interface Props {
 
     nccOptions: NccOption[];
     hhOptions: HHOption[];
+    viewMode?: "list" | "card";
 }
 
 function formatDate(val: any) {
@@ -203,7 +204,7 @@ function GiaNhapForm({
 // ─── Component chính ──────────────────────────────────────────
 export default function GiaNhapList({
     data, visibleColumns,
-    nhomHHOptions, phanLoaiOptions, dongHangOptions, nccOptions, hhOptions
+    nhomHHOptions, phanLoaiOptions, dongHangOptions, nccOptions, hhOptions, viewMode = "list"
 }: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
@@ -267,7 +268,7 @@ export default function GiaNhapList({
     return (
         <>
             {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
+            <div className={`overflow-x-auto ${viewMode === "card" ? "hidden lg:block" : ""}`}>
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -338,6 +339,7 @@ export default function GiaNhapList({
             </div>
 
             {/* Mobile Cards */}
+            {viewMode === "card" && (
             <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
                 {sortedData.length === 0 && (
                     <p className="text-center text-muted-foreground italic py-10">Chưa có dữ liệu giá nhập.</p>
@@ -383,6 +385,7 @@ export default function GiaNhapList({
                     </div>
                 ))}
             </div>
+            )}
 
             {/* Modal: Sửa */}
             <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Cập nhật giá nhập" icon={DollarSign}>

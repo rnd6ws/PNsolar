@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Settings, Trash2, Plus, Edit2, Save } from "lucide-react";
+import { Settings2, Trash2, Plus, Edit2, Save } from "lucide-react";
 import Modal from "@/components/Modal";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import {
@@ -90,10 +90,10 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
             : activeTab === "nguon"
                 ? nguons.map((i) => ({ id: i.ID, name: i.NGUON, extra: null }))
                 : activeTab === "ly-do-tu-choi"
-                ? lyDoTuChois.map((i) => ({ id: i.ID, name: i.LY_DO, extra: null }))
-                : activeTab === "nguoi-gioi-thieu"
-                ? nguoiGioiThieus.map((i) => ({ id: i.ID, name: i.TEN_NGT, extra: i.SO_DT_NGT }))
-                : nhoms.map((i) => ({ id: i.ID, name: i.NHOM, extra: null }));
+                    ? lyDoTuChois.map((i) => ({ id: i.ID, name: i.LY_DO, extra: null }))
+                    : activeTab === "nguoi-gioi-thieu"
+                        ? nguoiGioiThieus.map((i) => ({ id: i.ID, name: i.TEN_NGT, extra: i.SO_DT_NGT }))
+                        : nhoms.map((i) => ({ id: i.ID, name: i.NHOM, extra: null }));
 
     const placeholder =
         activeTab === "phan-loai"
@@ -101,23 +101,23 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
             : activeTab === "nguon"
                 ? "Tên nguồn mới..."
                 : activeTab === "ly-do-tu-choi"
-                ? "Tên lý do từ chối mới..."
-                : activeTab === "nguoi-gioi-thieu"
-                ? "Tên người giới thiệu mới..."
-                : "Tên nhóm mới...";
+                    ? "Tên lý do từ chối mới..."
+                    : activeTab === "nguoi-gioi-thieu"
+                        ? "Tên người giới thiệu mới..."
+                        : "Tên nhóm mới...";
 
     return (
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="btn-premium-secondary text-sm font-medium shadow-sm transition-all"
+                className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex items-center gap-2 text-sm"
                 title="Cài đặt danh mục khách hàng"
             >
-                <Settings className="w-4 h-4" />
+                <Settings2 className="w-4 h-4" />
                 Cài đặt danh mục
             </button>
 
-            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Thiết lập danh mục Khách hàng" icon={Settings}>
+            <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Thiết lập danh mục Khách hàng" icon={Settings2}>
                 {/* Tabs */}
                 <div className="flex border-b border-border mb-4 overflow-x-auto whitespace-nowrap custom-scrollbar pb-1">
                     {tabs.map((tab) => (
@@ -163,7 +163,7 @@ export default function SettingKhachHangButton({ phanLoais, nguons, nhoms, lyDoT
                             disabled={loading || !newName.trim()}
                             className="btn-premium-primary whitespace-nowrap shrink-0 h-[38px] px-4"
                         >
-                            {editTarget ? <Save className="w-4 h-4 mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />} 
+                            {editTarget ? <Save className="w-4 h-4 mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />}
                             {editTarget ? "Lưu" : "Thêm"}
                         </button>
                         {editTarget && (

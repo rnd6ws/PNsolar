@@ -32,14 +32,15 @@ model DSNV {
   AUDIT_LOGS AUDIT_LOG[]
   PHAN_QUYEN PHAN_QUYEN[]
 
-  KHTN_SALES_PT KHTN[]         @relation("SALES_PT")
-  KHTN_NV_CS    KHTN[]         @relation("NV_CS")
-  KEHOACH_CSKH  KEHOACH_CSKH[] @relation("NGUOI_CS")
-  KHAO_SAT      KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
-  BAO_GIA_GUI   BAO_GIA[]      @relation("NGUOI_GUI_BG")
+  KHTN_SALES_PT  KHTN[]         @relation("SALES_PT")
+  KHTN_NV_CS     KHTN[]         @relation("NV_CS")
+  KEHOACH_CSKH   KEHOACH_CSKH[] @relation("NGUOI_CS")
+  KHAO_SAT       KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
+  BAO_GIA_GUI    BAO_GIA[]      @relation("NGUOI_GUI_BG")
+  HOP_DONG_DUYET HOP_DONG[]     @relation("NGUOI_DUYET")
 
-  NOTIFICATIONS_RECEIVED NOTIFICATION[]     @relation("NotificationRecipient")
-  NOTIFICATIONS_SENT     NOTIFICATION[]     @relation("NotificationSender")
+  NOTIFICATIONS_RECEIVED NOTIFICATION[]      @relation("NotificationRecipient")
+  NOTIFICATIONS_SENT     NOTIFICATION[]      @relation("NotificationSender")
   PUSH_SUBSCRIPTIONS     PUSH_SUBSCRIPTION[] @relation("PushSubscriptions")
 
   @@index([IS_ACTIVE, ROLE])
@@ -812,8 +813,8 @@ model NOTIFICATION {
   ID           String    @id @default(auto()) @map("_id") @db.ObjectId
   TITLE        String
   MESSAGE      String
-  TYPE         String    // "BAO_GIA" | "KHACH_HANG" | "HOP_DONG" | "SYSTEM" | "MANUAL"
-  RECIPIENT_ID String?   @db.ObjectId   // null = broadcast tất cả
+  TYPE         String // "BAO_GIA" | "KHACH_HANG" | "HOP_DONG" | "SYSTEM" | "MANUAL"
+  RECIPIENT_ID String?   @db.ObjectId // null = broadcast tất cả
   SENDER_ID    String?   @db.ObjectId
   IS_READ      Boolean   @default(false)
   READ_AT      DateTime?
@@ -822,7 +823,7 @@ model NOTIFICATION {
   UPDATED_AT   DateTime  @updatedAt
 
   RECIPIENT DSNV? @relation("NotificationRecipient", fields: [RECIPIENT_ID], references: [ID])
-  SENDER    DSNV? @relation("NotificationSender",    fields: [SENDER_ID],    references: [ID])
+  SENDER    DSNV? @relation("NotificationSender", fields: [SENDER_ID], references: [ID])
 
   @@index([RECIPIENT_ID, IS_READ])
   @@index([CREATED_AT])
@@ -885,7 +886,7 @@ model DK_HD {
   SO_HD  String
   HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
 
-  HANG_MUC String  // Tên hạng mục (VD: "Chế độ bảo hành",...)
+  HANG_MUC String // Tên hạng mục (VD: "Chế độ bảo hành",...)
   NOI_DUNG String? // Nội dung chi tiết
   AN_HIEN  Boolean @default(true) // true = hiện, false = ẩn (dùng khi in)
 
@@ -900,7 +901,7 @@ model DK_HD {
 model HOP_DONG {
   ID      String   @id @default(auto()) @map("_id") @db.ObjectId
   SO_HD   String   @unique // DDMMYYYY-HĐSL-PNS-TEN_VT
-  LOAI_HD String   // Dân dụng | Công nghiệp
+  LOAI_HD String // Dân dụng | Công nghiệp
   NGAY_HD DateTime @default(now())
 
   THONG_TIN_KHAC THONG_TIN_KHAC[]
@@ -925,12 +926,18 @@ model HOP_DONG {
 
   TEP_DINH_KEM Json?
 
+  DUYET           String? //Chờ duyệt | Đã duyệt | Không duyệt
+  NGUOI_DUYET     String? //Người duyệt
+  NGUOI_DUYET_REL DSNV?     @relation("NGUOI_DUYET", fields: [NGUOI_DUYET], references: [MA_NV])
+  NGAY_DUYET      DateTime? //Ngày duyệt
+
   HOP_DONG_CT HOP_DONG_CT[]
   DKTT_HD     DKTT_HD[]
   DK_HD       DK_HD[]
 
-  CREATED_AT DateTime @default(now())
-  UPDATED_AT DateTime @updatedAt
+  CREATED_AT DateTime      @default(now())
+  UPDATED_AT DateTime      @updatedAt
+  banGiaoHds BAN_GIAO_HD[]
 
   @@index([MA_KH, MA_CH, MA_BAO_GIA])
   @@fulltext([SO_HD, MA_KH, MA_CH, MA_BAO_GIA])
@@ -962,4 +969,24 @@ model HOP_DONG_CT {
   @@index([SO_HD])
   @@index([MA_HH])
   @@map("HOP_DONG_CT")
+}
+
+// ===== BÀN GIAO VÀ NGHIỆM THU HỢP ĐỒNG =====
+model BAN_GIAO_HD {
+  ID String @id @default(auto()) @map("_id") @db.ObjectId
+
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
+
+  NGAY_BAN_GIAO DateTime @default(now())
+  SO_BAN_GIAO   String // BG-SO_HD-01
+
+  FILE_DINH_KEM      Json?
+  THOI_GIAN_BAO_HANH DateTime? // mặc định 1 năm kể từ ngày bàn giao
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([SO_HD, SO_BAN_GIAO])
+  @@map("BAN_GIAO_HD")
 }
