@@ -36,7 +36,7 @@ async function generateSoHD(maKH: string): Promise<string> {
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yyyy = String(now.getFullYear());
     const datePrefix = `${dd}${mm}${yyyy}`;
-    const prefix = `${datePrefix}-HĐSL-PNS`;
+    const prefix = `${datePrefix}/HĐSL-PNS`;
 
     let seqOrVt = '';
     if (maKH) {
