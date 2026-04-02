@@ -7,6 +7,7 @@ import { getEmployeeListAction } from "@/features/notifications/action";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useState, useRef, useEffect, lazy, Suspense, memo } from "react";
+import { createPortal } from "react-dom";
 
 const SendNotificationModal = lazy(() =>
     import("@/features/notifications/components/SendNotificationModal").then(m => ({ default: m.SendNotificationModal }))
@@ -166,15 +167,16 @@ function NotificationBellInner({ userId, isAdminOrManager }: NotificationBellPro
                 )}
             </div>
 
-            {/* Send Notification Modal — rendered outside bell to avoid clipping */}
-            {isAdminOrManager && sendModalOpen && (
+            {/* Send Notification Modal — Portal to body, tránh bị header stacking context che */}
+            {isAdminOrManager && sendModalOpen && createPortal(
                 <Suspense fallback={null}>
                     <SendNotificationModal
                         open={sendModalOpen}
                         onClose={() => setSendModalOpen(false)}
                         employees={employees}
                     />
-                </Suspense>
+                </Suspense>,
+                document.body
             )}
         </>
     );
