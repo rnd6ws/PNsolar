@@ -5,6 +5,7 @@ import Image from "next/image";
 import { UserCircle, Phone, Mail, Building2, MapPin, Search } from "lucide-react";
 import { getKeHoachCSByKH } from "@/features/ke-hoach-cs/action";
 import { getCoHoiByKH, getDmDichVu } from "@/features/co-hoi/action";
+import { getHopDongByKhachHang } from "@/features/hop-dong/action";
 
 interface KhachHangDetailProps {
     kh: any;
@@ -17,7 +18,7 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
     const getNVName = (id: string) => nhanViens.find(nv => nv.ID === id)?.HO_TEN || "—";
     const getNGTName = (id: string) => nguoiGioiThieus.find(n => n.ID === id)?.TEN_NGT || "—";
 
-    const [activeTab, setActiveTab] = useState<"info" | "cohoi" | "cskh" | "lichsu">("info");
+    const [activeTab, setActiveTab] = useState<"info" | "cohoi" | "hopdong" | "cskh" | "lichsu">("info");
     const [cskhList, setCskhList] = useState<any[] | null>(null);
     const [cskhLoading, setCskhLoading] = useState(false);
 
@@ -25,7 +26,10 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
     const [dmDichVuList, setDmDichVuList] = useState<any[]>([]);
     const [coHoiLoading, setCoHoiLoading] = useState(false);
 
-    const handleTabChange = async (tab: "info" | "cohoi" | "cskh" | "lichsu") => {
+    const [hopDongList, setHopDongList] = useState<any[] | null>(null);
+    const [hopDongLoading, setHopDongLoading] = useState(false);
+
+    const handleTabChange = async (tab: "info" | "cohoi" | "hopdong" | "cskh" | "lichsu") => {
         setActiveTab(tab);
         if (tab === "cskh" && cskhList === null) {
             setCskhLoading(true);
@@ -42,6 +46,12 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
             if (r1.success) setCoHoiList(r1.data);
             if (r2.success) setDmDichVuList(r2.data as any);
             setCoHoiLoading(false);
+        }
+        if (tab === "hopdong" && hopDongList === null) {
+            setHopDongLoading(true);
+            const r = await getHopDongByKhachHang(kh.MA_KH);
+            if (r.success && r.data) setHopDongList(r.data);
+            setHopDongLoading(false);
         }
     };
 
@@ -71,9 +81,10 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
 
     const tabs = [
         { key: "info" as const, label: "Thông tin chung" },
-        { key: "cohoi" as const, label: "Cơ hội" },
-        { key: "cskh" as const, label: "Lịch sử chăm sóc" },
-        { key: "lichsu" as const, label: "Lịch sử ghi chú" },
+        { key: "cohoi" as const, label: `Cơ hội (${kh._count?.CO_HOI || 0})` },
+        { key: "hopdong" as const, label: `Hợp đồng (${kh._count?.HOP_DONG || 0})` },
+        { key: "cskh" as const, label: `CSKH (${kh._count?.KEHOACH_CSKH || 0})` },
+        { key: "lichsu" as const, label: `Ghi chú (${lichSuEntries.length})` },
     ];
 
     return (
@@ -293,6 +304,93 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                                     </div>
                                                 </div>
                                             )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* === TAB 1.75: HỢP ĐỒNG === */}
+                {activeTab === "hopdong" && (
+                    <div className="p-5 md:p-6">
+                        {hopDongLoading ? (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                <p className="text-sm">Đang tải hợp đồng...</p>
+                            </div>
+                        ) : hopDongList && hopDongList.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                                <Search className="w-10 h-10 mb-3 opacity-20" />
+                                <p className="font-semibold">Chưa có hợp đồng nào</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {(hopDongList || []).map((hd: any) => {
+                                    const formatCurrency = (val: any) => val || val === 0 ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(val) : "—";
+                                    let ttCls = "bg-muted text-muted-foreground border-transparent";
+                                    const low = (hd.DUYET || "").toLowerCase();
+                                    if (low === "đã duyệt") {
+                                        ttCls = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                                    } else if (low === "chờ duyệt") {
+                                        ttCls = "bg-amber-50 text-amber-700 border-amber-200";
+                                    } else if (low === "không duyệt") {
+                                        ttCls = "bg-red-50 text-red-700 border-red-200";
+                                    }
+
+                                    return (
+                                        <div key={hd.ID} className="relative border border-border rounded-xl p-4 shadow-sm bg-card hover:bg-muted/10 transition-colors">
+                                            <div className="flex items-start justify-between gap-4 mb-3">
+                                                <div className="flex-1 overflow-hidden">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className="font-bold text-primary truncate">{hd.SO_HD}</p>
+                                                        {low === "đã duyệt" && (
+                                                            hd._count?.BAN_GIAO_HD > 0 ? (
+                                                                <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50/80 text-blue-700 border border-blue-200">
+                                                                    Đã bàn giao
+                                                                </span>
+                                                            ) : (
+                                                                <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted/60 text-muted-foreground border border-border/80">
+                                                                    Chưa bàn giao
+                                                                </span>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2 truncate">
+                                                        <span>{hd.LOAI_HD || "Chưa phân loại"}</span>
+                                                        {hd.MA_BAO_GIA && (
+                                                            <>
+                                                                <span className="w-1 h-1 rounded-full bg-muted-foreground/40 shrink-0" />
+                                                                <span className="truncate">BG: {hd.MA_BAO_GIA}</span>
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                                <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${ttCls}`}>{hd.DUYET}</span>
+                                            </div>
+
+                                            {hd.CONG_TRINH && (
+                                                <div className="mb-3 bg-muted/40 border border-border/50 rounded-lg p-2.5">
+                                                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-0.5">Công trình / Hạng mục</p>
+                                                    <p className="text-sm font-semibold text-foreground line-clamp-2">{hd.CONG_TRINH}</p>
+                                                </div>
+                                            )}
+
+                                            <div className="grid grid-cols-3 gap-3 border-t border-border/60 pt-3">
+                                                <div>
+                                                    <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Ngày HĐ</p>
+                                                    <p className="font-semibold text-foreground text-[13px]">{formatDate(hd.NGAY_HD)}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Người tạo</p>
+                                                    <p className="font-semibold text-foreground text-[13px] truncate">{hd.NGUOI_TAO_REL?.HO_TEN || "—"}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider mb-0.5">Giá trị HĐ</p>
+                                                    <p className="font-bold text-foreground text-[13px]">{formatCurrency(hd.TONG_TIEN)}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     );
                                 })}

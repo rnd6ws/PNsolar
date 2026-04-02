@@ -165,7 +165,11 @@ export default function BanGiaoList({ data, visibleColumns, viewMode = "list" }:
                     </thead>
                     <tbody>
                         {sortedData.map((item, idx) => (
-                            <tr key={item.ID} className="border-b border-border hover:bg-muted/30 transition-all">
+                            <tr 
+                                key={item.ID} 
+                                className="border-b border-border hover:bg-muted/30 transition-all cursor-pointer"
+                                onClick={() => setViewItem(item)}
+                            >
                                 <td className="px-4 py-3 text-muted-foreground text-xs">{idx + 1}</td>
                                 {col("soBanGiao") && (
                                     <td className="px-4 py-3">
@@ -219,14 +223,14 @@ export default function BanGiaoList({ data, visibleColumns, viewMode = "list" }:
                                 <td className="px-4 py-3 text-right">
                                     <div className="flex items-center justify-end gap-1">
                                         <button
-                                            onClick={() => setViewItem(item)}
+                                            onClick={(e) => { e.stopPropagation(); setViewItem(item); }}
                                             className="p-1.5 rounded-lg hover:bg-blue-500/10 text-muted-foreground hover:text-blue-600 transition-colors"
                                             title="Xem chi tiết"
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
                                         <button
-                                            onClick={() => handleExport(item)}
+                                            onClick={(e) => { e.stopPropagation(); handleExport(item); }}
                                             disabled={exportingId === item.ID}
                                             className="p-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 text-muted-foreground hover:text-green-700 transition-colors disabled:opacity-50"
                                             title="Xuất Biên bản (Word)"
@@ -235,7 +239,7 @@ export default function BanGiaoList({ data, visibleColumns, viewMode = "list" }:
                                         </button>
                                         <PermissionGuard moduleKey="ban-giao" level="edit">
                                             <button
-                                                onClick={() => setEditItem(item)}
+                                                onClick={(e) => { e.stopPropagation(); setEditItem(item); }}
                                                 className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
                                                 title="Sửa"
                                             >
@@ -244,7 +248,7 @@ export default function BanGiaoList({ data, visibleColumns, viewMode = "list" }:
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="ban-giao" level="delete">
                                             <button
-                                                onClick={() => setDeleteItem(item)}
+                                                onClick={(e) => { e.stopPropagation(); setDeleteItem(item); }}
                                                 className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                                                 title="Xóa"
                                             >

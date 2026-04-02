@@ -61,7 +61,10 @@ export async function getKhachHangs(filters: {
                         select: {
                             NGUOI_LIENHE: {
                                 where: { HIEU_LUC: "Đang hiệu lực" }
-                            }
+                            },
+                            CO_HOI: true,
+                            HOP_DONG: true,
+                            KEHOACH_CSKH: true
                         }
                     }
                 }
@@ -95,7 +98,10 @@ export async function getKhachHangById(id: string) {
                     select: {
                         NGUOI_LIENHE: {
                             where: { HIEU_LUC: "Đang hiệu lực" }
-                        }
+                        },
+                        CO_HOI: true,
+                        HOP_DONG: true,
+                        KEHOACH_CSKH: true
                     }
                 }
             }

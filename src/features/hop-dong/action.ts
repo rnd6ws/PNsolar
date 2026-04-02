@@ -137,7 +137,10 @@ export async function getHopDongList(filters: {
                 },
                 skip: (page - 1) * limit,
                 take: limit,
-                orderBy: { NGAY_HD: 'desc' },
+                orderBy: [
+                    { NGAY_HD: 'desc' },
+                    { CREATED_AT: 'desc' }
+                ],
             }),
             prisma.hOP_DONG.count({ where }),
         ]);
@@ -215,6 +218,40 @@ export async function getHopDongById(id: string) {
     } catch (error) {
         console.error('[getHopDongById]', error);
         return { success: false, message: 'Lỗi khi tải chi tiết hợp đồng' };
+    }
+}
+
+export async function getHopDongByKhachHang(maKH: string) {
+    try {
+        if (!maKH) return { success: false, data: [] };
+        
+        const data = await prisma.hOP_DONG.findMany({
+            where: { MA_KH: maKH },
+            select: {
+                ID: true,
+                SO_HD: true,
+                NGAY_HD: true,
+                TONG_TIEN: true,
+                LOAI_HD: true,
+                DUYET: true,
+                CONG_TRINH: true,
+                MA_BAO_GIA: true,
+                NGUOI_TAO_REL: { select: { HO_TEN: true } },
+                _count: { select: { BAN_GIAO_HD: true } }
+            },
+            orderBy: { NGAY_HD: 'desc' },
+        });
+
+        return {
+            success: true,
+            data: data.map(hd => ({
+                ...hd,
+                NGAY_HD: hd.NGAY_HD.toISOString()
+            }))
+        };
+    } catch (error) {
+        console.error('[getHopDongByKhachHang]', error);
+        return { success: false, message: 'Lỗi khi tải danh sách hợp đồng' };
     }
 }
 
