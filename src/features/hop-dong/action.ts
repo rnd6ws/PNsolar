@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth';
+import { createNotification } from '@/lib/notifications';
 import { hopDongSchema, hopDongChiTietSchema, dkttHdSchema, dkHdSchema } from './schema';
 import type { HopDongChiTietInput, DkttHdInput, ThongTinKhacInput, DkHdInput } from './schema';
 
@@ -347,6 +348,23 @@ export async function createHopDong(
         });
 
         revalidatePath('/hop-dong');
+
+        // Gửi thông báo cho ADMIN và MANAGER
+        prisma.dSNV.findMany({
+            where: { IS_ACTIVE: true, ROLE: { in: ['ADMIN', 'MANAGER'] } },
+            select: { ID: true },
+        }).then((managers) => {
+            for (const mgr of managers) {
+                createNotification({
+                    title: 'Hợp đồng mới',
+                    message: `Hợp đồng ${soHD} cho khách hàng ${parsed.data.MA_KH} đã được tạo.`,
+                    type: 'HOP_DONG',
+                    recipientId: mgr.ID,
+                    link: `/hop-dong?query=${encodeURIComponent(soHD)}`,
+                }).catch(() => {});
+            }
+        }).catch(() => {});
+
         return { success: true, message: 'Tạo hợp đồng thành công!' };
     } catch (error: any) {
         console.error('[createHopDong]', error);

@@ -5,7 +5,6 @@ import { getCurrentUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
 import { ActionResponse } from '@/lib/types';
-import { createNotification } from '@/lib/notifications';
 
 export async function createNhanVienAction(data: any) {
     const user = await getCurrentUser();
@@ -57,15 +56,6 @@ export async function createNhanVienAction(data: any) {
         });
 
         revalidatePath('/nhan-vien');
-
-        // Broadcast thông báo nhân viên mới đến tất cả
-        createNotification({
-            title: 'Nhân viên mới',
-            message: `${result.HO_TEN} (${result.MA_NV}) vừa được thêm vào hệ thống.`,
-            type: 'SYSTEM',
-            recipientId: null,
-            senderId: user.userId,
-        }).catch(() => {});
 
         return { success: true, data: result };
     } catch (error: any) {

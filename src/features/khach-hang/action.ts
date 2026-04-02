@@ -260,7 +260,7 @@ export async function createKhachHang(data: any) {
                             message: `Khách hàng ${data.TEN_KH} (${maKh}) đã được phân công cho bạn.`,
                             type: 'KHACH_HANG',
                             recipientId: emp.ID,
-                            link: '/khach-hang',
+                            link: `/khach-hang?query=${encodeURIComponent(maKh)}`,
                         }).catch(() => {});
                     }
                 })

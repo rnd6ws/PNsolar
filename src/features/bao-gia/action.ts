@@ -338,7 +338,7 @@ export async function createBaoGia(
                             message: `Báo giá ${maBaoGia} cho khách hàng ${parsed.data.MA_KH} đã được tạo thành công.`,
                             type: 'BAO_GIA',
                             recipientId: emp.ID,
-                            link: '/bao-gia',
+                            link: `/bao-gia?query=${encodeURIComponent(maBaoGia)}`,
                         }).catch(() => {});
                     }
                 })
