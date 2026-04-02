@@ -145,6 +145,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
     const searchParams = useSearchParams();
     const contentRef = useRef<HTMLDivElement>(null);
     const { pageLayout, sidebarStyle, navbarBehavior, sidebarCollapse } = useTheme();
+    const { canInstall, isInstalled: _isInstalled, install } = usePWAInstall();
 
     const isDashboard = pathname === '/dashboard';
     const isAdminOrManager = currentUser?.ROLE === 'ADMIN' || currentUser?.ROLE === 'MANAGER';
@@ -183,7 +184,6 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
             ? 'Quản lý'
             : 'Nhân viên';
 
-    const { canInstall, install } = usePWAInstall();
     const breadcrumb = getBreadcrumb(pathname);
 
     return (
