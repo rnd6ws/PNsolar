@@ -157,7 +157,8 @@ export const getCachedDmDichVu = unstable_cache(
         const data = await prisma.dM_DICH_VU.findMany({
             orderBy: { NHOM_DV: "asc" },
         });
-        return { success: true, data };
+        const mapped = data.map(d => ({ ...d, ID: d.MA_DV }));
+        return { success: true, data: mapped };
     },
     ["dm-dich-vu"],
     { revalidate: CACHE_10_MIN, tags: ["dm-dich-vu"] }
