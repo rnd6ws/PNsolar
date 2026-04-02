@@ -5,7 +5,15 @@ import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
 import KhachHangList from "./KhachHangList";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
-import { Download, Settings2, LayoutList, LayoutGrid } from "lucide-react";
+import { Download, Settings2, LayoutList, LayoutGrid, Grid, ChevronDown, X, Users, Tag, UserCheck, Globe } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface Props {
     data: any[];
@@ -18,18 +26,29 @@ interface Props {
     nhomOptions: { label: string; value: string }[];
     phanLoaiOptions: { label: string; value: string }[];
     nguonOptions: { label: string; value: string }[];
+    nhanVienOptions: { label: string; value: string }[];
     currentUserId?: string;
 }
+
+export type GroupByKey = "none" | "NHOM_KH" | "PHAN_LOAI" | "NV_CS" | "NGUON";
+
+const GROUP_LABELS: Record<string, string> = {
+    NHOM_KH: "Nhóm KH",
+    PHAN_LOAI: "Phân loại",
+    NV_CS: "NV chăm sóc",
+    NGUON: "Nguồn / Sales",
+};
 
 const DEFAULT_COLUMNS: ColumnKey[] = ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "nguonSales"];
 
 export default function KhachHangPageClient({
     data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois,
-    nhomOptions, phanLoaiOptions, nguonOptions, currentUserId,
+    nhomOptions, phanLoaiOptions, nguonOptions, nhanVienOptions, currentUserId,
 }: Props) {
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
     const [viewMode, setViewMode] = useState<"list" | "card">("list");
+    const [groupBy, setGroupBy] = useState<GroupByKey>("none");
 
     return (
         <>
@@ -73,6 +92,46 @@ export default function KhachHangPageClient({
                         <FilterSelect paramKey="NHOM_KH" options={nhomOptions} placeholder="Nhóm KH" />
                         <FilterSelect paramKey="PHAN_LOAI" options={phanLoaiOptions} placeholder="Phân loại" />
                         <FilterSelect paramKey="NGUON" options={nguonOptions} placeholder="Nguồn" />
+                        <FilterSelect paramKey="NV_CS" options={nhanVienOptions} placeholder="NV chăm sóc" />
+
+                        {/* Group By Dropdown — giống hàng hóa */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    className={cn(
+                                        "px-3 py-2 border rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2",
+                                        groupBy !== "none" ? "bg-primary/5 text-primary border-primary/30 hover:bg-primary/10" : "bg-background hover:bg-muted text-foreground border-border"
+                                    )}
+                                >
+                                    <Grid className="w-4 h-4" />
+                                    <span>{GROUP_LABELS[groupBy] || "Nhóm"}</span>
+                                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 rounded-xl font-medium">
+                                <DropdownMenuItem onClick={() => setGroupBy("NHOM_KH")} className={cn("py-2.5", groupBy === "NHOM_KH" && "bg-primary/10 text-primary")}>
+                                    <Users className="w-4 h-4 mr-2" /> Nhóm KH
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setGroupBy("PHAN_LOAI")} className={cn("py-2.5", groupBy === "PHAN_LOAI" && "bg-primary/10 text-primary")}>
+                                    <Tag className="w-4 h-4 mr-2" /> Phân loại
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setGroupBy("NV_CS")} className={cn("py-2.5", groupBy === "NV_CS" && "bg-primary/10 text-primary")}>
+                                    <UserCheck className="w-4 h-4 mr-2" /> NV chăm sóc
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setGroupBy("NGUON")} className={cn("py-2.5", groupBy === "NGUON" && "bg-primary/10 text-primary")}>
+                                    <Globe className="w-4 h-4 mr-2" /> Nguồn / Sales
+                                </DropdownMenuItem>
+                                {groupBy !== "none" && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => setGroupBy("none")} className="py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10">
+                                            <X className="w-4 h-4 mr-2" /> Không nhóm
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
                         <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                         <button
                             className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0"
@@ -90,16 +149,57 @@ export default function KhachHangPageClient({
                             <FilterSelect paramKey="NHOM_KH" options={nhomOptions} placeholder="Nhóm KH" />
                             <FilterSelect paramKey="PHAN_LOAI" options={phanLoaiOptions} placeholder="Phân loại" />
                             <FilterSelect paramKey="NGUON" options={nguonOptions} placeholder="Nguồn" />
+                            <FilterSelect paramKey="NV_CS" options={nhanVienOptions} placeholder="NV chăm sóc" />
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-border w-full">
-                            <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
-                            <button
-                                className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex"
-                                title="Xuất Excel"
-                            >
-                                <Download className="w-4 h-4" />
-                            </button>
+                        <div className="flex items-center justify-between gap-3 mt-1 pt-3 border-t border-border w-full">
+                            <div className="flex items-center gap-2">
+                                {/* Mobile Group By Dropdown */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            className={cn(
+                                                "px-3 py-2 border rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2",
+                                                groupBy !== "none" ? "bg-primary/5 text-primary border-primary/30 hover:bg-primary/10" : "bg-background hover:bg-muted text-foreground border-border"
+                                            )}
+                                        >
+                                            <Grid className="w-4 h-4" />
+                                            <span>{GROUP_LABELS[groupBy] || "Nhóm"}</span>
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-48 rounded-xl font-medium">
+                                        <DropdownMenuItem onClick={() => setGroupBy("NHOM_KH")} className={cn("py-2.5", groupBy === "NHOM_KH" && "bg-primary/10 text-primary")}>
+                                            <Users className="w-4 h-4 mr-2" /> Nhóm KH
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGroupBy("PHAN_LOAI")} className={cn("py-2.5", groupBy === "PHAN_LOAI" && "bg-primary/10 text-primary")}>
+                                            <Tag className="w-4 h-4 mr-2" /> Phân loại
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGroupBy("NV_CS")} className={cn("py-2.5", groupBy === "NV_CS" && "bg-primary/10 text-primary")}>
+                                            <UserCheck className="w-4 h-4 mr-2" /> NV chăm sóc
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGroupBy("NGUON")} className={cn("py-2.5", groupBy === "NGUON" && "bg-primary/10 text-primary")}>
+                                            <Globe className="w-4 h-4 mr-2" /> Nguồn / Sales
+                                        </DropdownMenuItem>
+                                        {groupBy !== "none" && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => setGroupBy("none")} className="py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                    <X className="w-4 h-4 mr-2" /> Không nhóm
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex"
+                                    title="Xuất Excel"
+                                >
+                                    <Download className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -118,6 +218,7 @@ export default function KhachHangPageClient({
                     visibleColumns={visibleColumns}
                     currentUserId={currentUserId}
                     viewMode={viewMode}
+                    groupBy={groupBy}
                 />
             </div>
         </>

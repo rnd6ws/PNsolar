@@ -10,8 +10,6 @@ export const metadata: Metadata = {
 import PhanQuyenClient from '@/features/phan-quyen/components/PhanQuyenClient';
 import { Shield } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export default async function PhanQuyenPage() {
     const user = await getCurrentUser();

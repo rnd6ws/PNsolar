@@ -196,6 +196,25 @@ export default function KeHoachCSDetail({ item, nhanViens, onClose }: Props) {
                                     <InfoRow icon={Building2} label="Khách hàng">
                                         <p className="text-sm font-semibold text-foreground">{item.KH?.TEN_KH || "—"}</p>
                                         {item.KH?.TEN_VT && <p className="text-xs text-muted-foreground">{item.KH.TEN_VT}</p>}
+                                        {(item.KH?.DIEN_THOAI || item.KH?.EMAIL || item.KH?.DIA_CHI) && (
+                                            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+                                                {item.KH?.DIEN_THOAI && (
+                                                    <a href={`tel:${item.KH.DIEN_THOAI}`} className="flex items-center gap-1 text-xs text-primary hover:underline">
+                                                        <Phone className="w-3 h-3" />{item.KH.DIEN_THOAI}
+                                                    </a>
+                                                )}
+                                                {item.KH?.EMAIL && (
+                                                    <a href={`mailto:${item.KH.EMAIL}`} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary hover:underline">
+                                                        {item.KH.EMAIL}
+                                                    </a>
+                                                )}
+                                                {item.KH?.DIA_CHI && (
+                                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                        <MapPin className="w-3 h-3" />{item.KH.DIA_CHI}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </InfoRow>
                                     {item.ID_LH && (
                                         <InfoRow icon={Phone} label="Người liên hệ">

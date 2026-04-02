@@ -49,6 +49,8 @@ export async function removeAuthCookie() {
 }
 
 // ✅ React cache() = tránh N+1
+// getCurrentUser: Full check — verify JWT + kiểm tra IS_ACTIVE trong DB
+// Dùng trong layout và server actions ghi dữ liệu
 export const getCurrentUser = cache(async (): Promise<JWTPayload | null> => {
     const token = (await cookies()).get(COOKIE_NAME)?.value;
     if (!token) return null;
@@ -67,3 +69,13 @@ export const getCurrentUser = cache(async (): Promise<JWTPayload | null> => {
     }
     return payload;
 });
+
+// ✅ getCurrentUserFast: JWT-only — KHÔNG query DB
+// Dùng trong các page server components chỉ cần đọc userId/ROLE
+// Layout đã check IS_ACTIVE rồi nên page con không cần check lại
+export const getCurrentUserFast = cache(async (): Promise<JWTPayload | null> => {
+    const token = (await cookies()).get(COOKIE_NAME)?.value;
+    if (!token) return null;
+    return verifyToken(token);
+});
+

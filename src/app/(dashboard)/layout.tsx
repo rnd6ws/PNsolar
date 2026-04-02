@@ -6,8 +6,11 @@ import { getMyPermissions } from '@/features/phan-quyen/action';
 import DashboardLayoutClient from './DashboardLayoutClient';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const user = await getCurrentUser();
-    const permissions = await getMyPermissions();
+    // ✅ FIX: Chạy song song — cache() đảm bảo getCurrentUser chỉ query DB 1 lần
+    const [user, permissions] = await Promise.all([
+        getCurrentUser(),
+        getMyPermissions(),
+    ]);
     const isAdmin = user?.ROLE === 'ADMIN';
 
     return (

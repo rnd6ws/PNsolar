@@ -3,7 +3,7 @@
 import React from "react";
 
 import { useState, useMemo, useEffect } from "react";
-import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users, CalendarPlus2, Target, Lock, AlertTriangle } from "lucide-react";
+import { Edit2, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Users, CalendarPlus2, Target, Lock, AlertTriangle, Phone, Mail, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { deleteCoHoi, updateCoHoi, closeCoHoi } from "../action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -80,6 +80,25 @@ function CoHoiDetail({ item, dmDichVu, onClose }: { item: any; dmDichVu: any[]; 
                         )}
                         <p className="text-sm font-semibold text-foreground truncate">{item.KH?.TEN_KH || "—"}</p>
                     </div>
+                    {(item.KH?.DIEN_THOAI || item.KH?.EMAIL || item.KH?.DIA_CHI) && (
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                            {item.KH?.DIEN_THOAI && (
+                                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                    <Phone className="w-2.5 h-2.5 text-primary/60" />{item.KH.DIEN_THOAI}
+                                </span>
+                            )}
+                            {item.KH?.EMAIL && (
+                                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                    <Mail className="w-2.5 h-2.5 text-primary/60" />{item.KH.EMAIL}
+                                </span>
+                            )}
+                            {item.KH?.DIA_CHI && (
+                                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                    <MapPin className="w-2.5 h-2.5 text-primary/60" />{item.KH.DIA_CHI}
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -405,7 +424,7 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
         const nhuCauIds: string[] = item.NHU_CAU || [];
         const selectedDv = dmDichVu.filter(d => nhuCauIds.includes(d.ID));
         return (
-            <div key={item.ID} className="p-4 space-y-2.5">
+            <div key={item.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-2.5">
                 <div className="flex items-start justify-between gap-2">
                     <div>
                         <p className="text-xs text-primary font-semibold">{item.ID_CH}</p>
@@ -440,21 +459,21 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                         )}
                     </div>
                 )}
-                <div className="flex justify-end gap-1 pt-1">
-                    <button onClick={() => { setScrollToStatus(null); setViewDrawerItem(item); }} className="p-2 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem"><Eye className="w-4 h-4" /></button>
+                <div className="flex items-center gap-2 pt-1 border-t border-border">
+                    <button onClick={() => { setScrollToStatus(null); setViewDrawerItem(item); }} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold" title="Xem"><Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span></button>
                     <PermissionGuard moduleKey="ke-hoach-cs" level="add">
-                        <button onClick={() => setKeHoachCSItem({ ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT, ID_CH: item.ID_CH })} className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors" title="Lên kế hoạch CSKH"><CalendarPlus2 className="w-4 h-4" /></button>
+                        <button onClick={() => setKeHoachCSItem({ ID: item.ID_KH, TEN_KH: item.KH?.TEN_KH, TEN_VT: item.KH?.TEN_VT, ID_CH: item.ID_CH })} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-violet-500/10 text-muted-foreground hover:text-violet-600 rounded-lg transition-colors text-xs font-semibold" title="Lên kế hoạch CSKH"><CalendarPlus2 className="w-4 h-4" /> <span className="hidden sm:inline">CSKH</span></button>
                     </PermissionGuard>
                     <PermissionGuard moduleKey="co-hoi" level="edit">
-                        <button onClick={() => setEditItem(item)} className="p-2 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => setEditItem(item)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold" title="Sửa"><Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span></button>
                     </PermissionGuard>
                     {item.TINH_TRANG !== "Đã đóng" && (
                         <PermissionGuard moduleKey="co-hoi" level="edit">
-                            <button onClick={() => { setCloseItem({ ID: item.ID, ID_CH: item.ID_CH, TEN_KH: item.KH?.TEN_KH || item.ID_CH }); setCloseLyDo(""); }} className="p-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-muted-foreground hover:text-amber-600 rounded-lg transition-colors" title="Đóng cơ hội"><Lock className="w-4 h-4" /></button>
+                            <button onClick={() => { setCloseItem({ ID: item.ID, ID_CH: item.ID_CH, TEN_KH: item.KH?.TEN_KH || item.ID_CH }); setCloseLyDo(""); }} className="flex-none p-2 bg-muted/50 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 rounded-lg transition-colors" title="Đóng cơ hội"><Lock className="w-4 h-4" /></button>
                         </PermissionGuard>
                     )}
                     <PermissionGuard moduleKey="co-hoi" level="delete">
-                        <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteItem({ ID: item.ID, ID_CH: item.ID_CH })} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa"><Trash2 className="w-4 h-4" /></button>
                     </PermissionGuard>
                 </div>
             </div>
@@ -602,7 +621,7 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
 
             {/* ── Mobile Cards ── */}
             {viewMode === "card" && (
-            <div className="lg:hidden divide-y divide-border">
+            <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
                 {groupByKH && groupedByKH ? (
                     Array.from(groupedByKH.entries()).map(([khId, group]) => {
                         const isCollapsed = !expandedGroups.has(khId);
@@ -629,7 +648,7 @@ export default function CoHoiList({ data, dmDichVu, visibleColumns, groupByKH = 
                                     {isCollapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
                                 </button>
                                 {!isCollapsed && (
-                                    <div className="divide-y divide-border/50">
+                                    <div className="flex flex-col gap-3 p-3">
                                         {group.items.map((item, idx) => renderMobileCard(item, idx))}
                                     </div>
                                 )}

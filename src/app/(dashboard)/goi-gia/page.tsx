@@ -7,8 +7,6 @@ export const metadata: Metadata = {
     title: "Gói giá | PN Solar",
 };
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export default async function GoiGiaPage({ searchParams }: { searchParams: Promise<{ query?: string; page?: string; pageSize?: string; MA_DONG_HANG?: string }> }) {
     const params = await searchParams;

@@ -14,8 +14,6 @@ export const metadata: Metadata = {
     description: "Quản lý hạng mục khảo sát",
 };
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export default async function HangMucKSPage() {
     const [hmRes, cdLctRes, cdNhomRes] = await Promise.all([

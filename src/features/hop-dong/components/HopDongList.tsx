@@ -1,8 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackagePlus } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import Modal from "@/components/Modal";
@@ -12,9 +11,6 @@ import AddEditHopDongModal from "./AddEditHopDongModal";
 import ViewHopDongModal from "./ViewHopDongModal";
 import { exportHopDongDocx } from "../utils/exportHopDong";
 import { exportPLHopDongDocx } from "../utils/exportPLHopDong";
-import ViewBanGiaoModal from "@/features/ban-giao/components/ViewBanGiaoModal";
-import AddEditBanGiaoModal from "@/features/ban-giao/components/AddEditBanGiaoModal";
-import { getBanGiaoById } from "@/features/ban-giao/action";
 
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString("vi-VN");
 const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
@@ -22,7 +18,6 @@ const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v)
 interface Props { data: any[]; visibleColumns: ColumnKey[]; viewMode?: "list" | "card"; }
 
 export default function HopDongList({ data, visibleColumns, viewMode = "list" }: Props) {
-    const router = useRouter();
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
     const [editModal, setEditModal] = useState(false);
@@ -34,37 +29,21 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
     const [duyetInfoModal, setDuyetInfoModal] = useState<{ isOpen: boolean; data: any | null }>({ isOpen: false, data: null });
     const [exportingId, setExportingId] = useState<string | null>(null);
     const [vatModal, setVatModal] = useState<{ open: boolean; item: any | null; loading: boolean }>({ open: false, item: null, loading: false });
-    const [banGiaoModal, setBanGiaoModal] = useState<{ isOpen: boolean; data: any | null }>({ isOpen: false, data: null });
-    const [createBanGiaoData, setCreateBanGiaoData] = useState<any | null>(null);
+    const [duyetConfirm, setDuyetConfirm] = useState<{ open: boolean; id: string; soHD: string; tenKH: string; action: "Đã duyệt" | "Không duyệt"; loading: boolean }>({ open: false, id: "", soHD: "", tenKH: "", action: "Đã duyệt", loading: false });
 
-    const handleViewBanGiao = async (banGiaoId: string) => {
-        const toastId = toast.loading("Đang tải dữ liệu bàn giao...");
-        try {
-            const result = await getBanGiaoById(banGiaoId);
-            if (result.success && result.data) {
-                toast.dismiss(toastId);
-                setBanGiaoModal({ isOpen: true, data: result.data });
-            } else {
-                toast.error(result.message || "Không thể tải chi tiết", { id: toastId });
-            }
-        } catch (err: any) {
-            toast.error(err.message || "Lỗi khi tải chi tiết", { id: toastId });
-        }
+    const openDuyetConfirm = (item: any, action: "Đã duyệt" | "Không duyệt") => {
+        setDuyetConfirm({ open: true, id: item.ID, soHD: item.SO_HD, tenKH: item.KHTN_REL?.TEN_KH || item.MA_KH || "", action, loading: false });
     };
 
-    const handleCreateBanGiao = async (item: any) => {
-        const toastId = toast.loading("Đang tạo bàn giao...");
-        try {
-            const result = await getHopDongById(item.ID);
-            if (result.success && result.data) {
-                toast.dismiss(toastId);
-                setCreateBanGiaoData(result.data);
-            } else {
-                toast.error(result.message || "Không thể tải dữ liệu hợp đồng", { id: toastId });
-            }
-        } catch (err: any) {
-            toast.error(err.message || "Lỗi khi tải dữ liệu hợp đồng", { id: toastId });
+    const confirmDuyet = async () => {
+        setDuyetConfirm(prev => ({ ...prev, loading: true }));
+        const res = await duyetHopDong(duyetConfirm.id, duyetConfirm.action);
+        if (res?.success) {
+            toast.success(res.message || "Thành công!");
+        } else {
+            toast.error(res?.message || "Có lỗi xảy ra!");
         }
+        setDuyetConfirm({ open: false, id: "", soHD: "", tenKH: "", action: "Đã duyệt", loading: false });
     };
 
     const handleExport = async (item: any) => {
@@ -215,20 +194,13 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                             <span className="pl-2.5 pr-1.5 py-0.5 text-yellow-700 dark:text-yellow-400 text-[11px] font-medium">Chờ duyệt</span>
                                             <PermissionGuard moduleKey="hop-dong" level="manage">
                                                 <div className="flex items-center gap-1 pr-1 py-0.5 pl-1.5 border-l border-yellow-200/80 dark:border-yellow-800/60">
-                                                    <button onClick={() => handleDuyet(item.ID, "Đã duyệt")} className="p-1 bg-background/40 dark:bg-background/20 hover:bg-green-500 hover:text-white text-green-600 dark:hover:bg-green-600 dark:text-green-400 rounded-full transition-all" title="Duyệt"><CheckCircle2 className="w-3.5 h-3.5" /></button>
-                                                    <button onClick={() => handleDuyet(item.ID, "Không duyệt")} className="p-1 bg-background/40 dark:bg-background/20 hover:bg-red-500 hover:text-white text-red-600 dark:hover:bg-red-600 dark:text-red-400 rounded-full transition-all" title="Không duyệt"><XCircle className="w-3.5 h-3.5" /></button>
+                                                    <button onClick={() => openDuyetConfirm(item, "Đã duyệt")} className="p-1 bg-background/40 dark:bg-background/20 hover:bg-green-500 hover:text-white text-green-600 dark:hover:bg-green-600 dark:text-green-400 rounded-full transition-all" title="Duyệt"><CheckCircle2 className="w-3.5 h-3.5" /></button>
+                                                    <button onClick={() => openDuyetConfirm(item, "Không duyệt")} className="p-1 bg-background/40 dark:bg-background/20 hover:bg-red-500 hover:text-white text-red-600 dark:hover:bg-red-600 dark:text-red-400 rounded-full transition-all" title="Không duyệt"><XCircle className="w-3.5 h-3.5" /></button>
                                                 </div>
                                             </PermissionGuard>
                                         </div>
                                     ) : item.DUYET === "Đã duyệt" ? (
-                                        <div className="flex flex-col items-center gap-1.5">
-                                            <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[11px] font-medium border border-green-200 dark:border-green-800/50 inline-block transition-opacity max-w-fit" title="Click để xem chi tiết duyệt">Đã duyệt</span>
-                                            {item.BAN_GIAO_HD?.length > 0 ? (
-                                                <span onClick={() => handleViewBanGiao(item.BAN_GIAO_HD[0].ID)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[10px] font-semibold border border-indigo-200 dark:border-indigo-800/50 inline-block transition-opacity whitespace-nowrap" title="Xem chi tiết bàn giao">Đã bàn giao</span>
-                                            ) : (
-                                                <span className="px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground text-[10px] font-semibold border border-border inline-block whitespace-nowrap">Chưa bàn giao</span>
-                                            )}
-                                        </div>
+                                        <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[11px] font-medium border border-green-200 dark:border-green-800/50 inline-block transition-opacity" title="Click để xem chi tiết duyệt">Đã duyệt</span>
                                     ) : (
                                         <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-[11px] font-medium border border-red-200 dark:border-red-800/50 inline-block transition-opacity" title="Click để xem chi tiết duyệt">Không duyệt</span>
                                     )}
@@ -261,16 +233,6 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                         <button onClick={() => handleView(item)} disabled={loadingView} className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground hover:text-primary" title="Xem"><Eye className="w-4 h-4" /></button>
                                         <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-muted-foreground hover:text-green-700" title="Xuất HĐ Word"><BookDown className="w-4 h-4" /></button>
                                         <button onClick={() => handleExportPL(item)} className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-muted-foreground hover:text-blue-700" title="Xuất Phụ Lục HĐ"><FileSpreadsheet className="w-4 h-4" /></button>
-                                        <PermissionGuard moduleKey="ban-giao" level="add">
-                                            <button 
-                                                onClick={() => item.DUYET === "Đã duyệt" && !item.BAN_GIAO_HD?.length && handleCreateBanGiao(item)} 
-                                                disabled={item.DUYET !== "Đã duyệt" || item.BAN_GIAO_HD?.length > 0}
-                                                className={`p-1.5 rounded-lg transition-colors flex items-center justify-center ${item.DUYET !== "Đã duyệt" || item.BAN_GIAO_HD?.length > 0 ? "opacity-40 cursor-not-allowed text-muted-foreground" : "hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-muted-foreground hover:text-indigo-700"}`} 
-                                                title={item.DUYET !== "Đã duyệt" ? "Hợp đồng chưa duyệt" : item.BAN_GIAO_HD?.length > 0 ? "Đã bàn giao" : "Tạo bàn giao"}
-                                            >
-                                                <PackagePlus className="w-4 h-4" />
-                                            </button>
-                                        </PermissionGuard>
                                         <PermissionGuard moduleKey="hop-dong" level="edit">
                                             <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground" title="Sửa"><Pencil className="w-4 h-4" /></button>
                                         </PermissionGuard>
@@ -302,14 +264,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                         {!item.DUYET || item.DUYET === "Chờ duyệt" ? (
                                             <span className="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 text-[11px] font-medium border border-yellow-200 dark:border-yellow-800/50">Chờ duyệt</span>
                                         ) : item.DUYET === "Đã duyệt" ? (
-                                            <div className="flex items-center gap-1">
-                                                <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[11px] font-medium border border-green-200 dark:border-green-800/50 transition-opacity" title="Click để xem chi tiết duyệt">Đã duyệt</span>
-                                                {item.BAN_GIAO_HD?.length > 0 ? (
-                                                    <span onClick={() => handleViewBanGiao(item.BAN_GIAO_HD[0].ID)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[11px] font-semibold border border-indigo-200 dark:border-indigo-800/50 transition-opacity" title="Xem chi tiết bàn giao">Đã bàn giao</span>
-                                                ) : (
-                                                    <span className="px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground text-[11px] font-semibold border border-border">Chưa bàn giao</span>
-                                                )}
-                                            </div>
+                                            <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[11px] font-medium border border-green-200 dark:border-green-800/50 transition-opacity" title="Click để xem chi tiết">Đã duyệt</span>
                                         ) : (
                                             <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-[11px] font-medium border border-red-200 dark:border-red-800/50 transition-opacity" title="Click để xem chi tiết">Không duyệt</span>
                                         )}
@@ -338,32 +293,22 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 </div>
                             </div>
 
-                            {/* Hành động */}
-                            <div className="flex justify-end gap-2 pt-1">
+                            {/* Footer: Actions */}
+                            <div className="flex items-center gap-2 pt-1 border-t border-border">
                                 {(!item.DUYET || item.DUYET === "Chờ duyệt") && (
                                     <PermissionGuard moduleKey="hop-dong" level="manage">
-                                        <button onClick={() => handleDuyet(item.ID, "Đã duyệt")} className="flex items-center justify-center p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors border border-transparent hover:border-green-200" title="Duyệt"><CheckCircle2 className="w-4 h-4" /></button>
-                                        <button onClick={() => handleDuyet(item.ID, "Không duyệt")} className="flex items-center justify-center p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors border border-transparent hover:border-red-200" title="Không duyệt"><XCircle className="w-4 h-4" /></button>
+                                        <button onClick={() => openDuyetConfirm(item, "Đã duyệt")} className="flex-none p-2 bg-muted/50 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors border border-transparent hover:border-green-200" title="Duyệt"><CheckCircle2 className="w-4 h-4" /></button>
+                                        <button onClick={() => openDuyetConfirm(item, "Không duyệt")} className="flex-none p-2 bg-muted/50 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors border border-transparent hover:border-red-200" title="Không duyệt"><XCircle className="w-4 h-4" /></button>
                                     </PermissionGuard>
                                 )}
-                                <button onClick={() => handleView(item)} disabled={loadingView} className="flex items-center justify-center p-2 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground hover:text-primary"><Eye className="w-4 h-4" /></button>
-                                <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="flex items-center justify-center p-2 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-muted-foreground hover:text-green-700" title="Xuất HĐ Word"><BookDown className="w-4 h-4" /></button>
-                                <button onClick={() => handleExportPL(item)} className="flex items-center justify-center p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-muted-foreground hover:text-blue-700" title="Xuất Phụ Lục"><FileSpreadsheet className="w-4 h-4" /></button>
-                                <PermissionGuard moduleKey="ban-giao" level="add">
-                                    <button 
-                                        onClick={() => item.DUYET === "Đã duyệt" && !item.BAN_GIAO_HD?.length && handleCreateBanGiao(item)} 
-                                        disabled={item.DUYET !== "Đã duyệt" || item.BAN_GIAO_HD?.length > 0}
-                                        className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.DUYET !== "Đã duyệt" || item.BAN_GIAO_HD?.length > 0 ? "opacity-40 cursor-not-allowed text-muted-foreground" : "hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-muted-foreground hover:text-indigo-700"}`} 
-                                        title={item.DUYET !== "Đã duyệt" ? "Hợp đồng chưa duyệt" : item.BAN_GIAO_HD?.length > 0 ? "Đã bàn giao" : "Tạo bàn giao"}
-                                    >
-                                        <PackagePlus className="w-4 h-4" />
-                                    </button>
-                                </PermissionGuard>
+                                <button onClick={() => handleView(item)} disabled={loadingView} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold"><Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span></button>
+                                <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-green-100 dark:hover:bg-green-900/30 text-muted-foreground hover:text-green-700 rounded-lg transition-colors text-xs font-semibold" title="Xuất HĐ Word"><BookDown className="w-4 h-4" /> <span className="hidden sm:inline">HĐ</span></button>
+                                <button onClick={() => handleExportPL(item)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-muted-foreground hover:text-blue-700 rounded-lg transition-colors text-xs font-semibold" title="Xuất Phụ Lục"><FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">PL</span></button>
                                 <PermissionGuard moduleKey="hop-dong" level="edit">
-                                    <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="flex items-center justify-center p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                                    <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold"><Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span></button>
                                 </PermissionGuard>
                                 <PermissionGuard moduleKey="hop-dong" level="delete">
-                                    <button onClick={() => setDeleteItem(item)} className="flex items-center justify-center p-2 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+                                    <button onClick={() => setDeleteItem(item)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                                 </PermissionGuard>
                             </div>
                         </div>
@@ -478,13 +423,48 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                 </div>
             </Modal>
 
-            <ViewBanGiaoModal isOpen={banGiaoModal.isOpen} onClose={() => setBanGiaoModal({ isOpen: false, data: null })} data={banGiaoModal.data} />
-            <AddEditBanGiaoModal
-                isOpen={!!createBanGiaoData}
-                onClose={() => setCreateBanGiaoData(null)}
-                prefillHD={createBanGiaoData}
-                onSuccess={() => { router.refresh(); }}
-            />
+            {/* Modal: Xác nhận duyệt / từ chối */}
+            <Modal
+                isOpen={duyetConfirm.open}
+                onClose={() => setDuyetConfirm(prev => ({ ...prev, open: false }))}
+                title={duyetConfirm.action === "Đã duyệt" ? "Xác nhận duyệt hợp đồng" : "Xác nhận từ chối hợp đồng"}
+                icon={duyetConfirm.action === "Đã duyệt" ? CheckCircle2 : XCircle}
+                footer={
+                    <>
+                        <span />
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setDuyetConfirm(prev => ({ ...prev, open: false }))} className="btn-premium-secondary" disabled={duyetConfirm.loading}>Hủy</button>
+                            <button
+                                type="button"
+                                disabled={duyetConfirm.loading}
+                                onClick={confirmDuyet}
+                                className={`btn-premium-primary ${duyetConfirm.action === "Đã duyệt" ? "bg-green-600 hover:bg-green-700 border-green-600" : "bg-red-600 hover:bg-red-700 border-red-600"}`}
+                            >
+                                {duyetConfirm.loading ? "Đang xử lý..." : duyetConfirm.action === "Đã duyệt" ? "✓ Xác nhận duyệt" : "✗ Xác nhận từ chối"}
+                            </button>
+                        </div>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div className={`flex items-start gap-3 p-3 rounded-xl border ${duyetConfirm.action === "Đã duyệt" ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"}`}>
+                        {duyetConfirm.action === "Đã duyệt" ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                        ) : (
+                            <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                        )}
+                        <div className="space-y-1">
+                            <p className={`text-sm font-semibold ${duyetConfirm.action === "Đã duyệt" ? "text-green-800 dark:text-green-300" : "text-red-800 dark:text-red-300"}`}>
+                                {duyetConfirm.action === "Đã duyệt" ? "Bạn muốn duyệt hợp đồng này?" : "Bạn muốn từ chối hợp đồng này?"}
+                            </p>
+                            <p className={`text-xs ${duyetConfirm.action === "Đã duyệt" ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+                                Hợp đồng <span className="font-bold">{duyetConfirm.soHD}</span>
+                                {duyetConfirm.tenKH && <> của khách hàng <span className="font-bold">{duyetConfirm.tenKH}</span></>}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 }
