@@ -38,6 +38,8 @@ model DSNV {
   KHAO_SAT       KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
   BAO_GIA_GUI    BAO_GIA[]      @relation("NGUOI_GUI_BG")
   HOP_DONG_DUYET HOP_DONG[]     @relation("NGUOI_DUYET")
+  HOP_DONG_TAO   HOP_DONG[]     @relation("NGUOI_TAO")
+  BAN_GIAO_TAO   BAN_GIAO_HD[]  @relation("NGUOI_TAO_BG")
 
   NOTIFICATIONS_RECEIVED NOTIFICATION[]      @relation("NotificationRecipient")
   NOTIFICATIONS_SENT     NOTIFICATION[]      @relation("NotificationSender")
@@ -904,6 +906,9 @@ model HOP_DONG {
   LOAI_HD String // Dân dụng | Công nghiệp
   NGAY_HD DateTime @default(now())
 
+  NGUOI_TAO     String? // mặc định user đang đăng nhập (trên form chỉ admin và manager sửa được còn staff thì không)
+  NGUOI_TAO_REL DSNV?   @relation("NGUOI_TAO", fields: [NGUOI_TAO], references: [MA_NV])
+
   THONG_TIN_KHAC THONG_TIN_KHAC[]
 
   CONG_TRINH String? // LOAI_HD: Công nghiệp
@@ -978,6 +983,9 @@ model BAN_GIAO_HD {
   SO_HD  String
   HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
 
+  DIA_DIEM      String? // DK_HD.NOI_DUNG (TIEU_DE = "- Địa điểm giao hàng và thi công:")
+  NGUOI_TAO     String?
+  NGUOI_TAO_REL DSNV?    @relation("NGUOI_TAO_BG", fields: [NGUOI_TAO], references: [MA_NV])
   NGAY_BAN_GIAO DateTime @default(now())
   SO_BAN_GIAO   String // BG-SO_HD
 

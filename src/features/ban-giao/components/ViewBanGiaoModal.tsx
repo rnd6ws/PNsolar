@@ -115,6 +115,14 @@ export default function ViewBanGiaoModal({ isOpen, onClose, data }: Props) {
                                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Giá trị Hợp đồng</span>
                                     <p className="text-sm font-black text-foreground bg-muted/30 px-3 py-1.5 rounded-lg inline-block self-start border border-border/50">{fmtMoney(data.HD_REL?.TONG_TIEN)}</p>
                                 </div>
+                                <div className="flex flex-col gap-1 border-t border-border/40 pt-3">
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Địa điểm bàn giao</span>
+                                    <p className="text-sm font-semibold text-foreground">{data.DIA_DIEM || "—"}</p>
+                                </div>
+                                <div className="flex flex-col gap-1 border-t border-border/40 pt-3">
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Người tạo</span>
+                                    <p className="text-sm font-semibold text-foreground">{data.NGUOI_TAO_REL ? `${data.NGUOI_TAO_REL.HO_TEN} (${data.NGUOI_TAO_REL.MA_NV})` : data.NGUOI_TAO || "—"}</p>
+                                </div>
                             </div>
                         </div>
                     </div>

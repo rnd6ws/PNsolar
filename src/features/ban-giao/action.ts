@@ -2,6 +2,30 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getCurrentUser } from '@/lib/auth';
+
+// ─── Lấy danh sách nhân viên và Role ───────────────────────────────────
+export async function getDsnvAndRole() {
+    try {
+        const user = await getCurrentUser();
+        const dsnv = await prisma.dSNV.findMany({
+            where: { IS_ACTIVE: true },
+            select: { MA_NV: true, HO_TEN: true },
+            orderBy: { HO_TEN: 'asc' }
+        });
+        
+        if (!user) return { dsnv, role: 'STAFF', currentMaNv: null };
+        const currentUserDb = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        
+        return {
+            dsnv,
+            role: user.ROLE || 'STAFF',
+            currentMaNv: currentUserDb?.MA_NV || null
+        };
+    } catch {
+        return { dsnv: [], role: 'STAFF', currentMaNv: null };
+    }
+}
 
 // ─── Sinh số bàn giao tự động ───────────────────────────────
 async function generateSoBanGiao(soHD: string): Promise<string> {
@@ -63,6 +87,7 @@ export async function getBanGiaoList(filters: {
                             KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIEN_THOAI: true, DIA_CHI: true } },
                         },
                     },
+                    NGUOI_TAO_REL: { select: { HO_TEN: true, MA_NV: true } },
                 },
                 skip: (page - 1) * limit,
                 take: limit,
@@ -132,8 +157,10 @@ export async function searchHopDongForBanGiao(query?: string) {
                 NGAY_HD: true,
                 LOAI_HD: true,
                 TONG_TIEN: true,
-                KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIEN_THOAI: true } },
+                KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIEN_THOAI: true, DIA_CHI: true } },
                 BAN_GIAO_HD: { select: { SO_BAN_GIAO: true } },
+                DK_HD: { select: { HANG_MUC: true, NOI_DUNG: true } },
+                THONG_TIN_KHAC: { select: { TIEU_DE: true, NOI_DUNG: true } },
             },
             take: 20,
             orderBy: { NGAY_HD: 'desc' },
@@ -153,7 +180,9 @@ export async function createBanGiao(data: {
     SO_HD: string;
     NGAY_BAN_GIAO: string;
     THOI_GIAN_BAO_HANH?: string | null;
+    DIA_DIEM?: string | null;
     FILE_DINH_KEM?: any;
+    NGUOI_TAO?: string | null;
 }) {
     try {
         if (!data.SO_HD) return { success: false, message: 'Vui lòng chọn hợp đồng.' };
@@ -167,13 +196,25 @@ export async function createBanGiao(data: {
 
         const soBanGiao = await generateSoBanGiao(data.SO_HD);
 
+        // NGUOI_TAO
+        let nguoiTao = data.NGUOI_TAO;
+        if (!nguoiTao) {
+            const user = await getCurrentUser();
+            if (user) {
+                const nv = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+                if (nv) nguoiTao = nv.MA_NV;
+            }
+        }
+
         await prisma.bAN_GIAO_HD.create({
             data: {
                 SO_HD: data.SO_HD,
                 SO_BAN_GIAO: soBanGiao,
                 NGAY_BAN_GIAO: new Date(data.NGAY_BAN_GIAO),
                 THOI_GIAN_BAO_HANH: data.THOI_GIAN_BAO_HANH ? new Date(data.THOI_GIAN_BAO_HANH) : null,
+                DIA_DIEM: data.DIA_DIEM || null,
                 FILE_DINH_KEM: data.FILE_DINH_KEM || null,
+                NGUOI_TAO: nguoiTao || null,
             },
         });
 
@@ -189,7 +230,9 @@ export async function createBanGiao(data: {
 export async function updateBanGiao(id: string, data: {
     NGAY_BAN_GIAO: string;
     THOI_GIAN_BAO_HANH?: string | null;
+    DIA_DIEM?: string | null;
     FILE_DINH_KEM?: any;
+    NGUOI_TAO?: string | null;
 }) {
     try {
         const existing = await prisma.bAN_GIAO_HD.findUnique({ where: { ID: id } });
@@ -200,7 +243,9 @@ export async function updateBanGiao(id: string, data: {
             data: {
                 NGAY_BAN_GIAO: new Date(data.NGAY_BAN_GIAO),
                 THOI_GIAN_BAO_HANH: data.THOI_GIAN_BAO_HANH ? new Date(data.THOI_GIAN_BAO_HANH) : null,
+                DIA_DIEM: data.DIA_DIEM ?? existing.DIA_DIEM,
                 FILE_DINH_KEM: data.FILE_DINH_KEM ?? existing.FILE_DINH_KEM,
+                NGUOI_TAO: data.NGUOI_TAO !== undefined ? data.NGUOI_TAO : existing.NGUOI_TAO,
             },
         });
 

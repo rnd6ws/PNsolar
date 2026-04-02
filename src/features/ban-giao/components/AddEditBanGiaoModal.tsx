@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { PackageCheck, Search, CalendarDays, FileText, Upload, X, Loader2 } from "lucide-react";
 import { useMultipleFileUpload } from "@/hooks/useFileUpload";
 import Modal from "@/components/Modal";
-import { createBanGiao, updateBanGiao, searchHopDongForBanGiao } from "../action";
+import FormSelect from "@/components/FormSelect";
+import { createBanGiao, updateBanGiao, searchHopDongForBanGiao, getDsnvAndRole } from "../action";
 
 interface Props {
     isOpen: boolean;
@@ -21,7 +22,11 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
     const [soHD, setSoHD] = useState("");
     const [ngayBanGiao, setNgayBanGiao] = useState("");
     const [thoiGianBaoHanh, setThoiGianBaoHanh] = useState("");
+    const [diaDiem, setDiaDiem] = useState("");
     const [tepDinhKems, setTepDinhKems] = useState<string[]>([]);
+    const [nguoiTao, setNguoiTao] = useState("");
+    const [dsnvList, setDsnvList] = useState<{MA_NV: string, HO_TEN: string}[]>([]);
+    const [userRole, setUserRole] = useState("STAFF");
 
     const { uploadMultiple, uploading: fileUploading } = useMultipleFileUpload({
         folder: 'pnsolar/ban-giao',
@@ -57,13 +62,20 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
     // Init form khi edit
     useEffect(() => {
         if (isOpen) {
+            getDsnvAndRole().then((res: any) => {
+                setDsnvList(res.dsnv);
+                setUserRole(res.role);
+                if (!editData) setNguoiTao(res.currentMaNv || "");
+            });
             if (editData) {
                 setSoHD(editData.SO_HD || "");
                 setNgayBanGiao(editData.NGAY_BAN_GIAO ? editData.NGAY_BAN_GIAO.slice(0, 10) : "");
                 setThoiGianBaoHanh(editData.THOI_GIAN_BAO_HANH ? editData.THOI_GIAN_BAO_HANH.slice(0, 10) : "");
+                setDiaDiem(editData.DIA_DIEM || "");
                 setSelectedHD({ SO_HD: editData.SO_HD, ...editData.HD_REL });
                 setHDQuery(editData.SO_HD || "");
                 setTepDinhKems(editData.FILE_DINH_KEM || []);
+                setNguoiTao(editData.NGUOI_TAO || "");
             } else {
                 setSoHD("");
                 setNgayBanGiao(new Date().toISOString().slice(0, 10));
@@ -71,6 +83,7 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                 const oneYear = new Date();
                 oneYear.setFullYear(oneYear.getFullYear() + 1);
                 setThoiGianBaoHanh(oneYear.toISOString().slice(0, 10));
+                setDiaDiem("");
                 setSelectedHD(null);
                 setHDQuery("");
                 setTepDinhKems([]);
@@ -116,14 +129,18 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                 result = await updateBanGiao(editData.ID, {
                     NGAY_BAN_GIAO: ngayBanGiao,
                     THOI_GIAN_BAO_HANH: thoiGianBaoHanh || null,
+                    DIA_DIEM: diaDiem || null,
                     FILE_DINH_KEM: tepDinhKems,
+                    NGUOI_TAO: nguoiTao || null,
                 });
             } else {
                 result = await createBanGiao({
                     SO_HD: soHD,
                     NGAY_BAN_GIAO: ngayBanGiao,
                     THOI_GIAN_BAO_HANH: thoiGianBaoHanh || null,
+                    DIA_DIEM: diaDiem || null,
                     FILE_DINH_KEM: tepDinhKems,
+                    NGUOI_TAO: nguoiTao || null,
                 });
             }
 
@@ -205,6 +222,28 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                                                         setSelectedHD(hd);
                                                         setSoHD(hd.SO_HD);
                                                         setHDQuery(hd.SO_HD);
+
+                                                        // Tìm địa điểm bàn giao từ Điều khoản Hợp đồng hoặc Thông tin khác
+                                                        const dkDiaDiem = hd.DK_HD?.find((dk: any) => 
+                                                            dk.HANG_MUC?.toLowerCase().includes("địa điểm") || 
+                                                            dk.HANG_MUC?.toLowerCase().includes("thi công")
+                                                        );
+                                                        const ttkDiaDiem = hd.THONG_TIN_KHAC?.find((tt: any) =>
+                                                            tt.TIEU_DE?.toLowerCase().includes("địa điểm") ||
+                                                            tt.TIEU_DE?.toLowerCase().includes("địa chỉ")
+                                                        );
+
+                                                        // Ưu tiên DK_HD -> THONG_TIN_KHAC -> KHTN_REL
+                                                        if (dkDiaDiem?.NOI_DUNG) {
+                                                            setDiaDiem(dkDiaDiem.NOI_DUNG);
+                                                        } else if (ttkDiaDiem?.NOI_DUNG) {
+                                                            setDiaDiem(ttkDiaDiem.NOI_DUNG);
+                                                        } else if (hd.KHTN_REL?.DIA_CHI) {
+                                                            setDiaDiem(hd.KHTN_REL.DIA_CHI);
+                                                        } else {
+                                                            setDiaDiem("");
+                                                        }
+
                                                         setShowHDDropdown(false);
                                                     }}
                                                 >
@@ -256,6 +295,31 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                         </div>
                     </div>
                 )}
+
+                {/* Địa điểm bàn giao và Người tạo */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-muted-foreground">Địa điểm bàn giao</label>
+                        <input
+                            type="text"
+                            className="input-modern w-full"
+                            placeholder="Nhập địa điểm giao hàng và thi công..."
+                            value={diaDiem}
+                            onChange={(e) => setDiaDiem(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-muted-foreground">Người tạo</label>
+                        <FormSelect
+                            name="nguoiTao"
+                            value={nguoiTao}
+                            onChange={setNguoiTao}
+                            options={dsnvList.map((nv) => ({ label: `${nv.HO_TEN} (${nv.MA_NV})`, value: nv.MA_NV }))}
+                            disabled={userRole !== "ADMIN" && userRole !== "MANAGER"}
+                            placeholder="-- Chọn người tạo --"
+                        />
+                    </div>
+                </div>
 
                 {/* Ngày bàn giao & Thời gian bảo hành */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

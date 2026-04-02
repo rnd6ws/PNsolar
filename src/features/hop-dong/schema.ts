@@ -25,6 +25,7 @@ export const hopDongSchema = z.object({
     PT_VAT: z.number().min(0).max(100).default(8),
     TT_UU_DAI: z.number().default(0),
     TEP_DINH_KEM: z.array(z.string()).default([]),
+    NGUOI_TAO: z.string().optional().nullable(),
 });
 
 // ===== Types =====
@@ -59,9 +60,11 @@ export interface HopDongFull {
     NGUOI_DUYET?: string | null;
     NGAY_DUYET?: string | null;
     CREATED_AT: string;
+    NGUOI_TAO?: string | null;
     // Relations
     KHTN_REL?: { TEN_KH: string; MA_KH: string };
     NGUOI_DUYET_REL?: { HO_TEN: string; MA_NV: string } | null;
+    NGUOI_TAO_REL?: { HO_TEN: string; MA_NV: string } | null;
     CO_HOI_REL?: { MA_CH: string; NGAY_TAO: string; GIA_TRI_DU_KIEN: number | null } | null;
     BAO_GIA_REL?: { MA_BAO_GIA: string; NGAY_BAO_GIA: string; TONG_TIEN: number } | null;
     HOP_DONG_CT?: any[];
