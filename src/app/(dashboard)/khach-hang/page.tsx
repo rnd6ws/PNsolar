@@ -20,7 +20,7 @@ export const revalidate = 0;
 export default async function KhachHangPage({
     searchParams,
 }: {
-    searchParams: Promise<{ query?: string; page?: string; pageSize?: string; NHOM_KH?: string; PHAN_LOAI?: string; NGUON?: string }>;
+    searchParams: Promise<{ query?: string; page?: string; pageSize?: string; NHOM_KH?: string; PHAN_LOAI?: string; NGUON?: string; NV_CS?: string }>;
 }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
@@ -29,10 +29,11 @@ export default async function KhachHangPage({
     const NHOM_KH = params.NHOM_KH;
     const PHAN_LOAI = params.PHAN_LOAI;
     const NGUON = params.NGUON;
+    const NV_CS = params.NV_CS;
 
     const [{ data = [], pagination }, { data: phanLoais = [] }, { data: nguons = [] }, { data: nhoms = [] }, stats, { data: nhanViens = [] }, { data: nguoiGioiThieus = [] }, { data: lyDoTuChois = [] }, user] =
         await Promise.all([
-            getKhachHangs({ query, page, limit: pageSize, NHOM_KH, PHAN_LOAI, NGUON }),
+            getKhachHangs({ query, page, limit: pageSize, NHOM_KH, PHAN_LOAI, NGUON, NV_CS }),
             getCachedPhanLoaiKH(),
             getCachedNguonKH(),
             getCachedNhomKH(),
@@ -46,6 +47,7 @@ export default async function KhachHangPage({
     const nhomOptions = Array.from(new Set((nhoms as any[]).map((n: any) => n.NHOM))).filter(Boolean).map(val => ({ label: String(val), value: String(val) }));
     const phanLoaiOptions = Array.from(new Set((phanLoais as any[]).map((p: any) => p.PL_KH))).filter(Boolean).map(val => ({ label: String(val), value: String(val) }));
     const nguonOptions = Array.from(new Set((nguons as any[]).map((n: any) => n.NGUON))).filter(Boolean).map(val => ({ label: String(val), value: String(val) }));
+    const nhanVienOptions = (nhanViens as any[]).map((nv: any) => ({ label: nv.HO_TEN, value: nv.ID }));
 
     const totalKH = (pagination as any)?.total ?? data.length;
     const thisMonth = (data as any[]).filter(
@@ -102,6 +104,7 @@ export default async function KhachHangPage({
                         nhomOptions={nhomOptions}
                         phanLoaiOptions={phanLoaiOptions}
                         nguonOptions={nguonOptions}
+                        nhanVienOptions={nhanVienOptions}
                         currentUserId={user?.userId}
                     />
 

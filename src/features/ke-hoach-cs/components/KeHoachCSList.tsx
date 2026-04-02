@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
     ArrowUpDown, ArrowUp, ArrowDown,
     Pencil, Trash2, ClipboardCheck, MoreHorizontal,
-    Clock, MapPin, User, CheckCircle2, TimerOff, ChevronDown, ChevronRight, Eye, XCircle
+    Clock, MapPin, User, CheckCircle2, TimerOff, ChevronDown, ChevronRight, Eye, XCircle, Phone
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -250,6 +250,11 @@ export default function KeHoachCSList({
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0 flex-1">
                                     <p className="font-semibold text-sm text-foreground truncate">{item.KH?.TEN_KH || '—'}</p>
+                                    {item.KH?.DIEN_THOAI && (
+                                        <a href={`tel:${item.KH.DIEN_THOAI}`} className="flex items-center gap-1 text-[11px] text-primary hover:underline mt-0.5" onClick={e => e.stopPropagation()}>
+                                            <Phone className="w-2.5 h-2.5" />{item.KH.DIEN_THOAI}
+                                        </a>
+                                    )}
                                     {item.LOAI_CS && <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 mt-0.5">{item.LOAI_CS}</span>}
                                 </div>
                                 <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border shrink-0 ${TRANG_THAI_COLORS[item.TRANG_THAI] || 'bg-muted text-muted-foreground border-border'}`}>
@@ -277,8 +282,34 @@ export default function KeHoachCSList({
                             </div>
 
                             {/* Footer: Actions */}
-                            <div className="flex items-center justify-end pt-2 border-t border-border gap-0.5" onClick={e => e.stopPropagation()}>
-                                <ActionButtons item={item} />
+                            <div className="flex items-center gap-2 pt-1 border-t border-border" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setViewItem(item)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
+                                    <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
+                                </button>
+                                {(item.NGUOI_CS === currentUserId || canEditCS) && (
+                                    <button
+                                        onClick={item.TRANG_THAI === "Hủy" || item.TRANG_THAI === "Đã hủy" ? undefined : () => setBaoCaoItem(item)}
+                                        disabled={item.TRANG_THAI === "Hủy" || item.TRANG_THAI === "Đã hủy"}
+                                        className={`flex-1 flex justify-center items-center gap-1.5 p-2 rounded-lg transition-colors text-xs font-semibold ${
+                                            item.TRANG_THAI === "Hủy" || item.TRANG_THAI === "Đã hủy"
+                                            ? "opacity-50 cursor-not-allowed bg-muted/30 text-muted-foreground"
+                                            : "bg-muted/50 hover:bg-green-500/10 text-muted-foreground hover:text-green-600"
+                                        }`}
+                                        title={item.TRANG_THAI === "Hủy" || item.TRANG_THAI === "Đã hủy" ? "Kế hoạch đã hủy" : "Báo cáo"}
+                                    >
+                                        <ClipboardCheck className="w-4 h-4" /> <span className="hidden sm:inline">Báo cáo</span>
+                                    </button>
+                                )}
+                                <PermissionGuard moduleKey="ke-hoach-cs" level="edit">
+                                    <button onClick={() => setEditItem(item)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
+                                        <Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
+                                    </button>
+                                </PermissionGuard>
+                                <PermissionGuard moduleKey="ke-hoach-cs" level="delete">
+                                    <button onClick={() => setDeleteItem(item)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </PermissionGuard>
                             </div>
                         </div>
                     ))}
@@ -399,6 +430,11 @@ export default function KeHoachCSList({
                                                     ) : item.KH?.TEN_VT ? (
                                                         <div className="text-xs text-muted-foreground mt-0.5">{item.KH.TEN_VT}</div>
                                                     ) : null}
+                                                    {item.KH?.DIEN_THOAI && (
+                                                        <div className="text-[11px] text-primary/70 mt-0.5">
+                                                            {item.KH.DIEN_THOAI}
+                                                        </div>
+                                                    )}
                                                 </td>
                                             )}
                                             {visibleColumns.includes("loaiCS") && (

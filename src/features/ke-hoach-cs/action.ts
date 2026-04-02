@@ -54,7 +54,7 @@ export async function getKeHoachCSKH(filters: {
                 take: limit,
                 orderBy: { TG_TU: "desc" },
                 include: {
-                    KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true } },
+                    KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true, DIEN_THOAI: true, EMAIL: true, DIA_CHI: true } },
                 },
             }),
             prisma.kEHOACH_CSKH.count({ where }),

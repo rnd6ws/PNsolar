@@ -307,48 +307,24 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
                                 <p className="text-lg font-bold text-primary">{fmtMoney(item.TONG_TIEN)}</p>
                             </div>
 
-                            {/* Mobile Actions */}
-                            <div className="flex justify-end gap-1 pt-2 border-t">
-                                <button
-                                    onClick={() => handleView(item)}
-                                    disabled={loadingView}
-                                    className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground hover:text-primary"
-                                    title="Xem"
-                                >
-                                    <Eye className="w-4 h-4" />
+                            {/* Footer: Actions */}
+                            <div className="flex items-center gap-2 pt-1 border-t border-border">
+                                <button onClick={() => handleView(item)} disabled={loadingView} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
+                                    <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
                                 </button>
-                                <button
-                                    onClick={() => handleExport(item, 'pdf')}
-                                    disabled={exportingId === item.ID}
-                                    className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-muted-foreground hover:text-red-500"
-                                    title="Xuất PDF"
-                                >
-                                    {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                                <button onClick={() => handleExport(item, 'pdf')} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors text-xs font-semibold" title="Xuất PDF">
+                                    {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />} <span className="hidden sm:inline">PDF</span>
                                 </button>
-                                <button
-                                    onClick={() => handleExport(item, 'excel')}
-                                    disabled={exportingId === item.ID}
-                                    className="p-1.5 hover:bg-green-500/10 rounded-lg transition-colors text-muted-foreground hover:text-green-600"
-                                    title="Xuất Excel"
-                                >
-                                    {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+                                <button onClick={() => handleExport(item, 'excel')} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-green-500/10 text-muted-foreground hover:text-green-600 rounded-lg transition-colors text-xs font-semibold" title="Xuất Excel">
+                                    {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />} <span className="hidden sm:inline">Excel</span>
                                 </button>
                                 <PermissionGuard moduleKey="bao-gia" level="edit">
-                                    <button
-                                        onClick={() => handleEdit(item)}
-                                        disabled={loadingEdit}
-                                        className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                                        title="Sửa"
-                                    >
-                                        <Pencil className="w-4 h-4" />
+                                    <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
+                                        <Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
                                     </button>
                                 </PermissionGuard>
                                 <PermissionGuard moduleKey="bao-gia" level="delete">
-                                    <button
-                                        onClick={() => setDeleteItem(item)}
-                                        className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground hover:text-destructive"
-                                        title="Xóa"
-                                    >
+                                    <button onClick={() => setDeleteItem(item)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </PermissionGuard>

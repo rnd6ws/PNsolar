@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { UserCircle, Phone, Mail, Building2, MapPin, Search } from "lucide-react";
+import Link from "next/link";
+import { UserCircle, Phone, Mail, Building2, MapPin, Search, Hash, Users, FileText, ClipboardList, HardHat, ExternalLink } from "lucide-react";
 import { getKeHoachCSByKH } from "@/features/ke-hoach-cs/action";
 import { getCoHoiByKH, getDmDichVu } from "@/features/co-hoi/action";
+import { getBaoGiaByKH, getHopDongByKH, getKhaoSatByKH } from "@/features/khach-hang/action";
 
 interface KhachHangDetailProps {
     kh: any;
@@ -13,11 +15,13 @@ interface KhachHangDetailProps {
     onClose: () => void;
 }
 
+type TabKey = "info" | "cohoi" | "cskh" | "baogia" | "hopdong" | "khaosat" | "lichsu";
+
 export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClose }: KhachHangDetailProps) {
     const getNVName = (id: string) => nhanViens.find(nv => nv.ID === id)?.HO_TEN || "—";
     const getNGTName = (id: string) => nguoiGioiThieus.find(n => n.ID === id)?.TEN_NGT || "—";
 
-    const [activeTab, setActiveTab] = useState<"info" | "cohoi" | "cskh" | "lichsu">("info");
+    const [activeTab, setActiveTab] = useState<TabKey>("info");
     const [cskhList, setCskhList] = useState<any[] | null>(null);
     const [cskhLoading, setCskhLoading] = useState(false);
 
@@ -25,7 +29,16 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
     const [dmDichVuList, setDmDichVuList] = useState<any[]>([]);
     const [coHoiLoading, setCoHoiLoading] = useState(false);
 
-    const handleTabChange = async (tab: "info" | "cohoi" | "cskh" | "lichsu") => {
+    const [baoGiaList, setBaoGiaList] = useState<any[] | null>(null);
+    const [baoGiaLoading, setBaoGiaLoading] = useState(false);
+
+    const [hopDongList, setHopDongList] = useState<any[] | null>(null);
+    const [hopDongLoading, setHopDongLoading] = useState(false);
+
+    const [khaoSatList, setKhaoSatList] = useState<any[] | null>(null);
+    const [khaoSatLoading, setKhaoSatLoading] = useState(false);
+
+    const handleTabChange = async (tab: TabKey) => {
         setActiveTab(tab);
         if (tab === "cskh" && cskhList === null) {
             setCskhLoading(true);
@@ -42,6 +55,24 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
             if (r1.success) setCoHoiList(r1.data);
             if (r2.success) setDmDichVuList(r2.data as any);
             setCoHoiLoading(false);
+        }
+        if (tab === "baogia" && baoGiaList === null) {
+            setBaoGiaLoading(true);
+            const r = await getBaoGiaByKH(kh.MA_KH);
+            if (r.success) setBaoGiaList(r.data);
+            setBaoGiaLoading(false);
+        }
+        if (tab === "hopdong" && hopDongList === null) {
+            setHopDongLoading(true);
+            const r = await getHopDongByKH(kh.MA_KH);
+            if (r.success) setHopDongList(r.data);
+            setHopDongLoading(false);
+        }
+        if (tab === "khaosat" && khaoSatList === null) {
+            setKhaoSatLoading(true);
+            const r = await getKhaoSatByKH(kh.MA_KH);
+            if (r.success) setKhaoSatList(r.data);
+            setKhaoSatLoading(false);
         }
     };
 
@@ -62,6 +93,11 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
         return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
     }
 
+    function formatCurrency(val: any) {
+        if (!val && val !== 0) return "—";
+        return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(val);
+    }
+
     const TRANG_THAI_COLORS: Record<string, string> = {
         "Chờ báo cáo": "bg-amber-100 text-amber-700 border-amber-200",
         "Đã báo cáo": "bg-green-100 text-green-700 border-green-200",
@@ -69,12 +105,37 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
         "Đã hủy": "bg-red-100 text-red-700 border-red-200",
     };
 
-    const tabs = [
-        { key: "info" as const, label: "Thông tin chung" },
-        { key: "cohoi" as const, label: "Cơ hội" },
-        { key: "cskh" as const, label: "Lịch sử chăm sóc" },
-        { key: "lichsu" as const, label: "Lịch sử ghi chú" },
+    const DUYET_COLORS: Record<string, string> = {
+        "Chờ duyệt": "bg-amber-100 text-amber-700 border-amber-200",
+        "Đã duyệt": "bg-green-100 text-green-700 border-green-200",
+        "Không duyệt": "bg-red-100 text-red-700 border-red-200",
+    };
+
+    const tabs: { key: TabKey; label: string }[] = [
+        { key: "info", label: "Thông tin chung" },
+        { key: "cohoi", label: "Cơ hội" },
+        { key: "baogia", label: "Báo giá" },
+        { key: "hopdong", label: "Hợp đồng" },
+        { key: "khaosat", label: "Khảo sát" },
+        { key: "cskh", label: "Lịch sử CS" },
+        { key: "lichsu", label: "Ghi chú" },
     ];
+
+    // Loading spinner component
+    const LoadingSpinner = ({ text }: { text: string }) => (
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm">{text}</p>
+        </div>
+    );
+
+    // Empty state component
+    const EmptyState = ({ icon: Icon, text }: { icon: any; text: string }) => (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <Icon className="w-10 h-10 mb-3 opacity-20" />
+            <p className="font-semibold">{text}</p>
+        </div>
+    );
 
     return (
         <div className="flex flex-col -m-5 md:-m-6 h-[80vh] md:h-[650px] max-h-[calc(85vh-2.5rem)]">
@@ -91,7 +152,9 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                 )}
                 <div className="flex-1 min-w-0">
                     <h3 className="text-base font-bold text-foreground leading-tight truncate">{kh.TEN_KH}</h3>
-                    {kh.TEN_VT && <p className="text-sm text-muted-foreground mt-0.5">{kh.TEN_VT}</p>}
+                    <div className="flex items-center gap-2 mt-0.5">
+                        {kh.TEN_VT && <p className="text-sm text-muted-foreground">{kh.TEN_VT}</p>}
+                    </div>
                     <div className="flex flex-wrap gap-3 mt-2">
                         {kh.MST && (
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -108,17 +171,22 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                 <Mail className="w-3 h-3 text-primary/60" />{kh.EMAIL}
                             </span>
                         )}
+                        {kh._count?.NGUOI_LIENHE > 0 && (
+                            <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                                <Users className="w-3 h-3" />{kh._count.NGUOI_LIENHE} người liên hệ
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Tab Bar */}
+            {/* Tab Bar - scrollable trên mobile */}
             <div className="flex border-b border-border bg-muted/20 shrink-0">
                 {tabs.map(t => (
                     <button
                         key={t.key}
                         onClick={() => handleTabChange(t.key)}
-                        className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors relative ${activeTab === t.key
+                        className={`px-3 md:px-4 py-3 text-xs md:text-sm font-semibold transition-colors relative whitespace-nowrap ${activeTab === t.key
                             ? "text-primary border-b-2 border-primary -mb-px bg-background"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                             }`}
@@ -145,6 +213,7 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                         {/* Grid thông tin */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
                             {[
+                                { label: "Mã khách hàng", value: kh.MA_KH || "-" },
                                 { label: "Ngày ghi nhận", value: kh.NGAY_GHI_NHAN ? formatDate(kh.NGAY_GHI_NHAN) : "-" },
                                 { label: "Ngày thành lập", value: kh.NGAY_THANH_LAP ? formatDate(kh.NGAY_THANH_LAP) : "-" },
                                 { label: "Phân loại", value: kh.PHAN_LOAI || "-" },
@@ -152,7 +221,7 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                 { label: "Nhóm KH", value: kh.NHOM_KH || "-" },
                                 { label: "Sales phụ trách", value: kh.SALES_PT ? getNVName(kh.SALES_PT) : "-" },
                                 { label: "NV chăm sóc", value: kh.NV_CS ? getNVName(kh.NV_CS) : "-" },
-                                { label: "Người giới thiệu", value: kh.NGUOI_GIOI_THIEU ? getNGTName(kh.NGUOI_GIOI_THIEU) : "-" },
+                                { label: "Người giới thiệu", value: kh.MA_NGT ? getNGTName(kh.MA_NGT) : "-" },
                             ].map(({ label, value }) => value ? (
                                 <div key={label} className="flex items-start gap-2 text-sm">
                                     <span className="text-muted-foreground w-32 shrink-0">{label}:</span>
@@ -226,25 +295,18 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                     </div>
                 )}
 
-                {/* === TAB 1.5: CƠ HỘI === */}
+                {/* === TAB: CƠ HỘI === */}
                 {activeTab === "cohoi" && (
                     <div className="p-5 md:p-6">
                         {coHoiLoading ? (
-                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                <p className="text-sm">Đang tải cơ hội...</p>
-                            </div>
+                            <LoadingSpinner text="Đang tải cơ hội..." />
                         ) : coHoiList && coHoiList.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                                <Search className="w-10 h-10 mb-3 opacity-20" />
-                                <p className="font-semibold">Chưa có cơ hội nào</p>
-                            </div>
+                            <EmptyState icon={Search} text="Chưa có cơ hội nào" />
                         ) : (
                             <div className="space-y-3">
                                 {(coHoiList || []).map((ch: any) => {
                                     const nhuCauIds: string[] = ch.NHU_CAU || [];
                                     const selectedDv = dmDichVuList.filter(d => nhuCauIds.includes(d.ID));
-                                    const formatCurrency = (val: any) => val || val === 0 ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(val) : "—";
 
                                     let ttCls = "bg-muted text-muted-foreground border-transparent";
                                     let ttBgCls = "bg-card";
@@ -264,7 +326,7 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                         <div key={ch.ID} className={`border border-border rounded-xl p-4 shadow-sm transition-colors ${ttBgCls}`}>
                                             <div className="flex items-start justify-between gap-4 mb-3">
                                                 <div>
-                                                    <p className="text-sm font-semibold text-primary">{ch.ID_CH}</p>
+                                                    <Link href={`/co-hoi?query=${encodeURIComponent(ch.ID_CH)}`} className="text-sm font-semibold text-primary hover:underline inline-flex items-center gap-1">{ch.ID_CH} <ExternalLink className="w-3 h-3" /></Link>
                                                     <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Khởi tạo: <span className="text-foreground">{formatDate(ch.NGAY_TAO)}</span></p>
                                                 </div>
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${ttCls}`}>{ch.TINH_TRANG}</span>
@@ -301,19 +363,170 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                     </div>
                 )}
 
-                {/* === TAB 2: LỊCH SỬ CHĂM SÓC === */}
+                {/* === TAB: BÁO GIÁ === */}
+                {activeTab === "baogia" && (
+                    <div className="p-5 md:p-6">
+                        {baoGiaLoading ? (
+                            <LoadingSpinner text="Đang tải báo giá..." />
+                        ) : baoGiaList && baoGiaList.length === 0 ? (
+                            <EmptyState icon={FileText} text="Chưa có báo giá nào" />
+                        ) : (
+                            <div className="space-y-3">
+                                {(baoGiaList || []).map((bg: any) => (
+                                    <div key={bg.ID} className="border border-border rounded-xl p-4 shadow-sm bg-card hover:bg-muted/20 transition-colors">
+                                        <div className="flex items-start justify-between gap-3 mb-2">
+                                            <div>
+                                                <Link href={`/bao-gia?query=${encodeURIComponent(bg.MA_BAO_GIA)}`} className="text-sm font-bold text-primary hover:underline inline-flex items-center gap-1">{bg.MA_BAO_GIA} <ExternalLink className="w-3 h-3" /></Link>
+                                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                    Ngày: <span className="text-foreground font-medium">{formatDate(bg.NGAY_BAO_GIA)}</span>
+                                                </p>
+                                            </div>
+                                            {bg.LOAI_BAO_GIA && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border bg-blue-50 text-blue-700 border-blue-200">
+                                                    {bg.LOAI_BAO_GIA}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center justify-between bg-primary/5 rounded-lg px-3 py-2 border border-primary/10">
+                                            <div>
+                                                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Tổng tiền</p>
+                                                <p className="text-sm font-bold text-primary">{formatCurrency(bg.TONG_TIEN)}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Sản phẩm</p>
+                                                <p className="text-sm font-semibold text-foreground">{bg._count?.CHI_TIETS || 0} hàng hóa</p>
+                                            </div>
+                                        </div>
+                                        {bg.CO_HOI_REL && (
+                                            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                                                <span>Cơ hội: <span className="font-semibold text-foreground">{bg.CO_HOI_REL.MA_CH}</span></span>
+                                                {bg.CO_HOI_REL.TINH_TRANG && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded border bg-muted">{bg.CO_HOI_REL.TINH_TRANG}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* === TAB: HỢP ĐỒNG === */}
+                {activeTab === "hopdong" && (
+                    <div className="p-5 md:p-6">
+                        {hopDongLoading ? (
+                            <LoadingSpinner text="Đang tải hợp đồng..." />
+                        ) : hopDongList && hopDongList.length === 0 ? (
+                            <EmptyState icon={ClipboardList} text="Chưa có hợp đồng nào" />
+                        ) : (
+                            <div className="space-y-3">
+                                {(hopDongList || []).map((hd: any) => (
+                                    <div key={hd.ID} className="border border-border rounded-xl p-4 shadow-sm bg-card hover:bg-muted/20 transition-colors">
+                                        <div className="flex items-start justify-between gap-3 mb-2">
+                                            <div>
+                                                <Link href={`/hop-dong?query=${encodeURIComponent(hd.SO_HD)}`} className="text-sm font-bold text-primary hover:underline inline-flex items-center gap-1">{hd.SO_HD} <ExternalLink className="w-3 h-3" /></Link>
+                                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                    Ngày: <span className="text-foreground font-medium">{formatDate(hd.NGAY_HD)}</span>
+                                                    {hd.LOAI_HD && <span className="ml-2">· {hd.LOAI_HD}</span>}
+                                                </p>
+                                            </div>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border shrink-0 ${DUYET_COLORS[hd.DUYET] || "bg-muted text-muted-foreground border-border"}`}>
+                                                {hd.DUYET}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between bg-primary/5 rounded-lg px-3 py-2 border border-primary/10">
+                                            <div>
+                                                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Tổng tiền</p>
+                                                <p className="text-sm font-bold text-primary">{formatCurrency(hd.TONG_TIEN)}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Chi tiết</p>
+                                                <p className="text-sm font-semibold text-foreground">{hd._count?.HOP_DONG_CT || 0} hàng hóa</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+                                            {hd.CONG_TRINH && <span>Công trình: <span className="font-medium text-foreground">{hd.CONG_TRINH}</span></span>}
+                                            {hd.NGUOI_TAO_REL?.HO_TEN && <span>Người tạo: <span className="font-medium text-foreground">{hd.NGUOI_TAO_REL.HO_TEN}</span></span>}
+                                            {hd.MA_BAO_GIA && <span>BG: <span className="font-medium text-foreground">{hd.MA_BAO_GIA}</span></span>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* === TAB: KHẢO SÁT === */}
+                {activeTab === "khaosat" && (
+                    <div className="p-5 md:p-6">
+                        {khaoSatLoading ? (
+                            <LoadingSpinner text="Đang tải khảo sát..." />
+                        ) : khaoSatList && khaoSatList.length === 0 ? (
+                            <EmptyState icon={HardHat} text="Chưa có khảo sát nào" />
+                        ) : (
+                            <div className="space-y-3">
+                                {(khaoSatList || []).map((ks: any) => (
+                                    <div key={ks.ID} className="border border-border rounded-xl p-4 shadow-sm bg-card hover:bg-muted/20 transition-colors">
+                                        <div className="flex items-start justify-between gap-3 mb-2">
+                                            <div>
+                                                <Link href={`/khao-sat?query=${encodeURIComponent(ks.MA_KHAO_SAT)}`} className="text-sm font-bold text-primary hover:underline inline-flex items-center gap-1">{ks.MA_KHAO_SAT} <ExternalLink className="w-3 h-3" /></Link>
+                                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                    Ngày: <span className="text-foreground font-medium">{formatDate(ks.NGAY_KHAO_SAT)}</span>
+                                                </p>
+                                            </div>
+                                            {ks.LOAI_CONG_TRINH && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border bg-violet-50 text-violet-700 border-violet-200">
+                                                    {ks.LOAI_CONG_TRINH}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                            {ks.DIA_CHI_CONG_TRINH && (
+                                                <div className="col-span-2">
+                                                    <p className="text-muted-foreground">Địa chỉ công trình</p>
+                                                    <p className="font-medium text-foreground mt-0.5">{ks.DIA_CHI_CONG_TRINH}</p>
+                                                </div>
+                                            )}
+                                            {ks.HANG_MUC && (
+                                                <div>
+                                                    <p className="text-muted-foreground">Hạng mục</p>
+                                                    <p className="font-medium text-foreground mt-0.5">{ks.HANG_MUC}</p>
+                                                </div>
+                                            )}
+                                            {ks.CONG_SUAT && (
+                                                <div>
+                                                    <p className="text-muted-foreground">Công suất</p>
+                                                    <p className="font-medium text-foreground mt-0.5">{ks.CONG_SUAT}</p>
+                                                </div>
+                                            )}
+                                            {ks.NGUOI_KHAO_SAT_REL?.HO_TEN && (
+                                                <div>
+                                                    <p className="text-muted-foreground">Người khảo sát</p>
+                                                    <p className="font-medium text-foreground mt-0.5">{ks.NGUOI_KHAO_SAT_REL.HO_TEN}</p>
+                                                </div>
+                                            )}
+                                            {ks._count?.KHAO_SAT_CT > 0 && (
+                                                <div>
+                                                    <p className="text-muted-foreground">Chi tiết KS</p>
+                                                    <p className="font-medium text-foreground mt-0.5">{ks._count.KHAO_SAT_CT} hạng mục</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* === TAB: LỊCH SỬ CHĂM SÓC === */}
                 {activeTab === "cskh" && (
                     <div className="p-5 md:p-6">
                         {cskhLoading ? (
-                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                <p className="text-sm">Đang tải lịch sử...</p>
-                            </div>
+                            <LoadingSpinner text="Đang tải lịch sử..." />
                         ) : cskhList && cskhList.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                                <Search className="w-10 h-10 mb-3 opacity-20" />
-                                <p className="font-semibold">Chưa có kế hoạch chăm sóc nào</p>
-                            </div>
+                            <EmptyState icon={Search} text="Chưa có kế hoạch chăm sóc nào" />
                         ) : (
                             <div className="space-y-3">
                                 {(cskhList || []).map((cs: any) => (
@@ -391,14 +604,11 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                     </div>
                 )}
 
-                {/* === TAB 3: LỊCH SỬ GHI CHÚ === */}
+                {/* === TAB: LỊCH SỬ GHI CHÚ === */}
                 {activeTab === "lichsu" && (
                     <div className="p-5 md:p-6">
                         {lichSuEntries.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                                <Search className="w-10 h-10 mb-3 opacity-20" />
-                                <p className="font-semibold">Chưa có ghi chú nào</p>
-                            </div>
+                            <EmptyState icon={Search} text="Chưa có ghi chú nào" />
                         ) : (
                             <div className="relative">
                                 {/* Timeline line */}

@@ -485,8 +485,7 @@ export default function NhaCungCapList({ data, visibleColumns, viewMode = "list"
                 )}
                 {sortedData.map((item) => (
                     <div key={item.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                                 {item.HINH_ANH ? (
                                     <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-border shrink-0">
                                         <Image src={item.HINH_ANH} alt={item.TEN_NCC} fill className="object-cover" />
@@ -500,29 +499,6 @@ export default function NhaCungCapList({ data, visibleColumns, viewMode = "list"
                                     <p className="font-semibold text-foreground text-sm">{item.TEN_NCC}</p>
                                     <p className="text-xs text-primary font-mono">{item.MA_NCC}</p>
                                 </div>
-                            </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors">
-                                        <MoreHorizontal className="w-4 h-4" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-32 rounded-xl">
-                                    <DropdownMenuItem onClick={() => setViewItem(item)} className="cursor-pointer gap-2 rounded-lg">
-                                        <Eye className="w-3.5 h-3.5" /> Xem
-                                    </DropdownMenuItem>
-                                    <PermissionGuard moduleKey="nha-cung-cap" level="edit">
-                                        <DropdownMenuItem onClick={() => setEditItem(item)} className="cursor-pointer gap-2 text-foreground hover:text-blue-600 focus:text-blue-600 rounded-lg">
-                                            <Edit2 className="w-3.5 h-3.5" /> Sửa
-                                        </DropdownMenuItem>
-                                    </PermissionGuard>
-                                    <PermissionGuard moduleKey="nha-cung-cap" level="delete">
-                                        <DropdownMenuItem onClick={() => setDeleteItem(item)} variant="destructive" className="cursor-pointer gap-2 rounded-lg">
-                                            <Trash2 className="w-3.5 h-3.5" /> Xóa
-                                        </DropdownMenuItem>
-                                    </PermissionGuard>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                             {item.TEN_VIET_TAT && <p><span className="font-medium">Tên VT:</span> {item.TEN_VIET_TAT}</p>}
@@ -532,6 +508,22 @@ export default function NhaCungCapList({ data, visibleColumns, viewMode = "list"
                             {item.NGUOI_DAI_DIEN && <p><span className="font-medium">NĐD:</span> {item.NGUOI_DAI_DIEN}</p>}
                             {item.SDT_NGUOI_DAI_DIEN && <p><span className="font-medium">SĐT NĐD:</span> {item.SDT_NGUOI_DAI_DIEN}</p>}
                             {item.NGAY_GHI_NHAN && <p><span className="font-medium">Ngày GN:</span> {formatDate(item.NGAY_GHI_NHAN)}</p>}
+                        </div>
+                        {/* Footer: Actions */}
+                        <div className="flex items-center gap-2 pt-1 border-t border-border">
+                            <button onClick={() => setViewItem(item)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
+                                <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
+                            </button>
+                            <PermissionGuard moduleKey="nha-cung-cap" level="edit">
+                                <button onClick={() => setEditItem(item)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
+                                    <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
+                                </button>
+                            </PermissionGuard>
+                            <PermissionGuard moduleKey="nha-cung-cap" level="delete">
+                                <button onClick={() => setDeleteItem(item)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </PermissionGuard>
                         </div>
                     </div>
                 ))}

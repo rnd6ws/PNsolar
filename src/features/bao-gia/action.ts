@@ -261,7 +261,7 @@ export async function createBaoGia(
         const maBaoGia = await generateMaBaoGia();
 
         // Validate MA_KH tồn tại
-        const kh = await prisma.kHTN.findUnique({ where: { MA_KH: parsed.data.MA_KH }, select: { MA_KH: true } });
+        const kh = await prisma.kHTN.findUnique({ where: { MA_KH: parsed.data.MA_KH }, select: { MA_KH: true, TEN_KH: true } });
         if (!kh) return { success: false, message: 'Khách hàng không tồn tại.' };
 
         // Validate MA_CH nếu có
@@ -335,7 +335,7 @@ export async function createBaoGia(
                     if (emp) {
                         createNotification({
                             title: 'Báo giá mới đã tạo',
-                            message: `Báo giá ${maBaoGia} cho khách hàng ${parsed.data.MA_KH} đã được tạo thành công.`,
+                            message: `Báo giá ${maBaoGia} — KH: ${kh.TEN_KH} đã được tạo thành công.`,
                             type: 'BAO_GIA',
                             recipientId: emp.ID,
                             link: `/bao-gia?query=${encodeURIComponent(maBaoGia)}`,

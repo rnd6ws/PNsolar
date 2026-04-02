@@ -934,7 +934,7 @@ export default function HangHoaClient({
                                                         <div className="flex items-center justify-between w-full">
                                                             <div className="flex items-center gap-2">
                                                                 {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                                                                <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                                                <span className="text-base font-bold text-foreground">{group.label}</span>
                                                                 <span className="text-xs font-normal text-muted-foreground tracking-wide">({group.total} sản phẩm)</span>
                                                             </div>
                                                         </div>
@@ -957,7 +957,7 @@ export default function HangHoaClient({
                                                                 )}
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <p className="font-medium text-foreground text-[14px] leading-tight mb-0.5">{prod.TEN_HH}</p>
+                                                                <p className="font-normal text-foreground text-[13px] leading-tight mb-0.5">{prod.TEN_HH}</p>
                                                                 {/* <p className="text-[12px] text-primary font-medium font-mono uppercase">{prod.MA_HH}</p> */}
                                                             </div>
                                                         </div>

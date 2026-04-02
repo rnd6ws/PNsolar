@@ -34,6 +34,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const contentRef = useRef<HTMLDivElement>(null);
     const { theme, setTheme, pageLayout, sidebarStyle, navbarBehavior, sidebarCollapse } = useTheme();
 
     const isDashboard = pathname === '/dashboard';
@@ -43,6 +44,16 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
     useEffect(() => {
         setInputValue(isDashboard ? (searchParams.get('q') ?? '') : '');
     }, [isDashboard, pathname]);
+
+    // ── Scroll to top on page change ────────────────────
+    useEffect(() => {
+        // Scroll content container
+        contentRef.current?.scrollTo({ top: 0 });
+        // Scroll window (mobile fallback)
+        window.scrollTo({ top: 0 });
+        // Scroll SidebarInset main element
+        document.querySelector('[data-slot="sidebar-inset"]')?.scrollTo({ top: 0 });
+    }, [pathname]);
     useEffect(() => {
         if (!isDashboard) return;
         const timer = setTimeout(() => {
@@ -401,7 +412,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
                     </header>
 
                     {/* ── Content ──────────────────────────────── */}
-                    <div className="flex-1 overflow-auto min-w-0 p-4 md:p-6">
+                    <div ref={contentRef} className="flex-1 overflow-auto min-w-0 p-4 md:p-6">
                         <div className={cn(
                             "mx-auto w-full transition-all",
                             pageLayout === 'full' ? "max-w-[1600px]" : "max-w-[1280px]"
