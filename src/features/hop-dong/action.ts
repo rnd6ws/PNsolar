@@ -239,7 +239,7 @@ export async function getHopDongByKhachHang(maKH: string) {
                 NGUOI_TAO_REL: { select: { HO_TEN: true } },
                 _count: { select: { BAN_GIAO_HD: true } }
             },
-            orderBy: { NGAY_HD: 'desc' },
+            orderBy: [{ NGAY_HD: 'desc' }, { CREATED_AT: 'desc' }],
         });
 
         return {
