@@ -11,6 +11,7 @@ import type { HopDongChiTietInput, DkttHdInput, ThongTinKhacInput, DkHdInput } f
 const HOP_DONG_INCLUDE = {
     KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIA_CHI: true, EMAIL: true, MST: true, DIEN_THOAI: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, CHUC_VU: true } } } },
     NGUOI_DUYET_REL: { select: { HO_TEN: true, MA_NV: true } },
+    NGUOI_TAO_REL: { select: { HO_TEN: true, MA_NV: true } },
     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true, TINH_TRANG: true } },
     BAO_GIA_REL: { select: { MA_BAO_GIA: true, NGAY_BAO_GIA: true, TONG_TIEN: true } },
     HOP_DONG_CT: {
@@ -129,6 +130,7 @@ export async function getHopDongList(filters: {
                 include: {
                     KHTN_REL: { select: { TEN_KH: true, MA_KH: true } },
                     NGUOI_DUYET_REL: { select: { HO_TEN: true, MA_NV: true } },
+                    NGUOI_TAO_REL: { select: { HO_TEN: true, MA_NV: true } },
                     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true } },
                     BAO_GIA_REL: { select: { MA_BAO_GIA: true, TONG_TIEN: true } },
                     _count: { select: { HOP_DONG_CT: true } },
@@ -298,6 +300,16 @@ export async function createHopDong(
 
         const soHD = await generateSoHD(parsed.data.MA_KH);
 
+        // NGUOI_TAO
+        let nguoiTao = parsed.data.NGUOI_TAO;
+        if (!nguoiTao) {
+            const user = await getCurrentUser();
+            if (user) {
+                const nv = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+                if (nv) nguoiTao = nv.MA_NV;
+            }
+        }
+
         await prisma.hOP_DONG.create({
             data: {
                 SO_HD: soHD,
@@ -311,6 +323,7 @@ export async function createHopDong(
                 PT_VAT: parsed.data.PT_VAT,
                 TEP_DINH_KEM: parsed.data.TEP_DINH_KEM || [],
                 DUYET: "Chờ duyệt",
+                NGUOI_TAO: nguoiTao || null,
                 ...totals,
                 HOP_DONG_CT: {
                     create: calculatedDetails.map(ct => ({
@@ -449,6 +462,7 @@ export async function updateHopDong(
                 HANG_MUC: parsed.data.HANG_MUC || null,
                 PT_VAT: parsed.data.PT_VAT,
                 TEP_DINH_KEM: parsed.data.TEP_DINH_KEM || [],
+                NGUOI_TAO: parsed.data.NGUOI_TAO || null,
                 ...totals,
                 HOP_DONG_CT: {
                     create: calculatedDetails.map(ct => ({
@@ -762,5 +776,28 @@ export async function duyetHopDong(id: string, trangThai: "Đã duyệt" | "Ch�
     } catch (error: any) {
         console.error('[duyetHopDong]', error);
         return { success: false, message: error.message || 'Lỗi server khi duyệt hợp đồng' };
+    }
+}
+
+// ─── Lấy danh sách nhân viên và Role ───────────────────────────────────
+export async function getDsnvAndRole() {
+    try {
+        const user = await getCurrentUser();
+        const dsnv = await prisma.dSNV.findMany({
+            where: { IS_ACTIVE: true },
+            select: { MA_NV: true, HO_TEN: true },
+            orderBy: { HO_TEN: 'asc' }
+        });
+        
+        if (!user) return { dsnv, role: 'STAFF', currentMaNv: null };
+        const currentUserDb = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        
+        return {
+            dsnv,
+            role: user.ROLE || 'STAFF',
+            currentMaNv: currentUserDb?.MA_NV || null
+        };
+    } catch {
+        return { dsnv: [], role: 'STAFF', currentMaNv: null };
     }
 }

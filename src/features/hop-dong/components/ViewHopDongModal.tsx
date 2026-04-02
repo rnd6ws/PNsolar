@@ -150,6 +150,10 @@ export default function ViewHopDongModal({ isOpen, onClose, data }: Props) {
                                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Báo giá</span>
                                         <p className="text-sm font-semibold text-primary">{data.MA_BAO_GIA || "—"}</p>
                                     </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Người tạo</span>
+                                        <p className="text-sm font-semibold text-foreground">{data.NGUOI_TAO_REL ? `${data.NGUOI_TAO_REL.HO_TEN} (${data.NGUOI_TAO_REL.MA_NV})` : data.NGUOI_TAO || "—"}</p>
+                                    </div>
                                 </div>
                             </div>
 

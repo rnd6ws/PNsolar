@@ -4,7 +4,7 @@ import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, 
 import Modal from "@/components/Modal";
 import FormSelect from "@/components/FormSelect";
 import { toast } from "sonner";
-import { createHopDong, updateHopDong, searchKhachHangForHopDong, getCoHoiByKhachHangForHD, getBaoGiaByKhachHang, getBaoGiaDetailsForHopDong, getBaoGiaDkttForHopDong, searchHangHoaForHopDong, getGiaBanForProductHD, getNhomHHForHopDong } from "../action";
+import { createHopDong, updateHopDong, searchKhachHangForHopDong, getCoHoiByKhachHangForHD, getBaoGiaByKhachHang, getBaoGiaDetailsForHopDong, getBaoGiaDkttForHopDong, searchHangHoaForHopDong, getGiaBanForProductHD, getNhomHHForHopDong, getDsnvAndRole } from "../action";
 import type { HopDongChiTietRow, DkttHdRow, ThongTinKhacRow, DkHdRow } from "../schema";
 import { DEFAULT_THONG_TIN_KHAC, DEFAULT_DK_HD } from "../schema";
 import { useMultipleFileUpload } from "@/hooks/useFileUpload";
@@ -82,6 +82,9 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const [ptVat, setPtVat] = useState(8);
     const [ttUuDai, setTtUuDai] = useState(0);
     const [tepDinhKems, setTepDinhKems] = useState<string[]>([]);
+    const [nguoiTao, setNguoiTao] = useState("");
+    const [dsnvList, setDsnvList] = useState<{MA_NV: string, HO_TEN: string}[]>([]);
+    const [userRole, setUserRole] = useState("STAFF");
 
     // Detail state
     const [chiTiets, setChiTiets] = useState<HopDongChiTietRow[]>([]);
@@ -136,8 +139,14 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
         if (!isOpen) return;
         setActiveTab("general");
         getNhomHHForHopDong().then(list => setNhomHHList(list as NhomHHOption[]));
+        getDsnvAndRole().then((res: any) => {
+            setDsnvList(res.dsnv);
+            setUserRole(res.role);
+            if (!editData) setNguoiTao(res.currentMaNv || "");
+        });
         if (editData) {
             setNgayHD(editData.NGAY_HD ? editData.NGAY_HD.slice(0, 10) : "");
+            setNguoiTao(editData.NGUOI_TAO || "");
             setMaKH(editData.MA_KH || "");
             setSelectedKH(editData.KHTN_REL ? { ID: "", MA_KH: editData.MA_KH, TEN_KH: editData.KHTN_REL.TEN_KH } : null);
             setMaCH(editData.MA_CH || "");
@@ -261,6 +270,14 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
         return { ...row, THANH_TIEN: Math.round(thanhTien), GIA_BAN_CHUA_VAT: Math.round(giaBanChuaVat) };
     }, [ptVat]);
 
+    useEffect(() => {
+        setChiTiets(prev => prev.map(row => {
+            if (!row.MA_HH) return row;
+            const giaBanChuaVat = ptVat > 0 ? row.GIA_BAN / (1 + ptVat / 100) : row.GIA_BAN;
+            return { ...row, GIA_BAN_CHUA_VAT: Math.round(giaBanChuaVat) };
+        }));
+    }, [ptVat]);
+
     const handleSelectHH = useCallback(async (rowId: string, hh: HHOption) => {
         setHhRowId(null); setHhQuery("");
         const cur = chiTietsRef.current.find(r => r._id === rowId);
@@ -286,7 +303,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const handleSubmit = () => {
         if (!maKH) { toast.error("Vui lòng chọn khách hàng!"); setActiveTab("general"); return; }
         if (validRows.length === 0) { toast.error("Vui lòng thêm ít nhất 1 hàng hóa!"); setActiveTab("details"); return; }
-        const header = { NGAY_HD: ngayHD, MA_KH: maKH, MA_CH: maCH || null, MA_BAO_GIA: maBaoGia || null, LOAI_HD: loaiHD, CONG_TRINH: congTrinh || null, HANG_MUC: hangMuc || null, PT_VAT: ptVat, TT_UU_DAI: ttUuDai, TEP_DINH_KEM: tepDinhKems };
+        const header = { NGAY_HD: ngayHD, MA_KH: maKH, MA_CH: maCH || null, MA_BAO_GIA: maBaoGia || null, LOAI_HD: loaiHD, CONG_TRINH: congTrinh || null, HANG_MUC: hangMuc || null, PT_VAT: ptVat, TT_UU_DAI: ttUuDai, TEP_DINH_KEM: tepDinhKems, NGUOI_TAO: nguoiTao || null };
         const details = validRows.map(ct => ({ MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || null, DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT, GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG, THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null }));
         const dktt = dkttRows.filter(d => d.LAN_THANH_TOAN);
         const ttk = thongTinRows.filter(t => t.TIEU_DE && t.TIEU_DE.trim() !== "").map(t => ({ TIEU_DE: t.TIEU_DE, NOI_DUNG: t.NOI_DUNG }));
@@ -473,6 +490,17 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                         )}
                                     </div>
                                 )}
+                            </div>
+
+                            <div className="space-y-1.5"><label className="text-sm font-semibold text-muted-foreground">Người tạo</label>
+                                <FormSelect
+                                    name="nguoiTao"
+                                    value={nguoiTao}
+                                    onChange={setNguoiTao}
+                                    options={dsnvList.map((nv) => ({ label: `${nv.HO_TEN} (${nv.MA_NV})`, value: nv.MA_NV }))}
+                                    disabled={userRole !== "ADMIN" && userRole !== "MANAGER"}
+                                    placeholder="-- Chọn người tạo --"
+                                />
                             </div>
 
                             <div className="space-y-1.5"><label className="text-sm font-semibold text-muted-foreground">% VAT</label>
