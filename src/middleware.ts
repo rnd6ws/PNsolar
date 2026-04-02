@@ -27,6 +27,6 @@ export const config = {
         /*
          * Match tất cả paths trừ static files, api, _next
          */
-        '/((?!api|_next/static|_next/image|favicon.ico|fonts|images|logoPN|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|css|js)$).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|fonts|images|logoPN|sw\\.js|manifest\\.json|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|css|js|json)$).*)',
     ],
 };
