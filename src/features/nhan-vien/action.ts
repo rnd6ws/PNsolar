@@ -138,6 +138,7 @@ export async function updateNhanVienAction(id: string, data: any) {
                 EMAIL: data.EMAIL,
                 ROLE: data.ROLE,
                 IS_ACTIVE: data.IS_ACTIVE === true || data.IS_ACTIVE === 'true',
+                HINH_CA_NHAN: data.HINH_CA_NHAN || null,
             }
         });
 
