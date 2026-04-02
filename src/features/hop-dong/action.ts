@@ -133,6 +133,7 @@ export async function getHopDongList(filters: {
                     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true } },
                     BAO_GIA_REL: { select: { MA_BAO_GIA: true, TONG_TIEN: true } },
                     _count: { select: { HOP_DONG_CT: true } },
+                    BAN_GIAO_HD: { select: { ID: true }, orderBy: { CREATED_AT: 'desc' as const }, take: 1 },
                 },
                 skip: (page - 1) * limit,
                 take: limit,

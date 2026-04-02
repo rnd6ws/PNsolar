@@ -12,10 +12,11 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     editData?: any | null;
+    prefillHD?: any | null;
     onSuccess?: () => void;
 }
 
-export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSuccess }: Props) {
+export default function AddEditBanGiaoModal({ isOpen, onClose, editData, prefillHD, onSuccess }: Props) {
     const isEdit = !!editData;
 
     const [loading, setLoading] = useState(false);
@@ -77,19 +78,33 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                 setTepDinhKems(editData.FILE_DINH_KEM || []);
                 setNguoiTao(editData.NGUOI_TAO || "");
             } else {
-                setSoHD("");
+                setSoHD(prefillHD?.SO_HD || "");
                 setNgayBanGiao(new Date().toISOString().slice(0, 10));
-                // Mặc định bảo hành 1 năm
                 const oneYear = new Date();
                 oneYear.setFullYear(oneYear.getFullYear() + 1);
                 setThoiGianBaoHanh(oneYear.toISOString().slice(0, 10));
-                setDiaDiem("");
-                setSelectedHD(null);
-                setHDQuery("");
+                
+                // Logic lấy địa điểm ưu tiên
+                let diaDiemPrefill = "";
+                if (prefillHD) {
+                    const dkDiaDiemVal = prefillHD.DK_HD?.find((dk: any) => 
+                        dk.HANG_MUC?.toLowerCase().includes("địa điểm") || 
+                        dk.HANG_MUC?.toLowerCase().includes("thi công")
+                    )?.NOI_DUNG?.trim();
+                    const ttkDiaDiemVal = prefillHD.THONG_TIN_KHAC?.find((tt: any) =>
+                        tt.TIEU_DE?.toLowerCase().includes("địa điểm") ||
+                        tt.TIEU_DE?.toLowerCase().includes("địa chỉ")
+                    )?.NOI_DUNG?.trim();
+                    diaDiemPrefill = prefillHD.CONG_TRINH?.trim() || dkDiaDiemVal || ttkDiaDiemVal || prefillHD.KHTN_REL?.DIA_CHI?.trim() || "";
+                }
+                setDiaDiem(diaDiemPrefill);
+                
+                setSelectedHD(prefillHD || null);
+                setHDQuery(prefillHD?.SO_HD || "");
                 setTepDinhKems([]);
             }
         }
-    }, [isOpen, editData]);
+    }, [isOpen, editData, prefillHD]);
 
     // HD search debounce & fetch initial
     useEffect(() => {
@@ -224,25 +239,17 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, onSucce
                                                         setHDQuery(hd.SO_HD);
 
                                                         // Tìm địa điểm bàn giao từ Điều khoản Hợp đồng hoặc Thông tin khác
-                                                        const dkDiaDiem = hd.DK_HD?.find((dk: any) => 
+                                                        const dkDiaDiemVal = hd.DK_HD?.find((dk: any) => 
                                                             dk.HANG_MUC?.toLowerCase().includes("địa điểm") || 
                                                             dk.HANG_MUC?.toLowerCase().includes("thi công")
-                                                        );
-                                                        const ttkDiaDiem = hd.THONG_TIN_KHAC?.find((tt: any) =>
+                                                        )?.NOI_DUNG?.trim();
+                                                        const ttkDiaDiemVal = hd.THONG_TIN_KHAC?.find((tt: any) =>
                                                             tt.TIEU_DE?.toLowerCase().includes("địa điểm") ||
                                                             tt.TIEU_DE?.toLowerCase().includes("địa chỉ")
-                                                        );
+                                                        )?.NOI_DUNG?.trim();
 
-                                                        // Ưu tiên DK_HD -> THONG_TIN_KHAC -> KHTN_REL
-                                                        if (dkDiaDiem?.NOI_DUNG) {
-                                                            setDiaDiem(dkDiaDiem.NOI_DUNG);
-                                                        } else if (ttkDiaDiem?.NOI_DUNG) {
-                                                            setDiaDiem(ttkDiaDiem.NOI_DUNG);
-                                                        } else if (hd.KHTN_REL?.DIA_CHI) {
-                                                            setDiaDiem(hd.KHTN_REL.DIA_CHI);
-                                                        } else {
-                                                            setDiaDiem("");
-                                                        }
+                                                        // Ưu tiên CONG_TRINH -> DK_HD -> THONG_TIN_KHAC -> KHTN_REL
+                                                        setDiaDiem(hd.CONG_TRINH?.trim() || dkDiaDiemVal || ttkDiaDiemVal || hd.KHTN_REL?.DIA_CHI?.trim() || "");
 
                                                         setShowHDDropdown(false);
                                                     }}
