@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     icon: "/logoPN-192.png",
     apple: "/logoPN-192.png",
   },
-  manifest: "/manifest.json",
+  manifest: "/manifest.json?v=2",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
