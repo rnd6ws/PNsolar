@@ -15,8 +15,9 @@ export async function getKhachHangs(filters: {
     NHOM_KH?: string;
     PHAN_LOAI?: string;
     NGUON?: string;
+    NV_CS?: string;
 } = {}) {
-    const { page = 1, limit = 10, query, NHOM_KH, PHAN_LOAI, NGUON } = filters;
+    const { page = 1, limit = 10, query, NHOM_KH, PHAN_LOAI, NGUON, NV_CS } = filters;
 
     const user = await getCurrentUser();
 
@@ -45,6 +46,7 @@ export async function getKhachHangs(filters: {
     if (NHOM_KH && NHOM_KH !== "all") andConditions.push({ NHOM_KH });
     if (PHAN_LOAI && PHAN_LOAI !== "all") andConditions.push({ PHAN_LOAI });
     if (NGUON && NGUON !== "all") andConditions.push({ NGUON });
+    if (NV_CS && NV_CS !== "all") andConditions.push({ NV_CS });
 
     if (andConditions.length > 0) where.AND = andConditions;
 
@@ -260,7 +262,7 @@ export async function createKhachHang(data: any) {
                             message: `Khách hàng ${data.TEN_KH} (${maKh}) đã được phân công cho bạn.`,
                             type: 'KHACH_HANG',
                             recipientId: emp.ID,
-                            link: '/khach-hang',
+                            link: `/khach-hang?query=${encodeURIComponent(maKh)}`,
                         }).catch(() => {});
                     }
                 })
@@ -664,5 +666,93 @@ export async function deleteLyDoTuChoi(id: string) {
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Lỗi xóa lý do" };
+    }
+}
+
+// ─── Lấy Báo giá theo MA_KH ──────────────────────────────────────
+export async function getBaoGiaByKH(maKH: string) {
+    try {
+        if (!maKH) return { success: true, data: [] };
+        const data = await prisma.bAO_GIA.findMany({
+            where: { MA_KH: maKH },
+            select: {
+                ID: true, MA_BAO_GIA: true, NGAY_BAO_GIA: true,
+                LOAI_BAO_GIA: true, TONG_TIEN: true, THANH_TIEN: true,
+                MA_CH: true,
+                CO_HOI_REL: { select: { MA_CH: true, TINH_TRANG: true } },
+                _count: { select: { CHI_TIETS: true } },
+            },
+            orderBy: { NGAY_BAO_GIA: 'desc' },
+            take: 50,
+        });
+        return {
+            success: true,
+            data: data.map(bg => ({
+                ...bg,
+                NGAY_BAO_GIA: bg.NGAY_BAO_GIA.toISOString(),
+            })),
+        };
+    } catch (error) {
+        console.error('[getBaoGiaByKH]', error);
+        return { success: false, data: [] };
+    }
+}
+
+// ─── Lấy Hợp đồng theo MA_KH ────────────────────────────────────
+export async function getHopDongByKH(maKH: string) {
+    try {
+        if (!maKH) return { success: true, data: [] };
+        const data = await prisma.hOP_DONG.findMany({
+            where: { MA_KH: maKH },
+            select: {
+                ID: true, SO_HD: true, NGAY_HD: true,
+                LOAI_HD: true, TONG_TIEN: true, DUYET: true,
+                MA_BAO_GIA: true, MA_CH: true,
+                CONG_TRINH: true,
+                NGUOI_TAO_REL: { select: { HO_TEN: true } },
+                _count: { select: { HOP_DONG_CT: true } },
+            },
+            orderBy: { NGAY_HD: 'desc' },
+            take: 50,
+        });
+        return {
+            success: true,
+            data: data.map(hd => ({
+                ...hd,
+                NGAY_HD: hd.NGAY_HD.toISOString(),
+            })),
+        };
+    } catch (error) {
+        console.error('[getHopDongByKH]', error);
+        return { success: false, data: [] };
+    }
+}
+
+// ─── Lấy Khảo sát theo MA_KH ─────────────────────────────────────
+export async function getKhaoSatByKH(maKH: string) {
+    try {
+        if (!maKH) return { success: true, data: [] };
+        const data = await prisma.kHAO_SAT.findMany({
+            where: { MA_KH: maKH },
+            select: {
+                ID: true, MA_KHAO_SAT: true, NGAY_KHAO_SAT: true,
+                LOAI_CONG_TRINH: true, DIA_CHI_CONG_TRINH: true,
+                HANG_MUC: true, CONG_SUAT: true,
+                NGUOI_KHAO_SAT_REL: { select: { HO_TEN: true } },
+                _count: { select: { KHAO_SAT_CT: true } },
+            },
+            orderBy: { NGAY_KHAO_SAT: 'desc' },
+            take: 50,
+        });
+        return {
+            success: true,
+            data: data.map(ks => ({
+                ...ks,
+                NGAY_KHAO_SAT: ks.NGAY_KHAO_SAT.toISOString(),
+            })),
+        };
+    } catch (error) {
+        console.error('[getKhaoSatByKH]', error);
+        return { success: false, data: [] };
     }
 }

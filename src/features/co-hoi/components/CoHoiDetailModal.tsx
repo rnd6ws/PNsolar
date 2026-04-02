@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Target, CalendarDays, FileText, FileCheck2, Activity, CheckCircle2, XCircle, Lock, AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import { Target, CalendarDays, FileText, FileCheck2, Activity, CheckCircle2, XCircle, Lock, AlertTriangle, ExternalLink } from "lucide-react";
 import { computeCoHoiStatus, getWarningLevel, getWarningMeta, PIPELINE_STEPS } from "@/lib/co-hoi-status";
 import { formatCurrency } from "@/lib/format";
 import { PctChotBadge } from "./CoHoiStatusBadge";
@@ -191,9 +192,24 @@ function DetailContent({ item, scrollToStatus }: { item: any; scrollToStatus?: s
                         isActive={true}
                         badge={<span className="text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">10%</span>}
                     >
-                        <div className="bg-muted/30 border border-border rounded-lg px-3 py-2 text-xs text-muted-foreground">
-                            Mã: <span className="font-semibold text-foreground">{item.ID_CH}</span>
-                            {" · "}KH: <span className="font-semibold text-foreground">{item.KH?.TEN_KH}</span>
+                        <div className="bg-muted/30 border border-border rounded-lg px-3 py-2 text-xs text-muted-foreground space-y-1">
+                            <div>
+                                Mã: <span className="font-semibold text-foreground">{item.ID_CH}</span>
+                                {" · "}KH: <span className="font-semibold text-foreground">{item.KH?.TEN_KH}</span>
+                            </div>
+                            {(item.KH?.DIEN_THOAI || item.KH?.EMAIL || item.KH?.DIA_CHI) && (
+                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 pt-1 border-t border-border/50">
+                                    {item.KH?.DIEN_THOAI && (
+                                        <span className="text-[11px]">📞 {item.KH.DIEN_THOAI}</span>
+                                    )}
+                                    {item.KH?.EMAIL && (
+                                        <span className="text-[11px]">✉️ {item.KH.EMAIL}</span>
+                                    )}
+                                    {item.KH?.DIA_CHI && (
+                                        <span className="text-[11px]">📍 {item.KH.DIA_CHI}</span>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </TimelineItem>
 
@@ -243,7 +259,7 @@ function DetailContent({ item, scrollToStatus }: { item: any; scrollToStatus?: s
                             bgs.map((bg: any, i: number) => (
                                 <div key={i} className="bg-muted/30 border border-border rounded-lg px-3 py-2 space-y-1">
                                     <div className="flex items-center justify-between gap-2">
-                                        <span className="text-xs font-semibold text-primary">{bg.MA_BAO_GIA || `Báo giá #${i + 1}`}</span>
+                                        <Link href={`/bao-gia?query=${encodeURIComponent(bg.MA_BAO_GIA || '')}`} className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1">{bg.MA_BAO_GIA || `Báo giá #${i + 1}`} <ExternalLink className="w-2.5 h-2.5" /></Link>
                                         {bg.TONG_TIEN && <span className="text-xs font-bold text-foreground">{formatCurrency(bg.TONG_TIEN)}</span>}
                                     </div>
                                     <p className="text-[11px] text-muted-foreground">{fDate(bg.NGAY_BAO_GIA)}</p>
@@ -286,7 +302,7 @@ function DetailContent({ item, scrollToStatus }: { item: any; scrollToStatus?: s
                             >
                                 <div className="bg-muted/30 border border-border rounded-lg px-3 py-2 space-y-1">
                                     <div className="flex items-center justify-between gap-2">
-                                        <span className="text-xs font-semibold text-foreground">{hd.SO_HD || `HĐ #${i + 1}`}</span>
+                                        <Link href={`/hop-dong?query=${encodeURIComponent(hd.SO_HD || '')}`} className="text-xs font-semibold text-foreground hover:text-primary hover:underline inline-flex items-center gap-1">{hd.SO_HD || `HĐ #${i + 1}`} <ExternalLink className="w-2.5 h-2.5" /></Link>
                                         <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${isDuyet ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600" :
                                             isKhongDuyet ? "bg-red-50 dark:bg-red-900/30 text-red-600" :
                                                 "bg-orange-50 dark:bg-orange-900/30 text-orange-600"

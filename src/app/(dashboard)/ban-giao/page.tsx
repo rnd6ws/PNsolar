@@ -1,18 +1,16 @@
 import { Metadata } from "next";
-import { getBaoGiaList, getBaoGiaStats } from "@/features/bao-gia/action";
+import { getBanGiaoList, getBanGiaoStats } from "@/features/ban-giao/action";
 import Pagination from "@/components/Pagination";
-import BaoGiaStatCards from "@/features/bao-gia/components/StatCards";
-import BaoGiaPageClient from "@/features/bao-gia/components/BaoGiaPageClient";
-import AddBaoGiaButton from "@/features/bao-gia/components/AddBaoGiaButton";
+import BanGiaoStatCards from "@/features/ban-giao/components/StatCards";
+import BanGiaoPageClient from "@/features/ban-giao/components/BanGiaoPageClient";
+import AddBanGiaoButton from "@/features/ban-giao/components/AddBanGiaoButton";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
-import { getRowsPerPage } from '@/lib/getRowsPerPage';
+import { getRowsPerPage } from "@/lib/getRowsPerPage";
 import { Suspense } from "react";
 
-export const metadata: Metadata = {
-    title: "Báo giá | PN Solar",
-};
+export const metadata: Metadata = { title: "Bàn giao & Nghiệm thu | PN Solar" };
 
-// ── Skeleton ────────────────────────────────────────
+// ── Skeletons ───────────────────────────────────────
 function StatsSkeleton() {
     return (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
@@ -51,31 +49,29 @@ function TableSkeleton() {
 }
 
 // ── Async: Stats ───────────────────────────────────
-async function BaoGiaStatsSection() {
-    const stats = await getBaoGiaStats();
-    return <BaoGiaStatCards stats={stats} />;
+async function BanGiaoStatsSection() {
+    const stats = await getBanGiaoStats();
+    return <BanGiaoStatCards stats={stats} />;
 }
 
 // ── Async: Data ────────────────────────────────────
-async function BaoGiaDataSection({
-    params,
-    page,
-    pageSize,
+async function BanGiaoDataSection({
+    params, page, pageSize,
 }: {
-    params: { query?: string; LOAI_BAO_GIA?: string };
+    params: { query?: string; TRANG_THAI?: string };
     page: number;
     pageSize: number;
 }) {
-    const { data = [], pagination } = await getBaoGiaList({
+    const { data = [], pagination } = await getBanGiaoList({
         query: params.query,
         page,
         limit: pageSize,
-        LOAI_BAO_GIA: params.LOAI_BAO_GIA,
+        TRANG_THAI: params.TRANG_THAI,
     });
 
     return (
         <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col mt-2 relative">
-            <BaoGiaPageClient data={data as any} />
+            <BanGiaoPageClient data={data as any[]} />
             {(pagination as any) && (
                 <div className="p-4 border-t flex justify-center items-center bg-transparent">
                     <Pagination
@@ -90,38 +86,35 @@ async function BaoGiaDataSection({
     );
 }
 
-export default async function BaoGiaPage({
+export default async function BanGiaoPage({
     searchParams,
 }: {
-    searchParams: Promise<{ query?: string; page?: string; pageSize?: string; LOAI_BAO_GIA?: string }>;
+    searchParams: Promise<{ query?: string; page?: string; pageSize?: string; TRANG_THAI?: string }>;
 }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
     const pageSize = await getRowsPerPage(params.pageSize);
 
     return (
-        <PermissionGuard moduleKey="bao-gia" level="view" showNoAccess>
+        <PermissionGuard moduleKey="ban-giao" level="view" showNoAccess>
             <div className="space-y-6 animate-in fade-in duration-500 pb-10">
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Báo giá</h1>
-                            <p className="text-sm text-muted-foreground mt-1">Quản lý báo giá cho khách hàng.</p>
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Bàn giao & Nghiệm thu</h1>
+                            <p className="text-sm text-muted-foreground mt-1">Quản lý biên bản bàn giao và nghiệm thu công trình.</p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <PermissionGuard moduleKey="bao-gia" level="add">
-                                <AddBaoGiaButton />
-                            </PermissionGuard>
+                            <AddBanGiaoButton />
                         </div>
                     </div>
-
                     <Suspense fallback={<StatsSkeleton />}>
-                        <BaoGiaStatsSection />
+                        <BanGiaoStatsSection />
                     </Suspense>
                 </div>
 
                 <Suspense fallback={<TableSkeleton />}>
-                    <BaoGiaDataSection params={params} page={page} pageSize={pageSize} />
+                    <BanGiaoDataSection params={params} page={page} pageSize={pageSize} />
                 </Suspense>
             </div>
         </PermissionGuard>

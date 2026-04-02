@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect, Fragment } from "react";
 import {
     Edit2, Trash2, MapPin, Phone,
     Mail, Building2, UserCircle, Eye, Search,
-    ArrowUpDown, ArrowUp, ArrowDown, UserPlus,
+    ArrowUpDown, ArrowUp, ArrowDown, UserPlus, ChevronRight, ChevronDown,
     MoreHorizontal, Settings2, UserCheck, UserX,
     CalendarPlus2, Target, ShieldCheck, KeyRound
 } from "lucide-react";
@@ -18,6 +18,7 @@ import ImageUpload from "@/components/ImageUpload";
 import Image from "next/image";
 import FormSelect from "@/components/FormSelect";
 import type { ColumnKey } from "./ColumnToggleButton";
+import type { GroupByKey } from "./KhachHangPageClient";
 
 interface Props {
     data: any[];
@@ -30,6 +31,7 @@ interface Props {
     visibleColumns?: ColumnKey[];
     currentUserId?: string;
     viewMode?: "list" | "card";
+    groupBy?: GroupByKey;
 }
 
 function formatDate(val: any) {
@@ -50,7 +52,7 @@ import KhachHangDetail from "./KhachHangDetail";
 
 
 // ─── Component chính ──────────────────────────────────────────
-export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois = [], visibleColumns, currentUserId, viewMode = "list" }: Props) {
+export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois = [], visibleColumns, currentUserId, viewMode = "list", groupBy = "none" }: Props) {
     const [editItem, setEditItem] = useState<any>(null);
     const [viewItem, setViewItem] = useState<any>(null);
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -95,6 +97,42 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
             return 0;
         });
     }, [data, sortConfig]);
+
+    // ─── Group By Logic ──────────────────────────────────────────
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+    const toggleGroup = (key: string) => {
+        setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const groupedData = useMemo(() => {
+        if (!groupBy || groupBy === "none") {
+            return [{ label: "", items: sortedData, total: sortedData.length }];
+        }
+        const groups: { label: string; items: any[] }[] = [];
+        const labelMap = new Map<string, number>();
+
+        sortedData.forEach(item => {
+            let label = "Chưa phân loại";
+            if (groupBy === "NHOM_KH") {
+                label = item.NHOM_KH || "Chưa có nhóm";
+            } else if (groupBy === "PHAN_LOAI") {
+                label = item.PHAN_LOAI || "Chưa phân loại";
+            } else if (groupBy === "NV_CS") {
+                const nv = nhanViens.find(n => n.ID === item.NV_CS);
+                label = nv ? nv.HO_TEN : (item.NV_CS || "Chưa phân công");
+            } else if (groupBy === "NGUON") {
+                label = item.NGUON || "Chưa có nguồn";
+            }
+            if (labelMap.has(label)) {
+                groups[labelMap.get(label)!].items.push(item);
+            } else {
+                labelMap.set(label, groups.length);
+                groups.push({ label, items: [item] });
+            }
+        });
+
+        return groups.map(g => ({ ...g, total: g.items.length }));
+    }, [sortedData, groupBy, nhanViens]);
 
     const handleSort = (key: string) => {
         let direction: "asc" | "desc" = "asc";
@@ -223,7 +261,21 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                             Chưa có khách hàng nào. Hãy thêm mới!
                         </div>
                     )}
-                    {sortedData.map((item, idx) => (
+                    {groupedData.map((group, gIdx) => {
+                        const isExpanded = expandedGroups[group.label] !== false;
+                        return (
+                            <Fragment key={gIdx}>
+                                {group.label && (
+                                    <button
+                                        onClick={() => toggleGroup(group.label)}
+                                        className="w-full flex items-center gap-2 px-4 py-2.5 bg-primary/5 border border-border rounded-xl hover:bg-primary/10 transition-colors mb-1"
+                                    >
+                                        {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                        <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                        <span className="text-xs font-normal text-muted-foreground">({group.total} khách hàng)</span>
+                                    </button>
+                                )}
+                                {(!group.label || isExpanded) && group.items.map((item, idx) => (
                         <div
                             key={item.ID}
                             onClick={() => setViewItem(item)}
@@ -284,49 +336,46 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                             </div>
 
                             {/* Footer: Actions */}
-                            <div className="flex items-center justify-between pt-2 border-t border-border">
-                                <div className="flex items-center gap-1 text-muted-foreground">
-                                    {item.NGUON && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{item.NGUON}</span>}
-                                    {item.SALES_PT && <span className="text-[10px]">• {nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN}</span>}
-                                </div>
-                                <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
-                                    <button onClick={() => setViewItem(item)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem">
-                                        <Eye className="w-3.5 h-3.5" />
+                            <div className="flex items-center gap-2 pt-2 border-t border-border" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setViewItem(item)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
+                                    <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
+                                </button>
+                                <PermissionGuard moduleKey="co-hoi" level="add">
+                                    <button onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-orange-500/10 text-muted-foreground hover:text-orange-500 rounded-lg transition-colors text-xs font-semibold" title="Tạo cơ hội">
+                                        <Target className="w-4 h-4" /> <span className="hidden sm:inline">Cơ hội</span>
                                     </button>
-                                    <PermissionGuard moduleKey="co-hoi" level="add">
-                                        <button onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-orange-500 rounded-lg transition-colors" title="Tạo cơ hội">
-                                            <Target className="w-3.5 h-3.5" />
-                                        </button>
-                                    </PermissionGuard>
-                                    <PermissionGuard moduleKey="ke-hoach-cs" level="add">
-                                        <button onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-violet-600 rounded-lg transition-colors" title="Lên kế hoạch CSKH">
-                                            <CalendarPlus2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </PermissionGuard>
-                                    <PermissionGuard moduleKey="khach-hang" level="add">
-                                        <button onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors relative" title="Người liên hệ">
-                                            <UserPlus className="w-3.5 h-3.5" />
-                                            {item._count?.NGUOI_LIENHE > 0 && (
-                                                <span className="absolute top-0 right-0 text-[9px] font-bold text-emerald-600">
-                                                    {item._count.NGUOI_LIENHE}
-                                                </span>
-                                            )}
-                                        </button>
-                                    </PermissionGuard>
-                                    <PermissionGuard moduleKey="khach-hang" level="edit">
-                                        <button onClick={() => setEditItem(item)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors" title="Sửa">
-                                            <Edit2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </PermissionGuard>
-                                    <PermissionGuard moduleKey="khach-hang" level="delete">
-                                        <button onClick={() => setDeleteItem({ ID: item.ID, TEN_KH: item.TEN_KH })} className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa">
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </PermissionGuard>
-                                </div>
+                                </PermissionGuard>
+                                <PermissionGuard moduleKey="ke-hoach-cs" level="add">
+                                    <button onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-violet-500/10 text-muted-foreground hover:text-violet-600 rounded-lg transition-colors text-xs font-semibold" title="Lên kế hoạch CSKH">
+                                        <CalendarPlus2 className="w-4 h-4" /> <span className="hidden sm:inline">CSKH</span>
+                                    </button>
+                                </PermissionGuard>
+                                <PermissionGuard moduleKey="khach-hang" level="add">
+                                    <button onClick={() => setNguoiLHItem({ ID: item.ID, TEN_KH: item.TEN_KH })} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-600 rounded-lg transition-colors text-xs font-semibold relative" title="Người liên hệ">
+                                        <UserPlus className="w-4 h-4" /> <span className="hidden sm:inline">NLH</span>
+                                        {item._count?.NGUOI_LIENHE > 0 && (
+                                            <span className="absolute top-0.5 right-1 text-[9px] font-bold text-emerald-600">
+                                                {item._count.NGUOI_LIENHE}
+                                            </span>
+                                        )}
+                                    </button>
+                                </PermissionGuard>
+                                <PermissionGuard moduleKey="khach-hang" level="edit">
+                                    <button onClick={() => setEditItem(item)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold" title="Sửa">
+                                        <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
+                                    </button>
+                                </PermissionGuard>
+                                <PermissionGuard moduleKey="khach-hang" level="delete">
+                                    <button onClick={() => setDeleteItem({ ID: item.ID, TEN_KH: item.TEN_KH })} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </PermissionGuard>
                             </div>
                         </div>
                     ))}
+                            </Fragment>
+                        );
+                    })}
                 </div>
             )}
 
@@ -375,7 +424,27 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                            {sortedData.map((item, idx) => (
+                            {groupedData.map((group, gIdx) => {
+                                const isExpanded = expandedGroups[group.label] !== false; // mặc định mở
+                                return (
+                                    <Fragment key={gIdx}>
+                                        {group.label && (
+                                            <tr
+                                                className="bg-primary/5 border-b border-border cursor-pointer hover:bg-primary/10 transition-colors"
+                                                onClick={() => toggleGroup(group.label)}
+                                            >
+                                                <td colSpan={100} className="px-4 py-2.5">
+                                                    <div className="flex items-center justify-between w-full">
+                                                        <div className="flex items-center gap-2">
+                                                            {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                                            <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                                            <span className="text-xs font-normal text-muted-foreground tracking-wide">({group.total} khách hàng)</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                        {(!group.label || isExpanded) && group.items.map((item, idx) => (
                                 <tr key={item.ID} className="hover:bg-muted/30 transition-colors group/row">
                                     <td className="px-4 py-3 align-middle text-muted-foreground text-xs text-center">{idx + 1}</td>
                                     {show("ngayGhiNhan") && (
@@ -593,7 +662,10 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                                        ))}
+                                    </Fragment>
+                                );
+                            })}
                             {data.length === 0 && (
                                 <tr>
                                     <td colSpan={10} className="px-6 py-16 text-center text-muted-foreground italic">

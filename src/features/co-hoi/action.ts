@@ -90,7 +90,7 @@ export async function deleteDmDichVu(id: string) {
 
 // ─── Include bảng con để compute trạng thái ảo ─────────────────
 const CO_HOI_INCLUDE = {
-    KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true, SALES_PT: true } },
+    KH_REL: { select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true, SALES_PT: true, DIEN_THOAI: true, EMAIL: true, DIA_CHI: true } },
     HOP_DONG: {
         select: {
             SO_HD: true,

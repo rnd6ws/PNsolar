@@ -460,13 +460,13 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
         >
             {/* ═══ TABS ═══ */}
             <div className="-mx-6 -mt-6 px-6 border-b mb-6">
-                <div className="flex gap-1">
+                <div className="flex flex-nowrap gap-1 overflow-x-auto hide-scrollbar">
                     {tabs.map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${activeTab === tab.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}>
-                            <tab.icon className="w-4 h-4" />{tab.label}
+                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all shrink-0 whitespace-nowrap ${activeTab === tab.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}>
+                            <tab.icon className="w-4 h-4 shrink-0" />{tab.label}
                             {tab.badge !== undefined && tab.badge > 0 && (
-                                <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">{tab.badge}</span>
+                                <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full shrink-0">{tab.badge}</span>
                             )}
                         </button>
                     ))}

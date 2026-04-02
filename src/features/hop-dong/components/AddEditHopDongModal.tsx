@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect, useCallback, useTransition, useRef } from "react";
+
 import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, X, CreditCard, Info, Eye, EyeOff, ScrollText } from "lucide-react";
 import Modal from "@/components/Modal";
 import FormSelect from "@/components/FormSelect";
 import { toast } from "sonner";
-import { createHopDong, updateHopDong, searchKhachHangForHopDong, getCoHoiByKhachHangForHD, getBaoGiaByKhachHang, getBaoGiaDetailsForHopDong, getBaoGiaDkttForHopDong, searchHangHoaForHopDong, getGiaBanForProductHD, getNhomHHForHopDong } from "../action";
+import { createHopDong, updateHopDong, searchKhachHangForHopDong, getCoHoiByKhachHangForHD, getBaoGiaByKhachHang, getBaoGiaDetailsForHopDong, getBaoGiaDkttForHopDong, searchHangHoaForHopDong, getGiaBanForProductHD, getNhomHHForHopDong, getDsnvAndRole } from "../action";
 import type { HopDongChiTietRow, DkttHdRow, ThongTinKhacRow, DkHdRow } from "../schema";
 import { DEFAULT_THONG_TIN_KHAC, DEFAULT_DK_HD } from "../schema";
 import { useMultipleFileUpload } from "@/hooks/useFileUpload";
@@ -82,6 +83,9 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const [ptVat, setPtVat] = useState(8);
     const [ttUuDai, setTtUuDai] = useState(0);
     const [tepDinhKems, setTepDinhKems] = useState<string[]>([]);
+    const [nguoiTao, setNguoiTao] = useState("");
+    const [dsnvList, setDsnvList] = useState<{MA_NV: string, HO_TEN: string}[]>([]);
+    const [userRole, setUserRole] = useState("STAFF");
 
     // Detail state
     const [chiTiets, setChiTiets] = useState<HopDongChiTietRow[]>([]);
@@ -107,13 +111,11 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const [hhLoading, setHhLoading] = useState(false);
     const hhDropdownRef = useRef<HTMLDivElement>(null);
     const [hhDropdownStyle, setHhDropdownStyle] = useState<React.CSSProperties>({});
-    const [khDropdownStyle, setKhDropdownStyle] = useState<React.CSSProperties>({});
-    const [chDropdownStyle, setChDropdownStyle] = useState<React.CSSProperties>({});
-    const [bgDropdownStyle, setBgDropdownStyle] = useState<React.CSSProperties>({});
     const chiTietsRef = useRef<HopDongChiTietRow[]>([]);
     const khRef = useRef<HTMLDivElement>(null);
     const chRef = useRef<HTMLDivElement>(null);
     const bgRef = useRef<HTMLDivElement>(null);
+
 
     useEffect(() => { chiTietsRef.current = chiTiets; }, [chiTiets]);
 
@@ -136,8 +138,14 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
         if (!isOpen) return;
         setActiveTab("general");
         getNhomHHForHopDong().then(list => setNhomHHList(list as NhomHHOption[]));
+        getDsnvAndRole().then((res: any) => {
+            setDsnvList(res.dsnv);
+            setUserRole(res.role);
+            if (!editData) setNguoiTao(res.currentMaNv || "");
+        });
         if (editData) {
             setNgayHD(editData.NGAY_HD ? editData.NGAY_HD.slice(0, 10) : "");
+            setNguoiTao(editData.NGUOI_TAO || "");
             setMaKH(editData.MA_KH || "");
             setSelectedKH(editData.KHTN_REL ? { ID: "", MA_KH: editData.MA_KH, TEN_KH: editData.KHTN_REL.TEN_KH } : null);
             setMaCH(editData.MA_CH || "");
@@ -214,19 +222,14 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
         setHhDropdownStyle(calcDropdownStyle(td, 280, 300));
     }, [hhRowId]);
 
-    // Handle scroll to close floating dropdowns to maintain UX
+    // Handle scroll to close HH floating dropdown (table specific) - KH/BG/CH use portal + click outside
     useEffect(() => {
         const handleScroll = (e: Event) => {
-            // only close if not scrolling the dropdown itself
             const target = e.target as HTMLElement;
             if (target?.closest && target.closest('.max-h-52, .max-h-60, .max-h-\\[280px\\]')) return;
-            setKhOpen(false);
-            setBgOpen(false);
-            setChOpen(false);
             setHhRowId(null);
             setHhQuery("");
         };
-        // Use true for capture phase to catch scroll events from any nested scrollable container
         window.addEventListener('scroll', handleScroll, true);
         window.addEventListener('resize', handleScroll);
         return () => {
@@ -261,6 +264,14 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
         return { ...row, THANH_TIEN: Math.round(thanhTien), GIA_BAN_CHUA_VAT: Math.round(giaBanChuaVat) };
     }, [ptVat]);
 
+    useEffect(() => {
+        setChiTiets(prev => prev.map(row => {
+            if (!row.MA_HH) return row;
+            const giaBanChuaVat = ptVat > 0 ? row.GIA_BAN / (1 + ptVat / 100) : row.GIA_BAN;
+            return { ...row, GIA_BAN_CHUA_VAT: Math.round(giaBanChuaVat) };
+        }));
+    }, [ptVat]);
+
     const handleSelectHH = useCallback(async (rowId: string, hh: HHOption) => {
         setHhRowId(null); setHhQuery("");
         const cur = chiTietsRef.current.find(r => r._id === rowId);
@@ -286,7 +297,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const handleSubmit = () => {
         if (!maKH) { toast.error("Vui lòng chọn khách hàng!"); setActiveTab("general"); return; }
         if (validRows.length === 0) { toast.error("Vui lòng thêm ít nhất 1 hàng hóa!"); setActiveTab("details"); return; }
-        const header = { NGAY_HD: ngayHD, MA_KH: maKH, MA_CH: maCH || null, MA_BAO_GIA: maBaoGia || null, LOAI_HD: loaiHD, CONG_TRINH: congTrinh || null, HANG_MUC: hangMuc || null, PT_VAT: ptVat, TT_UU_DAI: ttUuDai, TEP_DINH_KEM: tepDinhKems };
+        const header = { NGAY_HD: ngayHD, MA_KH: maKH, MA_CH: maCH || null, MA_BAO_GIA: maBaoGia || null, LOAI_HD: loaiHD, CONG_TRINH: congTrinh || null, HANG_MUC: hangMuc || null, PT_VAT: ptVat, TT_UU_DAI: ttUuDai, TEP_DINH_KEM: tepDinhKems, NGUOI_TAO: nguoiTao || null };
         const details = validRows.map(ct => ({ MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || null, DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT, GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG, THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null }));
         const dktt = dkttRows.filter(d => d.LAN_THANH_TOAN);
         const ttk = thongTinRows.filter(t => t.TIEU_DE && t.TIEU_DE.trim() !== "").map(t => ({ TIEU_DE: t.TIEU_DE, NOI_DUNG: t.NOI_DUNG }));
@@ -308,8 +319,6 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? "Sửa hợp đồng" : "Thêm hợp đồng mới"} icon={FileText} size="xl" fullHeight
-            disableBodyScroll
-            bodyClassName="p-0"
             footer={<>
                 <div className="text-sm text-muted-foreground">{validRows.length > 0 && <span>Tổng: <span className="font-bold text-primary">{fmtMoney(tongTien)} ₫</span></span>}</div>
                 <div className="flex items-center gap-3">
@@ -321,8 +330,8 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
             </>}
         >
             {/* Tabs */}
-            <div className="px-0 sm:px-6 border-b border-border shrink-0">
-                <div className="flex flex-nowrap gap-1 overflow-x-auto hide-scrollbar px-6 sm:px-0">
+            <div className="-mx-6 -mt-6 px-6 border-b mb-6">
+                <div className="flex flex-nowrap gap-1 overflow-x-auto hide-scrollbar">
                     {tabs.map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all shrink-0 whitespace-nowrap ${activeTab === tab.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}>
@@ -333,7 +342,6 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
                 {/* Tab 1: Thông tin chung */}
                 {activeTab === "general" && (
                     <div className="space-y-6 animate-in fade-in duration-200">
@@ -365,19 +373,26 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                 ) : (
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                                        <input type="text" value={khQuery} onChange={e => setKhQuery(e.target.value)} onFocus={() => { setKhDropdownStyle(calcDropdownStyle(khRef.current, 240)); setKhOpen(true); }} placeholder="Tìm khách hàng..." className="input-modern pl-10!" />
+                                        <input type="text" value={khQuery} onChange={e => setKhQuery(e.target.value)} onFocus={() => setKhOpen(true)} placeholder="Tìm khách hàng..." className="input-modern pl-10!" />
                                     </div>
                                 )}
                                 {khOpen && !selectedKH && (
-                                    <div style={khDropdownStyle} className="bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                        {khLoading ? <div className="p-4 text-center text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Đang tìm...</div>
-                                            : khResults.length === 0 ? <div className="p-4 text-center text-sm text-muted-foreground">Không tìm thấy</div>
-                                                : khResults.map(kh => (
-                                                    <button key={kh.MA_KH} type="button" onClick={() => handleSelectKH(kh)} className="w-full text-left px-3 py-2.5 hover:bg-muted flex items-center gap-2 transition-colors">
-                                                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">{kh.TEN_KH.charAt(0)}</div>
-                                                        <div className="min-w-0"><p className="text-sm font-medium truncate">{kh.TEN_KH}</p><p className="text-xs text-muted-foreground">{kh.MA_KH}</p></div>
-                                                    </button>
-                                                ))}
+                                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                        {khLoading ? (
+                                            <div className="p-4 text-center text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Đang tìm...</div>
+                                        ) : khResults.length === 0 ? (
+                                            <div className="p-4 text-center text-sm text-muted-foreground">Không tìm thấy</div>
+                                        ) : (
+                                            khResults.map(kh => (
+                                                <button key={kh.MA_KH} type="button" onClick={() => handleSelectKH(kh)} className="w-full text-left px-3 py-2.5 hover:bg-muted flex items-center gap-2 transition-colors">
+                                                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">{kh.TEN_KH.charAt(0)}</div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium truncate">{kh.TEN_KH}</p>
+                                                        <p className="text-xs text-muted-foreground">{kh.MA_KH}</p>
+                                                    </div>
+                                                </button>
+                                            ))
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -387,12 +402,12 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                 <label className="text-sm font-semibold text-muted-foreground">Báo giá</label>
                                 {!maKH ? <p className="text-xs text-muted-foreground italic p-2.5 border border-dashed border-border rounded-lg">Chọn khách hàng trước</p> : (
                                     <div className="relative">
-                                        <button type="button" onClick={() => { if (!bgOpen) setBgDropdownStyle(calcDropdownStyle(bgRef.current, 208)); setBgOpen(!bgOpen); }} className="input-modern w-full text-left flex items-center justify-between">
+                                        <button type="button" onClick={() => setBgOpen(!bgOpen)} className="input-modern w-full text-left flex items-center justify-between">
                                             <span className={selectedBG ? "text-foreground" : "text-muted-foreground"}>{selectedBG ? selectedBG.MA_BAO_GIA : "-- Chọn báo giá --"}</span>
                                             <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                         </button>
                                         {bgOpen && (
-                                            <div style={bgDropdownStyle} className="bg-card border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                                            <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto">
                                                 <button type="button" onClick={() => { setMaBaoGia(""); setSelectedBG(null); setBgOpen(false); }} className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-muted-foreground">-- Không chọn --</button>
                                                 {baoGias.map((bg: any) => (
                                                     <button key={bg.MA_BAO_GIA} type="button" onClick={async () => {
@@ -456,12 +471,12 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                 <label className="text-sm font-semibold text-muted-foreground">Cơ hội</label>
                                 {!maKH ? <p className="text-xs text-muted-foreground italic p-2.5 border border-dashed border-border rounded-lg">Chọn khách hàng trước</p> : (
                                     <div className="relative">
-                                        <button type="button" onClick={() => { if (!chOpen) setChDropdownStyle(calcDropdownStyle(chRef.current, 208)); setChOpen(!chOpen); }} className="input-modern w-full text-left flex items-center justify-between">
+                                        <button type="button" onClick={() => setChOpen(!chOpen)} className="input-modern w-full text-left flex items-center justify-between">
                                             <span className={selectedCH ? "text-foreground" : "text-muted-foreground"}>{selectedCH ? selectedCH.MA_CH : "-- Chọn cơ hội --"}</span>
                                             <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                         </button>
                                         {chOpen && (
-                                            <div style={chDropdownStyle} className="bg-card border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                                            <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto">
                                                 <button type="button" onClick={() => { setMaCH(""); setSelectedCH(null); setChOpen(false); }} className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-muted-foreground">-- Không chọn --</button>
                                                 {coHois.map((ch: any) => (
                                                     <button key={ch.MA_CH} type="button" onClick={() => { setMaCH(ch.MA_CH); setSelectedCH(ch); setChOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-muted transition-colors">
@@ -473,6 +488,17 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                         )}
                                     </div>
                                 )}
+                            </div>
+
+                            <div className="space-y-1.5"><label className="text-sm font-semibold text-muted-foreground">Người tạo</label>
+                                <FormSelect
+                                    name="nguoiTao"
+                                    value={nguoiTao}
+                                    onChange={setNguoiTao}
+                                    options={dsnvList.map((nv) => ({ label: `${nv.HO_TEN} (${nv.MA_NV})`, value: nv.MA_NV }))}
+                                    disabled={userRole !== "ADMIN" && userRole !== "MANAGER"}
+                                    placeholder="-- Chọn người tạo --"
+                                />
                             </div>
 
                             <div className="space-y-1.5"><label className="text-sm font-semibold text-muted-foreground">% VAT</label>
@@ -896,7 +922,6 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                     </div>
                 )}
 
-            </div>
         </Modal>
     );
 }

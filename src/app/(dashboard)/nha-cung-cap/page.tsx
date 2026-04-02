@@ -12,8 +12,6 @@ export const metadata: Metadata = {
     title: "Nhà cung cấp | PN Solar",
 };
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export default async function NhaCungCapPage({
     searchParams,

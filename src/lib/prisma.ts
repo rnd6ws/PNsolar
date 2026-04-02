@@ -5,7 +5,7 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 // Prisma configuration with logging
 const clientOptions = {
-    log: process.env.NODE_ENV === 'development' ? ['query', 'warn', 'error'] : ['error'],
+    log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
 } as any;
 
 export const prisma = globalForPrisma.prisma || new PrismaClient(clientOptions);

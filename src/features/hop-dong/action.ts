@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth';
+import { createNotification } from '@/lib/notifications';
 import { hopDongSchema, hopDongChiTietSchema, dkttHdSchema, dkHdSchema } from './schema';
 import type { HopDongChiTietInput, DkttHdInput, ThongTinKhacInput, DkHdInput } from './schema';
 
@@ -10,6 +11,7 @@ import type { HopDongChiTietInput, DkttHdInput, ThongTinKhacInput, DkHdInput } f
 const HOP_DONG_INCLUDE = {
     KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIA_CHI: true, EMAIL: true, MST: true, DIEN_THOAI: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, CHUC_VU: true } } } },
     NGUOI_DUYET_REL: { select: { HO_TEN: true, MA_NV: true } },
+    NGUOI_TAO_REL: { select: { HO_TEN: true, MA_NV: true } },
     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true, TINH_TRANG: true } },
     BAO_GIA_REL: { select: { MA_BAO_GIA: true, NGAY_BAO_GIA: true, TONG_TIEN: true } },
     HOP_DONG_CT: {
@@ -128,6 +130,7 @@ export async function getHopDongList(filters: {
                 include: {
                     KHTN_REL: { select: { TEN_KH: true, MA_KH: true } },
                     NGUOI_DUYET_REL: { select: { HO_TEN: true, MA_NV: true } },
+                    NGUOI_TAO_REL: { select: { HO_TEN: true, MA_NV: true } },
                     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true } },
                     BAO_GIA_REL: { select: { MA_BAO_GIA: true, TONG_TIEN: true } },
                     _count: { select: { HOP_DONG_CT: true } },
@@ -266,7 +269,7 @@ export async function createHopDong(
         const totals = calculateHeaderTotals(calculatedDetails, ptVat, parsed.data.TT_UU_DAI);
 
         // Validate MA_KH
-        const kh = await prisma.kHTN.findUnique({ where: { MA_KH: parsed.data.MA_KH }, select: { MA_KH: true } });
+        const kh = await prisma.kHTN.findUnique({ where: { MA_KH: parsed.data.MA_KH }, select: { MA_KH: true, TEN_KH: true } });
         if (!kh) return { success: false, message: 'Khách hàng không tồn tại.' };
 
         // Validate MA_CH nếu có
@@ -297,6 +300,16 @@ export async function createHopDong(
 
         const soHD = await generateSoHD(parsed.data.MA_KH);
 
+        // NGUOI_TAO
+        let nguoiTao = parsed.data.NGUOI_TAO;
+        if (!nguoiTao) {
+            const user = await getCurrentUser();
+            if (user) {
+                const nv = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+                if (nv) nguoiTao = nv.MA_NV;
+            }
+        }
+
         await prisma.hOP_DONG.create({
             data: {
                 SO_HD: soHD,
@@ -310,6 +323,7 @@ export async function createHopDong(
                 PT_VAT: parsed.data.PT_VAT,
                 TEP_DINH_KEM: parsed.data.TEP_DINH_KEM || [],
                 DUYET: "Chờ duyệt",
+                NGUOI_TAO: nguoiTao || null,
                 ...totals,
                 HOP_DONG_CT: {
                     create: calculatedDetails.map(ct => ({
@@ -347,6 +361,45 @@ export async function createHopDong(
         });
 
         revalidatePath('/hop-dong');
+
+        // Gửi thông báo cho ADMIN, MANAGER và người tạo
+        (async () => {
+            try {
+                const managers = await prisma.dSNV.findMany({
+                    where: { IS_ACTIVE: true, ROLE: { in: ['ADMIN', 'MANAGER'] } },
+                    select: { ID: true, MA_NV: true },
+                });
+                const sentIds = new Set<string>();
+                const hdLink = `/hop-dong?query=${encodeURIComponent(soHD)}`;
+
+                // Gửi cho ADMIN/MANAGER
+                for (const mgr of managers) {
+                    sentIds.add(mgr.ID);
+                    createNotification({
+                        title: 'Hợp đồng mới',
+                        message: `Hợp đồng ${soHD} — KH: ${kh.TEN_KH} đã được tạo.`,
+                        type: 'HOP_DONG',
+                        recipientId: mgr.ID,
+                        link: hdLink,
+                    }).catch(() => {});
+                }
+
+                // Gửi cho người tạo (nếu chưa gửi trùng)
+                if (nguoiTao) {
+                    const creator = await prisma.dSNV.findUnique({ where: { MA_NV: nguoiTao }, select: { ID: true } });
+                    if (creator && !sentIds.has(creator.ID)) {
+                        createNotification({
+                            title: 'Hợp đồng đã tạo thành công',
+                            message: `Hợp đồng ${soHD} — KH: ${kh.TEN_KH} đã được tạo thành công.`,
+                            type: 'HOP_DONG',
+                            recipientId: creator.ID,
+                            link: hdLink,
+                        }).catch(() => {});
+                    }
+                }
+            } catch {}
+        })();
+
         return { success: true, message: 'Tạo hợp đồng thành công!' };
     } catch (error: any) {
         console.error('[createHopDong]', error);
@@ -431,6 +484,7 @@ export async function updateHopDong(
                 HANG_MUC: parsed.data.HANG_MUC || null,
                 PT_VAT: parsed.data.PT_VAT,
                 TEP_DINH_KEM: parsed.data.TEP_DINH_KEM || [],
+                NGUOI_TAO: parsed.data.NGUOI_TAO || null,
                 ...totals,
                 HOP_DONG_CT: {
                     create: calculatedDetails.map(ct => ({
@@ -730,6 +784,13 @@ export async function duyetHopDong(id: string, trangThai: "Đã duyệt" | "Ch�
         const nv = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
         if (!nv) return { success: false, message: 'Nhân viên không tồn tại' };
 
+        // Lấy thông tin HĐ trước khi update (cần NGUOI_TAO, SO_HD)
+        const hopDong = await prisma.hOP_DONG.findUnique({
+            where: { ID: id },
+            select: { SO_HD: true, NGUOI_TAO: true, MA_KH: true, KHTN_REL: { select: { TEN_KH: true } } },
+        });
+        if (!hopDong) return { success: false, message: 'Không tìm thấy hợp đồng' };
+
         await prisma.hOP_DONG.update({
             where: { ID: id },
             data: {
@@ -740,9 +801,50 @@ export async function duyetHopDong(id: string, trangThai: "Đã duyệt" | "Ch�
         });
 
         revalidatePath('/hop-dong');
+
+        // Gửi thông báo cho người tạo khi duyệt hoặc không duyệt
+        if (trangThai !== 'Chờ duyệt' && hopDong.NGUOI_TAO) {
+            prisma.dSNV.findUnique({ where: { MA_NV: hopDong.NGUOI_TAO }, select: { ID: true } })
+                .then((creator) => {
+                    if (creator) {
+                        const statusText = trangThai === 'Đã duyệt' ? '✅ đã được duyệt' : '❌ không được duyệt';
+                        createNotification({
+                            title: `Hợp đồng ${trangThai.toLowerCase()}`,
+                            message: `Hợp đồng ${hopDong.SO_HD} — KH: ${(hopDong as any).KHTN_REL?.TEN_KH || hopDong.MA_KH} ${statusText}.`,
+                            type: 'HOP_DONG',
+                            recipientId: creator.ID,
+                            link: `/hop-dong?query=${encodeURIComponent(hopDong.SO_HD)}`,
+                        }).catch(() => {});
+                    }
+                }).catch(() => {});
+        }
+
         return { success: true, message: `Thao tác hợp đồng: ${trangThai} thành công!` };
     } catch (error: any) {
         console.error('[duyetHopDong]', error);
         return { success: false, message: error.message || 'Lỗi server khi duyệt hợp đồng' };
+    }
+}
+
+// ─── Lấy danh sách nhân viên và Role ───────────────────────────────────
+export async function getDsnvAndRole() {
+    try {
+        const user = await getCurrentUser();
+        const dsnv = await prisma.dSNV.findMany({
+            where: { IS_ACTIVE: true },
+            select: { MA_NV: true, HO_TEN: true },
+            orderBy: { HO_TEN: 'asc' }
+        });
+        
+        if (!user) return { dsnv, role: 'STAFF', currentMaNv: null };
+        const currentUserDb = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        
+        return {
+            dsnv,
+            role: user.ROLE || 'STAFF',
+            currentMaNv: currentUserDb?.MA_NV || null
+        };
+    } catch {
+        return { dsnv: [], role: 'STAFF', currentMaNv: null };
     }
 }
