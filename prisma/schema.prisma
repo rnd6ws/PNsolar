@@ -851,6 +851,7 @@ model DKTT_HD {
 
   LAN_THANH_TOAN   String // Lần 1, Lần 2...
   PT_THANH_TOAN    Float   @default(0) // % thanh toán
+  SO_TIEN          Float   @default(0) // Số tiền (tính tự động)
   NOI_DUNG_YEU_CAU String? // Nội dung yêu cầu
 
   CREATED_AT DateTime @default(now())

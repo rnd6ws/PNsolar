@@ -199,96 +199,116 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, prefill
             <form id="form-ban-giao" onSubmit={handleSubmit} className="space-y-4">
                 {/* Chọn hợp đồng - chỉ khi thêm mới */}
                 {!isEdit ? (
-                    <div className="space-y-2" ref={hdSearchRef}>
-                        <label className="text-sm font-semibold text-muted-foreground">Hợp đồng <span className="text-destructive">*</span></label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                            <input
-                                type="text"
-                                className="input-modern w-full"
-                                style={{ paddingLeft: "2.5rem" }}
-                                placeholder="Tìm hợp đồng đã duyệt..."
-                                value={hdQuery}
-                                onChange={(e) => {
-                                    setHDQuery(e.target.value);
-                                    if (e.target.value !== selectedHD?.SO_HD) {
-                                        setSoHD("");
-                                        setSelectedHD(null);
-                                    }
-                                    setShowHDDropdown(true);
-                                }}
-                                onClick={() => setShowHDDropdown(true)}
-                                onFocus={() => setShowHDDropdown(true)}
-                                required={!soHD}
-                                autoComplete="off"
-                            />
-                            {showHDDropdown && (
-                                <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-60 flex flex-col">
-                                    {isHDLoading ? (
-                                        <div className="p-4 text-center text-sm text-muted-foreground">Đang tải danh sách...</div>
-                                    ) : hdResults.length > 0 ? (
-                                        <div className="overflow-y-auto">
-                                            {hdResults.map((hd) => (
-                                                <button
-                                                    key={hd.ID}
-                                                    type="button"
-                                                    className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted transition-colors text-left"
-                                                    onClick={() => {
-                                                        setSelectedHD(hd);
-                                                        setSoHD(hd.SO_HD);
-                                                        setHDQuery(hd.SO_HD);
-
-                                                        // Tìm địa điểm bàn giao từ Điều khoản Hợp đồng hoặc Thông tin khác
-                                                        const dkDiaDiemVal = hd.DK_HD?.find((dk: any) =>
-                                                            dk.HANG_MUC?.toLowerCase().includes("địa điểm") ||
-                                                            dk.HANG_MUC?.toLowerCase().includes("thi công")
-                                                        )?.NOI_DUNG?.trim();
-                                                        const ttkDiaDiemVal = hd.THONG_TIN_KHAC?.find((tt: any) =>
-                                                            tt.TIEU_DE?.toLowerCase().includes("địa điểm") ||
-                                                            tt.TIEU_DE?.toLowerCase().includes("địa chỉ")
-                                                        )?.NOI_DUNG?.trim();
-
-                                                        // Ưu tiên CONG_TRINH -> DK_HD -> THONG_TIN_KHAC -> KHTN_REL
-                                                        setDiaDiem(hd.CONG_TRINH?.trim() || dkDiaDiemVal || ttkDiaDiemVal || hd.KHTN_REL?.DIA_CHI?.trim() || "");
-
-                                                        setShowHDDropdown(false);
-                                                    }}
-                                                >
-                                                    <FileText className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="font-semibold text-foreground text-sm truncate">Số HĐ: {hd.SO_HD}</p>
-                                                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                                                            <p className="truncate">Cty/KH: {hd.KHTN_REL?.TEN_KH}</p>
-                                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                                                {hd.NGAY_HD && <p>Ngày HĐ: {new Date(hd.NGAY_HD).toLocaleDateString('vi-VN')}</p>}
-                                                                {hd.TONG_TIEN !== undefined && <p>Tiền HĐ: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(hd.TONG_TIEN || 0)}</p>}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="p-4 text-center text-sm text-muted-foreground bg-muted/20">
-                                            Không có hợp đồng chưa bàn giao nào.
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        {selectedHD && (
+                    prefillHD ? (
+                        // Khi mở từ danh sách hợp đồng: hiển thị readonly, không cho thay đổi
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Hợp đồng <span className="text-destructive">*</span></label>
                             <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm">
-                                <p className="font-semibold text-primary">Số HĐ: {selectedHD.SO_HD}</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <PackageCheck className="w-4 h-4 text-primary shrink-0" />
+                                    <p className="font-semibold text-primary">Số HĐ: {prefillHD.SO_HD}</p>
+                                </div>
                                 <div className="text-muted-foreground text-xs mt-1 space-y-0.5">
-                                    <p>Cty/KH: {selectedHD.KHTN_REL?.TEN_KH}</p>
+                                    <p>Cty/KH: {prefillHD.KHTN_REL?.TEN_KH}</p>
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                        {selectedHD.NGAY_HD && <p>Ngày HĐ: {new Date(selectedHD.NGAY_HD).toLocaleDateString('vi-VN')}</p>}
-                                        {selectedHD.TONG_TIEN !== undefined && <p>Tiền HĐ: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedHD.TONG_TIEN || 0)}</p>}
+                                        {prefillHD.NGAY_HD && <p>Ngày HĐ: {new Date(prefillHD.NGAY_HD).toLocaleDateString('vi-VN')}</p>}
+                                        {prefillHD.TONG_TIEN !== undefined && <p>Tiền HĐ: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(prefillHD.TONG_TIEN || 0)}</p>}
                                     </div>
                                 </div>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-2" ref={hdSearchRef}>
+                            <label className="text-sm font-semibold text-muted-foreground">Hợp đồng <span className="text-destructive">*</span></label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                <input
+                                    type="text"
+                                    className="input-modern w-full"
+                                    style={{ paddingLeft: "2.5rem" }}
+                                    placeholder="Tìm hợp đồng đã duyệt..."
+                                    value={hdQuery}
+                                    onChange={(e) => {
+                                        setHDQuery(e.target.value);
+                                        if (e.target.value !== selectedHD?.SO_HD) {
+                                            setSoHD("");
+                                            setSelectedHD(null);
+                                        }
+                                        setShowHDDropdown(true);
+                                    }}
+                                    onClick={() => setShowHDDropdown(true)}
+                                    onFocus={() => setShowHDDropdown(true)}
+                                    required={!soHD}
+                                    autoComplete="off"
+                                />
+                                {showHDDropdown && (
+                                    <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-60 flex flex-col">
+                                        {isHDLoading ? (
+                                            <div className="p-4 text-center text-sm text-muted-foreground">Đang tải danh sách...</div>
+                                        ) : hdResults.length > 0 ? (
+                                            <div className="overflow-y-auto">
+                                                {hdResults.map((hd) => (
+                                                    <button
+                                                        key={hd.ID}
+                                                        type="button"
+                                                        className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted transition-colors text-left"
+                                                        onClick={() => {
+                                                            setSelectedHD(hd);
+                                                            setSoHD(hd.SO_HD);
+                                                            setHDQuery(hd.SO_HD);
+
+                                                            // Tìm địa điểm bàn giao từ Điều khoản Hợp đồng hoặc Thông tin khác
+                                                            const dkDiaDiemVal = hd.DK_HD?.find((dk: any) =>
+                                                                dk.HANG_MUC?.toLowerCase().includes("địa điểm") ||
+                                                                dk.HANG_MUC?.toLowerCase().includes("thi công")
+                                                            )?.NOI_DUNG?.trim();
+                                                            const ttkDiaDiemVal = hd.THONG_TIN_KHAC?.find((tt: any) =>
+                                                                tt.TIEU_DE?.toLowerCase().includes("địa điểm") ||
+                                                                tt.TIEU_DE?.toLowerCase().includes("địa chỉ")
+                                                            )?.NOI_DUNG?.trim();
+
+                                                            // Ưu tiên CONG_TRINH -> DK_HD -> THONG_TIN_KHAC -> KHTN_REL
+                                                            setDiaDiem(hd.CONG_TRINH?.trim() || dkDiaDiemVal || ttkDiaDiemVal || hd.KHTN_REL?.DIA_CHI?.trim() || "");
+
+                                                            setShowHDDropdown(false);
+                                                        }}
+                                                    >
+                                                        <FileText className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="font-semibold text-foreground text-sm truncate">Số HĐ: {hd.SO_HD}</p>
+                                                            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                                                                <p className="truncate">Cty/KH: {hd.KHTN_REL?.TEN_KH}</p>
+                                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                                                    {hd.NGAY_HD && <p>Ngày HĐ: {new Date(hd.NGAY_HD).toLocaleDateString('vi-VN')}</p>}
+                                                                    {hd.TONG_TIEN !== undefined && <p>Tiền HĐ: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(hd.TONG_TIEN || 0)}</p>}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 text-center text-sm text-muted-foreground bg-muted/20">
+                                                Không có hợp đồng chưa bàn giao nào.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            {selectedHD && (
+                                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm">
+                                    <p className="font-semibold text-primary">Số HĐ: {selectedHD.SO_HD}</p>
+                                    <div className="text-muted-foreground text-xs mt-1 space-y-0.5">
+                                        <p>Cty/KH: {selectedHD.KHTN_REL?.TEN_KH}</p>
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                            {selectedHD.NGAY_HD && <p>Ngày HĐ: {new Date(selectedHD.NGAY_HD).toLocaleDateString('vi-VN')}</p>}
+                                            {selectedHD.TONG_TIEN !== undefined && <p>Tiền HĐ: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedHD.TONG_TIEN || 0)}</p>}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )
                 ) : (
                     <div className="bg-muted/40 border border-border rounded-lg p-3 text-sm">
                         <p className="text-xs text-muted-foreground mb-1">Hợp đồng</p>
