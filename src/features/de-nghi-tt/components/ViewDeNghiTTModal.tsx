@@ -1,7 +1,9 @@
 "use client";
 
-import { FileText, CalendarDays, Users, Landmark, DollarSign, Hash, User, StickyNote } from "lucide-react";
+import { useState } from "react";
+import { FileText, CalendarDays, Users, Landmark, DollarSign, Hash, User, StickyNote, CreditCard } from "lucide-react";
 import Modal from "@/components/Modal";
+import AddEditThanhToanModal from "@/features/thanh-toan/components/AddEditThanhToanModal";
 
 function fDate(v: Date | string | null | undefined) {
     if (!v) return "—";
@@ -20,9 +22,19 @@ interface Props {
 }
 
 export default function ViewDeNghiTTModal({ isOpen, onClose, data }: Props) {
+    const [openThanhToan, setOpenThanhToan] = useState(false);
     if (!data) return null;
 
+    const prefill = {
+        MA_KH: data.MA_KH,
+        TEN_KH: data.KHTN_REL?.TEN_KH || data.MA_KH,
+        SO_HD: data.SO_HD,
+        SO_TIEN: data.SO_TIEN_DE_NGHI,
+        SO_TK: data.SO_TK || null,
+    };
+
     return (
+        <>
         <Modal
             isOpen={isOpen}
             onClose={onClose}
@@ -33,7 +45,13 @@ export default function ViewDeNghiTTModal({ isOpen, onClose, data }: Props) {
             fullHeight
             footer={
                 <>
-                    <div />
+                    <button
+                        onClick={() => setOpenThanhToan(true)}
+                        className="btn-premium-primary flex items-center gap-2"
+                    >
+                        <CreditCard className="w-4 h-4" />
+                        Thanh toán
+                    </button>
                     <button onClick={onClose} className="btn-premium-secondary px-6 h-10 text-sm">
                         Đóng
                     </button>
@@ -140,5 +158,13 @@ export default function ViewDeNghiTTModal({ isOpen, onClose, data }: Props) {
                 </div>
             </div>
         </Modal>
+
+        <AddEditThanhToanModal
+            isOpen={openThanhToan}
+            onClose={() => setOpenThanhToan(false)}
+            onSuccess={() => { setOpenThanhToan(false); onClose(); }}
+            prefillData={prefill}
+        />
+        </>
     );
 }

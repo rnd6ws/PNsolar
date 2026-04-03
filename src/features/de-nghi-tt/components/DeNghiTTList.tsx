@@ -3,7 +3,7 @@
 import { useState, useMemo, Fragment } from "react";
 import { toast } from "sonner";
 import {
-    ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Pencil, Trash2, Eye,
+    ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Pencil, Trash2, Eye, CreditCard,
     FileText, CalendarDays, DollarSign, Landmark, ChevronDown, ChevronRight,
 } from "lucide-react";
 import {
@@ -16,6 +16,7 @@ import type { ColumnKey } from "./ColumnToggleButton";
 import type { GroupByKey } from "./DeNghiTTPageClient";
 import ViewDeNghiTTModal from "./ViewDeNghiTTModal";
 import AddEditDeNghiTTModal from "./AddEditDeNghiTTModal";
+import AddEditThanhToanModal from "@/features/thanh-toan/components/AddEditThanhToanModal";
 
 interface Props {
     data: any[];
@@ -39,6 +40,7 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
     const [deleteItem, setDeleteItem] = useState<any | null>(null);
     const [viewItem, setViewItem] = useState<any | null>(null);
     const [editItem, setEditItem] = useState<any | null>(null);
+    const [thanhToanItem, setThanhToanItem] = useState<any | null>(null);
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
     // ─── Sort ─────────────────────────────────────────────────
@@ -209,6 +211,15 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
                     >
                         <Eye className="w-4 h-4" />
                     </button>
+                    <PermissionGuard moduleKey="thanh-toan" level="add">
+                        <button
+                            onClick={() => setThanhToanItem(item)}
+                            className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-600 transition-colors"
+                            title="Thanh toán"
+                        >
+                            <CreditCard className="w-4 h-4" />
+                        </button>
+                    </PermissionGuard>
                     <PermissionGuard moduleKey="de-nghi-tt" level="edit">
                         <button
                             onClick={() => setEditItem(item)}
@@ -280,9 +291,6 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
         </thead>
     );
 
-    // ─── Group Header Row ─────────────────────────────────────
-    const colSpan = visibleColumns.length + 2; // +2 for # and actions
-
     return (
         <>
             {/* ─── Desktop Table ─── */}
@@ -298,18 +306,18 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
                                     <Fragment key={group.key}>
                                         {/* Group header */}
                                         <tr
-                                            className="bg-muted/50 border-b border-border cursor-pointer hover:bg-muted/70 transition-colors"
+                                            className="bg-primary/5 border-b border-border cursor-pointer hover:bg-primary/10 transition-colors"
                                             onClick={() => toggleGroup(group.key)}
                                         >
-                                            <td colSpan={colSpan} className="px-4 py-2.5">
+                                            <td colSpan={100} className="px-4 py-2.5">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
                                                         {isCollapsed
                                                             ? <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                                             : <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                                         }
-                                                        <span className="font-bold text-sm text-foreground">{group.label}</span>
-                                                        <span className="text-xs text-muted-foreground">({group.items.length} đề nghị)</span>
+                                                        <span className="text-base font-bold text-foreground">{group.label}</span>
+                                                        <span className="text-xs font-normal text-muted-foreground tracking-wide">({group.items.length} đề nghị)</span>
                                                     </div>
                                                     <span className="text-xs font-semibold text-primary">{formatMoney(group.total)}</span>
                                                 </div>
@@ -348,6 +356,11 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
                                         <DropdownMenuItem onClick={() => setViewItem(item)} className="gap-2 cursor-pointer">
                                             <Eye className="w-4 h-4" /> Xem
                                         </DropdownMenuItem>
+                                        <PermissionGuard moduleKey="thanh-toan" level="add">
+                                            <DropdownMenuItem onClick={() => setThanhToanItem(item)} className="gap-2 cursor-pointer text-emerald-600 focus:text-emerald-600 focus:bg-emerald-500/10">
+                                                <CreditCard className="w-4 h-4" /> Thanh toán
+                                            </DropdownMenuItem>
+                                        </PermissionGuard>
                                         <PermissionGuard moduleKey="de-nghi-tt" level="edit">
                                             <DropdownMenuItem onClick={() => setEditItem(item)} className="gap-2 cursor-pointer">
                                                 <Pencil className="w-4 h-4" /> Sửa
@@ -433,6 +446,22 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
                 itemDetail={`Khách hàng: ${deleteItem?.KHTN_REL?.TEN_KH || ""} — HĐ: ${deleteItem?.SO_HD || ""}`}
                 confirmText="Xóa đề nghị"
             />
+
+            {/* ─── Thanh toán Modal ─── */}
+            {thanhToanItem && (
+                <AddEditThanhToanModal
+                    isOpen={!!thanhToanItem}
+                    onClose={() => setThanhToanItem(null)}
+                    onSuccess={() => setThanhToanItem(null)}
+                    prefillData={{
+                        MA_KH: thanhToanItem.MA_KH,
+                        TEN_KH: thanhToanItem.KHTN_REL?.TEN_KH || thanhToanItem.MA_KH,
+                        SO_HD: thanhToanItem.SO_HD,
+                        SO_TIEN: thanhToanItem.SO_TIEN_DE_NGHI,
+                        SO_TK: thanhToanItem.SO_TK || null,
+                    }}
+                />
+            )}
         </>
     );
 }

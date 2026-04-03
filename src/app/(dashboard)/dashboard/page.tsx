@@ -218,6 +218,18 @@ const moduleGroups: ModuleGroup[] = [
                 available: true,
                 moduleKey: "de-nghi-tt",
             },
+            {
+                name: "Thanh toán",
+                description: "Ghi nhận thanh toán và hoàn tiền theo hợp đồng.",
+                href: "/thanh-toan",
+                icon: DollarSign,
+                color: "text-emerald-600 dark:text-emerald-400",
+                bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
+                gradientFrom: "from-emerald-500/10",
+                gradientTo: "to-teal-500/10",
+                available: true,
+                moduleKey: "thanh-toan",
+            },
         ],
     },
 
