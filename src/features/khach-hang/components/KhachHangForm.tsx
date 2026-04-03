@@ -458,26 +458,15 @@ export function KhachHangForm({
                 </div>
             )}
 
-            {/* Row 7: Sales phụ trách & NV chăm sóc */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
-                    <FormSelect
-                        name="SALES_PT"
-                        defaultValue={defaultValues?.SALES_PT || currentUserId || ""}
-                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
-                        placeholder="-- Chọn nhân viên --"
-                    />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-muted-foreground">NV Chăm sóc</label>
-                    <FormSelect
-                        name="NV_CS"
-                        defaultValue={defaultValues?.NV_CS || currentUserId || ""}
-                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
-                        placeholder="-- Chọn nhân viên --"
-                    />
-                </div>
+            {/* Row 7: Sales phụ trách */}
+            <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
+                <FormSelect
+                    name="SALES_PT"
+                    defaultValue={defaultValues?.SALES_PT || currentUserId || ""}
+                    options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
+                    placeholder="-- Chọn nhân viên --"
+                />
             </div>
 
             {/* Nút submit */}

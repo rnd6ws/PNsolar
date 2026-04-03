@@ -26,7 +26,7 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, prefill
     const [diaDiem, setDiaDiem] = useState("");
     const [tepDinhKems, setTepDinhKems] = useState<string[]>([]);
     const [nguoiTao, setNguoiTao] = useState("");
-    const [dsnvList, setDsnvList] = useState<{MA_NV: string, HO_TEN: string}[]>([]);
+    const [dsnvList, setDsnvList] = useState<{ MA_NV: string, HO_TEN: string }[]>([]);
     const [userRole, setUserRole] = useState("STAFF");
 
     const { uploadMultiple, uploading: fileUploading } = useMultipleFileUpload({
@@ -83,12 +83,12 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, prefill
                 const oneYear = new Date();
                 oneYear.setFullYear(oneYear.getFullYear() + 1);
                 setThoiGianBaoHanh(oneYear.toISOString().slice(0, 10));
-                
+
                 // Logic lấy địa điểm ưu tiên
                 let diaDiemPrefill = "";
                 if (prefillHD) {
-                    const dkDiaDiemVal = prefillHD.DK_HD?.find((dk: any) => 
-                        dk.HANG_MUC?.toLowerCase().includes("địa điểm") || 
+                    const dkDiaDiemVal = prefillHD.DK_HD?.find((dk: any) =>
+                        dk.HANG_MUC?.toLowerCase().includes("địa điểm") ||
                         dk.HANG_MUC?.toLowerCase().includes("thi công")
                     )?.NOI_DUNG?.trim();
                     const ttkDiaDiemVal = prefillHD.THONG_TIN_KHAC?.find((tt: any) =>
@@ -98,7 +98,7 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, prefill
                     diaDiemPrefill = prefillHD.CONG_TRINH?.trim() || dkDiaDiemVal || ttkDiaDiemVal || prefillHD.KHTN_REL?.DIA_CHI?.trim() || "";
                 }
                 setDiaDiem(diaDiemPrefill);
-                
+
                 setSelectedHD(prefillHD || null);
                 setHDQuery(prefillHD?.SO_HD || "");
                 setTepDinhKems([]);
@@ -239,8 +239,8 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, prefill
                                                         setHDQuery(hd.SO_HD);
 
                                                         // Tìm địa điểm bàn giao từ Điều khoản Hợp đồng hoặc Thông tin khác
-                                                        const dkDiaDiemVal = hd.DK_HD?.find((dk: any) => 
-                                                            dk.HANG_MUC?.toLowerCase().includes("địa điểm") || 
+                                                        const dkDiaDiemVal = hd.DK_HD?.find((dk: any) =>
+                                                            dk.HANG_MUC?.toLowerCase().includes("địa điểm") ||
                                                             dk.HANG_MUC?.toLowerCase().includes("thi công")
                                                         )?.NOI_DUNG?.trim();
                                                         const ttkDiaDiemVal = hd.THONG_TIN_KHAC?.find((tt: any) =>
@@ -310,7 +310,7 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, prefill
                         <input
                             type="text"
                             className="input-modern w-full"
-                            placeholder="Nhập địa điểm giao hàng và thi công..."
+                            placeholder="Nhập địa điểm bàn giao..."
                             value={diaDiem}
                             onChange={(e) => setDiaDiem(e.target.value)}
                         />

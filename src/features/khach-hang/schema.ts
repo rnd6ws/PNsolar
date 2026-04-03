@@ -13,7 +13,6 @@ export const khachHangSchema = z.object({
     PHAN_LOAI: z.string().optional().or(z.literal('')),
     NGUOI_GIOI_THIEU: z.string().optional().or(z.literal('')),
     SALES_PT: z.string().optional().or(z.literal('')),
-    NV_CS: z.string().optional().or(z.literal('')),
     LICH_SU: z.string().optional().or(z.literal('')),
     NGAY_GHI_NHAN: z.string().optional().or(z.literal('')),
     NGAY_THANH_LAP: z.string().optional().or(z.literal('')),

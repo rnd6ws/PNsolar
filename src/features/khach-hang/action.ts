@@ -15,9 +15,8 @@ export async function getKhachHangs(filters: {
     NHOM_KH?: string;
     PHAN_LOAI?: string;
     NGUON?: string;
-    NV_CS?: string;
 } = {}) {
-    const { page = 1, limit = 10, query, NHOM_KH, PHAN_LOAI, NGUON, NV_CS } = filters;
+    const { page = 1, limit = 10, query, NHOM_KH, PHAN_LOAI, NGUON } = filters;
 
     const user = await getCurrentUser();
 
@@ -27,9 +26,9 @@ export async function getKhachHangs(filters: {
     if (user?.ROLE === 'STAFF') {
         const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
         if (staff?.MA_NV) {
-            andConditions.push({ NV_CS: staff.MA_NV });
+            andConditions.push({ SALES_PT: staff.MA_NV });
         } else {
-            andConditions.push({ NV_CS: "NONE" });
+            andConditions.push({ SALES_PT: "NONE" });
         }
     }
 
@@ -46,7 +45,6 @@ export async function getKhachHangs(filters: {
     if (NHOM_KH && NHOM_KH !== "all") andConditions.push({ NHOM_KH });
     if (PHAN_LOAI && PHAN_LOAI !== "all") andConditions.push({ PHAN_LOAI });
     if (NGUON && NGUON !== "all") andConditions.push({ NGUON });
-    if (NV_CS && NV_CS !== "all") andConditions.push({ NV_CS });
 
     if (andConditions.length > 0) where.AND = andConditions;
 
@@ -135,7 +133,7 @@ export async function getKhachHangStats() {
         const where: any = {};
         if (user?.ROLE === 'STAFF') {
             const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-            where.NV_CS = staff?.MA_NV || "NONE";
+            where.SALES_PT = staff?.MA_NV || "NONE";
         }
 
         const total = await prisma.kHTN.count({ where });
@@ -222,7 +220,6 @@ export async function createKhachHang(data: any) {
                         PHAN_LOAI: data.PHAN_LOAI || null,
                         MA_NGT: data.NGUOI_GIOI_THIEU || null,
                         SALES_PT: data.SALES_PT || null,
-                        NV_CS: data.NV_CS || null,
                         LICH_SU: initialLichSu,
                         NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
                         NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
@@ -309,7 +306,6 @@ export async function updateKhachHang(id: string, data: any) {
                 PHAN_LOAI: data.PHAN_LOAI || null,
                 MA_NGT: data.NGUOI_GIOI_THIEU || null,
                 SALES_PT: data.SALES_PT || null,
-                NV_CS: data.NV_CS || null,
                 LICH_SU: updatedLichSu,
                 NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
                 NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,

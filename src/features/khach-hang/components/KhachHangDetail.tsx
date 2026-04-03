@@ -220,7 +220,6 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                 { label: "Nguồn", value: kh.NGUON || "-" },
                                 { label: "Nhóm KH", value: kh.NHOM_KH || "-" },
                                 { label: "Sales phụ trách", value: kh.SALES_PT ? getNVName(kh.SALES_PT) : "-" },
-                                { label: "NV chăm sóc", value: kh.NV_CS ? getNVName(kh.NV_CS) : "-" },
                                 { label: "Người giới thiệu", value: kh.MA_NGT ? getNGTName(kh.MA_NGT) : "-" },
                             ].map(({ label, value }) => value ? (
                                 <div key={label} className="flex items-start gap-2 text-sm">
