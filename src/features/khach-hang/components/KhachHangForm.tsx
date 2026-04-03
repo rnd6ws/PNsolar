@@ -18,6 +18,7 @@ export interface KhachHangFormProps {
     onSubmit: (data: any, hinhAnh: string, lat: string, long: string) => void;
     onCancel: () => void;
     submitLabel: string;
+    currentUserId?: string;
 }
 
 const CTV_NGUON = "CTV/ Referrals";
@@ -33,6 +34,7 @@ export function KhachHangForm({
     onSubmit,
     onCancel,
     submitLabel,
+    currentUserId,
 }: KhachHangFormProps) {
     const [hinhAnh, setHinhAnh] = useState(defaultValues?.HINH_ANH || "");
     const formRef = useRef<HTMLFormElement>(null);
@@ -450,7 +452,7 @@ export function KhachHangForm({
                     <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
                     <FormSelect
                         name="SALES_PT"
-                        defaultValue={defaultValues?.SALES_PT || ""}
+                        defaultValue={defaultValues?.SALES_PT || currentUserId || ""}
                         options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
                         placeholder="-- Chọn nhân viên --"
                     />
@@ -459,7 +461,7 @@ export function KhachHangForm({
                     <label className="text-sm font-semibold text-muted-foreground">NV Chăm sóc</label>
                     <FormSelect
                         name="NV_CS"
-                        defaultValue={defaultValues?.NV_CS || ""}
+                        defaultValue={defaultValues?.NV_CS || currentUserId || ""}
                         options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
                         placeholder="-- Chọn nhân viên --"
                     />

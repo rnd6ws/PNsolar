@@ -13,9 +13,10 @@ interface Props {
     nhoms: { ID: string; NHOM: string }[];
     nhanViens: { ID: string; HO_TEN: string }[];
     nguoiGioiThieus: { ID: string; TEN_NGT: string; SO_DT_NGT?: string | null }[];
+    currentUserId?: string;
 }
 
-export default function AddKhachHangButton({ phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus }: Props) {
+export default function AddKhachHangButton({ phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, currentUserId }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -64,6 +65,7 @@ export default function AddKhachHangButton({ phanLoais, nguons, nhoms, nhanViens
                     onSubmit={handleSubmit}
                     onCancel={handleClose}
                     submitLabel="Lưu khách hàng"
+                    currentUserId={currentUserId}
                 />
             </Modal>
         </>

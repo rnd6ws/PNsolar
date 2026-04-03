@@ -151,6 +151,8 @@ export default async function KhachHangPage({
     const catalogs = { phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois };
     const options = { nhomOptions, phanLoaiOptions, nguonOptions, nhanVienOptions };
 
+    const currentUserMaNv = (nhanViens as any[]).find((nv: any) => nv.USER_ID === user?.userId)?.ID || user?.userId;
+
     return (
         <PermissionGuard moduleKey="khach-hang" level="view" showNoAccess>
             <div className="space-y-5 animate-in fade-in duration-500 pb-10">
@@ -178,6 +180,7 @@ export default async function KhachHangPage({
                                     nhoms={nhoms as any}
                                     nhanViens={nhanViens as any}
                                     nguoiGioiThieus={nguoiGioiThieus as any}
+                                    currentUserId={currentUserMaNv}
                                 />
                             </PermissionGuard>
                         </div>
@@ -197,7 +200,7 @@ export default async function KhachHangPage({
                         pageSize={pageSize}
                         catalogs={catalogs}
                         options={options}
-                        currentUserId={user?.userId}
+                        currentUserId={currentUserMaNv}
                     />
                 </Suspense>
             </div>
