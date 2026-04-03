@@ -341,11 +341,21 @@ export default function HomePage() {
     const { canView } = usePermissions();
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
+    // Load favorites from localStorage on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('pnsolar_favorites');
+            if (saved) setFavorites(new Set(JSON.parse(saved)));
+        } catch { }
+    }, []);
+
     const toggleFavorite = useCallback((name: string) => {
         setFavorites((prev) => {
             const next = new Set(prev);
             if (next.has(name)) next.delete(name);
             else next.add(name);
+            // Save to localStorage
+            try { localStorage.setItem('pnsolar_favorites', JSON.stringify([...next])); } catch { }
             return next;
         });
     }, []);
@@ -388,7 +398,7 @@ export default function HomePage() {
                 <div className="absolute top-0 right-0 w-72 h-72 bg-linear-to-bl from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-linear-to-tr from-primary/8 to-transparent rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
 
-                <div className="relative px-6 py-6 md:px-8 md:py-8">
+                <div className="relative px-4 py-4 md:px-8 md:py-4">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="space-y-2">
                             <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
@@ -605,11 +615,28 @@ function ModuleCard({
                     : "opacity-40 cursor-default"
             )}
         >
-            {/* Favorite indicator */}
-            {isFav && (
-                <div className="absolute -top-1 -right-1 z-10">
-                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                </div>
+            {/* Star toggle button - visible on hover or if favorited */}
+            {mod.available && (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onToggleFav();
+                    }}
+                    className={cn(
+                        "absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200",
+                        isFav
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-70 hover:!opacity-100"
+                    )}
+                    title={isFav ? 'Bỏ khỏi truy cập nhanh' : 'Thêm vào truy cập nhanh'}
+                >
+                    <Star className={cn(
+                        "w-3.5 h-3.5 transition-colors",
+                        isFav ? "text-amber-500 fill-amber-500" : "text-muted-foreground/50 hover:text-amber-400"
+                    )} />
+                </button>
             )}
 
             {/* Icon */}

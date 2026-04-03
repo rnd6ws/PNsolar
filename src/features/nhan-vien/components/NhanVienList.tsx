@@ -1,8 +1,8 @@
 "use client"
 import { useState, useMemo } from 'react';
-import { Trash2, Key, Lock, Edit2, ArrowUpDown, ArrowUp, ArrowDown, UserPlus } from 'lucide-react';
+import { Trash2, Key, Lock, Edit2, ArrowUpDown, ArrowUp, ArrowDown, UserPlus, Eye, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { deleteNhanVienAction, updateNhanVienAction, changePasswordAction } from '@/features/nhan-vien/action';
+import { deleteNhanVienAction, updateNhanVienAction, changePasswordAction, impersonateUser } from '@/features/nhan-vien/action';
 import Modal from '@/components/Modal';
 import { toast } from 'sonner';
 import type { ColumnKey } from './ColumnToggleButton';
@@ -10,6 +10,8 @@ import ImageUpload from '@/components/ImageUpload';
 import Image from 'next/image';
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
+import ChiTietNhanVien from './ChiTietNhanVien';
+import { useRouter } from 'next/navigation';
 
 export default function NhanVienList({
     employees,
@@ -31,6 +33,9 @@ export default function NhanVienList({
     const [error, setError] = useState<string | null>(null);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
     const [deleteEmp, setDeleteEmp] = useState<any>(null);
+    const [viewingEmp, setViewingEmp] = useState<any>(null);
+    const [impersonating, setImpersonating] = useState(false);
+    const router = useRouter();
 
     const sortedEmployees = useMemo(() => {
         if (!sortConfig) return employees;
@@ -171,12 +176,12 @@ export default function NhanVienList({
                     </thead>
                     <tbody className="divide-y divide-border">
                         {sortedEmployees.map((emp) => (
-                            <tr key={emp.ID} className="border-b border-border hover:bg-muted/30 transition-all data-[state=selected]:bg-muted group">
+                            <tr key={emp.ID} className="border-b border-border hover:bg-muted/30 transition-all data-[state=selected]:bg-muted group cursor-pointer" onClick={() => setViewingEmp(emp)}>
                                 <td className="p-5 align-middle">
                                     <div className="flex items-center gap-3">
                                         <EmpAvatar emp={emp} size={40} />
                                         <div>
-                                            <p className="font-medium text-foreground text-[14px] leading-tight mb-0.5">{emp.HO_TEN}</p>
+                                            <p className="font-medium text-foreground text-[14px] leading-tight mb-0.5 group-hover:text-primary transition-colors">{emp.HO_TEN}</p>
                                             <p className="text-[12px] text-muted-foreground truncate max-w-[150px]">{emp.MA_NV}</p>
                                         </div>
                                     </div>
@@ -224,8 +229,11 @@ export default function NhanVienList({
                                     </td>
                                 )}
 
-                                <td className="p-5 align-middle text-right">
+                                <td className="p-5 align-middle text-right" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-end gap-1 transition-opacity">
+                                        <button onClick={() => setViewingEmp(emp)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Xem chi tiết">
+                                            <Eye className="w-4 h-4" />
+                                        </button>
                                         <PermissionGuard moduleKey="nhan-vien" level="edit">
                                             <button onClick={() => setChangingPasswordEmp(emp)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors" title="Đổi mật khẩu">
                                                 <Key className="w-4 h-4" />
@@ -240,6 +248,27 @@ export default function NhanVienList({
                                                 className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" title="Xóa nhân viên"
                                             >
                                                 <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </PermissionGuard>
+                                        <PermissionGuard moduleKey="nhan-vien" level="edit">
+                                            <button
+                                                disabled={impersonating}
+                                                onClick={async () => {
+                                                    setImpersonating(true);
+                                                    const res = await impersonateUser(emp.ID);
+                                                    if (res.success) {
+                                                        toast.success(res.message);
+                                                        router.push('/');
+                                                        router.refresh();
+                                                    } else {
+                                                        toast.error(res.message);
+                                                    }
+                                                    setImpersonating(false);
+                                                }}
+                                                className="p-1.5 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 rounded-lg transition-colors"
+                                                title="Đăng nhập vào TK này"
+                                            >
+                                                <LogIn className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
                                     </div>
@@ -259,7 +288,7 @@ export default function NhanVienList({
             {viewMode === "card" && (
             <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
                 {employees.map((emp) => (
-                    <div key={emp.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-4">
+                    <div key={emp.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-4 cursor-pointer" onClick={() => setViewingEmp(emp)}>
                         <div className="flex justify-between items-start">
                             <div className="flex items-center gap-3 relative">
                                 <EmpAvatar emp={emp} size={48} />
@@ -281,7 +310,7 @@ export default function NhanVienList({
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-2 pt-1 border-t">
+                        <div className="flex items-center gap-2 pt-1 border-t" onClick={(e) => e.stopPropagation()}>
                             <PermissionGuard moduleKey="nhan-vien" level="edit">
                                 <button onClick={() => setChangingPasswordEmp(emp)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
                                     <Key className="w-4 h-4" /> <span className="hidden sm:inline">Mật khẩu</span>
@@ -371,24 +400,29 @@ export default function NhanVienList({
                             />
                         </div>
 
+                        {/* Hidden: MA_NV = USER_NAME */}
+                        <input type="hidden" name="MA_NV" value={editingEmp.USER_NAME} />
+
+                        {/* Row 1: Họ tên + Username */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mã NV</label>
-                                <input name="MA_NV" required className="input-modern" defaultValue={editingEmp.MA_NV} />
+                                <label className="text-sm font-bold text-muted-foreground">Họ và tên <span className="text-destructive">*</span></label>
+                                <input name="HO_TEN" required className="input-modern" defaultValue={editingEmp.HO_TEN} />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Họ và tên</label>
-                                <input name="HO_TEN" required className="input-modern" defaultValue={editingEmp.HO_TEN} />
+                                <label className="text-sm font-bold text-muted-foreground">Username <span className="text-destructive">*</span></label>
+                                <input name="USER_NAME" required className="input-modern" defaultValue={editingEmp.USER_NAME} />
                             </div>
                         </div>
 
+                        {/* Row 2: Email + Trạng thái */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Username</label>
-                                <input name="USER_NAME" required className="input-modern" defaultValue={editingEmp.USER_NAME} />
+                                <label className="text-sm font-bold text-muted-foreground">Email</label>
+                                <input name="EMAIL" type="email" className="input-modern" defaultValue={editingEmp.EMAIL || ''} />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Trạng thái</label>
+                                <label className="text-sm font-bold text-muted-foreground">Trạng thái</label>
                                 <select name="IS_ACTIVE" className="input-modern" defaultValue={editingEmp.IS_ACTIVE ? 'true' : 'false'}>
                                     <option value="true">Đang hoạt động</option>
                                     <option value="false">Tạm khóa / Nghỉ</option>
@@ -396,10 +430,10 @@ export default function NhanVienList({
                             </div>
                         </div>
 
-                        {/* Phòng ban trước Chức vụ */}
+                        {/* Row 3: Phòng ban + Chức vụ */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Phòng ban</label>
+                                <label className="text-sm font-bold text-muted-foreground">Phòng ban</label>
                                 <select name="PHONG_BAN" className="input-modern" defaultValue={editingEmp.PHONG_BAN || ''}>
                                     <option value="">-- Chọn phòng ban --</option>
                                     {phongBans.map(pb => (
@@ -408,7 +442,7 @@ export default function NhanVienList({
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Chức vụ</label>
+                                <label className="text-sm font-bold text-muted-foreground">Chức vụ</label>
                                 <select name="CHUC_VU" required className="input-modern" defaultValue={editingEmp.CHUC_VU}>
                                     <option value="">-- Chọn chức vụ --</option>
                                     {chucVus.map(cv => (
@@ -418,24 +452,20 @@ export default function NhanVienList({
                             </div>
                         </div>
 
+                        {/* Row 4: SĐT + Vai trò */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Số điện thoại</label>
+                                <label className="text-sm font-bold text-muted-foreground">Số điện thoại</label>
                                 <input name="SO_DIEN_THOAI" className="input-modern" defaultValue={editingEmp.SO_DIEN_THOAI || ''} />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vai trò HT</label>
+                                <label className="text-sm font-bold text-muted-foreground">Vai trò HT</label>
                                 <select name="ROLE" className="input-modern" defaultValue={editingEmp.ROLE}>
                                     <option value="STAFF">Nhân viên</option>
                                     <option value="MANAGER">Quản lý (Manager)</option>
                                     <option value="ADMIN">Quản trị viên (Admin)</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Email</label>
-                            <input name="EMAIL" type="email" className="input-modern" defaultValue={editingEmp.EMAIL || ''} />
                         </div>
                     </form>
                 )}
@@ -459,6 +489,13 @@ export default function NhanVienList({
                 itemName={deleteEmp?.HO_TEN}
                 itemDetail={deleteEmp ? `Mã NV: ${deleteEmp.MA_NV}` : undefined}
                 confirmText="Xóa nhân viên"
+            />
+
+            {/* Panel Xem Chi Tiết */}
+            <ChiTietNhanVien
+                emp={viewingEmp}
+                isOpen={!!viewingEmp}
+                onClose={() => setViewingEmp(null)}
             />
         </div>
     );
