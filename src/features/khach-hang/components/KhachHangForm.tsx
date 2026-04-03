@@ -198,6 +198,18 @@ export function KhachHangForm({
         setViettatLoading(false);
     };
 
+    const handleTenKhBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const val = e.target.value.trim();
+        if (!val) return;
+        if (formRef.current) {
+            const mstEl = formRef.current.elements.namedItem("MST") as HTMLInputElement;
+            const nguoiDdEl = formRef.current.elements.namedItem("NGUOI_DD") as HTMLInputElement;
+            if (mstEl && !mstEl.value.trim() && nguoiDdEl && !nguoiDdEl.value.trim()) {
+                nguoiDdEl.value = val;
+            }
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (viettatError) {
@@ -219,7 +231,7 @@ export function KhachHangForm({
             {/* Row 1: MÃ KH, TEN KH */}
             <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-muted-foreground">Tên khách hàng <span className="text-destructive">*</span></label>
-                <input name="TEN_KH" required className="input-modern" placeholder="Nhập tên khách hàng hoặc nhập mst để tra cứu" defaultValue={defaultValues?.TEN_KH ?? ""} />
+                <input name="TEN_KH" required className="input-modern" placeholder="Nhập tên khách hàng hoặc nhập mst để tra cứu" defaultValue={defaultValues?.TEN_KH ?? ""} onBlur={handleTenKhBlur} />
             </div>
 
             {/* Row 2: Tên viết tắt, Ngày thành lập & Ngày ghi nhận */}
@@ -336,8 +348,8 @@ export function KhachHangForm({
                         <input name="CHUC_VU_DD" className="input-modern" placeholder="Nhập chức vụ" defaultValue={defaultNguoiDaiDien?.CHUC_VU ?? ""} />
                     </div>
                     <div className="space-y-1.5 md:col-span-12 lg:col-span-4">
-                        <label className="text-sm font-semibold text-muted-foreground">Điện thoại <span className="text-destructive">*</span></label>
-                        <input name="SDT_DD" required className="input-modern" placeholder="09xxx..." defaultValue={defaultNguoiDaiDien?.SDT ?? ""} />
+                        <label className="text-sm font-semibold text-muted-foreground">Điện thoại</label>
+                        <input name="SDT_DD" className="input-modern" placeholder="09xxx..." defaultValue={defaultNguoiDaiDien?.SDT ?? ""} />
                     </div>
                     <div className="space-y-1.5 md:col-span-6 lg:col-span-4">
                         <label className="text-sm font-semibold text-muted-foreground">Email</label>

@@ -38,7 +38,7 @@ export default function KhaoSatFormModal({
     const mode = initialData ? "edit" : "add";
 
     const [form, setForm] = useState({
-        LOAI_CONG_TRINH: loaiCongTrinhOptions[0]?.value || "",
+        LOAI_CONG_TRINH: loaiCongTrinhOptions[2]?.value || "",
         NGUOI_KHAO_SAT: [] as string[],
         MA_KH: "",
         MA_CH: "",
@@ -118,7 +118,7 @@ export default function KhaoSatFormModal({
                 }
             } else {
                 setForm({
-                    LOAI_CONG_TRINH: loaiCongTrinhOptions[0]?.value || "",
+                    LOAI_CONG_TRINH: loaiCongTrinhOptions[2]?.value || "",
                     NGUOI_KHAO_SAT: [],
                     MA_KH: "",
                     MA_CH: "",
@@ -171,13 +171,13 @@ export default function KhaoSatFormModal({
     const handleNlhSuccess = async () => {
         if (!form.MA_KH) return;
         const options = await refreshNlhOptions(form.MA_KH);
-        
+
         setForm((f) => {
             if (options.length > 0) {
                 // Nếu đang có 1 người LH được chọn và nó vẫn tồn tại + còn hiệu lực -> giữ nguyên
                 const isValid = options.some((opt) => opt.value === f.NGUOI_LIEN_HE);
                 if (isValid) return { ...f }; // Không thay đổi gì
-                
+
                 // Nếu bị xóa / hết hiệu lực / hoặc chưa chọn -> chọn người mới nhất
                 return { ...f, NGUOI_LIEN_HE: options[0].value };
             }
