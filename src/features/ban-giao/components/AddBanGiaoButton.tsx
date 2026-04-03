@@ -16,7 +16,7 @@ export default function AddBanGiaoButton() {
                     className="btn-premium-primary flex items-center gap-2"
                 >
                     <Plus className="w-4 h-4" />
-                    Tạo biên bản
+                    Tạo bàn giao
                 </button>
             </PermissionGuard>
 

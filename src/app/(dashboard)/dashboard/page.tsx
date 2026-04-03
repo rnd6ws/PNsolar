@@ -12,7 +12,7 @@ import {
     Archive, DollarSign, Target,
     CalendarCheck2, ClipboardCheck, MapPin,
     Sparkles, Clock, TrendingUp, Zap,
-    ArrowRight, Grid3X3, Layers,
+    ArrowRight, Grid3X3, Layers, PackageCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/features/phan-quyen/PermissionContext";
@@ -193,6 +193,18 @@ const moduleGroups: ModuleGroup[] = [
                 gradientTo: "to-purple-500/10",
                 available: true,
                 moduleKey: "hop-dong",
+            },
+            {
+                name: "Bàn giao",
+                description: "Quản lý biên bản bàn giao và nghiệm thu công trình.",
+                href: "/ban-giao",
+                icon: PackageCheck,
+                color: "text-purple-600 dark:text-purple-400",
+                bgColor: "bg-purple-50 dark:bg-purple-950/50",
+                gradientFrom: "from-purple-500/10",
+                gradientTo: "to-fuchsia-500/10",
+                available: true,
+                moduleKey: "ban-giao",
             },
             {
                 name: "Hạng mục KS",

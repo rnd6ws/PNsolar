@@ -30,12 +30,11 @@ interface Props {
     currentUserId?: string;
 }
 
-export type GroupByKey = "none" | "NHOM_KH" | "PHAN_LOAI" | "NV_CS" | "NGUON";
+export type GroupByKey = "none" | "NHOM_KH" | "PHAN_LOAI" | "NGUON";
 
 const GROUP_LABELS: Record<string, string> = {
     NHOM_KH: "Nhóm KH",
     PHAN_LOAI: "Phân loại",
-    NV_CS: "NV chăm sóc",
     NGUON: "Nguồn / Sales",
 };
 
@@ -92,7 +91,6 @@ export default function KhachHangPageClient({
                         <FilterSelect paramKey="NHOM_KH" options={nhomOptions} placeholder="Nhóm KH" />
                         <FilterSelect paramKey="PHAN_LOAI" options={phanLoaiOptions} placeholder="Phân loại" />
                         <FilterSelect paramKey="NGUON" options={nguonOptions} placeholder="Nguồn" />
-                        <FilterSelect paramKey="NV_CS" options={nhanVienOptions} placeholder="NV chăm sóc" />
 
                         {/* Group By Dropdown — giống hàng hóa */}
                         <DropdownMenu>
@@ -114,9 +112,6 @@ export default function KhachHangPageClient({
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setGroupBy("PHAN_LOAI")} className={cn("py-2.5", groupBy === "PHAN_LOAI" && "bg-primary/10 text-primary")}>
                                     <Tag className="w-4 h-4 mr-2" /> Phân loại
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setGroupBy("NV_CS")} className={cn("py-2.5", groupBy === "NV_CS" && "bg-primary/10 text-primary")}>
-                                    <UserCheck className="w-4 h-4 mr-2" /> NV chăm sóc
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setGroupBy("NGUON")} className={cn("py-2.5", groupBy === "NGUON" && "bg-primary/10 text-primary")}>
                                     <Globe className="w-4 h-4 mr-2" /> Nguồn / Sales
@@ -149,7 +144,6 @@ export default function KhachHangPageClient({
                             <FilterSelect paramKey="NHOM_KH" options={nhomOptions} placeholder="Nhóm KH" />
                             <FilterSelect paramKey="PHAN_LOAI" options={phanLoaiOptions} placeholder="Phân loại" />
                             <FilterSelect paramKey="NGUON" options={nguonOptions} placeholder="Nguồn" />
-                            <FilterSelect paramKey="NV_CS" options={nhanVienOptions} placeholder="NV chăm sóc" />
                         </div>
 
                         <div className="flex items-center justify-between gap-3 mt-1 pt-3 border-t border-border w-full">
@@ -173,9 +167,6 @@ export default function KhachHangPageClient({
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setGroupBy("PHAN_LOAI")} className={cn("py-2.5", groupBy === "PHAN_LOAI" && "bg-primary/10 text-primary")}>
                                             <Tag className="w-4 h-4 mr-2" /> Phân loại
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setGroupBy("NV_CS")} className={cn("py-2.5", groupBy === "NV_CS" && "bg-primary/10 text-primary")}>
-                                            <UserCheck className="w-4 h-4 mr-2" /> NV chăm sóc
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setGroupBy("NGUON")} className={cn("py-2.5", groupBy === "NGUON" && "bg-primary/10 text-primary")}>
                                             <Globe className="w-4 h-4 mr-2" /> Nguồn / Sales

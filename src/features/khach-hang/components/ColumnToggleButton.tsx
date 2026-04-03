@@ -23,7 +23,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: "nhom", label: "Nhóm khách hàng" },
     { key: "phanLoai", label: "Phân loại" },
     { key: "nhanVienPT", label: "NV phụ trách" },
-    { key: "nguonSales", label: "Nguồn / Sales" },
+    { key: "nguonSales", label: "Nguồn KH" },
     { key: "diaChi", label: "Địa chỉ" },
     { key: "mst", label: "Mã số thuế" },
 ];

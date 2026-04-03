@@ -118,6 +118,41 @@ export async function getBanGiaoList(filters: {
     }
 }
 
+// ─── Lấy chi tiết biên bản bàn giao ──────────────────────────
+export async function getBanGiaoById(id: string) {
+    try {
+        const data = await prisma.bAN_GIAO_HD.findUnique({
+            where: { ID: id },
+            include: {
+                HD_REL: {
+                    include: {
+                        KHTN_REL: true,
+                        THONG_TIN_KHAC: true,
+                    }
+                },
+                NGUOI_TAO_REL: { select: { HO_TEN: true, MA_NV: true } },
+            }
+        });
+        if (!data) return { success: false, message: 'Không tìm thấy biên bản bàn giao' };
+        
+        return {
+            success: true,
+            data: {
+                ...data,
+                NGAY_BAN_GIAO: data.NGAY_BAN_GIAO.toISOString(),
+                THOI_GIAN_BAO_HANH: data.THOI_GIAN_BAO_HANH ? data.THOI_GIAN_BAO_HANH.toISOString() : null,
+                HD_REL: {
+                    ...data.HD_REL,
+                    NGAY_HD: data.HD_REL.NGAY_HD.toISOString()
+                }
+            }
+        };
+    } catch (error: any) {
+        console.error('[getBanGiaoById]', error);
+        return { success: false, message: error.message || 'Lỗi server khi lấy chi tiết bàn giao' };
+    }
+}
+
 // ─── Thống kê ──────────────────────────────────────────────
 export async function getBanGiaoStats() {
     try {
@@ -157,6 +192,7 @@ export async function searchHopDongForBanGiao(query?: string) {
                 NGAY_HD: true,
                 LOAI_HD: true,
                 TONG_TIEN: true,
+                CONG_TRINH: true,
                 KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIEN_THOAI: true, DIA_CHI: true } },
                 BAN_GIAO_HD: { select: { SO_BAN_GIAO: true } },
                 DK_HD: { select: { HANG_MUC: true, NOI_DUNG: true } },

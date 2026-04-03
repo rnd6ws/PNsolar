@@ -33,7 +33,6 @@ model DSNV {
   PHAN_QUYEN PHAN_QUYEN[]
 
   KHTN_SALES_PT  KHTN[]         @relation("SALES_PT")
-  KHTN_NV_CS     KHTN[]         @relation("NV_CS")
   KEHOACH_CSKH   KEHOACH_CSKH[] @relation("NGUOI_CS")
   KHAO_SAT       KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
   BAO_GIA_GUI    BAO_GIA[]      @relation("NGUOI_GUI_BG")
@@ -275,9 +274,6 @@ model KHTN {
   SALES_PT_REL DSNV?   @relation("SALES_PT", fields: [SALES_PT], references: [MA_NV])
 
   PHAN_LOAI String? //PHANLOAI_KH.PL_KH
-
-  NV_CS     String? //DSNV.MA_NV
-  NV_CS_REL DSNV?   @relation("NV_CS", fields: [NV_CS], references: [MA_NV])
 
   LICH_SU       String?
   LY_DO_TU_CHOI String? //LY_DO_TU_CHOI.LY_DO
@@ -855,6 +851,7 @@ model DKTT_HD {
 
   LAN_THANH_TOAN   String // Lần 1, Lần 2...
   PT_THANH_TOAN    Float   @default(0) // % thanh toán
+  SO_TIEN          Float   @default(0) // Số tiền (tính tự động)
   NOI_DUNG_YEU_CAU String? // Nội dung yêu cầu
 
   CREATED_AT DateTime @default(now())

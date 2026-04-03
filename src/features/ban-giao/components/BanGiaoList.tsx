@@ -4,14 +4,16 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import {
     ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Pencil, Trash2, Eye,
-    FileText, ShieldCheck, ShieldOff, ShieldAlert, Paperclip, CalendarDays, PackageCheck,
+    FileText, ShieldCheck, ShieldOff, ShieldAlert, Paperclip, CalendarDays, PackageCheck, BookDown,
+    FileCheckCorner
 } from "lucide-react";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
-import { deleteBanGiao } from "../action";
+import { deleteBanGiao, getBanGiaoById } from "../action";
+import { exportBanGiaoHDDocx } from "../utils/exportBanGiaoHD";
 import type { ColumnKey } from "./ColumnToggleButton";
 import AddEditBanGiaoModal from "./AddEditBanGiaoModal";
 import ViewBanGiaoModal from "./ViewBanGiaoModal";
@@ -19,6 +21,7 @@ interface Props {
     data: any[];
     visibleColumns: ColumnKey[];
     onRefresh?: () => void;
+    viewMode?: "list" | "card";
 }
 
 function formatDate(iso?: string | null) {
@@ -39,21 +42,39 @@ function BaoHanhBadge({ date }: { date?: string | null }) {
     );
     const isExpired = new Date(date) < new Date();
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-            isExpired ? "bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400"
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isExpired ? "bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400"
                 : "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400"
-        }`}>
+            }`}>
             {isExpired ? <ShieldOff className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
             {formatDate(date)}
         </span>
     );
 }
 
-export default function BanGiaoList({ data, visibleColumns }: Props) {
+export default function BanGiaoList({ data, visibleColumns, viewMode = "list" }: Props) {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [editItem, setEditItem] = useState<any | null>(null);
     const [deleteItem, setDeleteItem] = useState<any | null>(null);
     const [viewItem, setViewItem] = useState<any | null>(null);
+    const [exportingId, setExportingId] = useState<string | null>(null);
+
+    // ─── Export ───────────────────────────────────────────────
+    const handleExport = async (item: any) => {
+        setExportingId(item.ID);
+        try {
+            const res = await getBanGiaoById(item.ID);
+            if (res.success && res.data) {
+                await exportBanGiaoHDDocx(res.data);
+                toast.success("Xuất biên bản nghiệm thu thành công!");
+            } else {
+                toast.error(res.message || "Không thể tải dữ liệu để xuất");
+            }
+        } catch (e: any) {
+            toast.error(e.message || "Lỗi khi xuất file");
+        } finally {
+            setExportingId(null);
+        }
+    };
 
     // ─── Sort ─────────────────────────────────────────────────
     const sortedData = useMemo(() => {
@@ -108,7 +129,7 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
     return (
         <>
             {/* ─── Desktop Table ─── */}
-            <div className="hidden lg:block overflow-x-auto">
+            <div className={viewMode === "card" ? "hidden lg:block overflow-x-auto" : "overflow-x-auto"}>
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -144,7 +165,11 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
                     </thead>
                     <tbody>
                         {sortedData.map((item, idx) => (
-                            <tr key={item.ID} className="border-b border-border hover:bg-muted/30 transition-all">
+                            <tr 
+                                key={item.ID} 
+                                className="border-b border-border hover:bg-muted/30 transition-all cursor-pointer"
+                                onClick={() => setViewItem(item)}
+                            >
                                 <td className="px-4 py-3 text-muted-foreground text-xs">{idx + 1}</td>
                                 {col("soBanGiao") && (
                                     <td className="px-4 py-3">
@@ -198,15 +223,23 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
                                 <td className="px-4 py-3 text-right">
                                     <div className="flex items-center justify-end gap-1">
                                         <button
-                                            onClick={() => setViewItem(item)}
+                                            onClick={(e) => { e.stopPropagation(); setViewItem(item); }}
                                             className="p-1.5 rounded-lg hover:bg-blue-500/10 text-muted-foreground hover:text-blue-600 transition-colors"
                                             title="Xem chi tiết"
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleExport(item); }}
+                                            disabled={exportingId === item.ID}
+                                            className="p-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 text-muted-foreground hover:text-green-700 transition-colors disabled:opacity-50"
+                                            title="Xuất Biên bản (Word)"
+                                        >
+                                            <FileCheckCorner className="w-4 h-4" />
+                                        </button>
                                         <PermissionGuard moduleKey="ban-giao" level="edit">
                                             <button
-                                                onClick={() => setEditItem(item)}
+                                                onClick={(e) => { e.stopPropagation(); setEditItem(item); }}
                                                 className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
                                                 title="Sửa"
                                             >
@@ -215,7 +248,7 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="ban-giao" level="delete">
                                             <button
-                                                onClick={() => setDeleteItem(item)}
+                                                onClick={(e) => { e.stopPropagation(); setDeleteItem(item); }}
                                                 className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                                                 title="Xóa"
                                             >
@@ -231,7 +264,8 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
             </div>
 
             {/* ─── Mobile Cards ─── */}
-            <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
+            {viewMode === "card" && (
+                <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
                 {sortedData.map((item) => (
                     <div key={item.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-2">
@@ -251,6 +285,9 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
                                 <DropdownMenuContent align="end" className="w-36 rounded-xl">
                                     <DropdownMenuItem onClick={() => setViewItem(item)} className="gap-2 cursor-pointer">
                                         <Eye className="w-4 h-4" /> Xem
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="gap-2 cursor-pointer">
+                                        <FileCheckCorner className="w-4 h-4" /> Xuất Word
                                     </DropdownMenuItem>
                                     <PermissionGuard moduleKey="ban-giao" level="edit">
                                         <DropdownMenuItem onClick={() => setEditItem(item)} className="gap-2 cursor-pointer">
@@ -300,12 +337,13 @@ export default function BanGiaoList({ data, visibleColumns }: Props) {
                     </div>
                 ))}
             </div>
+            )}
 
             {/* ─── Modals ─── */}
-            <ViewBanGiaoModal 
+            <ViewBanGiaoModal
                 isOpen={!!viewItem}
                 onClose={() => setViewItem(null)}
-                data={viewItem} 
+                data={viewItem}
             />
 
             {editItem && (

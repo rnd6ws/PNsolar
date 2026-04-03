@@ -134,10 +134,14 @@ export async function getHopDongList(filters: {
                     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true } },
                     BAO_GIA_REL: { select: { MA_BAO_GIA: true, TONG_TIEN: true } },
                     _count: { select: { HOP_DONG_CT: true } },
+                    BAN_GIAO_HD: { select: { ID: true }, orderBy: { CREATED_AT: 'desc' as const }, take: 1 },
                 },
                 skip: (page - 1) * limit,
                 take: limit,
-                orderBy: { NGAY_HD: 'desc' },
+                orderBy: [
+                    { NGAY_HD: 'desc' },
+                    { CREATED_AT: 'desc' }
+                ],
             }),
             prisma.hOP_DONG.count({ where }),
         ]);
@@ -215,6 +219,40 @@ export async function getHopDongById(id: string) {
     } catch (error) {
         console.error('[getHopDongById]', error);
         return { success: false, message: 'Lỗi khi tải chi tiết hợp đồng' };
+    }
+}
+
+export async function getHopDongByKhachHang(maKH: string) {
+    try {
+        if (!maKH) return { success: false, data: [] };
+        
+        const data = await prisma.hOP_DONG.findMany({
+            where: { MA_KH: maKH },
+            select: {
+                ID: true,
+                SO_HD: true,
+                NGAY_HD: true,
+                TONG_TIEN: true,
+                LOAI_HD: true,
+                DUYET: true,
+                CONG_TRINH: true,
+                MA_BAO_GIA: true,
+                NGUOI_TAO_REL: { select: { HO_TEN: true } },
+                _count: { select: { BAN_GIAO_HD: true } }
+            },
+            orderBy: [{ NGAY_HD: 'desc' }, { CREATED_AT: 'desc' }],
+        });
+
+        return {
+            success: true,
+            data: data.map(hd => ({
+                ...hd,
+                NGAY_HD: hd.NGAY_HD.toISOString()
+            }))
+        };
+    } catch (error) {
+        console.error('[getHopDongByKhachHang]', error);
+        return { success: false, message: 'Lỗi khi tải danh sách hợp đồng' };
     }
 }
 
@@ -341,6 +379,7 @@ export async function createHopDong(
                     create: validDktt.map(d => ({
                         LAN_THANH_TOAN: d.LAN_THANH_TOAN,
                         PT_THANH_TOAN: d.PT_THANH_TOAN,
+                        SO_TIEN: d.SO_TIEN,
                         NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || null,
                     })),
                 } : undefined,
@@ -502,6 +541,7 @@ export async function updateHopDong(
                     create: validDktt.map(d => ({
                         LAN_THANH_TOAN: d.LAN_THANH_TOAN,
                         PT_THANH_TOAN: d.PT_THANH_TOAN,
+                        SO_TIEN: d.SO_TIEN,
                         NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || null,
                     })),
                 } : undefined,
