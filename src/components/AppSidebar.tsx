@@ -76,7 +76,6 @@ const navGroups: NavGroup[] = [
         label: "Hàng hóa & Giá",
         defaultOpen: true,
         items: [
-            { name: "Phân loại HH", href: "/phan-loai-hh", icon: Package, moduleKey: "phan-loai-hh" },
             { name: "Hàng hóa", href: "/hang-hoa", icon: Package, moduleKey: "hang-hoa" },
             { name: "Gói giá", href: "/goi-gia", icon: CreditCard, moduleKey: "goi-gia" },
             { name: "Nhà cung cấp", href: "/nha-cung-cap", icon: Truck, moduleKey: "nha-cung-cap" },
@@ -88,11 +87,12 @@ const navGroups: NavGroup[] = [
         label: "Kinh doanh",
         defaultOpen: true,
         items: [
+            { name: "Khảo sát CT", href: "/khao-sat", icon: MapPin, moduleKey: "khao-sat" },
             { name: "Báo giá", href: "/bao-gia", icon: FileText, moduleKey: "bao-gia" },
             { name: "Hợp đồng", href: "/hop-dong", icon: FileText, moduleKey: "hop-dong" },
             { name: "Bàn giao", href: "/ban-giao", icon: PackageCheck, moduleKey: "ban-giao" },
-            { name: "Hạng mục KS", href: "/hang-muc-ks", icon: ClipboardCheck, moduleKey: "hang-muc-ks" },
-            { name: "Khảo sát CT", href: "/khao-sat", icon: MapPin, moduleKey: "khao-sat" },
+            { name: "Đề nghị TT", href: "/de-nghi-tt", icon: CreditCard, moduleKey: "de-nghi-tt" },
+            { name: "Thanh toán", href: "/thanh-toan", icon: DollarSign, moduleKey: "thanh-toan" },
         ],
     },
     {
@@ -100,6 +100,8 @@ const navGroups: NavGroup[] = [
         defaultOpen: false,
         items: [
             { name: "Nhân viên", href: "/nhan-vien", icon: Users, moduleKey: "nhan-vien" },
+            { name: "Phân loại HH", href: "/phan-loai-hh", icon: Package, moduleKey: "phan-loai-hh" },
+            { name: "Hạng mục KS", href: "/hang-muc-ks", icon: ClipboardCheck, moduleKey: "hang-muc-ks" },
             { name: "Cài đặt", href: "/settings", icon: Settings, moduleKey: "settings" },
             { name: "Phân quyền", href: "/phan-quyen", icon: Shield, moduleKey: "phan-quyen" },
             { name: "Trợ giúp", href: "#", icon: HelpCircle, moduleKey: null },

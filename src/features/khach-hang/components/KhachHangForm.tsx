@@ -18,6 +18,7 @@ export interface KhachHangFormProps {
     onSubmit: (data: any, hinhAnh: string, lat: string, long: string) => void;
     onCancel: () => void;
     submitLabel: string;
+    currentUserId?: string;
 }
 
 const CTV_NGUON = "CTV/ Referrals";
@@ -33,6 +34,7 @@ export function KhachHangForm({
     onSubmit,
     onCancel,
     submitLabel,
+    currentUserId,
 }: KhachHangFormProps) {
     const [hinhAnh, setHinhAnh] = useState(defaultValues?.HINH_ANH || "");
     const formRef = useRef<HTMLFormElement>(null);
@@ -196,6 +198,18 @@ export function KhachHangForm({
         setViettatLoading(false);
     };
 
+    const handleTenKhBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const val = e.target.value.trim();
+        if (!val) return;
+        if (formRef.current) {
+            const mstEl = formRef.current.elements.namedItem("MST") as HTMLInputElement;
+            const nguoiDdEl = formRef.current.elements.namedItem("NGUOI_DD") as HTMLInputElement;
+            if (mstEl && !mstEl.value.trim() && nguoiDdEl && !nguoiDdEl.value.trim()) {
+                nguoiDdEl.value = val;
+            }
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (viettatError) {
@@ -217,7 +231,7 @@ export function KhachHangForm({
             {/* Row 1: MÃ KH, TEN KH */}
             <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-muted-foreground">Tên khách hàng <span className="text-destructive">*</span></label>
-                <input name="TEN_KH" required className="input-modern" placeholder="Nhập tên khách hàng hoặc nhập mst để tra cứu" defaultValue={defaultValues?.TEN_KH ?? ""} />
+                <input name="TEN_KH" required className="input-modern" placeholder="Nhập tên khách hàng hoặc nhập mst để tra cứu" defaultValue={defaultValues?.TEN_KH ?? ""} onBlur={handleTenKhBlur} />
             </div>
 
             {/* Row 2: Tên viết tắt, Ngày thành lập & Ngày ghi nhận */}
@@ -334,8 +348,8 @@ export function KhachHangForm({
                         <input name="CHUC_VU_DD" className="input-modern" placeholder="Nhập chức vụ" defaultValue={defaultNguoiDaiDien?.CHUC_VU ?? ""} />
                     </div>
                     <div className="space-y-1.5 md:col-span-12 lg:col-span-4">
-                        <label className="text-sm font-semibold text-muted-foreground">Điện thoại <span className="text-destructive">*</span></label>
-                        <input name="SDT_DD" required className="input-modern" placeholder="09xxx..." defaultValue={defaultNguoiDaiDien?.SDT ?? ""} />
+                        <label className="text-sm font-semibold text-muted-foreground">Điện thoại</label>
+                        <input name="SDT_DD" className="input-modern" placeholder="09xxx..." defaultValue={defaultNguoiDaiDien?.SDT ?? ""} />
                     </div>
                     <div className="space-y-1.5 md:col-span-6 lg:col-span-4">
                         <label className="text-sm font-semibold text-muted-foreground">Email</label>
@@ -444,26 +458,15 @@ export function KhachHangForm({
                 </div>
             )}
 
-            {/* Row 7: Sales phụ trách & NV chăm sóc */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
-                    <FormSelect
-                        name="SALES_PT"
-                        defaultValue={defaultValues?.SALES_PT || ""}
-                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
-                        placeholder="-- Chọn nhân viên --"
-                    />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-muted-foreground">NV Chăm sóc</label>
-                    <FormSelect
-                        name="NV_CS"
-                        defaultValue={defaultValues?.NV_CS || ""}
-                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
-                        placeholder="-- Chọn nhân viên --"
-                    />
-                </div>
+            {/* Row 7: Sales phụ trách */}
+            <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
+                <FormSelect
+                    name="SALES_PT"
+                    defaultValue={defaultValues?.SALES_PT || currentUserId || ""}
+                    options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
+                    placeholder="-- Chọn nhân viên --"
+                />
             </div>
 
             {/* Nút submit */}

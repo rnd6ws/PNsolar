@@ -273,8 +273,7 @@ export default function ViewHopDongModal({ isOpen, onClose, data }: Props) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {data.DKTT_HD.map((d: any, idx: number) => {
                                             const pt = Number(d.PT_THANH_TOAN || 0);
-                                            const total = Number(data.TONG_TIEN || 0);
-                                            const amount = (total * pt) / 100;
+                                            const amount = Number(d.SO_TIEN || 0);
 
                                             return (
                                                 <div key={d.ID} className="flex flex-col gap-2 p-4 border border-border rounded-xl shadow-xs bg-card relative overflow-hidden group hover:border-primary/30 transition-colors">

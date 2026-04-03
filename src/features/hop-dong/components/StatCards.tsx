@@ -2,56 +2,22 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { FileText, Home, Factory, DollarSign, Loader2 } from "lucide-react";
+import { FileText, DollarSign, CheckCircle2, Wallet, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
     stats: {
         total: number;
-        danDung: number;
-        congNghiep: number;
+        daDuyet: number;
         tongGiaTri: number;
+        tongDaDuyet: number;
+        tongDaThanhToan: number;
     };
 }
 
-const statCards = [
-    {
-        label: "Tổng hợp đồng",
-        key: "total" as const,
-        icon: FileText,
-        iconBg: "#6366f1",       // indigo-500
-        cardBg: "rgba(99, 102, 241, 0.06)",
-        borderActive: "#6366f1",
-        filterVal: "all",
-    },
-    {
-        label: "Dân dụng",
-        key: "danDung" as const,
-        icon: Home,
-        iconBg: "#f59e0b",       // amber-500
-        cardBg: "rgba(245, 158, 11, 0.06)",
-        borderActive: "#f59e0b",
-        filterVal: "Dân dụng",
-    },
-    {
-        label: "Công nghiệp",
-        key: "congNghiep" as const,
-        icon: Factory,
-        iconBg: "#10b981",       // emerald-500
-        cardBg: "rgba(16, 185, 129, 0.06)",
-        borderActive: "#10b981",
-        filterVal: "Công nghiệp",
-    },
-    {
-        label: "Tổng giá trị",
-        key: "tongGiaTri" as const,
-        icon: DollarSign,
-        iconBg: "#8b5cf6",       // violet-500
-        cardBg: "rgba(139, 92, 246, 0.06)",
-        borderActive: "#8b5cf6",
-        filterVal: "__value__",
-    },
-];
+function fMoney(val: number) {
+    return new Intl.NumberFormat("vi-VN").format(val) + " ₫";
+}
 
 export default function HopDongStatCards({ stats }: Props) {
     const router = useRouter();
@@ -61,56 +27,84 @@ export default function HopDongStatCards({ stats }: Props) {
     const currentFilter = searchParams.get("LOAI_HD") || "all";
 
     const handleCardClick = (filterVal: string) => {
-        if (filterVal === "__value__") return;
         const params = new URLSearchParams(searchParams.toString());
-        if (filterVal === "all") {
-            params.delete("LOAI_HD");
-        } else {
-            params.set("LOAI_HD", filterVal);
-        }
+        if (filterVal === "all") params.delete("LOAI_HD");
+        else params.set("LOAI_HD", filterVal);
         params.delete("page");
         const queryStr = params.toString();
-        const href = `/hop-dong${queryStr ? `?${queryStr}` : ""}`;
-        startTransition(() => { router.replace(href); });
+        startTransition(() => { router.replace(`/hop-dong${queryStr ? `?${queryStr}` : ""}`); });
     };
 
-    const formatValue = (key: string, value: number) => {
-        if (key === "tongGiaTri") {
-            return new Intl.NumberFormat("vi-VN").format(value) + " ₫";
-        }
-        return value;
-    };
+    const cards = [
+        {
+            label: "Tổng hợp đồng",
+            value: `${stats.daDuyet}/${stats.total}`,
+            sub: "đã duyệt / tổng",
+            icon: FileText,
+            iconBg: "#6366f1",
+            cardBg: "rgba(99, 102, 241, 0.06)",
+            borderActive: "#6366f1",
+            filterVal: "all",
+            clickable: true,
+        },
+        {
+            label: "Tổng giá trị",
+            value: fMoney(stats.tongGiaTri),
+            icon: DollarSign,
+            iconBg: "#8b5cf6",
+            cardBg: "rgba(139, 92, 246, 0.06)",
+            borderActive: "#8b5cf6",
+            filterVal: "__value__",
+            clickable: false,
+        },
+        {
+            label: "Tổng tiền đã duyệt",
+            value: fMoney(stats.tongDaDuyet),
+            icon: CheckCircle2,
+            iconBg: "#10b981",
+            cardBg: "rgba(16, 185, 129, 0.06)",
+            borderActive: "#10b981",
+            filterVal: "__value__",
+            clickable: false,
+        },
+        {
+            label: "Tổng đã thanh toán",
+            value: fMoney(stats.tongDaThanhToan),
+            icon: Wallet,
+            iconBg: "#f59e0b",
+            cardBg: "rgba(245, 158, 11, 0.06)",
+            borderActive: "#f59e0b",
+            filterVal: "__value__",
+            clickable: false,
+        },
+    ];
 
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            {statCards.map((stat) => {
+            {cards.map((stat) => {
                 const isActive = stat.filterVal === "all"
                     ? (!currentFilter || currentFilter === "all")
-                    : currentFilter === stat.filterVal;
-                const isClickable = stat.filterVal !== "__value__";
+                    : false;
 
                 return (
                     <button
                         key={stat.label}
-                        onClick={() => handleCardClick(stat.filterVal)}
-                        disabled={isPending || !isClickable}
+                        onClick={() => stat.clickable && handleCardClick(stat.filterVal)}
+                        disabled={isPending || !stat.clickable}
                         className={cn(
                             "group relative rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 text-left overflow-hidden border",
-                            isClickable
+                            stat.clickable
                                 ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5"
                                 : "cursor-default",
-                            isActive && isClickable
-                                ? "shadow-md scale-[1.02]"
-                                : "",
+                            isActive && stat.clickable ? "shadow-md scale-[1.02]" : "",
                             isPending && "opacity-70"
                         )}
                         style={{
                             backgroundColor: stat.cardBg,
-                            borderColor: isActive && isClickable ? stat.borderActive : "transparent",
-                            boxShadow: isActive && isClickable ? `0 4px 12px ${stat.borderActive}20` : undefined,
+                            borderColor: isActive && stat.clickable ? stat.borderActive : "transparent",
+                            boxShadow: isActive && stat.clickable ? `0 4px 12px ${stat.borderActive}20` : undefined,
                         }}
                     >
-                        {/* Icon */}
                         <div
                             className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105"
                             style={{ backgroundColor: stat.iconBg }}
@@ -122,12 +116,14 @@ export default function HopDongStatCards({ stats }: Props) {
                             )}
                         </div>
 
-                        {/* Content */}
                         <div className="min-w-0 flex-1">
                             <p className="text-xs md:text-sm text-muted-foreground leading-tight">{stat.label}</p>
-                            <p className="text-base md:text-2xl font-bold text-foreground leading-tight mt-1">
-                                {formatValue(stat.key, stats[stat.key])}
+                            <p className="text-base md:text-xl font-bold text-foreground leading-tight mt-1">
+                                {stat.value}
                             </p>
+                            {"sub" in stat && stat.sub && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{stat.sub}</p>
+                            )}
                         </div>
                     </button>
                 );

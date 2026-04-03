@@ -77,6 +77,7 @@ export interface HopDongFull {
 export const dkttHdSchema = z.object({
     LAN_THANH_TOAN: z.string().min(1, 'Lần thanh toán không được trống'),
     PT_THANH_TOAN: z.number().min(0).max(100).default(0),
+    SO_TIEN: z.number().min(0).default(0),
     NOI_DUNG_YEU_CAU: z.string().optional().nullable(),
 });
 

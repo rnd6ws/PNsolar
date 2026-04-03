@@ -6,7 +6,7 @@ import { X, FileText, CheckCircle, Upload, Image as ImageIcon, Paperclip, Link, 
 import Modal from "@/components/Modal";
 import { submitBaoCaoCS } from "../action";
 import FormSelect from "@/components/FormSelect";
-import { formatFileSize } from "@/hooks/useFileUpload";
+import { formatFileSize, useMultipleFileUpload } from "@/hooks/useFileUpload";
 
 // Helper: icon + màu theo ext
 function getFileStyle(name: string): { label: string; color: string } {
@@ -65,7 +65,7 @@ export default function BaoCaoCSForm({ item, ketQuaList, lyDoList, onSuccess, on
             const parsed = item?.HINH_ANH ? JSON.parse(item.HINH_ANH) : [];
             return Array.isArray(parsed) ? parsed.map((i: any) => ({
                 url: i.url,
-                name: i.name || "ảnh",
+                name: (i.name && i.name !== "ảnh") ? i.name : i.url.split("/").pop() || "ảnh",
                 bytes: i.bytes || 0,
             })) : [];
         } catch { return []; }
@@ -96,7 +96,7 @@ export default function BaoCaoCSForm({ item, ketQuaList, lyDoList, onSuccess, on
             const parsed = item?.FILE ? JSON.parse(item.FILE) : [];
             return Array.isArray(parsed) ? parsed.map((f: any) => ({
                 url: f.url,
-                name: f.name || "file",
+                name: (f.name && f.name !== "file") ? f.name : f.url.split("/").pop() || "file",
                 bytes: f.bytes || 0,
                 file_type: f.file_type,
             })) : [];
@@ -122,33 +122,10 @@ export default function BaoCaoCSForm({ item, ketQuaList, lyDoList, onSuccess, on
     };
 
     // ── Upload lên Cloudinary ──────────────────────────────────
-    const uploadToCloudinary = async (
-        file: File,
-        folder: string,
-        type: "image" | "document"
-    ): Promise<SavedFile | null> => {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("folder", folder);
-        formData.append("type", type);
-        try {
-            const res = await fetch("/api/upload", { method: "POST", body: formData });
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                toast.error(data.message || "Upload thất bại");
-                return null;
-            }
-            return {
-                url: data.url,
-                name: file.name,              // Tên gốc từ browser có extension
-                bytes: data.bytes || file.size,
-                file_type: data.file_type,    // "WORD", "PDF", "EXCEL"...
-            };
-        } catch {
-            toast.error("Lỗi kết nối khi upload");
-            return null;
-        }
-    };
+    const { uploadMultiple: uploadImgs, uploading: uploadingImgs } = useMultipleFileUpload({ folder: "pnsolar/bao-cao-cs/hinh-anh", type: "image", onError: (msg) => toast.error(msg) });
+    const { uploadMultiple: uploadDocs, uploading: uploadingDocs } = useMultipleFileUpload({ folder: "pnsolar/bao-cao-cs/files", type: "document", onError: (msg) => toast.error(msg) });
+
+
 
     // ── KQ change ─────────────────────────────────────────────
     const handleKqChange = (val: string) => {
@@ -163,42 +140,51 @@ export default function BaoCaoCSForm({ item, ketQuaList, lyDoList, onSuccess, on
     const isTuChoi = kqCS.toLowerCase().includes("từ chối") || kqCS.toLowerCase().includes("tu choi");
 
     // ── Submit: upload pending rồi mới lưu ────────────────────
+    const isBusy = submitting || uploadingImgs || uploadingDocs;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
 
-        // Upload pending images
-        let allImgs = [...savedImgs];
-        for (const p of pendingImgs) {
-            const uploaded = await uploadToCloudinary(p.file, "pnsolar/bao-cao-cs/hinh-anh", "image");
-            if (uploaded) allImgs.push(uploaded);
-        }
+        try {
+            // Sử dụng hook để upload với chế độ chia luồng (Concurrency Chunking)
+            const [uploadedImgsData, uploadedFilesData] = await Promise.all([
+                pendingImgs.length > 0 ? uploadImgs(pendingImgs.map(p => ({ file: p.file }))) : Promise.resolve([]),
+                pendingFiles.length > 0 ? uploadDocs(pendingFiles.map(p => ({ file: p.file }))) : Promise.resolve([])
+            ]);
 
-        // Upload pending files
-        let allFiles = [...savedFiles];
-        for (const p of pendingFiles) {
-            const uploaded = await uploadToCloudinary(p.file, "pnsolar/bao-cao-cs/files", "document");
-            if (uploaded) allFiles.push(uploaded);
-        }
+            let allImgs = [
+                ...savedImgs, 
+                ...uploadedImgsData.map((u, i) => ({ url: u.url, name: pendingImgs[i].file.name, bytes: u.bytes, file_type: u.format }))
+            ];
+            let allFiles = [
+                ...savedFiles, 
+                ...uploadedFilesData.map((u, i) => ({ url: u.url, name: pendingFiles[i].file.name, bytes: u.bytes, file_type: u.format }))
+            ];
 
-        const result = await submitBaoCaoCS(item.ID, {
-            NGAY_CS_TT: ngayCStt,
-            HINH_ANH: allImgs.length > 0 ? JSON.stringify(allImgs) : null,
-            FILE: allFiles.length > 0 ? JSON.stringify(allFiles) : null,
-            LINK_BC: linkBc || null,
-            KQ_CS: kqCS,
-            XL_CS: xlCS,
-            NOI_DUNG_TD: noiDungTD,
-            LY_DO_TC: isTuChoi ? lyDoTC : null,
-        });
+            const result = await submitBaoCaoCS(item.ID, {
+                NGAY_CS_TT: ngayCStt,
+                HINH_ANH: allImgs.length > 0 ? JSON.stringify(allImgs) : null,
+                FILE: allFiles.length > 0 ? JSON.stringify(allFiles) : null,
+                LINK_BC: linkBc || null,
+                KQ_CS: kqCS,
+                XL_CS: xlCS,
+                NOI_DUNG_TD: noiDungTD,
+                LY_DO_TC: isTuChoi ? lyDoTC : null,
+            });
 
-        if (result.success) {
-            toast.success("Nộp báo cáo chăm sóc thành công!");
-            onSuccess();
-        } else {
-            toast.error(result.message || "Có lỗi xảy ra");
+            if (result.success) {
+                toast.success("Nộp báo cáo chăm sóc thành công!");
+                onSuccess();
+            } else {
+                toast.error(result.message || "Có lỗi xảy ra");
+            }
+        } catch (error) {
+            console.error(error);
+            // Error handling is managed internally by useMultipleFileUpload
+        } finally {
+            setSubmitting(false);
         }
-        setSubmitting(false);
     };
 
     const totalImgs = savedImgs.length + pendingImgs.length;
@@ -216,19 +202,19 @@ export default function BaoCaoCSForm({ item, ketQuaList, lyDoList, onSuccess, on
                 <>
                     <span />
                     <div className="flex gap-3">
-                        <button type="button" onClick={onClose} disabled={submitting} className="btn-premium-secondary">
+                        <button type="button" onClick={onClose} disabled={isBusy} className="btn-premium-secondary">
                             Hủy
                         </button>
                         <button
                             type="button"
                             onClick={handleSubmit as any}
-                            disabled={submitting}
+                            disabled={isBusy}
                             className="btn-premium-primary flex items-center justify-center gap-2"
                         >
-                            {submitting ? (
+                            {isBusy ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    {pendingImgs.length + pendingFiles.length > 0 ? "Đang upload & lưu..." : "Đang lưu..."}
+                                    {uploadingImgs || uploadingDocs ? "Đang upload..." : "Đang lưu..."}
                                 </>
                             ) : (
                                 <>

@@ -9,7 +9,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export type ColumnKey = "ngayHD" | "khachHang" | "coHoi" | "baoGia" | "loai" | "tongTien" | "congTrinh";
+export type ColumnKey = "ngayHD" | "khachHang" | "coHoi" | "baoGia" | "loai" | "tongTien" | "congTrinh" | "daTT";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: "ngayHD", label: "Ngày HĐ" },
@@ -19,6 +19,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: "loai", label: "Loại" },
     { key: "tongTien", label: "Tổng tiền" },
     { key: "congTrinh", label: "Công trình" },
+    { key: "daTT", label: "Đã thanh toán" },
 ];
 
 interface Props {

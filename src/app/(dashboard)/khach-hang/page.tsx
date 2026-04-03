@@ -74,7 +74,7 @@ async function KhachHangDataSection({
     options,
     currentUserId,
 }: {
-    params: { query?: string; NHOM_KH?: string; PHAN_LOAI?: string; NGUON?: string; NV_CS?: string };
+    params: { query?: string; NHOM_KH?: string; PHAN_LOAI?: string; NGUON?: string };
     page: number;
     pageSize: number;
     catalogs: any;
@@ -88,7 +88,6 @@ async function KhachHangDataSection({
         NHOM_KH: params.NHOM_KH,
         PHAN_LOAI: params.PHAN_LOAI,
         NGUON: params.NGUON,
-        NV_CS: params.NV_CS,
     });
 
     return (
@@ -125,7 +124,7 @@ async function KhachHangDataSection({
 export default async function KhachHangPage({
     searchParams,
 }: {
-    searchParams: Promise<{ query?: string; page?: string; pageSize?: string; NHOM_KH?: string; PHAN_LOAI?: string; NGUON?: string; NV_CS?: string }>;
+    searchParams: Promise<{ query?: string; page?: string; pageSize?: string; NHOM_KH?: string; PHAN_LOAI?: string; NGUON?: string }>;
 }) {
     const params = await searchParams;
     const page = Number(params.page) || 1;
@@ -150,6 +149,8 @@ export default async function KhachHangPage({
 
     const catalogs = { phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois };
     const options = { nhomOptions, phanLoaiOptions, nguonOptions, nhanVienOptions };
+
+    const currentUserMaNv = (nhanViens as any[]).find((nv: any) => nv.USER_ID === user?.userId)?.ID || user?.userId;
 
     return (
         <PermissionGuard moduleKey="khach-hang" level="view" showNoAccess>
@@ -178,6 +179,7 @@ export default async function KhachHangPage({
                                     nhoms={nhoms as any}
                                     nhanViens={nhanViens as any}
                                     nguoiGioiThieus={nguoiGioiThieus as any}
+                                    currentUserId={currentUserMaNv}
                                 />
                             </PermissionGuard>
                         </div>
@@ -197,7 +199,7 @@ export default async function KhachHangPage({
                         pageSize={pageSize}
                         catalogs={catalogs}
                         options={options}
-                        currentUserId={user?.userId}
+                        currentUserId={currentUserMaNv}
                     />
                 </Suspense>
             </div>

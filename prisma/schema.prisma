@@ -33,13 +33,14 @@ model DSNV {
   PHAN_QUYEN PHAN_QUYEN[]
 
   KHTN_SALES_PT  KHTN[]         @relation("SALES_PT")
-  KHTN_NV_CS     KHTN[]         @relation("NV_CS")
   KEHOACH_CSKH   KEHOACH_CSKH[] @relation("NGUOI_CS")
   KHAO_SAT       KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
   BAO_GIA_GUI    BAO_GIA[]      @relation("NGUOI_GUI_BG")
   HOP_DONG_DUYET HOP_DONG[]     @relation("NGUOI_DUYET")
   HOP_DONG_TAO   HOP_DONG[]     @relation("NGUOI_TAO")
   BAN_GIAO_TAO   BAN_GIAO_HD[]  @relation("NGUOI_TAO_BG")
+  DE_NGHI_TT_TAO DE_NGHI_TT[]   @relation("NGUOI_TAO_DNTT")
+  THANH_TOAN_TAO THANH_TOAN[]   @relation("NGUOI_TAO_TT")
 
   NOTIFICATIONS_RECEIVED NOTIFICATION[]      @relation("NotificationRecipient")
   NOTIFICATIONS_SENT     NOTIFICATION[]      @relation("NotificationSender")
@@ -276,9 +277,6 @@ model KHTN {
 
   PHAN_LOAI String? //PHANLOAI_KH.PL_KH
 
-  NV_CS     String? //DSNV.MA_NV
-  NV_CS_REL DSNV?   @relation("NV_CS", fields: [NV_CS], references: [MA_NV])
-
   LICH_SU       String?
   LY_DO_TU_CHOI String? //LY_DO_TU_CHOI.LY_DO
   LAT           Float?
@@ -291,6 +289,8 @@ model KHTN {
   BAO_GIAS       BAO_GIA[]
   KHAO_SAT       KHAO_SAT[]
   HOP_DONG       HOP_DONG[]
+  DE_NGHI_TT     DE_NGHI_TT[]
+  THANH_TOAN     THANH_TOAN[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -855,6 +855,7 @@ model DKTT_HD {
 
   LAN_THANH_TOAN   String // Lần 1, Lần 2...
   PT_THANH_TOAN    Float   @default(0) // % thanh toán
+  SO_TIEN          Float   @default(0) // Số tiền (tính tự động)
   NOI_DUNG_YEU_CAU String? // Nội dung yêu cầu
 
   CREATED_AT DateTime @default(now())
@@ -940,6 +941,8 @@ model HOP_DONG {
   DKTT_HD     DKTT_HD[]
   DK_HD       DK_HD[]
   BAN_GIAO_HD BAN_GIAO_HD[]
+  DE_NGHI_TT  DE_NGHI_TT[]
+  THANH_TOAN  THANH_TOAN[]
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -997,4 +1000,88 @@ model BAN_GIAO_HD {
 
   @@index([SO_HD, SO_BAN_GIAO])
   @@map("BAN_GIAO_HD")
+}
+
+// ===== TÀI KHOẢN THANH TOÁN =====
+model TAIKHOAN_THANHTOAN {
+  ID           String  @id @default(auto()) @map("_id") @db.ObjectId
+  SO_TK        String  @unique
+  TEN_TK       String
+  TEN_NGAN_HANG String
+  LOAI_TK      String? // VD: "Ngân hàng", "Ví điện tử"...
+
+  DE_NGHI_TT DE_NGHI_TT[]
+  THANH_TOAN THANH_TOAN[]
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@map("TAIKHOAN_THANHTOAN")
+}
+
+// ===== ĐỀ NGHỊ THANH TOÁN =====
+model DE_NGHI_TT {
+  ID           String   @id @default(auto()) @map("_id") @db.ObjectId
+  MA_DE_NGHI   String   @unique // DNTT-YYMMDD-001
+
+  MA_KH        String
+  KHTN_REL     KHTN     @relation(fields: [MA_KH], references: [MA_KH])
+
+  SO_HD        String
+  HD_REL       HOP_DONG @relation(fields: [SO_HD], references: [SO_HD])
+
+  NGAY_DE_NGHI DateTime @default(now())
+
+  LAN_THANH_TOAN     String  // Lần 1, Lần 2...
+  SO_TIEN_THEO_LAN   Float   @default(0) // Số tiền theo lần thanh toán (từ DKTT_HD)
+  SO_TIEN_DE_NGHI    Float   @default(0) // Số tiền đề nghị (có thể chỉnh)
+
+  SO_TK        String?
+  TK_REL       TAIKHOAN_THANHTOAN? @relation(fields: [SO_TK], references: [SO_TK])
+
+  GHI_CHU      String?
+
+  NGUOI_TAO     String?
+  NGUOI_TAO_REL DSNV? @relation("NGUOI_TAO_DNTT", fields: [NGUOI_TAO], references: [MA_NV])
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([MA_KH, SO_HD])
+  @@index([SO_TK])
+  @@fulltext([MA_DE_NGHI, MA_KH, SO_HD])
+  @@map("DE_NGHI_TT")
+}
+
+// ===== THANH TOÁN =====
+model THANH_TOAN {
+  ID     String @id @default(auto()) @map("_id") @db.ObjectId
+  MA_TT  String @unique // TT-YYMMDD-001
+
+  MA_KH  String
+  KH_REL KHTN   @relation(fields: [MA_KH], references: [MA_KH])
+
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD])
+
+  LOAI_THANH_TOAN   String   @default("Thanh toán") // "Thanh toán" | "Hoàn tiền"
+  NGAY_THANH_TOAN   DateTime @default(now())
+  SO_TIEN_THANH_TOAN Float   @default(0)
+
+  SO_TK  String?
+  TK_REL TAIKHOAN_THANHTOAN? @relation(fields: [SO_TK], references: [SO_TK])
+
+  HINH_ANH String? // URL ảnh chứng từ (Cloudinary)
+  GHI_CHU  String?
+
+  NGUOI_TAO     String?
+  NGUOI_TAO_REL DSNV? @relation("NGUOI_TAO_TT", fields: [NGUOI_TAO], references: [MA_NV])
+
+  CREATED_AT DateTime @default(now())
+  UPDATED_AT DateTime @updatedAt
+
+  @@index([MA_KH, SO_HD])
+  @@index([SO_TK])
+  @@fulltext([MA_TT, MA_KH, SO_HD])
+  @@map("THANH_TOAN")
 }

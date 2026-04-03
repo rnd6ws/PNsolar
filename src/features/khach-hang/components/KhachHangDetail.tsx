@@ -220,7 +220,6 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                 { label: "Nguồn", value: kh.NGUON || "-" },
                                 { label: "Nhóm KH", value: kh.NHOM_KH || "-" },
                                 { label: "Sales phụ trách", value: kh.SALES_PT ? getNVName(kh.SALES_PT) : "-" },
-                                { label: "NV chăm sóc", value: kh.NV_CS ? getNVName(kh.NV_CS) : "-" },
                                 { label: "Người giới thiệu", value: kh.MA_NGT ? getNGTName(kh.MA_NGT) : "-" },
                             ].map(({ label, value }) => value ? (
                                 <div key={label} className="flex items-start gap-2 text-sm">
@@ -521,133 +520,137 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                 )}
 
                 {/* === TAB: LỊCH SỬ CHĂM SÓC === */}
-                {activeTab === "cskh" && (
-                    <div className="p-5 md:p-6">
-                        {cskhLoading ? (
-                            <LoadingSpinner text="Đang tải lịch sử..." />
-                        ) : cskhList && cskhList.length === 0 ? (
-                            <EmptyState icon={Search} text="Chưa có kế hoạch chăm sóc nào" />
-                        ) : (
-                            <div className="space-y-3">
-                                {(cskhList || []).map((cs: any) => (
-                                    <div key={cs.ID} className="border border-border rounded-xl overflow-hidden">
-                                        {/* Header card */}
-                                        <div className="flex items-center gap-4 px-4 py-2.5 bg-primary/5 border-b border-primary/10">
-                                            <span className="text-[12px] font-bold text-primary shrink-0">{formatDT(cs.TG_TU)}</span>
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                {cs.LOAI_CS && (
-                                                    <span className="text-xs font-semibold text-foreground">{cs.LOAI_CS}</span>
+                {
+                    activeTab === "cskh" && (
+                        <div className="p-5 md:p-6">
+                            {cskhLoading ? (
+                                <LoadingSpinner text="Đang tải lịch sử..." />
+                            ) : cskhList && cskhList.length === 0 ? (
+                                <EmptyState icon={Search} text="Chưa có kế hoạch chăm sóc nào" />
+                            ) : (
+                                <div className="space-y-3">
+                                    {(cskhList || []).map((cs: any) => (
+                                        <div key={cs.ID} className="border border-border rounded-xl overflow-hidden">
+                                            {/* Header card */}
+                                            <div className="flex items-center gap-4 px-4 py-2.5 bg-primary/5 border-b border-primary/10">
+                                                <span className="text-[12px] font-bold text-primary shrink-0">{formatDT(cs.TG_TU)}</span>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    {cs.LOAI_CS && (
+                                                        <span className="text-xs font-semibold text-foreground">{cs.LOAI_CS}</span>
+                                                    )}
+                                                    {cs.HINH_THUC && (
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${cs.HINH_THUC === "Online"
+                                                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                            : "bg-purple-50 text-purple-700 border-purple-200"
+                                                            }`}>{cs.HINH_THUC}</span>
+                                                    )}
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${TRANG_THAI_COLORS[cs.TRANG_THAI] || "bg-muted text-muted-foreground border-border"
+                                                        }`}>{cs.TRANG_THAI}</span>
+                                                </div>
+                                            </div>
+                                            {/* Body */}
+                                            <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                                                {cs.NGUOI_LH && (
+                                                    <div>
+                                                        <p className="text-muted-foreground">Người liên hệ</p>
+                                                        <p className="font-semibold text-foreground">{cs.NGUOI_LH.TENNGUOI_LIENHE}{cs.NGUOI_LH.CHUC_VU && ` · ${cs.NGUOI_LH.CHUC_VU}`}</p>
+                                                    </div>
                                                 )}
-                                                {cs.HINH_THUC && (
-                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${cs.HINH_THUC === "Online"
-                                                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                        : "bg-purple-50 text-purple-700 border-purple-200"
-                                                        }`}>{cs.HINH_THUC}</span>
+                                                {cs.NGUOI_CS && nhanViens.find(nv => nv.ID === cs.NGUOI_CS) && (
+                                                    <div>
+                                                        <p className="text-muted-foreground">Người CS</p>
+                                                        <p className="font-semibold text-foreground">{getNVName(cs.NGUOI_CS)}</p>
+                                                    </div>
                                                 )}
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${TRANG_THAI_COLORS[cs.TRANG_THAI] || "bg-muted text-muted-foreground border-border"
-                                                    }`}>{cs.TRANG_THAI}</span>
+                                                {cs.DIA_DIEM && (
+                                                    <div>
+                                                        <p className="text-muted-foreground">Địa điểm</p>
+                                                        <p className="font-semibold text-foreground">{cs.DIA_DIEM}</p>
+                                                    </div>
+                                                )}
+                                                {cs.KQ_CS && (
+                                                    <div>
+                                                        <p className="text-muted-foreground">Kết quả</p>
+                                                        <p className="font-semibold text-foreground">{cs.KQ_CS}</p>
+                                                    </div>
+                                                )}
+                                                {Array.isArray(cs.DICH_VU_NAMES) && cs.DICH_VU_NAMES.length > 0 && (
+                                                    <div className="col-span-2 md:col-span-3">
+                                                        <p className="text-muted-foreground mb-1">Dịch vụ quan tâm</p>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {(cs.DICH_VU_NAMES as string[]).map((dv: string, idx: number) => (
+                                                                <span key={idx} className="px-2 py-0.5 rounded-full text-[11px] bg-primary/10 text-primary border border-primary/20 font-medium">{dv}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {cs.NOI_DUNG_TD && (
+                                                    <div className="col-span-2 md:col-span-3">
+                                                        <p className="text-muted-foreground mb-0.5">Nội dung trao đổi</p>
+                                                        <p className="text-foreground whitespace-pre-wrap leading-snug">{cs.NOI_DUNG_TD}</p>
+                                                    </div>
+                                                )}
+                                                {cs.GHI_CHU_NC && (
+                                                    <div className="col-span-2 md:col-span-3">
+                                                        <p className="text-muted-foreground mb-0.5">Ghi chú nội bộ</p>
+                                                        <p className="text-foreground italic whitespace-pre-wrap leading-snug">{cs.GHI_CHU_NC}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                        {/* Body */}
-                                        <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                                            {cs.NGUOI_LH && (
-                                                <div>
-                                                    <p className="text-muted-foreground">Người liên hệ</p>
-                                                    <p className="font-semibold text-foreground">{cs.NGUOI_LH.TENNGUOI_LIENHE}{cs.NGUOI_LH.CHUC_VU && ` · ${cs.NGUOI_LH.CHUC_VU}`}</p>
-                                                </div>
-                                            )}
-                                            {cs.NGUOI_CS && nhanViens.find(nv => nv.ID === cs.NGUOI_CS) && (
-                                                <div>
-                                                    <p className="text-muted-foreground">Người CS</p>
-                                                    <p className="font-semibold text-foreground">{getNVName(cs.NGUOI_CS)}</p>
-                                                </div>
-                                            )}
-                                            {cs.DIA_DIEM && (
-                                                <div>
-                                                    <p className="text-muted-foreground">Địa điểm</p>
-                                                    <p className="font-semibold text-foreground">{cs.DIA_DIEM}</p>
-                                                </div>
-                                            )}
-                                            {cs.KQ_CS && (
-                                                <div>
-                                                    <p className="text-muted-foreground">Kết quả</p>
-                                                    <p className="font-semibold text-foreground">{cs.KQ_CS}</p>
-                                                </div>
-                                            )}
-                                            {Array.isArray(cs.DICH_VU_NAMES) && cs.DICH_VU_NAMES.length > 0 && (
-                                                <div className="col-span-2 md:col-span-3">
-                                                    <p className="text-muted-foreground mb-1">Dịch vụ quan tâm</p>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {(cs.DICH_VU_NAMES as string[]).map((dv: string, idx: number) => (
-                                                            <span key={idx} className="px-2 py-0.5 rounded-full text-[11px] bg-primary/10 text-primary border border-primary/20 font-medium">{dv}</span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {cs.NOI_DUNG_TD && (
-                                                <div className="col-span-2 md:col-span-3">
-                                                    <p className="text-muted-foreground mb-0.5">Nội dung trao đổi</p>
-                                                    <p className="text-foreground whitespace-pre-wrap leading-snug">{cs.NOI_DUNG_TD}</p>
-                                                </div>
-                                            )}
-                                            {cs.GHI_CHU_NC && (
-                                                <div className="col-span-2 md:col-span-3">
-                                                    <p className="text-muted-foreground mb-0.5">Ghi chú nội bộ</p>
-                                                    <p className="text-foreground italic whitespace-pre-wrap leading-snug">{cs.GHI_CHU_NC}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )
+                }
 
                 {/* === TAB: LỊCH SỬ GHI CHÚ === */}
-                {activeTab === "lichsu" && (
-                    <div className="p-5 md:p-6">
-                        {lichSuEntries.length === 0 ? (
-                            <EmptyState icon={Search} text="Chưa có ghi chú nào" />
-                        ) : (
-                            <div className="relative">
-                                {/* Timeline line */}
-                                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
-                                <div className="space-y-3">
-                                    {lichSuEntries.map((entry: string, i: number) => {
-                                        // Parse [2026-03-13 11:40] Nội dung
-                                        const match = entry.match(/^\[(\d{4}-\d{2}-\d{2}\s[\d:]+)\]\s*(.+)$/);
-                                        const time = match ? match[1] : null;
-                                        const content = match ? match[2] : entry;
-                                        const isFirst = i === 0;
-                                        return (
-                                            <div key={i} className="flex gap-3 pl-1">
-                                                {/* Dot */}
-                                                <div className={`mt-1.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 z-10 ${isFirst
-                                                    ? "bg-primary border-primary"
-                                                    : "bg-background border-border"
-                                                    }`} />
-                                                <div className="flex-1 pb-1">
-                                                    {time && (
-                                                        <p className="text-[11px] text-muted-foreground font-medium mb-0.5">{time}</p>
-                                                    )}
-                                                    <p className={`text-sm leading-snug ${isFirst ? "font-semibold text-foreground" : "text-muted-foreground"
-                                                        }`}>{content}</p>
+                {
+                    activeTab === "lichsu" && (
+                        <div className="p-5 md:p-6">
+                            {lichSuEntries.length === 0 ? (
+                                <EmptyState icon={Search} text="Chưa có ghi chú nào" />
+                            ) : (
+                                <div className="relative">
+                                    {/* Timeline line */}
+                                    <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
+                                    <div className="space-y-3">
+                                        {lichSuEntries.map((entry: string, i: number) => {
+                                            // Parse [2026-03-13 11:40] Nội dung
+                                            const match = entry.match(/^\[(\d{4}-\d{2}-\d{2}\s[\d:]+)\]\s*(.+)$/);
+                                            const time = match ? match[1] : null;
+                                            const content = match ? match[2] : entry;
+                                            const isFirst = i === 0;
+                                            return (
+                                                <div key={i} className="flex gap-3 pl-1">
+                                                    {/* Dot */}
+                                                    <div className={`mt-1.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 z-10 ${isFirst
+                                                        ? "bg-primary border-primary"
+                                                        : "bg-background border-border"
+                                                        }`} />
+                                                    <div className="flex-1 pb-1">
+                                                        {time && (
+                                                            <p className="text-[11px] text-muted-foreground font-medium mb-0.5">{time}</p>
+                                                        )}
+                                                        <p className={`text-sm leading-snug ${isFirst ? "font-semibold text-foreground" : "text-muted-foreground"
+                                                            }`}>{content}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+                            )}
+                        </div>
+                    )
+                }
+            </div >
 
             {/* Footer */}
-            <div className="border-t border-border px-5 md:px-6 py-3 bg-muted/10 flex justify-end shrink-0">
+            < div className="border-t border-border px-5 md:px-6 py-3 bg-muted/10 flex justify-end shrink-0" >
                 <button onClick={onClose} className="btn-premium-secondary px-6">Đóng</button>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

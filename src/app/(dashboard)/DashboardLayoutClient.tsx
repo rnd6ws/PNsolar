@@ -54,6 +54,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
     '/settings': 'Cài đặt',
     '/phan-quyen': 'Phân quyền',
     '/ban-giao': 'Bàn giao',
+    '/de-nghi-tt': 'Đề nghị thanh toán',
 };
 
 function getBreadcrumb(pathname: string): string {
