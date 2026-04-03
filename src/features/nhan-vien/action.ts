@@ -1,10 +1,92 @@
 "use server"
 import { prisma } from '@/lib/prisma';
 import { nhanVienSchema } from './schema';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, signToken, setAuthCookie } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
 import { ActionResponse } from '@/lib/types';
+import { cookies } from 'next/headers';
+
+const IMPERSONATE_COOKIE = 'admin_original_token';
+
+// ─── Impersonate: Admin đăng nhập vào tài khoản người dùng ─────────
+export async function impersonateUser(targetUserId: string) {
+    const user = await getCurrentUser();
+    if (!user || user.ROLE !== 'ADMIN') {
+        return { success: false, message: 'Chỉ Admin mới có quyền sử dụng chức năng này' };
+    }
+
+    try {
+        const targetUser = await prisma.dSNV.findUnique({
+            where: { ID: targetUserId },
+            select: { ID: true, USER_NAME: true, ROLE: true, HO_TEN: true, IS_ACTIVE: true },
+        });
+
+        if (!targetUser) return { success: false, message: 'Không tìm thấy nhân viên' };
+        if (!targetUser.IS_ACTIVE) return { success: false, message: 'Tài khoản này đang bị khóa' };
+
+        // Lưu token admin gốc để quay lại sau
+        const cookieStore = await cookies();
+        const currentToken = cookieStore.get('auth_token')?.value;
+        if (currentToken) {
+            cookieStore.set(IMPERSONATE_COOKIE, currentToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 60 * 60 * 2, // 2 giờ
+                path: '/',
+            });
+        }
+
+        // Tạo token mới cho user target
+        const newToken = await signToken({
+            userId: targetUser.ID,
+            USER_NAME: targetUser.USER_NAME,
+            ROLE: targetUser.ROLE as any,
+            tokenVersion: 0,
+        }, '2h'); // Session ngắn 2h cho an toàn
+
+        await setAuthCookie(newToken, 60 * 60 * 2);
+
+        // Ghi audit log
+        await prisma.aUDIT_LOG.create({
+            data: {
+                ACTION: 'IMPERSONATE',
+                USER_ID: user.userId,
+                USER_NAME: user.USER_NAME,
+                TARGET_MODEL: 'DSNV',
+                TARGET_ID: targetUserId,
+                DETAILS: `Admin ${user.USER_NAME} đăng nhập vào tài khoản: ${targetUser.HO_TEN} (${targetUser.USER_NAME})`,
+            },
+        });
+
+        return { success: true, message: `Đã chuyển sang tài khoản ${targetUser.HO_TEN}` };
+    } catch (error: any) {
+        console.error('[impersonateUser]', error);
+        return { success: false, message: 'Lỗi hệ thống' };
+    }
+}
+
+// ─── Quay lại tài khoản Admin ──────────────────────────────────────
+export async function stopImpersonation() {
+    try {
+        const cookieStore = await cookies();
+        const originalToken = cookieStore.get(IMPERSONATE_COOKIE)?.value;
+
+        if (!originalToken) {
+            return { success: false, message: 'Không tìm thấy phiên admin gốc' };
+        }
+
+        // Khôi phục token admin
+        await setAuthCookie(originalToken, 60 * 60 * 24 * 30);
+        cookieStore.delete(IMPERSONATE_COOKIE);
+
+        return { success: true, message: 'Đã quay lại tài khoản Admin' };
+    } catch (error: any) {
+        console.error('[stopImpersonation]', error);
+        return { success: false, message: 'Lỗi khi quay lại tài khoản admin' };
+    }
+}
 
 export async function createNhanVienAction(data: any) {
     const user = await getCurrentUser();

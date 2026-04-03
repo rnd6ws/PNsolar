@@ -265,11 +265,6 @@ export function AppSidebar({ permissions = {}, isAdmin = false, ...props }: AppS
                 ))}
             </SidebarContent>
 
-            {/* Footer */}
-            <SidebarFooter>
-                <NavUser />
-            </SidebarFooter>
-
             <SidebarRail />
         </Sidebar>
     );

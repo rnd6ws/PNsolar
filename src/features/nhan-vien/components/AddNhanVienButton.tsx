@@ -17,10 +17,12 @@ export default function AddNhanVienButton({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [avatarUrl, setAvatarUrl] = useState('');
+    const [username, setUsername] = useState('');
 
     const handleClose = () => {
         setIsModalOpen(false);
         setAvatarUrl('');
+        setUsername('');
         setError(null);
     };
 
@@ -83,28 +85,41 @@ export default function AddNhanVienButton({
                         />
                     </div>
 
+                    {/* Hidden: MA_NV = USERNAME */}
+                    <input type="hidden" name="MA_NV" value={username} />
+
+                    {/* Row 1: Họ tên + Username */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-muted-foreground">Mã NV</label>
-                            <input name="MA_NV" required className="input-modern" placeholder="NV001" />
+                            <label className="text-sm font-bold text-muted-foreground">Họ và tên <span className="text-destructive">*</span></label>
+                            <input name="HO_TEN" required className="input-modern" placeholder="Nguyễn Văn A" />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-muted-foreground">Họ và tên</label>
-                            <input name="HO_TEN" required className="input-modern" placeholder="Nguyễn Văn A" />
+                            <label className="text-sm font-bold text-muted-foreground">Username <span className="text-destructive">*</span></label>
+                            <input
+                                name="USER_NAME"
+                                required
+                                className="input-modern"
+                                placeholder="tên đăng nhập..."
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                            />
                         </div>
                     </div>
 
+                    {/* Row 2: Mật khẩu + Email */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-muted-foreground">Username</label>
-                            <input name="USER_NAME" required className="input-modern" placeholder="tên đăng nhập..." />
-                        </div>
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-muted-foreground">Mật khẩu</label>
                             <input name="PASSWORD" type="password" className="input-modern" placeholder="123456" />
                         </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-muted-foreground">Email</label>
+                            <input name="EMAIL" type="email" className="input-modern" placeholder="email@gmail.com" />
+                        </div>
                     </div>
 
+                    {/* Row 3: Phòng ban + Chức vụ */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-muted-foreground">Phòng ban</label>
@@ -126,6 +141,7 @@ export default function AddNhanVienButton({
                         </div>
                     </div>
 
+                    {/* Row 4: SĐT + Vai trò */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-muted-foreground">Số điện thoại</label>
@@ -139,11 +155,6 @@ export default function AddNhanVienButton({
                                 <option value="ADMIN">Quản trị viên (Admin)</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold text-muted-foreground">Email</label>
-                        <input name="EMAIL" type="email" className="input-modern" placeholder="email@gmail.com" />
                     </div>
 
                 </form>
