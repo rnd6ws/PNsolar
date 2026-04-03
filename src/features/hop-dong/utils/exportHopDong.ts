@@ -109,6 +109,7 @@ interface ThongTinKhacItem {
 interface DkttHdItem {
     LAN_THANH_TOAN: string;
     PT_THANH_TOAN: number;
+    SO_TIEN?: number;
     NOI_DUNG_YEU_CAU: string | null;
 }
 
@@ -174,10 +175,10 @@ export async function exportHopDongDocx(item: HopDongExportData): Promise<void> 
 
     // 6. Điều kiện thanh toán
     const DK_TT = (item.DKTT_HD || []).map(d => {
-        const soTien = Math.round(tongTien * (d.PT_THANH_TOAN / 100));
+        const soTien = Math.round(Number(d.SO_TIEN || tongTien * ((d.PT_THANH_TOAN || 0) / 100)));
         return {
             LAN_TT: d.LAN_THANH_TOAN || "",
-            PT_TT: `${d.PT_THANH_TOAN}%`,
+            PT_TT: `${d.PT_THANH_TOAN || 0}%`,
             ND_TT: d.NOI_DUNG_YEU_CAU || "",
             ST_TT: new Intl.NumberFormat("vi-VN").format(soTien),
             BANG_CHU: `(Bằng chữ: ${soThanhChu(soTien)})`

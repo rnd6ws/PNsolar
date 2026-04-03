@@ -168,7 +168,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
             const groups = [...new Set(rows.map(r => r.NHOM_HH || DEFAULT_NHOM))];
             if (!groups.includes(DEFAULT_NHOM)) groups.unshift(DEFAULT_NHOM);
             setActiveGroups(groups); setActiveNhomTab(groups[0]);
-            setDkttRows((editData.DKTT_HD || []).map((d: any) => ({ _id: tempId(), _dbId: d.ID, LAN_THANH_TOAN: d.LAN_THANH_TOAN, PT_THANH_TOAN: d.PT_THANH_TOAN, NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || "" })));
+            setDkttRows((editData.DKTT_HD || []).map((d: any) => ({ _id: tempId(), _dbId: d.ID, LAN_THANH_TOAN: d.LAN_THANH_TOAN, PT_THANH_TOAN: d.PT_THANH_TOAN, SO_TIEN: d.SO_TIEN || 0, NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || "" })));
             setDkHdRows((editData.DK_HD || []).map((d: any) => ({ _id: tempId(), _dbId: d.ID, HANG_MUC: d.HANG_MUC, NOI_DUNG: d.NOI_DUNG || "", AN_HIEN: d.AN_HIEN !== false })));
             const ttk = editData.THONG_TIN_KHAC || [];
             if (ttk.length > 0) {
@@ -448,6 +448,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                                 _id: tempId(),
                                                                 LAN_THANH_TOAN: `Lần ${index + 1}`,
                                                                 PT_THANH_TOAN: d.PT_THANH_TOAN || 0,
+                                                                SO_TIEN: 0,
                                                                 NOI_DUNG_YEU_CAU: ""
                                                             }));
                                                             setDkttRows(newDktt);
@@ -821,7 +822,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                     <span className="text-muted-foreground">{dkttRows.filter(d => d.LAN_THANH_TOAN).length} lần thanh toán</span>
                                 </div>
                             </div>
-                            <button type="button" onClick={() => setDkttRows(prev => [...prev, { _id: tempId(), LAN_THANH_TOAN: `Lần ${prev.length + 1}`, PT_THANH_TOAN: 0, NOI_DUNG_YEU_CAU: "" }])} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"><Plus className="w-4 h-4" />Thêm lần</button>
+                            <button type="button" onClick={() => setDkttRows(prev => [...prev, { _id: tempId(), LAN_THANH_TOAN: `Lần ${prev.length + 1}`, PT_THANH_TOAN: 0, SO_TIEN: 0, NOI_DUNG_YEU_CAU: "" }])} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"><Plus className="w-4 h-4" />Thêm lần</button>
                         </div>
                         {dkttRows.length === 0 ? (
                             <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl"><CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="text-sm">Chưa có điều kiện thanh toán.</p></div>
@@ -832,6 +833,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                         <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8">#</th>
                                         <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-40">Lần thanh toán</th>
                                         <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-28">% Thanh toán</th>
+                                        <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-32">Số tiền</th>
                                         <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Nội dung yêu cầu</th>
                                         <th className="px-3 py-2.5 w-10"></th>
                                     </tr></thead>
@@ -841,7 +843,19 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                 <td className="px-3 py-2 text-muted-foreground">{idx + 1}</td>
                                                 <td className="px-3 py-2"><input type="text" value={row.LAN_THANH_TOAN} onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, LAN_THANH_TOAN: e.target.value } : r))} className="w-full px-2 py-1.5 border border-border rounded text-[13px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="VD: Lần 1" /></td>
                                                 <td className="px-3 py-2">
-                                                    <div className="relative"><input type="number" min="0" max="100" step="0.1" value={row.PT_THANH_TOAN || ""} onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, PT_THANH_TOAN: parseFloat(e.target.value) || 0 } : r))} className="w-full px-2 py-1.5 pr-7 border border-border rounded text-[13px] text-right bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="0" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span></div>
+                                                    <div className="relative"><input type="number" min="0" max="100" step="0.1" value={row.PT_THANH_TOAN || ""} onChange={e => {
+                                                        const pt = parseFloat(e.target.value) || 0;
+                                                        const st = tongTien > 0 ? Math.round((tongTien * pt) / 100) : 0;
+                                                        setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, PT_THANH_TOAN: pt, SO_TIEN: st } : r));
+                                                    }} className="w-full px-2 py-1.5 pr-7 border border-border rounded text-[13px] text-right bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="0" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span></div>
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <input type="text" inputMode="numeric" value={row.SO_TIEN > 0 ? fmtMoney(row.SO_TIEN) : ""} onChange={e => {
+                                                        const raw = e.target.value.replace(/[^0-9]/g, "");
+                                                        const st = parseInt(raw, 10) || 0;
+                                                        const pt = tongTien > 0 ? Math.round((st / tongTien) * 10000) / 100 : 0;
+                                                        setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, SO_TIEN: st, PT_THANH_TOAN: pt } : r));
+                                                    }} className="w-full px-2 py-1.5 border border-border rounded text-[13px] text-right bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="0" />
                                                 </td>
                                                 <td className="px-3 py-2"><input type="text" value={row.NOI_DUNG_YEU_CAU || ""} onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG_YEU_CAU: e.target.value } : r))} className="w-full px-2 py-1.5 border border-border rounded text-[13px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="Nội dung yêu cầu..." /></td>
                                                 <td className="px-3 py-2"><button type="button" onClick={() => setDkttRows(prev => prev.filter(r => r._id !== row._id))} className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors"><Trash2 className="w-3.5 h-3.5" /></button></td>

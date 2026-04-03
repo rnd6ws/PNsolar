@@ -379,6 +379,7 @@ export async function createHopDong(
                     create: validDktt.map(d => ({
                         LAN_THANH_TOAN: d.LAN_THANH_TOAN,
                         PT_THANH_TOAN: d.PT_THANH_TOAN,
+                        SO_TIEN: d.SO_TIEN,
                         NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || null,
                     })),
                 } : undefined,
@@ -540,6 +541,7 @@ export async function updateHopDong(
                     create: validDktt.map(d => ({
                         LAN_THANH_TOAN: d.LAN_THANH_TOAN,
                         PT_THANH_TOAN: d.PT_THANH_TOAN,
+                        SO_TIEN: d.SO_TIEN,
                         NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || null,
                     })),
                 } : undefined,
