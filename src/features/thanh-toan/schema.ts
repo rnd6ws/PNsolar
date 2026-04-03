@@ -5,7 +5,7 @@ export const LOAI_THANH_TOAN_OPTIONS = ['Thanh toán', 'Hoàn tiền'] as const;
 export const thanhToanSchema = z.object({
     MA_KH: z.string().min(1, 'Vui lòng chọn khách hàng'),
     SO_HD: z.string().min(1, 'Vui lòng chọn hợp đồng'),
-    LOAI_THANH_TOAN: z.enum(LOAI_THANH_TOAN_OPTIONS, { errorMap: () => ({ message: 'Loại thanh toán không hợp lệ' }) }),
+    LOAI_THANH_TOAN: z.enum(LOAI_THANH_TOAN_OPTIONS, { error: 'Loại thanh toán không hợp lệ' }),
     NGAY_THANH_TOAN: z.string().min(1, 'Ngày thanh toán không được trống'),
     SO_TIEN_THANH_TOAN: z.number().min(0, 'Số tiền phải >= 0'),
     SO_TK: z.string().optional().nullable(),
