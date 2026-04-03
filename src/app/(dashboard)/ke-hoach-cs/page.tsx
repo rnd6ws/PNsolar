@@ -96,7 +96,7 @@ async function KeHoachContentSection({
     }));
 
     return (
-        <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col relative">
+        <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col relative overflow-hidden">
             <KeHoachCSPageClient
                 data={data}
                 nhanViens={catalogs.nhanViens}

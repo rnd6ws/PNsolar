@@ -163,14 +163,27 @@ export function KhachHangForm({
                 const tenVtEl = formRef.current.elements.namedItem("TEN_VT") as HTMLInputElement;
                 const diaChiEl = formRef.current.elements.namedItem("DIA_CHI") as HTMLTextAreaElement;
 
-                if (tenKhEl) tenKhEl.value = res.data.name || tenKhEl.value;
-                if (tenVtEl) tenVtEl.value = res.data.shortName || tenVtEl.value;
+                const dtEl = formRef.current.elements.namedItem("DIEN_THOAI") as HTMLInputElement;
+                const emailEl = formRef.current.elements.namedItem("EMAIL") as HTMLInputElement;
+
+                if (tenKhEl) tenKhEl.value = res.data.name || "";
+                if (tenVtEl) tenVtEl.value = res.data.shortName || "";
                 if (diaChiEl) {
-                    diaChiEl.value = res.data.address || diaChiEl.value;
+                    diaChiEl.value = res.data.address || "";
                     diaChiEl.style.height = 'auto';
-                    diaChiEl.style.height = `${diaChiEl.scrollHeight}px`;
+                    if (diaChiEl.scrollHeight > 0) {
+                        diaChiEl.style.height = `${diaChiEl.scrollHeight}px`;
+                    }
                 }
+                
+                // Clear old phone and email because it's a new lookup
+                if (dtEl) dtEl.value = "";
+                if (emailEl) emailEl.value = "";
             }
+            setLat("");
+            setLong("");
+            setViettatError(null);
+            
             toast.success("Đã cập nhật thông tin công ty từ mã số thuế");
 
             if (res.data.address) {

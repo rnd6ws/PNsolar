@@ -266,10 +266,10 @@ export async function createKhachHang(data: any) {
                             type: 'KHACH_HANG',
                             recipientId: emp.ID,
                             link: `/khach-hang?query=${encodeURIComponent(maKh)}`,
-                        }).catch(() => {});
+                        }).catch(() => { });
                     }
                 })
-                .catch(() => {});
+                .catch(() => { });
         }
 
         return { success: true };
@@ -609,25 +609,43 @@ export async function getCoordinatesFromAddress(address: string) {
         return { success: false, message: 'Vui lòng nhập địa chỉ' };
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
     try {
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+            {
+                headers: { 'User-Agent': 'PNsolarRND6/1.0 (contact@pnsolar.com)' },
+                signal: controller.signal
+            }
         );
+
+        if (!response.ok) {
+            return { success: false, message: `Lỗi từ server: ${response.status}` };
+        }
+
         const data = await response.json();
 
         if (data && data.length > 0) {
             return {
                 success: true,
                 data: {
-                    lat: data[0].lat,
-                    lon: data[0].lon
+                    lat: parseFloat(data[0].lat),
+                    lon: parseFloat(data[0].lon)
                 }
             };
-        } else {
-            return { success: false, message: 'Không tìm thấy tọa độ cho địa chỉ này' };
         }
+
+        return { success: false, message: 'Không tìm thấy tọa độ cho địa chỉ này' };
+
     } catch (error: any) {
+        if (error.name === 'AbortError') {
+            return { success: false, message: 'Yêu cầu quá thời gian, vui lòng thử lại' };
+        }
         return { success: false, message: 'Lỗi khi lấy tọa độ vui lòng kiểm tra lại' };
+    } finally {
+        clearTimeout(timeout);
     }
 }
 
