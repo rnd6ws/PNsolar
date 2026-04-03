@@ -7,6 +7,7 @@ import { getEmployeeListAction } from "@/features/notifications/action";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useState, useRef, useEffect, lazy, Suspense, memo } from "react";
+import { createPortal } from "react-dom";
 
 const SendNotificationModal = lazy(() =>
     import("@/features/notifications/components/SendNotificationModal").then(m => ({ default: m.SendNotificationModal }))
@@ -47,6 +48,17 @@ function NotificationBellInner({ userId, isAdminOrManager }: NotificationBellPro
 
     const { notifications, unreadCount, markRead, markAllRead } = useNotifications(userId);
     const { subscribed, supported, subscribe, unsubscribe } = usePushSubscription();
+    const [toggling, setToggling] = useState(false);
+
+    const handleTogglePush = async () => {
+        setToggling(true);
+        try {
+            if (subscribed) await unsubscribe();
+            else await subscribe();
+        } finally {
+            setToggling(false);
+        }
+    };
 
     const handleOpenBell = () => {
         if (!bellOpen && isAdminOrManager && employees.length === 0) {
@@ -151,14 +163,31 @@ function NotificationBellInner({ userId, isAdminOrManager }: NotificationBellPro
                         </div>
 
                         {/* Footer */}
-                        <div className="px-4 py-3 border-t bg-muted/5 flex items-center justify-between">
+                        <div className="px-4 py-2.5 border-t bg-muted/5 flex items-center justify-between">
                             <span className="text-xs font-bold text-primary">Thông báo</span>
                             {supported && (
                                 <button
-                                    onClick={subscribed ? unsubscribe : subscribe}
-                                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                                    onClick={handleTogglePush}
+                                    disabled={toggling}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-300 active:scale-90",
+                                        toggling && "opacity-70 pointer-events-none",
+                                        subscribed
+                                            ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                            : "bg-muted text-muted-foreground hover:bg-muted-foreground/15"
+                                    )}
                                 >
-                                    {subscribed ? '🔔 Tắt push' : '🔕 Bật thông báo đẩy'}
+                                    {toggling ? (
+                                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <span className={cn(
+                                            "inline-block transition-transform duration-500",
+                                            subscribed && "animate-[bellShake_0.5s_ease-in-out]"
+                                        )}>
+                                            {subscribed ? '🔔' : '🔕'}
+                                        </span>
+                                    )}
+                                    {toggling ? 'Đang xử lý...' : subscribed ? 'Đang bật' : 'Đã tắt'}
                                 </button>
                             )}
                         </div>
@@ -166,15 +195,16 @@ function NotificationBellInner({ userId, isAdminOrManager }: NotificationBellPro
                 )}
             </div>
 
-            {/* Send Notification Modal — rendered outside bell to avoid clipping */}
-            {isAdminOrManager && sendModalOpen && (
+            {/* Send Notification Modal — Portal to body, tránh bị header stacking context che */}
+            {isAdminOrManager && sendModalOpen && createPortal(
                 <Suspense fallback={null}>
                     <SendNotificationModal
                         open={sendModalOpen}
                         onClose={() => setSendModalOpen(false)}
                         employees={employees}
                     />
-                </Suspense>
+                </Suspense>,
+                document.body
             )}
         </>
     );

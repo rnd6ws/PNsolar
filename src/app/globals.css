@@ -386,3 +386,14 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     @apply w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm;
   }
 }
+
+/* Bell shake animation for notification toggle */
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-8deg); }
+  75% { transform: rotate(4deg); }
+  90% { transform: rotate(-2deg); }
+}

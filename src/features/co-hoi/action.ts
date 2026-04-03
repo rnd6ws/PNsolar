@@ -83,8 +83,9 @@ export async function deleteDmDichVu(id: string) {
         await prisma.dM_DICH_VU.delete({ where: { MA_DV: id } });
         revalidatePath("/co-hoi");
         return { success: true };
-    } catch {
-        return { success: false, message: "Lỗi xóa danh mục" };
+    } catch (error: any) {
+        console.error("[deleteDmDichVu]", id, error);
+        return { success: false, message: error.message || "Lỗi xóa danh mục" };
     }
 }
 
