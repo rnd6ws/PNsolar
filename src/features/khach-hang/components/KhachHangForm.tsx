@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, MapPin, ChevronDown, ChevronUp, Plus, X, UserPlus } from "lucide-react";
+import { Search, MapPin, Link2, ChevronDown, ChevronUp, Plus, X, UserPlus } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 import FormSelect from "@/components/FormSelect";
 import { lookupCompanyByTaxCode, getCoordinatesFromAddress, createNguoiGioiThieu, checkTenVietTatTrung } from "@/features/khach-hang/action";
+import { useResolveMapsUrl } from "@/hooks/useResolveMapsUrl";
 import { toast } from "sonner";
 
 export interface KhachHangFormProps {
@@ -43,6 +44,13 @@ export function KhachHangForm({
     const [showCoordinates, setShowCoordinates] = useState(false);
     const [lat, setLat] = useState(defaultValues?.LAT?.toString() || "");
     const [long, setLong] = useState(defaultValues?.LONG?.toString() || "");
+    const [linkMap, setLinkMap] = useState(defaultValues?.LINK_MAP || "");
+    const {
+        resolve: resolveMapLink,
+        loading: linkMapLoading,
+        result: mapResult,
+        error: mapError,
+    } = useResolveMapsUrl();
 
     const [viettatLoading, setViettatLoading] = useState(false);
     const [viettatError, setViettatError] = useState<string | null>(null);
@@ -147,6 +155,44 @@ export function KhachHangForm({
         }
     };
 
+    const handleExtractFromLink = async () => {
+        if (!linkMap || linkMap.trim() === '') {
+            toast.warning('Vui lòng nhập link Google Maps trước');
+            return;
+        }
+        await resolveMapLink(linkMap.trim());
+    };
+
+    // Phản ứng khi hook trả về kết quả
+    useEffect(() => {
+        if (mapResult) {
+            setLat(mapResult.lat.toString());
+            setLong(mapResult.lng.toString());
+            setShowCoordinates(true);
+
+            // address đã được build chuẩn VN từ server, dùng trực tiếp
+            if (mapResult.address && formRef.current) {
+                const diaChiEl = formRef.current.elements.namedItem('DIA_CHI') as HTMLTextAreaElement;
+                if (diaChiEl && !diaChiEl.value.trim()) {
+                    diaChiEl.value = mapResult.address;
+                    diaChiEl.style.height = 'auto';
+                    diaChiEl.style.height = `${diaChiEl.scrollHeight}px`;
+                }
+            }
+
+            const nameLabel = mapResult.name ? ` — ${mapResult.name}` : '';
+            toast.success(mapResult.address
+                ? `Đã lấy tọa độ & địa chỉ${nameLabel}`
+                : `Đã lấy tọa độ${nameLabel}`
+            );
+        }
+    }, [mapResult]);
+
+
+    useEffect(() => {
+        if (mapError) toast.error(mapError);
+    }, [mapError]);
+
     const handleLookup = async () => {
         const taxCodeElement = formRef.current?.elements.namedItem("MST") as HTMLInputElement;
         const taxCode = taxCodeElement?.value;
@@ -175,7 +221,7 @@ export function KhachHangForm({
                         diaChiEl.style.height = `${diaChiEl.scrollHeight}px`;
                     }
                 }
-                
+
                 // Clear old phone and email because it's a new lookup
                 if (dtEl) dtEl.value = "";
                 if (emailEl) emailEl.value = "";
@@ -183,7 +229,7 @@ export function KhachHangForm({
             setLat("");
             setLong("");
             setViettatError(null);
-            
+
             toast.success("Đã cập nhật thông tin công ty từ mã số thuế");
 
             if (res.data.address) {
@@ -294,7 +340,7 @@ export function KhachHangForm({
                     <div className="flex items-center gap-2">
                         <label className="text-sm font-semibold text-muted-foreground">Địa chỉ</label>
                         {(lat || long) && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary truncate max-w-[150px] md:max-w-[200px]" title={`${lat}, ${long}`}>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary truncate max-w-[200px] md:max-w-[250px]" title={`${lat}, ${long}`}>
                                 {lat && long ? `${lat}, ${long}` : (lat ? `Lat: ${lat}` : `Long: ${long}`)}
                             </span>
                         )}
@@ -319,15 +365,35 @@ export function KhachHangForm({
                             e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
                         }}
                     />
-                    <button
-                        type="button"
-                        onClick={handleManualGetCoordinates}
-                        disabled={coordinateLoading}
-                        className="btn-premium-secondary shrink-0 flex items-center justify-center gap-1.5 w-12 h-auto"
-                        title="Lấy tọa độ từ địa chỉ"
-                    >
-                        {coordinateLoading ? <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" /> : <MapPin className="w-6 h-6 text-primary" />}
-                    </button>
+                    {linkMap || lat || long ? (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (formRef.current) {
+                                    const diaChiEl = formRef.current.elements.namedItem("DIA_CHI") as HTMLTextAreaElement;
+                                    if (diaChiEl) {
+                                        diaChiEl.value = "";
+                                        diaChiEl.style.height = "auto";
+                                        diaChiEl.focus();
+                                    }
+                                }
+                            }}
+                            className="btn-premium-secondary shrink-0 flex items-center justify-center gap-1.5 w-12 h-auto text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200"
+                            title="Xóa nhanh chữ trong ô địa chỉ"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleManualGetCoordinates}
+                            disabled={coordinateLoading}
+                            className="btn-premium-secondary shrink-0 flex items-center justify-center gap-1.5 w-12 h-auto"
+                            title="Lấy tọa độ từ địa chỉ"
+                        >
+                            {coordinateLoading ? <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" /> : <MapPin className="w-6 h-6 text-primary" />}
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -345,7 +411,45 @@ export function KhachHangForm({
                 </div>
             )}
 
-            {/* Người đại diện */}
+            {/* Link Google Maps */}
+            <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+                    <Link2 className="w-3.5 h-3.5" /> Link Google Maps
+                </label>
+                <div className="flex gap-2">
+                    <input
+                        name="LINK_MAP"
+                        value={linkMap}
+                        onChange={(e) => setLinkMap(e.target.value)}
+                        className="input-modern"
+                        placeholder="Dán link Google Maps vào đây..."
+                    />
+                    {linkMap && (
+                        <a
+                            href={linkMap}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-premium-secondary shrink-0 flex items-center justify-center px-3"
+                            title="Mở link"
+                        >
+                            <Link2 className="w-4 h-4 text-primary" />
+                        </a>
+                    )}
+                    <button
+                        type="button"
+                        onClick={handleExtractFromLink}
+                        disabled={linkMapLoading || !linkMap.trim()}
+                        className="btn-premium-primary shrink-0 flex items-center justify-center gap-1.5 px-3 text-xs font-semibold whitespace-nowrap"
+                        title="Truy xuất lat/long từ link"
+                    >
+                        {linkMapLoading
+                            ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                            : <><MapPin className="w-4 h-4" /></>}
+                    </button>
+                </div>
+            </div>
+
+
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center mb-1">
                     <label className="text-sm font-semibold text-muted-foreground">Người đại diện</label>

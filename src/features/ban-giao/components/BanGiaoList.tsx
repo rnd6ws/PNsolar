@@ -43,7 +43,7 @@ function BaoHanhBadge({ date }: { date?: string | null }) {
     const isExpired = new Date(date) < new Date();
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isExpired ? "bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400"
-                : "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400"
+            : "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400"
             }`}>
             {isExpired ? <ShieldOff className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
             {formatDate(date)}
@@ -165,8 +165,8 @@ export default function BanGiaoList({ data, visibleColumns, viewMode = "list" }:
                     </thead>
                     <tbody>
                         {sortedData.map((item, idx) => (
-                            <tr 
-                                key={item.ID} 
+                            <tr
+                                key={item.ID}
                                 className="border-b border-border hover:bg-muted/30 transition-all cursor-pointer"
                                 onClick={() => setViewItem(item)}
                             >
@@ -266,77 +266,77 @@ export default function BanGiaoList({ data, visibleColumns, viewMode = "list" }:
             {/* ─── Mobile Cards ─── */}
             {viewMode === "card" && (
                 <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-                {sortedData.map((item) => (
-                    <div key={item.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                                <p className="font-bold text-primary truncate">{item.SO_BAN_GIAO}</p>
-                                <div className="flex items-center gap-1 mt-0.5">
-                                    <FileText className="w-3 h-3 text-muted-foreground" />
-                                    <p className="text-xs text-muted-foreground truncate">{item.SO_HD}</p>
+                    {sortedData.map((item) => (
+                        <div key={item.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-primary truncate">{item.SO_BAN_GIAO}</p>
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                        <FileText className="w-3 h-3 text-muted-foreground" />
+                                        <p className="text-xs text-muted-foreground truncate">{item.SO_HD}</p>
+                                    </div>
                                 </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
+                                            <MoreHorizontal className="w-4 h-4" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-36 rounded-xl">
+                                        <DropdownMenuItem onClick={() => setViewItem(item)} className="gap-2 text-blue-600 focus:text-blue-700 focus:bg-blue-50 dark:focus:bg-blue-900/30 cursor-pointer">
+                                            <Eye className="w-4 h-4 text-blue-600" /> Xem
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="gap-2 text-green-600 focus:text-green-700 focus:bg-green-50 dark:focus:bg-green-900/30 cursor-pointer">
+                                            <FileCheckCorner className="w-4 h-4 text-green-600" /> Xuất Word
+                                        </DropdownMenuItem>
+                                        <PermissionGuard moduleKey="ban-giao" level="edit">
+                                            <DropdownMenuItem onClick={() => setEditItem(item)} className="gap-2 text-primary focus:text-primary focus:bg-primary/10 cursor-pointer">
+                                                <Pencil className="w-4 h-4 text-primary" /> Sửa
+                                            </DropdownMenuItem>
+                                        </PermissionGuard>
+                                        <PermissionGuard moduleKey="ban-giao" level="delete">
+                                            <DropdownMenuItem onClick={() => setDeleteItem(item)} className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer">
+                                                <Trash2 className="w-4 h-4 text-destructive" /> Xóa
+                                            </DropdownMenuItem>
+                                        </PermissionGuard>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
-                                        <MoreHorizontal className="w-4 h-4" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-36 rounded-xl">
-                                    <DropdownMenuItem onClick={() => setViewItem(item)} className="gap-2 cursor-pointer">
-                                        <Eye className="w-4 h-4" /> Xem
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="gap-2 cursor-pointer">
-                                        <FileCheckCorner className="w-4 h-4" /> Xuất Word
-                                    </DropdownMenuItem>
-                                    <PermissionGuard moduleKey="ban-giao" level="edit">
-                                        <DropdownMenuItem onClick={() => setEditItem(item)} className="gap-2 cursor-pointer">
-                                            <Pencil className="w-4 h-4" /> Sửa
-                                        </DropdownMenuItem>
-                                    </PermissionGuard>
-                                    <PermissionGuard moduleKey="ban-giao" level="delete">
-                                        <DropdownMenuItem onClick={() => setDeleteItem(item)} className="gap-2 text-destructive cursor-pointer focus:text-destructive">
-                                            <Trash2 className="w-4 h-4" /> Xóa
-                                        </DropdownMenuItem>
-                                    </PermissionGuard>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
 
-                        <div className="border-t border-border pt-3 grid grid-cols-1 gap-2 text-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="text-muted-foreground text-xs">Khách hàng</span>
-                                <span className="font-medium text-foreground text-xs text-right">{item.HD_REL?.KHTN_REL?.TEN_KH || "—"}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-muted-foreground text-xs">Ngày bàn giao</span>
-                                <div className="flex items-center gap-1 text-xs text-foreground">
-                                    <CalendarDays className="w-3 h-3 text-muted-foreground" />
-                                    {formatDate(item.NGAY_BAN_GIAO)}
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-muted-foreground text-xs">Bảo hành đến</span>
-                                <BaoHanhBadge date={item.THOI_GIAN_BAO_HANH} />
-                            </div>
-                            {item.FILE_DINH_KEM && Array.isArray(item.FILE_DINH_KEM) && item.FILE_DINH_KEM.length > 0 && (
+                            <div className="border-t border-border pt-3 grid grid-cols-1 gap-2 text-sm">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground text-xs">File đính kèm</span>
-                                    <span className="inline-flex items-center gap-1 text-xs text-primary">
-                                        <Paperclip className="w-3 h-3" /> {item.FILE_DINH_KEM.length} file
-                                    </span>
+                                    <span className="text-muted-foreground text-xs">Khách hàng</span>
+                                    <span className="font-medium text-foreground text-xs text-right">{item.HD_REL?.KHTN_REL?.TEN_KH || "—"}</span>
                                 </div>
-                            )}
-                            {item.HD_REL?.TONG_TIEN && (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground text-xs">Giá trị HĐ</span>
-                                    <span className="font-semibold text-primary text-xs">{formatMoney(item.HD_REL.TONG_TIEN)}</span>
+                                    <span className="text-muted-foreground text-xs">Ngày bàn giao</span>
+                                    <div className="flex items-center gap-1 text-xs text-foreground">
+                                        <CalendarDays className="w-3 h-3 text-muted-foreground" />
+                                        {formatDate(item.NGAY_BAN_GIAO)}
+                                    </div>
                                 </div>
-                            )}
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground text-xs">Bảo hành đến</span>
+                                    <BaoHanhBadge date={item.THOI_GIAN_BAO_HANH} />
+                                </div>
+                                {item.FILE_DINH_KEM && Array.isArray(item.FILE_DINH_KEM) && item.FILE_DINH_KEM.length > 0 && (
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-muted-foreground text-xs">File đính kèm</span>
+                                        <span className="inline-flex items-center gap-1 text-xs text-primary">
+                                            <Paperclip className="w-3 h-3" /> {item.FILE_DINH_KEM.length} file
+                                        </span>
+                                    </div>
+                                )}
+                                {item.HD_REL?.TONG_TIEN && (
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-muted-foreground text-xs">Giá trị HĐ</span>
+                                        <span className="font-semibold text-primary text-xs">{formatMoney(item.HD_REL.TONG_TIEN)}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
             )}
 
             {/* ─── Modals ─── */}

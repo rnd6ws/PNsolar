@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { updateTag } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
+import { resolveMapsInfo } from "@/lib/maps/resolveMapsInfo";
 
 // ─── KHTN (Khách hàng) ────────────────────────────────────────
 
@@ -225,6 +226,7 @@ export async function createKhachHang(data: any) {
                         NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
                         LAT: data.LAT ? parseFloat(data.LAT) : null,
                         LONG: data.LONG ? parseFloat(data.LONG) : null,
+                        LINK_MAP: data.LINK_MAP || null,
                         ...(data.NGUOI_DD ? {
                             NGUOI_DAI_DIEN: {
                                 create: {
@@ -311,6 +313,7 @@ export async function updateKhachHang(id: string, data: any) {
                 NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
                 LAT: data.LAT ? parseFloat(data.LAT) : null,
                 LONG: data.LONG ? parseFloat(data.LONG) : null,
+                LINK_MAP: data.LINK_MAP || null,
                 LY_DO_TU_CHOI: data.LY_DO_TU_CHOI || null,
             },
         });
@@ -648,6 +651,30 @@ export async function getCoordinatesFromAddress(address: string) {
         clearTimeout(timeout);
     }
 }
+
+// ─── Lấy tọa độ + địa chỉ từ link Google Maps ────────────────────────
+
+export async function getCoordinatesFromGoogleMapsLink(url: string) {
+    if (!url || url.trim() === '') {
+        return { success: false, message: 'Vui lòng nhập link Google Maps' };
+    }
+    try {
+        const info = await resolveMapsInfo(url.trim());
+        return {
+            success: true,
+            data: {
+                lat: info.lat,
+                lon: info.lng,
+                name: info.name,
+                address: info.address,
+                addressDetail: info.addressDetail,
+            },
+        };
+    } catch (err: any) {
+        return { success: false, message: err.message ?? 'Không thể xử lý link Google Maps' };
+    }
+}
+
 
 // ─── Danh mục: LÝ DO TỪ CHỐI ────────────────────────────────────────
 
