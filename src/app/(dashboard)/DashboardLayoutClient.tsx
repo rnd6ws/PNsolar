@@ -1,6 +1,6 @@
 "use client";
 // src/app/(dashboard)/DashboardLayoutClient.tsx
-import { Search, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronDown, Shield, Download } from 'lucide-react';
+import { Search, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronDown, Shield, Download, Bell } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useTheme } from '@/components/ThemeProvider';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -20,6 +20,7 @@ import type { UserPermissions } from '@/lib/permissions';
 
 // Dynamic imports — giảm bundle size ban đầu
 const PreferencesPopover = lazy(() => import('@/components/PreferencesPopover').then(m => ({ default: m.PreferencesPopover })));
+import ImpersonateBanner from '@/features/nhan-vien/components/ImpersonateBanner';
 
 interface Props {
     children: React.ReactNode;
@@ -27,6 +28,8 @@ interface Props {
     isAdmin: boolean;
     currentUser: { HO_TEN: string; ROLE: string } | null;
     userId: string | null;
+    isImpersonating?: boolean;
+    impersonatedName?: string;
 }
 
 // ── Breadcrumb helper (memoized) ──────────────────
@@ -51,6 +54,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
     '/settings': 'Cài đặt',
     '/phan-quyen': 'Phân quyền',
     '/ban-giao': 'Bàn giao',
+    '/de-nghi-tt': 'Đề nghị thanh toán',
 };
 
 function getBreadcrumb(pathname: string): string {
@@ -115,17 +119,18 @@ const UserMenu = memo(function UserMenu({
                         </div>
                     </div>
                     <div className="py-1.5 px-1.5 space-y-0.5">
-                        <Link href="/settings" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors">
+                        <Link href="/settings?tab=profile" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors">
                             <UserCircle className="w-4 h-4 text-muted-foreground" /> Hồ sơ cá nhân
                         </Link>
-                        <Link href="/settings" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors">
-                            <SettingsIcon className="w-4 h-4 text-muted-foreground" /> Cài đặt hệ thống
+                        <Link href="/settings?tab=security" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors">
+                            <Shield className="w-4 h-4 text-muted-foreground" /> Bảo mật
                         </Link>
-                        {isAdmin && (
-                            <Link href="/phan-quyen" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors">
-                                <Shield className="w-4 h-4 text-muted-foreground" /> Phân quyền
-                            </Link>
-                        )}
+                        <Link href="/settings?tab=appearance" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors">
+                            <SettingsIcon className="w-4 h-4 text-muted-foreground" /> Giao diện
+                        </Link>
+                        <Link href="/settings?tab=notifications" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors">
+                            <Bell className="w-4 h-4 text-muted-foreground" /> Thông báo
+                        </Link>
                     </div>
                     <div className="border-t border-border px-1.5 py-1.5">
                         <button onClick={() => logoutUser()} className="w-full flex items-center gap-2.5 px-2.5 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
@@ -139,7 +144,7 @@ const UserMenu = memo(function UserMenu({
 });
 
 // ── Main Layout ────────────────────────────────────
-export default function DashboardLayoutClient({ children, permissions, isAdmin, currentUser, userId }: Props) {
+export default function DashboardLayoutClient({ children, permissions, isAdmin, currentUser, userId, isImpersonating, impersonatedName }: Props) {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -188,6 +193,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
 
     return (
         <PermissionProvider permissions={permissions} isAdmin={isAdmin}>
+            {isImpersonating && <ImpersonateBanner userName={impersonatedName || ''} />}
             <SidebarProvider>
                 <AppSidebar
                     variant={sidebarVariant}

@@ -6,7 +6,7 @@ import HopDongList from "./HopDongList";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
 import { Download, Settings2, LayoutList, LayoutGrid } from "lucide-react";
 
-const DEFAULT_COLUMNS: ColumnKey[] = ["ngayHD", "khachHang", "coHoi", "baoGia", "loai", "tongTien"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["ngayHD", "khachHang", "coHoi", "baoGia", "loai", "tongTien", "daTT"];
 const LOAI_OPTIONS = [{ label: "Dân dụng", value: "Dân dụng" }, { label: "Công nghiệp", value: "Công nghiệp" }];
 
 export default function HopDongPageClient({ data }: { data: any[] }) {

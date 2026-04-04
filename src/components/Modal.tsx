@@ -80,9 +80,10 @@ export default function Modal({
     // ─── Chế độ fullHeight (header + body scroll + footer cố định) ──
     if (fullHeight) {
         return (
-            <div className="fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className={`bg-card border border-border rounded-2xl shadow-2xl w-full ${sizeClasses[size]} animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden`}
-                    style={{ maxHeight: 'min(calc(100vh - 1.5rem), 92vh)' }}>
+            <div className="fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+                <div className={`relative bg-card border border-border rounded-2xl shadow-2xl w-full ${sizeClasses[size]} animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden`}
+                    style={{ maxHeight: 'min(calc(100vh - 1.5rem), 92vh)', minHeight: 'min(calc(100vh - 1.5rem), 92vh)' }}>
                     {/* Header */}
                     <div className={`px-6 py-4 border-b flex items-center justify-between shrink-0 ${Icon || headerContent ? 'bg-linear-to-r from-primary/5 to-transparent' : ''}`}>
                         {renderTitle()}

@@ -213,6 +213,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                             {show("loai") && <th className={`${thClass} text-center`}>Loại</th>}
                             {show("congTrinh") && <th className={thClass}>Công trình</th>}
                             {show("tongTien") && <th className={`${thClass} text-right`} onClick={() => handleSort("TONG_TIEN")}>Tổng tiền <SortIcon columnKey="TONG_TIEN" /></th>}
+                            {show("daTT") && <th className={`${thClass} text-right`}>Đã thanh toán</th>}
                             <th className={`${thClass} text-right`}>Hành động</th>
                         </tr>
                     </thead>
@@ -269,6 +270,13 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 )}
                                 {show("congTrinh") && <td className={tdClass}><p className="truncate max-w-[250px] text-muted-foreground">{item.CONG_TRINH || "—"}</p></td>}
                                 {show("tongTien") && <td className={`${tdClass} text-right font-bold`}>{fmtMoney(item.TONG_TIEN)}</td>}
+                                {show("daTT") && (
+                                    <td className={`${tdClass} text-right font-semibold text-emerald-600 dark:text-emerald-400`}>
+                                        {item.THANH_TOAN?.length > 0
+                                            ? fmtMoney(item.THANH_TOAN.reduce((s: number, t: any) => s + (t.SO_TIEN_THANH_TOAN || 0), 0))
+                                            : <span className="text-muted-foreground font-normal">—</span>}
+                                    </td>
+                                )}
                                 <td className={`${tdClass} text-right`}>
                                     <div className="flex items-center justify-end gap-1">
                                         <button onClick={() => handleView(item)} disabled={loadingView} className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground hover:text-primary" title="Xem"><Eye className="w-4 h-4" /></button>

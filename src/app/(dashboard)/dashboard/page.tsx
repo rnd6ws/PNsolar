@@ -91,18 +91,6 @@ const moduleGroups: ModuleGroup[] = [
         accentColor: "from-emerald-500 to-teal-500",
         modules: [
             {
-                name: "Phân loại hàng hóa",
-                description: "Quản lý mã và tên phân loại hàng hóa.",
-                href: "/phan-loai-hh",
-                icon: Package,
-                color: "text-emerald-700 dark:text-emerald-400",
-                bgColor: "bg-emerald-100 dark:bg-emerald-800/50",
-                gradientFrom: "from-emerald-500/10",
-                gradientTo: "to-green-500/10",
-                available: true,
-                moduleKey: "phan-loai-hh",
-            },
-            {
                 name: "Hàng hóa",
                 description: "Quản lý danh mục sản phẩm hàng hóa.",
                 href: "/hang-hoa",
@@ -171,6 +159,18 @@ const moduleGroups: ModuleGroup[] = [
         accentColor: "from-amber-500 to-orange-500",
         modules: [
             {
+                name: "Khảo sát công trình",
+                description: "Lập phiếu và quản lý khảo sát thực tế công trình.",
+                href: "/khao-sat",
+                icon: MapPin,
+                color: "text-emerald-600 dark:text-emerald-400",
+                bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
+                gradientFrom: "from-emerald-500/10",
+                gradientTo: "to-teal-500/10",
+                available: true,
+                moduleKey: "khao-sat",
+            },
+            {
                 name: "Báo giá",
                 description: "Tạo và quản lý báo giá cho khách hàng.",
                 href: "/bao-gia",
@@ -207,28 +207,28 @@ const moduleGroups: ModuleGroup[] = [
                 moduleKey: "ban-giao",
             },
             {
-                name: "Hạng mục KS",
-                description: "Quản lý loại công trình, nhóm và hạng mục khảo sát.",
-                href: "/hang-muc-ks",
-                icon: ClipboardCheck,
-                color: "text-indigo-600 dark:text-indigo-400",
-                bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
-                gradientFrom: "from-indigo-500/10",
-                gradientTo: "to-violet-500/10",
+                name: "Đề nghị TT",
+                description: "Quản lý đề nghị thanh toán theo hợp đồng.",
+                href: "/de-nghi-tt",
+                icon: CreditCard,
+                color: "text-rose-600 dark:text-rose-400",
+                bgColor: "bg-rose-50 dark:bg-rose-950/50",
+                gradientFrom: "from-rose-500/10",
+                gradientTo: "to-pink-500/10",
                 available: true,
-                moduleKey: "hang-muc-ks",
+                moduleKey: "de-nghi-tt",
             },
             {
-                name: "Khảo sát công trình",
-                description: "Lập phiếu và quản lý khảo sát thực tế công trình.",
-                href: "/khao-sat",
-                icon: MapPin,
+                name: "Thanh toán",
+                description: "Ghi nhận thanh toán và hoàn tiền theo hợp đồng.",
+                href: "/thanh-toan",
+                icon: DollarSign,
                 color: "text-emerald-600 dark:text-emerald-400",
                 bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
                 gradientFrom: "from-emerald-500/10",
                 gradientTo: "to-teal-500/10",
                 available: true,
-                moduleKey: "khao-sat",
+                moduleKey: "thanh-toan",
             },
         ],
     },
@@ -294,6 +294,30 @@ const moduleGroups: ModuleGroup[] = [
                 moduleKey: "nhan-vien",
             },
             {
+                name: "Phân loại hàng hóa",
+                description: "Quản lý mã và tên phân loại hàng hóa.",
+                href: "/phan-loai-hh",
+                icon: Package,
+                color: "text-emerald-700 dark:text-emerald-400",
+                bgColor: "bg-emerald-100 dark:bg-emerald-800/50",
+                gradientFrom: "from-emerald-500/10",
+                gradientTo: "to-green-500/10",
+                available: true,
+                moduleKey: "phan-loai-hh",
+            },
+            {
+                name: "Hạng mục KS",
+                description: "Quản lý loại công trình, nhóm và hạng mục khảo sát.",
+                href: "/hang-muc-ks",
+                icon: ClipboardCheck,
+                color: "text-indigo-600 dark:text-indigo-400",
+                bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
+                gradientFrom: "from-indigo-500/10",
+                gradientTo: "to-violet-500/10",
+                available: true,
+                moduleKey: "hang-muc-ks",
+            },
+            {
                 name: "Cài đặt",
                 description: "Cấu hình hệ thống, phân quyền người dùng.",
                 href: "/settings",
@@ -353,11 +377,21 @@ export default function HomePage() {
     const { canView } = usePermissions();
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
+    // Load favorites from localStorage on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('pnsolar_favorites');
+            if (saved) setFavorites(new Set(JSON.parse(saved)));
+        } catch { }
+    }, []);
+
     const toggleFavorite = useCallback((name: string) => {
         setFavorites((prev) => {
             const next = new Set(prev);
             if (next.has(name)) next.delete(name);
             else next.add(name);
+            // Save to localStorage
+            try { localStorage.setItem('pnsolar_favorites', JSON.stringify([...next])); } catch { }
             return next;
         });
     }, []);
@@ -400,7 +434,7 @@ export default function HomePage() {
                 <div className="absolute top-0 right-0 w-72 h-72 bg-linear-to-bl from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-linear-to-tr from-primary/8 to-transparent rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
 
-                <div className="relative px-6 py-6 md:px-8 md:py-8">
+                <div className="relative px-4 py-4 md:px-8 md:py-4">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="space-y-2">
                             <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
@@ -617,11 +651,28 @@ function ModuleCard({
                     : "opacity-40 cursor-default"
             )}
         >
-            {/* Favorite indicator */}
-            {isFav && (
-                <div className="absolute -top-1 -right-1 z-10">
-                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                </div>
+            {/* Star toggle button - visible on hover or if favorited */}
+            {mod.available && (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onToggleFav();
+                    }}
+                    className={cn(
+                        "absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200",
+                        isFav
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-70 hover:!opacity-100"
+                    )}
+                    title={isFav ? 'Bỏ khỏi truy cập nhanh' : 'Thêm vào truy cập nhanh'}
+                >
+                    <Star className={cn(
+                        "w-3.5 h-3.5 transition-colors",
+                        isFav ? "text-amber-500 fill-amber-500" : "text-muted-foreground/50 hover:text-amber-400"
+                    )} />
+                </button>
             )}
 
             {/* Icon */}
