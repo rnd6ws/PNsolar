@@ -294,6 +294,18 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const tongTien = thanhTienTotal + ttUuDai;
     const validRows = chiTiets.filter(r => r.MA_HH);
 
+    useEffect(() => {
+        setDkttRows(prev => {
+            const updated = prev.map(r => {
+                const st = tongTien > 0 ? Math.round((tongTien * (Number(r.PT_THANH_TOAN) || 0)) / 100) : 0;
+                if (r.SO_TIEN === st) return r;
+                return { ...r, SO_TIEN: st };
+            });
+            const changed = updated.some((r, i) => r.SO_TIEN !== prev[i].SO_TIEN);
+            return changed ? updated : prev;
+        });
+    }, [tongTien]);
+
     const handleSubmit = () => {
         if (!maKH) { toast.error("Vui lòng chọn khách hàng!"); setActiveTab("general"); return; }
         if (validRows.length === 0) { toast.error("Vui lòng thêm ít nhất 1 hàng hóa!"); setActiveTab("details"); return; }
@@ -602,10 +614,11 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                 {activeTab === "info" && (
                     <div className="space-y-4 animate-in fade-in duration-200">
                         <p className="text-sm text-muted-foreground">Thông tin bổ sung của bên ký kết hợp đồng.</p>
-                        <div className="space-y-3">
-                            {thongTinRows.map(row => (
-                                <div key={row._id} className="grid grid-cols-[1fr_2fr_auto] gap-3 items-center">
-                                    <div className="w-full relative">
+                        <div className="overflow-x-auto hide-scrollbar pb-2">
+                            <div className="space-y-3 min-w-[450px]">
+                                {thongTinRows.map(row => (
+                                    <div key={row._id} className="grid grid-cols-[140px_1fr_auto] gap-3 items-center">
+                                        <div className="w-full relative">
                                         <input
                                             type="text"
                                             value={row.TIEU_DE || ""}
@@ -687,6 +700,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                     </button>
                                 </div>
                             ))}
+                            </div>
                         </div>
                         <button type="button" onClick={() => setThongTinRows(prev => [...prev, { _id: tempId(), TIEU_DE: "", NOI_DUNG: "" }])} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"><Plus className="w-4 h-4" />Thêm dòng</button>
                     </div>
@@ -732,16 +746,16 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                             ) : (
                                 <div className="border border-border rounded-xl overflow-hidden">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-[12px]">
+                                        <table className="w-full text-left text-[12px] min-w-[850px]">
                                             <thead><tr className="bg-primary/10 border-b">
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-5">#</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[200px]">Hàng hóa</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-13">ĐVT</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-right text-[10px] w-26">Giá chưa VAT</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-26">Giá bán</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-16">SL</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-24">Thành tiền</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8"></th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-10">#</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[250px]">Hàng hóa</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-20">ĐVT</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-right text-[10px] w-32">Giá chưa VAT</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-32">Giá bán</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-20">SL</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-36">Thành tiền</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-12"></th>
                                             </tr></thead>
                                             <tbody>
                                                 {groupRows.map((row, idx) => (
@@ -828,15 +842,16 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                             <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl"><CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="text-sm">Chưa có điều kiện thanh toán.</p></div>
                         ) : (
                             <div className="border border-border rounded-xl overflow-hidden">
-                                <table className="w-full text-left text-[13px]">
-                                    <thead><tr className="bg-primary/10 border-b">
-                                        <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8">#</th>
-                                        <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-40">Lần thanh toán</th>
-                                        <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-28">% Thanh toán</th>
-                                        <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-32">Số tiền</th>
-                                        <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Nội dung yêu cầu</th>
-                                        <th className="px-3 py-2.5 w-10"></th>
-                                    </tr></thead>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-[13px] min-w-[700px]">
+                                        <thead><tr className="bg-primary/10 border-b">
+                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-12">#</th>
+                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-48">Lần thanh toán</th>
+                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-36">% Thanh toán</th>
+                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-36">Số tiền</th>
+                                            <th className="px-3 py-2.5 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[200px]">Nội dung yêu cầu</th>
+                                            <th className="px-3 py-2.5 w-12"></th>
+                                        </tr></thead>
                                     <tbody>
                                         {dkttRows.map((row, idx) => (
                                             <tr key={row._id} className="border-b hover:bg-muted/30 transition-colors">
@@ -849,13 +864,8 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                         setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, PT_THANH_TOAN: pt, SO_TIEN: st } : r));
                                                     }} className="w-full px-2 py-1.5 pr-7 border border-border rounded text-[13px] text-right bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="0" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span></div>
                                                 </td>
-                                                <td className="px-3 py-2">
-                                                    <input type="text" inputMode="numeric" value={row.SO_TIEN > 0 ? fmtMoney(row.SO_TIEN) : ""} onChange={e => {
-                                                        const raw = e.target.value.replace(/[^0-9]/g, "");
-                                                        const st = parseInt(raw, 10) || 0;
-                                                        const pt = tongTien > 0 ? Math.round((st / tongTien) * 10000) / 100 : 0;
-                                                        setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, SO_TIEN: st, PT_THANH_TOAN: pt } : r));
-                                                    }} className="w-full px-2 py-1.5 border border-border rounded text-[13px] text-right bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="0" />
+                                                <td className="px-3 py-2 text-right font-medium text-foreground text-[13px]">
+                                                    {row.SO_TIEN > 0 ? fmtMoney(row.SO_TIEN) : "0"} ₫
                                                 </td>
                                                 <td className="px-3 py-2"><input type="text" value={row.NOI_DUNG_YEU_CAU || ""} onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG_YEU_CAU: e.target.value } : r))} className="w-full px-2 py-1.5 border border-border rounded text-[13px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="Nội dung yêu cầu..." /></td>
                                                 <td className="px-3 py-2"><button type="button" onClick={() => setDkttRows(prev => prev.filter(r => r._id !== row._id))} className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors"><Trash2 className="w-3.5 h-3.5" /></button></td>
@@ -872,6 +882,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                         </tr>
                                     </tfoot>
                                 </table>
+                                </div>
                             </div>
                         )}
                     </div>

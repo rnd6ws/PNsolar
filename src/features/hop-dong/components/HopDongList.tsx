@@ -12,6 +12,8 @@ import ViewHopDongModal from "./ViewHopDongModal";
 import { exportHopDongDocx } from "../utils/exportHopDong";
 import { exportPLHopDongDocx } from "../utils/exportPLHopDong";
 import AddEditBanGiaoModal from "@/features/ban-giao/components/AddEditBanGiaoModal";
+import ViewBanGiaoModal from "@/features/ban-giao/components/ViewBanGiaoModal";
+import { getBanGiaoById } from "@/features/ban-giao/action";
 
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString("vi-VN");
 const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
@@ -33,6 +35,24 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
     const [duyetConfirm, setDuyetConfirm] = useState<{ open: boolean; id: string; soHD: string; tenKH: string; action: "Đã duyệt" | "Không duyệt"; loading: boolean }>({ open: false, id: "", soHD: "", tenKH: "", action: "Đã duyệt", loading: false });
     const [banGiaoModal, setBanGiaoModal] = useState<{ open: boolean; prefillHD: any | null }>({ open: false, prefillHD: null });
     const [loadingBanGiao, setLoadingBanGiao] = useState(false);
+    const [viewBanGiaoModal, setViewBanGiaoModal] = useState<{ open: boolean; data: any | null }>({ open: false, data: null });
+    const [loadingViewBanGiao, setLoadingViewBanGiao] = useState(false);
+
+    const handleViewBanGiao = async (banGiaoId: string) => {
+        setLoadingViewBanGiao(true);
+        try {
+            const result = await getBanGiaoById(banGiaoId);
+            if (result.success && result.data) {
+                setViewBanGiaoModal({ open: true, data: result.data });
+            } else {
+                toast.error(result.message || "Không thể tải chi tiết bàn giao");
+            }
+        } catch (error) {
+            toast.error("Có lỗi xảy ra khi lấy dữ liệu bàn giao");
+        } finally {
+            setLoadingViewBanGiao(false);
+        }
+    };
 
     const handleBanGiao = async (item: any) => {
         setLoadingBanGiao(true);
@@ -173,8 +193,8 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
     };
 
     const show = (key: ColumnKey) => visibleColumns.includes(key);
-    const thClass = "h-9 px-2 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[12px] cursor-pointer group hover:text-foreground";
-    const tdClass = "px-2 py-1.5 align-middle text-[12px]";
+    const thClass = "h-9 px-3 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[12px] cursor-pointer group hover:text-foreground whitespace-nowrap";
+    const tdClass = "px-3 py-2 align-middle text-[13px] whitespace-nowrap";
 
     return (
         <>
@@ -220,7 +240,14 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                             </PermissionGuard>
                                         </div>
                                     ) : item.DUYET === "Đã duyệt" ? (
-                                        <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[11px] font-medium border border-green-200 dark:border-green-800/50 inline-block transition-opacity" title="Click để xem chi tiết duyệt">Đã duyệt</span>
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[11px] font-medium border border-green-200 dark:border-green-800/50 inline-block transition-opacity" title="Click để xem chi tiết duyệt">Đã duyệt</span>
+                                            {(item.BAN_GIAO_HD?.length ?? 0) > 0 ? (
+                                                <span onClick={() => handleViewBanGiao(item.BAN_GIAO_HD[0].ID)} className={`cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[10px] font-medium border border-purple-200 dark:border-purple-800/50 inline-block transition-opacity ${loadingViewBanGiao ? 'opacity-50 pointer-events-none' : ''}`} title="Xem chi tiết bàn giao">Đã bàn giao</span>
+                                            ) : (
+                                                <span onClick={() => handleBanGiao(item)} className={`cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800/30 dark:text-slate-400 text-[10px] font-medium border border-slate-200 dark:border-slate-700/50 inline-block transition-opacity ${loadingBanGiao ? 'opacity-50 pointer-events-none' : ''}`} title="Tạo bàn giao">Chờ bàn giao</span>
+                                            )}
+                                        </div>
                                     ) : (
                                         <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-[11px] font-medium border border-red-200 dark:border-red-800/50 inline-block transition-opacity" title="Click để xem chi tiết duyệt">Không duyệt</span>
                                     )}
@@ -241,7 +268,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                         </span>
                                     </td>
                                 )}
-                                {show("congTrinh") && <td className={tdClass}><p className="truncate max-w-[120px] text-muted-foreground">{item.CONG_TRINH || "—"}</p></td>}
+                                {show("congTrinh") && <td className={tdClass}><p className="truncate max-w-[250px] text-muted-foreground">{item.CONG_TRINH || "—"}</p></td>}
                                 {show("tongTien") && <td className={`${tdClass} text-right font-bold`}>{fmtMoney(item.TONG_TIEN)}</td>}
                                 {show("daTT") && (
                                     <td className={`${tdClass} text-right font-semibold text-emerald-600 dark:text-emerald-400`}>
@@ -252,24 +279,24 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 )}
                                 <td className={`${tdClass} text-right`}>
                                     <div className="flex items-center justify-end gap-1">
-                                        <button onClick={() => handleView(item)} disabled={loadingView} className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground hover:text-primary" title="Xem"><Eye className="w-4 h-4" /></button>
-                                        <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-muted-foreground hover:text-green-700" title="Xuất HĐ Word"><BookDown className="w-4 h-4" /></button>
-                                        <button onClick={() => handleExportPL(item)} className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-muted-foreground hover:text-blue-700" title="Xuất Phụ Lục HĐ"><FileSpreadsheet className="w-4 h-4" /></button>
+                                        <button onClick={() => handleView(item)} disabled={loadingView} className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground group-hover:text-primary hover:text-primary" title="Xem"><Eye className="w-4 h-4" /></button>
+                                        <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-green-600 dark:group-hover:text-green-500 hover:text-green-700" title="Xuất HĐ Word"><BookDown className="w-4 h-4" /></button>
+                                        <button onClick={() => handleExportPL(item)} className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-500 hover:text-blue-700" title="Xuất Phụ Lục HĐ"><FileSpreadsheet className="w-4 h-4" /></button>
                                         <PermissionGuard moduleKey="hop-dong" level="edit">
                                             <button
                                                 onClick={() => handleBanGiao(item)}
                                                 disabled={loadingBanGiao || item.DUYET !== "Đã duyệt" || (item.BAN_GIAO_HD?.length ?? 0) > 0}
-                                                className="p-1.5 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors text-muted-foreground hover:text-purple-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                                                className="p-1.5 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-purple-600 dark:group-hover:text-purple-500 hover:text-purple-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:group-hover:text-muted-foreground"
                                                 title={item.DUYET !== "Đã duyệt" ? "Hợp đồng chưa được duyệt" : (item.BAN_GIAO_HD?.length ?? 0) > 0 ? "Hợp đồng đã bàn giao" : "Bàn giao hợp đồng"}
                                             >
                                                 <PackageCheck className="w-4 h-4" />
                                             </button>
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="hop-dong" level="edit">
-                                            <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground" title="Sửa"><Pencil className="w-4 h-4" /></button>
+                                            <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground group-hover:text-blue-500 hover:text-blue-600" title="Sửa"><Pencil className="w-4 h-4" /></button>
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="hop-dong" level="delete">
-                                            <button onClick={() => setDeleteItem(item)} className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground hover:text-destructive" title="Xóa"><Trash2 className="w-4 h-4" /></button>
+                                            <button onClick={() => setDeleteItem(item)} className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground group-hover:text-destructive hover:text-destructive" title="Xóa"><Trash2 className="w-4 h-4" /></button>
                                         </PermissionGuard>
                                     </div>
                                 </td>
@@ -281,26 +308,33 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
 
             {/* Card View - Mobile */}
             {viewMode === "card" && (
-                <div className="flex flex-col gap-4 p-4 bg-muted/10 lg:hidden">
+                <div className="flex flex-col gap-4 p-3 bg-muted/10 lg:hidden">
                     {sortedData.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">Không có dữ liệu</div>
                     ) : sortedData.map((item: any) => (
-                        <div key={item.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                        <div key={item.ID} className="bg-background border border-border rounded-xl p-3 shadow-sm flex flex-col gap-3">
                             {/* Header: Số hợp đồng và Loại hợp đồng */}
                             <div className="flex items-start justify-between gap-2">
-                                <div className="flex flex-col gap-1">
+                                <div className="flex flex-col">
                                     <button onClick={() => handleView(item)} disabled={loadingView} className="font-bold text-base text-primary leading-tight hover:text-primary/80 hover:underline transition-all text-left cursor-pointer">
                                         {item.SO_HD}
                                     </button>
-                                    <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-sm font-semibold text-foreground mt-0.5 mb-1.5">{fmtDate(item.NGAY_HD)}</span>
+                                    <div className="flex items-center flex-wrap gap-2">
                                         {!item.DUYET || item.DUYET === "Chờ duyệt" ? (
                                             <span className="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 text-[11px] font-medium border border-yellow-200 dark:border-yellow-800/50">Chờ duyệt</span>
                                         ) : item.DUYET === "Đã duyệt" ? (
-                                            <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[11px] font-medium border border-green-200 dark:border-green-800/50 transition-opacity" title="Click để xem chi tiết">Đã duyệt</span>
+                                            <>
+                                                <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[11px] font-medium border border-green-200 dark:border-green-800/50 transition-opacity" title="Click để xem chi tiết">Đã duyệt</span>
+                                                {(item.BAN_GIAO_HD?.length ?? 0) > 0 ? (
+                                                    <span onClick={() => handleViewBanGiao(item.BAN_GIAO_HD[0].ID)} className={`cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[10px] font-medium border border-purple-200 dark:border-purple-800/50 inline-block transition-opacity ${loadingViewBanGiao ? 'opacity-50 pointer-events-none' : ''}`} title="Xem chi tiết bàn giao">Đã bàn giao</span>
+                                                ) : (
+                                                    <span onClick={() => handleBanGiao(item)} className={`cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800/30 dark:text-slate-400 text-[10px] font-medium border border-slate-200 dark:border-slate-700/50 inline-block transition-opacity ${loadingBanGiao ? 'opacity-50 pointer-events-none' : ''}`} title="Tạo bàn giao">Chờ bàn giao</span>
+                                                )}
+                                            </>
                                         ) : (
                                             <span onClick={() => showDuyetInfo(item)} className="cursor-pointer hover:opacity-80 px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-[11px] font-medium border border-red-200 dark:border-red-800/50 transition-opacity" title="Click để xem chi tiết">Không duyệt</span>
                                         )}
-                                        <span className="text-[11px] text-muted-foreground font-medium">{fmtDate(item.NGAY_HD)}</span>
                                     </div>
                                 </div>
                                 <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${item.LOAI_HD === "Dân dụng" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}>
@@ -309,7 +343,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                             </div>
 
                             {/* Khách hàng và Giá trị */}
-                            <div className="flex flex-col gap-1.5 p-3 bg-muted/40 rounded-lg">
+                            <div className="flex flex-col gap-1.5 p-1.5 bg-muted/40 rounded-lg">
                                 <div className="flex flex-col">
                                     <span className="text-[11px] text-muted-foreground mb-0.5 uppercase tracking-wider font-semibold">Khách hàng</span>
                                     <p className="text-sm font-semibold text-foreground line-clamp-1">{item.KHTN_REL?.TEN_KH || item.MA_KH}</p>
@@ -379,6 +413,11 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                 onClose={() => setBanGiaoModal({ open: false, prefillHD: null })}
                 onSuccess={() => setBanGiaoModal({ open: false, prefillHD: null })}
                 prefillHD={banGiaoModal.prefillHD}
+            />
+            <ViewBanGiaoModal
+                isOpen={viewBanGiaoModal.open}
+                onClose={() => setViewBanGiaoModal({ open: false, data: null })}
+                data={viewBanGiaoModal.data}
             />
 
             <Modal

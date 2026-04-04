@@ -181,7 +181,10 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
             </div>
 
             {/* Tab Bar - scrollable trên mobile */}
-            <div className="flex border-b border-border bg-muted/20 shrink-0">
+            <div
+                className="flex w-full overflow-x-auto overflow-y-hidden flex-nowrap border-b border-border bg-muted/20 shrink-0 [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
                 {tabs.map(t => (
                     <button
                         key={t.key}
