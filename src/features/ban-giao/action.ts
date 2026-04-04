@@ -73,6 +73,24 @@ export async function getBanGiaoList(filters: {
 
     if (andConditions.length > 0) where.AND = andConditions;
 
+    // ── STAFF Data Isolation: chỉ xem BG mình tạo hoặc KH mình phụ trách ──
+    const user = await getCurrentUser();
+    if (user?.ROLE === 'STAFF') {
+        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (staff?.MA_NV) {
+            if (!where.AND) where.AND = [];
+            where.AND.push({
+                OR: [
+                    { NGUOI_TAO: staff.MA_NV },
+                    { HD_REL: { KHTN_REL: { SALES_PT: staff.MA_NV } } },
+                ]
+            });
+        } else {
+            if (!where.AND) where.AND = [];
+            where.AND.push({ NGUOI_TAO: 'NONE' });
+        }
+    }
+
     try {
         const [data, total] = await Promise.all([
             prisma.bAN_GIAO_HD.findMany({
@@ -157,11 +175,27 @@ export async function getBanGiaoById(id: string) {
 export async function getBanGiaoStats() {
     try {
         const now = new Date();
+
+        // ── STAFF Data Isolation ──
+        const user = await getCurrentUser();
+        const baseWhere: any = {};
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                baseWhere.OR = [
+                    { NGUOI_TAO: staff.MA_NV },
+                    { HD_REL: { KHTN_REL: { SALES_PT: staff.MA_NV } } },
+                ];
+            } else {
+                baseWhere.NGUOI_TAO = 'NONE';
+            }
+        }
+
         const [total, conBaoHanh, hetBaoHanh, khongBaoHanh] = await Promise.all([
-            prisma.bAN_GIAO_HD.count(),
-            prisma.bAN_GIAO_HD.count({ where: { THOI_GIAN_BAO_HANH: { gte: now } } }),
-            prisma.bAN_GIAO_HD.count({ where: { THOI_GIAN_BAO_HANH: { lt: now } } }),
-            prisma.bAN_GIAO_HD.count({ where: { THOI_GIAN_BAO_HANH: null } }),
+            prisma.bAN_GIAO_HD.count({ where: baseWhere }),
+            prisma.bAN_GIAO_HD.count({ where: { ...baseWhere, THOI_GIAN_BAO_HANH: { gte: now } } }),
+            prisma.bAN_GIAO_HD.count({ where: { ...baseWhere, THOI_GIAN_BAO_HANH: { lt: now } } }),
+            prisma.bAN_GIAO_HD.count({ where: { ...baseWhere, THOI_GIAN_BAO_HANH: null } }),
         ]);
 
         return { total, conBaoHanh, hetBaoHanh, khongBaoHanh };
@@ -178,12 +212,34 @@ export async function searchHopDongForBanGiao(query?: string) {
             DUYET: 'Đã duyệt',
             BAN_GIAO_HD: { none: {} } // Chỉ lấy hợp đồng chưa bàn giao
         };
-        if (query?.trim()) {
-            where.OR = [
-                { SO_HD: { contains: query, mode: 'insensitive' } },
-                { KHTN_REL: { TEN_KH: { contains: query, mode: 'insensitive' } } },
-            ];
+
+        // ── STAFF: chỉ HĐ mình tạo hoặc KH mình phụ trách ──
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                where.AND = [{
+                    OR: [
+                        { NGUOI_TAO: staff.MA_NV },
+                        { KHTN_REL: { SALES_PT: staff.MA_NV } },
+                    ]
+                }];
+            } else {
+                where.NGUOI_TAO = 'NONE';
+            }
         }
+
+        if (query?.trim()) {
+            const searchCond = {
+                OR: [
+                    { SO_HD: { contains: query, mode: 'insensitive' } },
+                    { KHTN_REL: { TEN_KH: { contains: query, mode: 'insensitive' } } },
+                ],
+            };
+            if (where.AND) where.AND.push(searchCond);
+            else where.AND = [searchCond];
+        }
+
         const data = await prisma.hOP_DONG.findMany({
             where,
             select: {

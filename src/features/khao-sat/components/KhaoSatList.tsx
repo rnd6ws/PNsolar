@@ -62,7 +62,7 @@ interface Props {
         STT: number | null;
         HIEU_LUC: boolean;
     }[];
-    viewMode?: "table" | "card" | "auto";
+    viewMode?: "list" | "card";
 }
 
 type SortDir = "asc" | "desc";
@@ -89,7 +89,7 @@ export default function KhaoSatList({
     visibleColumns,
     nhomKSData,
     hangMucData,
-    viewMode = "auto",
+    viewMode = "card",
 }: Props) {
     const router = useRouter();
     const [sortKey, setSortKey] = useState<string | null>(null);
@@ -158,10 +158,7 @@ export default function KhaoSatList({
     return (
         <>
             {/* Table */}
-            <div className={`overflow-x-auto ${viewMode === "table" ? "block" :
-                viewMode === "card" ? "hidden" :
-                    "hidden md:block"
-                }`}>
+            <div className={`overflow-x-auto ${viewMode === "card" ? "hidden lg:block" : ""}`}>
                 <table className="w-full text-center border-collapse text-sm max-md:whitespace-nowrap md:whitespace-normal">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
@@ -320,11 +317,8 @@ export default function KhaoSatList({
                 </table>
             </div>
 
-            {/* Card View */}
-            <div className={`grid grid-cols-1 gap-2 p-1 ${viewMode === "card" ? "block" :
-                viewMode === "table" ? "hidden" :
-                    "block md:hidden"
-                }`}>
+            {viewMode === "card" && (
+            <div className="lg:hidden grid grid-cols-1 gap-2 p-1">
                 {sorted.length === 0 && (
                     <div className="text-center py-16 text-muted-foreground text-sm italic border rounded-xl border-dashed">
                         Chưa có phiếu khảo sát nào
@@ -408,6 +402,7 @@ export default function KhaoSatList({
                     </div>
                 ))}
             </div>
+            )}
 
             {/* Edit Modal (Info) */}
             {editItem && (

@@ -17,7 +17,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: 'GHI_CHU', label: 'Ghi chú' },
 ];
 
-export const DEFAULT_COLUMNS: ColumnKey[] = ['MA_TT', 'KHACH_HANG', 'HOP_DONG', 'LOAI_THANH_TOAN', 'NGAY_THANH_TOAN', 'SO_TIEN_THANH_TOAN', 'SO_TK', 'GHI_CHU'];
+export const DEFAULT_COLUMNS: ColumnKey[] = ['MA_TT', 'KHACH_HANG', 'HOP_DONG', 'LOAI_THANH_TOAN', 'NGAY_THANH_TOAN', 'SO_TIEN_THANH_TOAN', 'SO_TK', 'HINH_ANH', 'GHI_CHU'];
 
 interface Props {
     visibleColumns: ColumnKey[];

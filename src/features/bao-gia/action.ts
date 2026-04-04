@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getCurrentUser } from '@/lib/auth';
 import { baoGiaSchema, baoGiaChiTietSchema, dkttBgSchema, dkBaoGiaSchema } from './schema';
 import { createNotification } from '@/lib/notifications';
 import type { BaoGiaChiTietInput, DkttBgInput, DkBaoGiaInput } from './schema';
@@ -119,6 +120,22 @@ export async function getBaoGiaList(filters: {
         andConditions.push({ LOAI_BAO_GIA });
     }
 
+    // ── STAFF Data Isolation: chỉ xem BG mình tạo hoặc KH mình phụ trách ──
+    const user = await getCurrentUser();
+    if (user?.ROLE === 'STAFF') {
+        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (staff?.MA_NV) {
+            andConditions.push({
+                OR: [
+                    { NGUOI_GUI: staff.MA_NV },
+                    { KH_REL: { SALES_PT: staff.MA_NV } },
+                ]
+            });
+        } else {
+            andConditions.push({ NGUOI_GUI: 'NONE' });
+        }
+    }
+
     if (andConditions.length > 0) where.AND = andConditions;
 
     try {
@@ -156,11 +173,26 @@ export async function getBaoGiaList(filters: {
 // ─── Thống kê ───────────────────────────────────────────────
 export async function getBaoGiaStats() {
     try {
+        // ── STAFF Data Isolation ──
+        const user = await getCurrentUser();
+        const baseWhere: any = {};
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                baseWhere.OR = [
+                    { NGUOI_GUI: staff.MA_NV },
+                    { KH_REL: { SALES_PT: staff.MA_NV } },
+                ];
+            } else {
+                baseWhere.NGUOI_GUI = 'NONE';
+            }
+        }
+
         const [total, danDung, congNghiep, sumResult] = await Promise.all([
-            prisma.bAO_GIA.count(),
-            prisma.bAO_GIA.count({ where: { LOAI_BAO_GIA: 'Dân dụng' } }),
-            prisma.bAO_GIA.count({ where: { LOAI_BAO_GIA: 'Công nghiệp' } }),
-            prisma.bAO_GIA.aggregate({ _sum: { TONG_TIEN: true } }),
+            prisma.bAO_GIA.count({ where: baseWhere }),
+            prisma.bAO_GIA.count({ where: { ...baseWhere, LOAI_BAO_GIA: 'Dân dụng' } }),
+            prisma.bAO_GIA.count({ where: { ...baseWhere, LOAI_BAO_GIA: 'Công nghiệp' } }),
+            prisma.bAO_GIA.aggregate({ _sum: { TONG_TIEN: true }, where: baseWhere }),
         ]);
 
         return {
@@ -488,15 +520,29 @@ export async function deleteBaoGia(id: string) {
 // ─── Tìm kiếm khách hàng cho selector ──────────────────────
 export async function searchKhachHangForBaoGia(query?: string) {
     try {
-        const where = query?.trim()
-            ? {
+        const where: any = {};
+        const andConditions: any[] = [];
+
+        // ── STAFF: chỉ KH mình phụ trách ──
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) andConditions.push({ SALES_PT: staff.MA_NV });
+            else andConditions.push({ MA_KH: 'NONE' });
+        }
+
+        if (query?.trim()) {
+            andConditions.push({
                 OR: [
                     { TEN_KH: { contains: query, mode: 'insensitive' as const } },
                     { MA_KH: { contains: query, mode: 'insensitive' as const } },
                     { TEN_VT: { contains: query, mode: 'insensitive' as const } },
                 ],
-            }
-            : {};
+            });
+        }
+
+        if (andConditions.length > 0) where.AND = andConditions;
+
         const data = await prisma.kHTN.findMany({
             where,
             select: { ID: true, MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true, DIEN_THOAI: true },

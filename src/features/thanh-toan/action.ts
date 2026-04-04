@@ -64,6 +64,24 @@ export async function getThanhToanList(filters: {
 
     if (andConditions.length > 0) where.AND = andConditions;
 
+    // ── STAFF Data Isolation: chỉ xem TT mình tạo hoặc KH mình phụ trách ──
+    const user = await getCurrentUser();
+    if (user?.ROLE === 'STAFF') {
+        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (staff?.MA_NV) {
+            if (!where.AND) where.AND = [];
+            where.AND.push({
+                OR: [
+                    { NGUOI_TAO: staff.MA_NV },
+                    { KH_REL: { SALES_PT: staff.MA_NV } },
+                ]
+            });
+        } else {
+            if (!where.AND) where.AND = [];
+            where.AND.push({ NGUOI_TAO: 'NONE' });
+        }
+    }
+
     try {
         const [data, total] = await Promise.all([
             prisma.tHANH_TOAN.findMany({
@@ -103,16 +121,31 @@ export async function getThanhToanStats() {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+        // ── STAFF Data Isolation ──
+        const user = await getCurrentUser();
+        const baseWhere: any = {};
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                baseWhere.OR = [
+                    { NGUOI_TAO: staff.MA_NV },
+                    { KH_REL: { SALES_PT: staff.MA_NV } },
+                ];
+            } else {
+                baseWhere.NGUOI_TAO = 'NONE';
+            }
+        }
+
         const [total, sumAll, thangNay, tongHoanTien] = await Promise.all([
-            prisma.tHANH_TOAN.count(),
+            prisma.tHANH_TOAN.count({ where: baseWhere }),
             prisma.tHANH_TOAN.aggregate({
                 _sum: { SO_TIEN_THANH_TOAN: true },
-                where: { LOAI_THANH_TOAN: 'Thanh toán' },
+                where: { ...baseWhere, LOAI_THANH_TOAN: 'Thanh toán' },
             }),
-            prisma.tHANH_TOAN.count({ where: { NGAY_THANH_TOAN: { gte: startOfMonth } } }),
+            prisma.tHANH_TOAN.count({ where: { ...baseWhere, NGAY_THANH_TOAN: { gte: startOfMonth } } }),
             prisma.tHANH_TOAN.aggregate({
                 _sum: { SO_TIEN_THANH_TOAN: true },
-                where: { LOAI_THANH_TOAN: 'Hoàn tiền' },
+                where: { ...baseWhere, LOAI_THANH_TOAN: 'Hoàn tiền' },
             }),
         ]);
 
@@ -239,14 +272,28 @@ export async function deleteThanhToan(id: string) {
 // ─── Tìm khách hàng ──────────────────────────────────────
 export async function searchKhachHangForTT(query?: string) {
     try {
-        const where = query?.trim()
-            ? {
+        const where: any = {};
+        const andConditions: any[] = [];
+
+        // ── STAFF: chỉ KH mình phụ trách ──
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) andConditions.push({ SALES_PT: staff.MA_NV });
+            else andConditions.push({ MA_KH: 'NONE' });
+        }
+
+        if (query?.trim()) {
+            andConditions.push({
                 OR: [
                     { TEN_KH: { contains: query, mode: 'insensitive' as const } },
                     { MA_KH: { contains: query, mode: 'insensitive' as const } },
                 ],
-            }
-            : {};
+            });
+        }
+
+        if (andConditions.length > 0) where.AND = andConditions;
+
         return await prisma.kHTN.findMany({
             where,
             select: { ID: true, MA_KH: true, TEN_KH: true, DIEN_THOAI: true },

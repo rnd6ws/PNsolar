@@ -1,4 +1,7 @@
 import { Metadata } from "next";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Settings2 } from "lucide-react";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { getKhaoSatList, getKhaoSatStats } from "@/features/khao-sat/action";
 import { getCdLoaiCongTrinh } from "@/features/hang-muc-ks/action";
@@ -161,6 +164,14 @@ export default async function KhaoSatPage({
                         <p className="text-sm text-muted-foreground mt-1">Quản lý phiếu khảo sát theo loại công trình.</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
+                        <PermissionGuard moduleKey="hang-muc-ks" level="view">
+                            <Link href="/hang-muc-ks">
+                                <Button variant="outline" className="hidden sm:flex" size="sm">
+                                    <Settings2 className="w-4 h-4 mr-2" />
+                                    Hạng mục khảo sát
+                                </Button>
+                            </Link>
+                        </PermissionGuard>
                         <PermissionGuard moduleKey="khao-sat" level="add">
                             <AddKhaoSatButton
                                 loaiCongTrinhOptions={loaiOptions}

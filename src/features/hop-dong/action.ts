@@ -121,6 +121,22 @@ export async function getHopDongList(filters: {
         andConditions.push({ LOAI_HD });
     }
 
+    // ── STAFF Data Isolation: chỉ xem HĐ mình tạo hoặc KH mình phụ trách ──
+    const user = await getCurrentUser();
+    if (user?.ROLE === 'STAFF') {
+        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (staff?.MA_NV) {
+            andConditions.push({
+                OR: [
+                    { NGUOI_TAO: staff.MA_NV },
+                    { KHTN_REL: { SALES_PT: staff.MA_NV } },
+                ]
+            });
+        } else {
+            andConditions.push({ NGUOI_TAO: 'NONE' });
+        }
+    }
+
     if (andConditions.length > 0) where.AND = andConditions;
 
     try {
@@ -166,12 +182,43 @@ export async function getHopDongList(filters: {
 // ─── Thống kê ──────────────────────────────────────────────
 export async function getHopDongStats() {
     try {
+        // ── STAFF Data Isolation ──
+        const user = await getCurrentUser();
+        const baseWhere: any = {};
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                baseWhere.OR = [
+                    { NGUOI_TAO: staff.MA_NV },
+                    { KHTN_REL: { SALES_PT: staff.MA_NV } },
+                ];
+            } else {
+                baseWhere.NGUOI_TAO = 'NONE';
+            }
+        }
+
+        // Build thanh toán filter: lọc theo HĐ mà STAFF được phép xem
+        const ttWhere: any = {};
+        if (user?.ROLE === 'STAFF') {
+            const maNv = baseWhere.OR?.[0]?.NGUOI_TAO;
+            if (maNv) {
+                ttWhere.HD_REL = {
+                    OR: [
+                        { NGUOI_TAO: maNv },
+                        { KHTN_REL: { SALES_PT: maNv } },
+                    ]
+                };
+            } else {
+                ttWhere.MA_HD = 'NONE';
+            }
+        }
+
         const [total, daDuyet, sumTatCa, sumDaDuyet, sumThanhToan] = await Promise.all([
-            prisma.hOP_DONG.count(),
-            prisma.hOP_DONG.count({ where: { DUYET: 'Đã duyệt' } }),
-            prisma.hOP_DONG.aggregate({ _sum: { TONG_TIEN: true } }),
-            prisma.hOP_DONG.aggregate({ _sum: { TONG_TIEN: true }, where: { DUYET: 'Đã duyệt' } }),
-            prisma.tHANH_TOAN.aggregate({ _sum: { SO_TIEN_THANH_TOAN: true } }),
+            prisma.hOP_DONG.count({ where: baseWhere }),
+            prisma.hOP_DONG.count({ where: { ...baseWhere, DUYET: 'Đã duyệt' } }),
+            prisma.hOP_DONG.aggregate({ _sum: { TONG_TIEN: true }, where: baseWhere }),
+            prisma.hOP_DONG.aggregate({ _sum: { TONG_TIEN: true }, where: { ...baseWhere, DUYET: 'Đã duyệt' } }),
+            prisma.tHANH_TOAN.aggregate({ _sum: { SO_TIEN_THANH_TOAN: true }, where: ttWhere }),
         ]);
 
         return {
@@ -595,15 +642,29 @@ export async function deleteHopDong(id: string) {
 // ─── Tìm kiếm khách hàng ──────────────────────────────────
 export async function searchKhachHangForHopDong(query?: string) {
     try {
-        const where = query?.trim()
-            ? {
+        const where: any = {};
+        const andConditions: any[] = [];
+
+        // ── STAFF: chỉ KH mình phụ trách ──
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) andConditions.push({ SALES_PT: staff.MA_NV });
+            else andConditions.push({ MA_KH: 'NONE' });
+        }
+
+        if (query?.trim()) {
+            andConditions.push({
                 OR: [
                     { TEN_KH: { contains: query, mode: 'insensitive' as const } },
                     { MA_KH: { contains: query, mode: 'insensitive' as const } },
                     { TEN_VT: { contains: query, mode: 'insensitive' as const } },
                 ],
-            }
-            : {};
+            });
+        }
+
+        if (andConditions.length > 0) where.AND = andConditions;
+
         const data = await prisma.kHTN.findMany({
             where,
             select: { ID: true, MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true, DIEN_THOAI: true, DIA_CHI: true, EMAIL: true, MST: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, CHUC_VU: true } } },

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { updateTag } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
+import { resolveMapsInfo } from "@/lib/maps/resolveMapsInfo";
 
 // ─── KHTN (Khách hàng) ────────────────────────────────────────
 
@@ -225,6 +226,7 @@ export async function createKhachHang(data: any) {
                         NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
                         LAT: data.LAT ? parseFloat(data.LAT) : null,
                         LONG: data.LONG ? parseFloat(data.LONG) : null,
+                        LINK_MAP: data.LINK_MAP || null,
                         ...(data.NGUOI_DD ? {
                             NGUOI_DAI_DIEN: {
                                 create: {
@@ -266,10 +268,10 @@ export async function createKhachHang(data: any) {
                             type: 'KHACH_HANG',
                             recipientId: emp.ID,
                             link: `/khach-hang?query=${encodeURIComponent(maKh)}`,
-                        }).catch(() => {});
+                        }).catch(() => { });
                     }
                 })
-                .catch(() => {});
+                .catch(() => { });
         }
 
         return { success: true };
@@ -311,6 +313,7 @@ export async function updateKhachHang(id: string, data: any) {
                 NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
                 LAT: data.LAT ? parseFloat(data.LAT) : null,
                 LONG: data.LONG ? parseFloat(data.LONG) : null,
+                LINK_MAP: data.LINK_MAP || null,
                 LY_DO_TU_CHOI: data.LY_DO_TU_CHOI || null,
             },
         });
@@ -609,27 +612,69 @@ export async function getCoordinatesFromAddress(address: string) {
         return { success: false, message: 'Vui lòng nhập địa chỉ' };
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
     try {
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+            {
+                headers: { 'User-Agent': 'PNsolarRND6/1.0 (contact@pnsolar.com)' },
+                signal: controller.signal
+            }
         );
+
+        if (!response.ok) {
+            return { success: false, message: `Lỗi từ server: ${response.status}` };
+        }
+
         const data = await response.json();
 
         if (data && data.length > 0) {
             return {
                 success: true,
                 data: {
-                    lat: data[0].lat,
-                    lon: data[0].lon
+                    lat: parseFloat(data[0].lat),
+                    lon: parseFloat(data[0].lon)
                 }
             };
-        } else {
-            return { success: false, message: 'Không tìm thấy tọa độ cho địa chỉ này' };
         }
+
+        return { success: false, message: 'Không tìm thấy tọa độ cho địa chỉ này' };
+
     } catch (error: any) {
+        if (error.name === 'AbortError') {
+            return { success: false, message: 'Yêu cầu quá thời gian, vui lòng thử lại' };
+        }
         return { success: false, message: 'Lỗi khi lấy tọa độ vui lòng kiểm tra lại' };
+    } finally {
+        clearTimeout(timeout);
     }
 }
+
+// ─── Lấy tọa độ + địa chỉ từ link Google Maps ────────────────────────
+
+export async function getCoordinatesFromGoogleMapsLink(url: string) {
+    if (!url || url.trim() === '') {
+        return { success: false, message: 'Vui lòng nhập link Google Maps' };
+    }
+    try {
+        const info = await resolveMapsInfo(url.trim());
+        return {
+            success: true,
+            data: {
+                lat: info.lat,
+                lon: info.lng,
+                name: info.name,
+                address: info.address,
+                addressDetail: info.addressDetail,
+            },
+        };
+    } catch (err: any) {
+        return { success: false, message: err.message ?? 'Không thể xử lý link Google Maps' };
+    }
+}
+
 
 // ─── Danh mục: LÝ DO TỪ CHỐI ────────────────────────────────────────
 

@@ -266,6 +266,7 @@ model KHTN {
   EMAIL          String?
   MST            String?
   NGAY_THANH_LAP DateTime?
+  LINK_MAP       String?
   DIA_CHI        String?
   NGUON          String? //NGUON_KH.NGUON
 
@@ -1004,11 +1005,11 @@ model BAN_GIAO_HD {
 
 // ===== TÀI KHOẢN THANH TOÁN =====
 model TAIKHOAN_THANHTOAN {
-  ID           String  @id @default(auto()) @map("_id") @db.ObjectId
-  SO_TK        String  @unique
-  TEN_TK       String
+  ID            String  @id @default(auto()) @map("_id") @db.ObjectId
+  SO_TK         String  @unique
+  TEN_TK        String
   TEN_NGAN_HANG String
-  LOAI_TK      String? // VD: "Ngân hàng", "Ví điện tử"...
+  LOAI_TK       String? // VD: "Ngân hàng", "Ví điện tử"...
 
   DE_NGHI_TT DE_NGHI_TT[]
   THANH_TOAN THANH_TOAN[]
@@ -1021,28 +1022,28 @@ model TAIKHOAN_THANHTOAN {
 
 // ===== ĐỀ NGHỊ THANH TOÁN =====
 model DE_NGHI_TT {
-  ID           String   @id @default(auto()) @map("_id") @db.ObjectId
-  MA_DE_NGHI   String   @unique // DNTT-YYMMDD-001
+  ID         String @id @default(auto()) @map("_id") @db.ObjectId
+  MA_DE_NGHI String @unique // DNTT-YYMMDD-001
 
-  MA_KH        String
-  KHTN_REL     KHTN     @relation(fields: [MA_KH], references: [MA_KH])
+  MA_KH    String
+  KHTN_REL KHTN   @relation(fields: [MA_KH], references: [MA_KH])
 
-  SO_HD        String
-  HD_REL       HOP_DONG @relation(fields: [SO_HD], references: [SO_HD])
+  SO_HD  String
+  HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD])
 
   NGAY_DE_NGHI DateTime @default(now())
 
-  LAN_THANH_TOAN     String  // Lần 1, Lần 2...
-  SO_TIEN_THEO_LAN   Float   @default(0) // Số tiền theo lần thanh toán (từ DKTT_HD)
-  SO_TIEN_DE_NGHI    Float   @default(0) // Số tiền đề nghị (có thể chỉnh)
+  LAN_THANH_TOAN   String // Lần 1, Lần 2...
+  SO_TIEN_THEO_LAN Float  @default(0) // Số tiền theo lần thanh toán (từ DKTT_HD)
+  SO_TIEN_DE_NGHI  Float  @default(0) // Số tiền đề nghị (có thể chỉnh)
 
-  SO_TK        String?
-  TK_REL       TAIKHOAN_THANHTOAN? @relation(fields: [SO_TK], references: [SO_TK])
+  SO_TK  String?
+  TK_REL TAIKHOAN_THANHTOAN? @relation(fields: [SO_TK], references: [SO_TK])
 
-  GHI_CHU      String?
+  GHI_CHU String?
 
   NGUOI_TAO     String?
-  NGUOI_TAO_REL DSNV? @relation("NGUOI_TAO_DNTT", fields: [NGUOI_TAO], references: [MA_NV])
+  NGUOI_TAO_REL DSNV?   @relation("NGUOI_TAO_DNTT", fields: [NGUOI_TAO], references: [MA_NV])
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt
@@ -1055,8 +1056,8 @@ model DE_NGHI_TT {
 
 // ===== THANH TOÁN =====
 model THANH_TOAN {
-  ID     String @id @default(auto()) @map("_id") @db.ObjectId
-  MA_TT  String @unique // TT-YYMMDD-001
+  ID    String @id @default(auto()) @map("_id") @db.ObjectId
+  MA_TT String @unique // TT-YYMMDD-001
 
   MA_KH  String
   KH_REL KHTN   @relation(fields: [MA_KH], references: [MA_KH])
@@ -1064,9 +1065,9 @@ model THANH_TOAN {
   SO_HD  String
   HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD])
 
-  LOAI_THANH_TOAN   String   @default("Thanh toán") // "Thanh toán" | "Hoàn tiền"
-  NGAY_THANH_TOAN   DateTime @default(now())
-  SO_TIEN_THANH_TOAN Float   @default(0)
+  LOAI_THANH_TOAN    String   @default("Thanh toán") // "Thanh toán" | "Hoàn tiền"
+  NGAY_THANH_TOAN    DateTime @default(now())
+  SO_TIEN_THANH_TOAN Float    @default(0)
 
   SO_TK  String?
   TK_REL TAIKHOAN_THANHTOAN? @relation(fields: [SO_TK], references: [SO_TK])
@@ -1075,7 +1076,7 @@ model THANH_TOAN {
   GHI_CHU  String?
 
   NGUOI_TAO     String?
-  NGUOI_TAO_REL DSNV? @relation("NGUOI_TAO_TT", fields: [NGUOI_TAO], references: [MA_NV])
+  NGUOI_TAO_REL DSNV?   @relation("NGUOI_TAO_TT", fields: [NGUOI_TAO], references: [MA_NV])
 
   CREATED_AT DateTime @default(now())
   UPDATED_AT DateTime @updatedAt

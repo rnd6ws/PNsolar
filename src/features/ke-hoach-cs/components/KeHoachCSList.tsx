@@ -322,10 +322,10 @@ export default function KeHoachCSList({
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
                         <tr className="border-b border-border hover:bg-primary/15 transition-colors bg-primary/10">
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] w-8">#</th>
+                            <th className="h-11 px-4 align-middle font-bold text-foreground/80 tracking-widest text-[13px] w-10 whitespace-nowrap">#</th>
                             {visibleColumns.includes("khachHang") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground min-w-[180px]"
+                                    className="h-11 px-4 align-middle font-bold text-foreground/80 tracking-widest text-[13px] cursor-pointer group hover:text-foreground min-w-[240px]"
                                     onClick={() => handleSort("khachHang")}
                                 >
                                     Khách hàng <SortIcon columnKey="khachHang" />
@@ -333,7 +333,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("loaiCS") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[120px]"
+                                    className="h-11 px-4 align-middle font-bold text-foreground/80 tracking-widest text-[13px] cursor-pointer group hover:text-foreground text-center min-w-[130px] whitespace-nowrap"
                                     onClick={() => handleSort("LOAI_CS")}
                                 >
                                     Loại CS <SortIcon columnKey="LOAI_CS" />
@@ -341,7 +341,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("thoiGian") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[140px]"
+                                    className="h-11 px-4 align-middle font-bold text-foreground/80 tracking-widest text-[13px] cursor-pointer group hover:text-foreground text-center min-w-[160px] whitespace-nowrap"
                                     onClick={() => handleSort("TG_TU")}
                                 >
                                     Thời gian <SortIcon columnKey="TG_TU" />
@@ -349,7 +349,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("hinhThuc") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[100px]"
+                                    className="h-11 px-4 align-middle font-bold text-foreground/80 tracking-widest text-[13px] cursor-pointer group hover:text-foreground text-center min-w-[120px] whitespace-nowrap"
                                     onClick={() => handleSort("HINH_THUC")}
                                 >
                                     Hình thức <SortIcon columnKey="HINH_THUC" />
@@ -357,7 +357,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("nguoiCS") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[140px]"
+                                    className="h-11 px-4 align-middle font-bold text-foreground/80 tracking-widest text-[13px] cursor-pointer group hover:text-foreground text-center min-w-[160px] whitespace-nowrap"
                                     onClick={() => handleSort("NGUOI_CS")}
                                 >
                                     Người CS <SortIcon columnKey="NGUOI_CS" />
@@ -365,7 +365,7 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("dichVuQT") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[100px]"
+                                    className="h-11 px-4 align-middle font-bold text-foreground/80 tracking-widest text-[13px] cursor-pointer group hover:text-foreground text-center min-w-[200px]"
                                     onClick={() => handleSort("DICH_VU_QT")}
                                 >
                                     Dịch vụ QT <SortIcon columnKey="DICH_VU_QT" />
@@ -373,16 +373,16 @@ export default function KeHoachCSList({
                             )}
                             {visibleColumns.includes("trangThai") && (
                                 <th
-                                    className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] cursor-pointer group hover:text-foreground text-center min-w-[140px]"
+                                    className="h-11 px-4 align-middle font-bold text-foreground/80 tracking-widest text-[13px] cursor-pointer group hover:text-foreground text-center min-w-[160px] whitespace-nowrap"
                                     onClick={() => handleSort("TRANG_THAI")}
                                 >
                                     Trạng thái <SortIcon columnKey="TRANG_THAI" />
                                 </th>
                             )}
-                            <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-right min-w-[120px]">Thao tác</th>
+                            <th className="h-11 px-4 align-middle font-bold text-foreground/80 tracking-widest text-[13px] text-right min-w-[140px] whitespace-nowrap">Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="[&_tr:last-child]:border-0">
                         {groupedData.map((group, gIdx) => {
                             const isExpanded = expandedGroups[group.label] || false;
                             return (
@@ -397,7 +397,7 @@ export default function KeHoachCSList({
                                                     <div className="flex items-center gap-2">
                                                         {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                                                         <span className="text-sm font-bold text-foreground">{group.label}</span>
-                                                        <span className="text-xs font-normal text-muted-foreground tracking-wide">({group.total} kế hoạch)</span>
+                                                        <span className="text-xs font-medium text-muted-foreground tracking-wide">({group.total} kế hoạch)</span>
                                                     </div>
                                                     <div className="flex items-center gap-4 text-xs font-medium">
                                                         <span className="text-muted-foreground">Tổng: {group.total}</span>
@@ -410,11 +410,11 @@ export default function KeHoachCSList({
                                     )}
                                     {(!group.label || isExpanded) && group.items.map((item, idx) => (
                                         <tr key={item.ID} className="group border-b border-border hover:bg-muted/30 transition-all">
-                                            <td className="px-4 py-3 text-muted-foreground text-xs">{idx + 1}</td>
+                                            <td className="px-4 py-3 font-medium text-muted-foreground text-[13px]">{idx + 1}</td>
                                             {visibleColumns.includes("khachHang") && (
                                                 <td className="px-4 py-3">
                                                     <div 
-                                                        className={`font-semibold text-[13px] cursor-pointer hover:text-primary transition-colors inline-block ${
+                                                        className={`font-semibold text-[14px] cursor-pointer hover:text-primary transition-colors inline-block ${
                                                             (item.TRANG_THAI === "Hủy" || item.TRANG_THAI === "Đã hủy") ? "text-red-600 dark:text-red-500" : "text-foreground"
                                                         }`}
                                                         onClick={(e) => { e.stopPropagation(); setViewItem(item); }}
@@ -423,33 +423,33 @@ export default function KeHoachCSList({
                                                         {item.KH?.TEN_KH}
                                                     </div>
                                                     {item.NGUOI_LH ? (
-                                                        <div className="text-xs text-muted-foreground mt-0.5">
+                                                        <div className="text-[13px] font-medium text-foreground/80 mt-0.5">
                                                             {item.NGUOI_LH.TENNGUOI_LIENHE}
                                                             {item.NGUOI_LH.CHUC_VU && <span> - {item.NGUOI_LH.CHUC_VU}</span>}
                                                         </div>
                                                     ) : item.KH?.TEN_VT ? (
-                                                        <div className="text-xs text-muted-foreground mt-0.5">{item.KH.TEN_VT}</div>
+                                                        <div className="text-[13px] font-medium text-foreground/80 mt-0.5">{item.KH.TEN_VT}</div>
                                                     ) : null}
                                                     {item.KH?.DIEN_THOAI && (
-                                                        <div className="text-[11px] text-primary/70 mt-0.5">
+                                                        <div className="text-[12px] font-medium text-foreground mt-0.5">
                                                             {item.KH.DIEN_THOAI}
                                                         </div>
                                                     )}
                                                 </td>
                                             )}
                                             {visibleColumns.includes("loaiCS") && (
-                                                <td className="px-4 py-3 text-xs text-muted-foreground text-center">{item.LOAI_CS || "—"}</td>
+                                                <td className="px-4 py-3 text-[13px] font-medium text-foreground text-center whitespace-nowrap">{item.LOAI_CS || "—"}</td>
                                             )}
                                             {visibleColumns.includes("thoiGian") && (
-                                                <td className="px-4 py-3 text-center">
-                                                    <div className="text-[11px] text-foreground">{formatDateTime(item.TG_TU)}</div>
-                                                    <div className="text-[11px] text-muted-foreground">→ {formatDateTime(item.TG_DEN)}</div>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    <div className="text-[13px] font-medium text-foreground">{formatDateTime(item.TG_TU)}</div>
+                                                    <div className="text-[12px] font-medium text-foreground/80">→ {formatDateTime(item.TG_DEN)}</div>
                                                 </td>
                                             )}
                                             {visibleColumns.includes("hinhThuc") && (
-                                                <td className="px-4 py-3 text-center">
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
                                                     {item.HINH_THUC ? (
-                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-medium border ${item.HINH_THUC === "Online"
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-medium border ${item.HINH_THUC === "Online"
                                                             ? "bg-blue-50 text-blue-700 border-blue-200"
                                                             : "bg-purple-50 text-purple-700 border-purple-200"
                                                             }`}>
@@ -459,7 +459,7 @@ export default function KeHoachCSList({
                                                 </td>
                                             )}
                                             {visibleColumns.includes("nguoiCS") && (
-                                                <td className="px-4 py-3 text-xs text-muted-foreground text-center">
+                                                <td className="px-4 py-3 text-[13px] font-medium text-foreground text-center whitespace-nowrap">
                                                     {getNVName(item.NGUOI_CS, nhanViens)}
                                                 </td>
                                             )}
@@ -472,29 +472,29 @@ export default function KeHoachCSList({
                                                             title="Xem chi tiết dịch vụ quan tâm"
                                                         >
                                                             {item.DICH_VU_QT.slice(0, 4).map((id: string) => (
-                                                                <span key={id} className="max-w-[130px] truncate inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border" title={dichVuMap.get(id) || id}>
+                                                                <span key={id} className="max-w-[130px] truncate inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-medium bg-muted text-foreground border border-border" title={dichVuMap.get(id) || id}>
                                                                     <span className="truncate">{dichVuMap.get(id) || id}</span>
                                                                 </span>
                                                             ))}
                                                             {item.DICH_VU_QT.length > 4 && (
-                                                                <span className="text-[10px] text-primary/80 font-semibold bg-primary/10 px-1.5 rounded-full flex items-center shrink-0">
+                                                                <span className="text-[12px] text-primary font-semibold bg-primary/10 px-2 rounded-full flex items-center shrink-0">
                                                                     +{item.DICH_VU_QT.length - 4}
                                                                 </span>
                                                             )}
                                                         </div>
-                                                    ) : <span className="text-[11px] text-muted-foreground block text-center">—</span>}
+                                                    ) : <span className="text-[13px] text-foreground/60 block text-center">—</span>}
                                                 </td>
                                             )}
                                             {visibleColumns.includes("trangThai") && (
-                                                <td className="px-4 py-3 text-center">
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
                                                     <div className="inline-flex flex-col items-center gap-1">
                                                         <div className="flex items-center gap-1">
-                                                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border ${TRANG_THAI_COLORS[item.TRANG_THAI] || "bg-muted text-muted-foreground border-border"}`}>
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-medium border ${TRANG_THAI_COLORS[item.TRANG_THAI] || "bg-muted text-muted-foreground border-border"}`}>
                                                                 {item.TRANG_THAI === "Đã báo cáo"
-                                                                    ? <CheckCircle2 className="w-3 h-3" />
+                                                                    ? <CheckCircle2 className="w-3.5 h-3.5" />
                                                                     : (item.TRANG_THAI === "Đã hủy" || item.TRANG_THAI === "Hủy")
-                                                                        ? <XCircle className="w-3 h-3" />
-                                                                        : <TimerOff className="w-3 h-3" />}
+                                                                        ? <XCircle className="w-3.5 h-3.5" />
+                                                                        : <TimerOff className="w-3.5 h-3.5" />}
                                                                 {item.TRANG_THAI}
                                                             </span>
                                                             {item.TRANG_THAI === "Chờ báo cáo" && (
@@ -503,20 +503,20 @@ export default function KeHoachCSList({
                                                                     className="p-1 rounded-full text-muted-foreground hover:bg-red-100 hover:text-red-600 transition-colors shrink-0"
                                                                     title="Chuyển sang Hủy"
                                                                 >
-                                                                    <XCircle className="w-3.5 h-3.5" />
+                                                                    <XCircle className="w-4 h-4" />
                                                                 </button>
                                                             )}
                                                         </div>
                                                         {item.TRANG_THAI === "Chờ báo cáo" && item.TG_DEN && new Date() > new Date(item.TG_DEN) && (
-                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border bg-red-100 text-red-600 border-red-200">
-                                                                <TimerOff className="w-3 h-3" />
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-medium border bg-red-100 text-red-600 border-red-200">
+                                                                <TimerOff className="w-3.5 h-3.5" />
                                                                 Quá hạn
                                                             </span>
                                                         )}
                                                     </div>
                                                 </td>
                                             )}
-                                            <td className="px-4 py-3">
+                                            <td className="px-4 py-3 whitespace-nowrap">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <ActionButtons item={item} />
                                                 </div>
