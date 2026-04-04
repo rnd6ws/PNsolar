@@ -319,13 +319,30 @@ export async function deleteKetQuaCS(id: string) {
 
 export async function searchKhachHangForCS(query: string) {
     try {
-        const data = await prisma.kHTN.findMany({
-            where: {
+        const where: any = {};
+        const andConditions: any[] = [];
+
+        // ── STAFF: chỉ KH mình phụ trách ──
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) andConditions.push({ SALES_PT: staff.MA_NV });
+            else andConditions.push({ MA_KH: 'NONE' });
+        }
+
+        if (query?.trim()) {
+            andConditions.push({
                 OR: [
                     { TEN_KH: { contains: query, mode: "insensitive" } },
                     { TEN_VT: { contains: query, mode: "insensitive" } },
                 ],
-            },
+            });
+        }
+
+        if (andConditions.length > 0) where.AND = andConditions;
+
+        const data = await prisma.kHTN.findMany({
+            where,
             select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true },
             take: 15,
             orderBy: { TEN_KH: "asc" },

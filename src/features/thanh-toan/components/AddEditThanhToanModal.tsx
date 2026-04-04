@@ -178,12 +178,16 @@ export default function AddEditThanhToanModal({ isOpen, onClose, onSuccess, edit
             return;
         }
 
-        if (!selectedKH || !selectedHD) {
+        if (isPrefill && prefillData) {
+            payload.MA_KH = prefillData.MA_KH;
+            payload.SO_HD = prefillData.SO_HD;
+        } else if (!selectedKH || !selectedHD) {
             toast.error("Vui lòng chọn đầy đủ khách hàng và hợp đồng.");
             return;
+        } else {
+            payload.MA_KH = selectedKH.MA_KH;
+            payload.SO_HD = selectedHD.SO_HD;
         }
-        payload.MA_KH = selectedKH.MA_KH;
-        payload.SO_HD = selectedHD.SO_HD;
 
         setLoading(true);
         const result = await createThanhToan(payload);

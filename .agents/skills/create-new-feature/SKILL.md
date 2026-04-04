@@ -52,7 +52,7 @@ Mở file `src/lib/permissions.ts` và THÊM tính năng đó vào mảng `MODUL
 ### Bước 2: Dựng kho Feature
 Tạo thư mục `src/features/[tên-tính-năng]` và chia file:
 - `schema.ts`: Khai báo Zod Model (Nếu form phức tạp) hoặc Types.
-- `action.ts`: Đặt `"use server"` lên trên cùng. Code Prisma thao tác DB. Nhớ thêm `revalidatePath('/[tên-tính-năng]')` ở cuối mỗi hàm tạo/sửa/xóa. **BẮT BUỘC dùng XÓA CỨNG** (`prisma.[model].delete()`) — KHÔNG dùng xóa mềm (DELETED_AT).
+- `action.ts`: Đặt `"use server"` lên trên cùng. Code Prisma thao tác DB. Nhớ thêm `revalidatePath('/[tên-tính-năng]')` ở cuối mỗi hàm tạo/sửa/xóa. **BẮT BUỘC dùng XÓA CỨNG** (`prisma.[model].delete()`) — KHÔNG dùng xóa mềm (DELETED_AT). **BẮT BUỘC áp dụng Data Isolation** (xem Bước 2.5).
 - `components/[Tên]PageClient.tsx`: Component chính chứa toolbar (search + filter + column toggle).
 - `components/[Tên]List.tsx`: Bảng desktop + mobile cards + sort logic.
 - `components/ColumnToggleButton.tsx`: Nút ẩn/hiện cột.
@@ -68,6 +68,84 @@ Tóm tắt quy tắc bắt buộc:
 - Hiển thị UI: `item.NHOM?.TEN_NHOM || item.MA_NHOM_HH` (fallback về mã nếu null).
 - Chạy `npx prisma generate` sau khi sửa schema (KHÔNG cần `db push` nếu chỉ thêm `@relation` với MongoDB).
 - Checklist đầy đủ: xem cuối file `.agents/docs/huong-dan-relation.md`.
+
+### Bước 2.5: Data Isolation — Phân quyền dữ liệu Server-Side (BẮT BUỘC)
+
+Mọi hàm trong `action.ts` mà **trả về danh sách, thống kê, hoặc dropdown search** đều PHẢI filter theo STAFF.
+
+**Import bắt buộc:**
+```typescript
+import { getCurrentUser } from '@/lib/auth';
+```
+
+**Pattern cho `getList()` và `getStats()`:**
+```typescript
+const user = await getCurrentUser();
+const baseWhere: any = {};
+if (user?.ROLE === 'STAFF') {
+    const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+    if (staff?.MA_NV) {
+        baseWhere.OR = [
+            { NGUOI_TAO: staff.MA_NV },           // Dữ liệu do mình tạo
+            { KH_REL: { SALES_PT: staff.MA_NV } }, // KH mình phụ trách (relation name tùy bảng)
+        ];
+    } else {
+        baseWhere.NGUOI_TAO = 'NONE'; // Không tìm thấy NV → trả 0 kết quả
+    }
+}
+// Dùng baseWhere cho count(), findMany(), aggregate()
+```
+> **LƯU Ý**: Tên relation (`KH_REL`, `KHTN_REL`, `HD_REL`...) phải khớp với schema Prisma. Kiểm tra `prisma/schema.prisma` trước khi code.
+
+**Pattern cho `searchKhachHangFor[Module]()` (dropdown chọn KH khi tạo mới):**
+```typescript
+export async function searchKhachHangForXXX(query?: string) {
+    const where: any = {};
+    const andConditions: any[] = [];
+
+    // ── STAFF: chỉ KH mình phụ trách ──
+    const user = await getCurrentUser();
+    if (user?.ROLE === 'STAFF') {
+        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (staff?.MA_NV) andConditions.push({ SALES_PT: staff.MA_NV });
+        else andConditions.push({ MA_KH: 'NONE' });
+    }
+
+    if (query?.trim()) {
+        andConditions.push({
+            OR: [
+                { TEN_KH: { contains: query, mode: 'insensitive' } },
+                { MA_KH: { contains: query, mode: 'insensitive' } },
+            ],
+        });
+    }
+
+    if (andConditions.length > 0) where.AND = andConditions;
+    return prisma.kHTN.findMany({ where, take: 20, orderBy: { TEN_KH: 'asc' } });
+}
+```
+
+**Pattern cho `searchHopDongFor[Module]()` (dropdown chọn HĐ khi tạo mới):**
+```typescript
+// STAFF chỉ thấy HĐ mình tạo hoặc HĐ thuộc KH mình phụ trách
+if (user?.ROLE === 'STAFF') {
+    where.AND = [{
+        OR: [
+            { NGUOI_TAO: staff.MA_NV },
+            { KHTN_REL: { SALES_PT: staff.MA_NV } },
+        ]
+    }];
+}
+```
+
+**⚠️ Cross-table Stats:** Nếu hàm `getStats()` query **bảng khác** (VD: Cơ hội tổng hợp từ HOP_DONG, Hợp đồng tổng hợp từ THANH_TOAN), thì bảng đó cũng PHẢI filter theo STAFF qua relation ngược.
+
+**Checklist Data Isolation:**
+- [ ] `getList()` có `baseWhere` filter STAFF
+- [ ] `getStats()` có `baseWhere` filter STAFF (bao gồm cross-table queries)
+- [ ] `searchKhachHangFor[Module]()` có filter `SALES_PT`
+- [ ] `searchHopDongFor[Module]()` có filter `NGUOI_TAO / KHTN_REL.SALES_PT` (nếu có)
+- [ ] Các hàm `getXXXByKH(maKH)` KHÔNG cần sửa (vì KH dropdown đã filter)
 
 ### Bước 3: Xây dựng UI theo Quy Chuẩn (GHI NHỚ UI-PATTERNS!)
 Khi code `[Tên]PageClient.tsx` và `[Tên]List.tsx`:
@@ -256,4 +334,6 @@ Khớp tên `moduleKey` và cho `available: true`.
 - CẤM dùng `totalPages > 1` làm điều kiện hiển thị Pagination — phải **luôn hiển thị** Pagination để user chọn số dòng/trang.
 - CẤM hardcode `limit` trong server page — PHẢI dùng `getRowsPerPage()` từ `@/lib/getRowsPerPage` để đọc giá trị global từ cookie.
 - CẤM tạo component LimitSelect/PageSizeSelect riêng — Pagination đã tích hợp sẵn dropdown chọn số dòng.
+- CẤM viết `getList()`, `getStats()` hoặc `searchKhachHang*()` mà **KHÔNG có Data Isolation** — PHẢI filter theo STAFF (xem Bước 2.5). Nếu bỏ qua, nhân viên sẽ thấy data của người khác.
+- CẤM query cross-table trong `getStats()` mà không filter — nếu stats query bảng THANH_TOAN, HOP_DONG... từ module khác, bảng đó cũng PHẢI được filter theo STAFF.
 

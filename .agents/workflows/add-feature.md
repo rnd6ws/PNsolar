@@ -51,6 +51,38 @@ Bên trong `src/features/[tên-tính-năng]/action.ts`:
 - Không chia nhỏ làm actions hay services nữa. Toàn bộ logic tạo/xóa/sửa/lấy list (CRUD) viết luôn tại đây.
 - Các Mutations (Thêm, Xóa, Sửa) **BẮT BUỘC** gọi `revalidatePath('/dashboard/[tên-tính-năng]')` để Next.js làm mới giao diện ngay lập tức mà không cần F5.
 - **XÓA CỨNG**: Hàm xóa phải dùng `prisma.[model].delete()` — KHÔNG dùng xóa mềm (DELETED_AT). Nếu model có relation con, phải xóa con trước rồi xóa cha.
+- **Data Isolation (BẮT BUỘC)**: Xem mục 4.5 bên dưới.
+
+## 4.5. Data Isolation — Phân quyền dữ liệu Server-Side (BẮT BUỘC)
+
+Mọi module CRM **PHẢI** áp dụng data isolation ở tầng server để STAFF chỉ thấy dữ liệu của mình.
+
+### Quy tắc:
+- `getCurrentUser()` → kiểm tra `ROLE`
+- Nếu `STAFF` → tra `MA_NV` từ bảng `DSNV` → inject vào `where` clause
+- Admin/Manager → không filter, thấy hết
+
+### Phải filter ở 3 nơi:
+
+| Nơi | Pattern | Mục đích |
+|------|---------|----------|
+| `getList()` | `baseWhere.OR = [{ NGUOI_TAO: maNv }, { KH_REL: { SALES_PT: maNv } }]` | Danh sách chỉ hiện record của STAFF |
+| `getStats()` | Dùng `baseWhere` cho count/aggregate, **kể cả cross-table queries** | Stats cards chỉ tính data của STAFF |
+| `searchKhachHang*()` | `andConditions.push({ SALES_PT: maNv })` | Dropdown tạo mới chỉ hiện KH của STAFF |
+| `searchHopDong*()` | `where.AND = [{ OR: [{ NGUOI_TAO }, { KHTN_REL.SALES_PT }] }]` | Dropdown chọn HĐ chỉ hiện HĐ của STAFF |
+
+### ⚠️ Cross-table Stats:
+Nếu `getStats()` query **bảng khác** (VD: Cơ hội tổng từ HOP_DONG, Hợp đồng tổng từ THANH_TOAN), bảng đó cũng PHẢI filter theo STAFF qua relation ngược.
+
+### Code mẫu chuẩn:
+Xem `.agents/skills/create-new-feature/SKILL.md` → Bước 2.5.
+
+### Checklist:
+- [ ] `getList()` có `baseWhere` filter STAFF
+- [ ] `getStats()` có `baseWhere` filter STAFF (bao gồm cross-table)
+- [ ] `searchKhachHangFor[Module]()` có filter `SALES_PT`
+- [ ] `searchHopDongFor[Module]()` có filter (nếu có)
+- [ ] Các hàm `getXXXByKH(maKH)` KHÔNG cần sửa (KH dropdown đã filter)
 
 ## 5. Tạo Các UI Đặc thù (components/) — THEO QUY CHUẨN
 Bên trong `src/features/[tên-tính-năng]/components/`:

@@ -160,10 +160,7 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
             )}
             {col("HOP_DONG") && (
                 <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                        <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                        <span className="font-medium text-foreground text-xs">{item.SO_HD}</span>
-                    </div>
+                    <span className="font-medium text-foreground text-xs">{item.SO_HD}</span>
                 </td>
             )}
             {col("NGAY_DE_NGHI") && (

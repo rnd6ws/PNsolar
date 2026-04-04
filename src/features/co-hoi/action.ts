@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "@/lib/auth";
 
 // ─── Sinh ID_CH ────────────────────────────────────────────────
 async function generateIdCh(tenVt: string, offset: number = 0): Promise<string> {
@@ -144,6 +145,17 @@ export async function getCoHois(filters: {
     const where: any = {};
     const andConditions: any[] = [];
 
+    // ── STAFF Data Isolation: chỉ xem cơ hội của khách hàng mình phụ trách ──
+    const user = await getCurrentUser();
+    if (user?.ROLE === 'STAFF') {
+        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (staff?.MA_NV) {
+            andConditions.push({ KH_REL: { SALES_PT: staff.MA_NV } });
+        } else {
+            andConditions.push({ MA_KH: "NONE" });
+        }
+    }
+
     if (query) {
         andConditions.push({
             OR: [
@@ -252,11 +264,23 @@ export async function getCoHoiByKH(khId: string) {
 
 export async function getCoHoiStats() {
     try {
+        // ── STAFF Data Isolation ──
+        const user = await getCurrentUser();
+        const baseWhere: any = {};
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                baseWhere.KH_REL = { SALES_PT: staff.MA_NV };
+            } else {
+                baseWhere.MA_KH = "NONE";
+            }
+        }
+
         const [total, daDong, allOpen, hdDaDuyet] = await Promise.all([
-            prisma.cO_HOI.count(),
-            prisma.cO_HOI.count({ where: { TINH_TRANG: "Đã đóng" } }),
+            prisma.cO_HOI.count({ where: baseWhere }),
+            prisma.cO_HOI.count({ where: { ...baseWhere, TINH_TRANG: "Đã đóng" } }),
             prisma.cO_HOI.findMany({
-                where: { TINH_TRANG: { not: "Đã đóng" } },
+                where: { ...baseWhere, TINH_TRANG: { not: "Đã đóng" } },
                 select: {
                     MA_CH: true, GIA_TRI_DU_KIEN: true,
                     HOP_DONG: { select: { DUYET: true, NGAY_HD: true, NGAY_DUYET: true } },
@@ -266,10 +290,22 @@ export async function getCoHoiStats() {
                 },
             }),
             // Lấy TONG_TIEN từ HĐ đã duyệt để tính doanh thu đã ký
-            prisma.hOP_DONG.findMany({
-                where: { DUYET: "Đã duyệt", MA_CH: { not: null } },
-                select: { TONG_TIEN: true, MA_CH: true },
-            }),
+            // Cũng cần filter theo STAFF: chỉ HĐ của KH mình phụ trách
+            (() => {
+                const hdWhere: any = { DUYET: "Đã duyệt", MA_CH: { not: null } };
+                if (user?.ROLE === 'STAFF') {
+                    const maNv = baseWhere.KH_REL?.SALES_PT;
+                    if (maNv) {
+                        hdWhere.KHTN_REL = { SALES_PT: maNv };
+                    } else {
+                        hdWhere.NGUOI_TAO = 'NONE';
+                    }
+                }
+                return prisma.hOP_DONG.findMany({
+                    where: hdWhere,
+                    select: { TONG_TIEN: true, MA_CH: true },
+                });
+            })(),
         ]);
 
         const { computeCoHoiStatus } = await import("@/lib/co-hoi-status");
@@ -454,14 +490,28 @@ export async function deleteCoHoi(id: string) {
 // ─── Tìm kiếm khách hàng từ KHTN ───────────────────────────────
 export async function searchKhachHang(query?: string) {
     try {
-        const where = query?.trim()
-            ? {
+        const where: any = {};
+        const andConditions: any[] = [];
+
+        // ── STAFF: chỉ KH mình phụ trách ──
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) andConditions.push({ SALES_PT: staff.MA_NV });
+            else andConditions.push({ MA_KH: 'NONE' });
+        }
+
+        if (query?.trim()) {
+            andConditions.push({
                 OR: [
                     { TEN_KH: { contains: query, mode: "insensitive" as const } },
                     { TEN_VT: { contains: query, mode: "insensitive" as const } },
                 ],
-            }
-            : {};
+            });
+        }
+
+        if (andConditions.length > 0) where.AND = andConditions;
+
         const data = await prisma.kHTN.findMany({
             where,
             select: { MA_KH: true, TEN_KH: true, TEN_VT: true, HINH_ANH: true },
