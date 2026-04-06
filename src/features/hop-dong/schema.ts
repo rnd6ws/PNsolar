@@ -161,6 +161,24 @@ export const DEFAULT_DK_HD: DkHdTemplate[] = [
         LOAI_HD: 'Dân dụng',
     },
     {
+        HANG_MUC: 'Dự án:',
+        NOI_DUNG: '',
+        AN_HIEN: true,
+        LOAI_HD: 'Công nghiệp',
+    },
+    {
+        HANG_MUC: 'Công trình:',
+        NOI_DUNG: '',
+        AN_HIEN: true,
+        LOAI_HD: 'Công nghiệp',
+    },
+    {
+        HANG_MUC: 'Hạng mục:',
+        NOI_DUNG: '',
+        AN_HIEN: true,
+        LOAI_HD: 'Công nghiệp',
+    },
+    {
         HANG_MUC: 'Địa điểm thi công:',
         NOI_DUNG: '',
         AN_HIEN: true,
