@@ -285,7 +285,7 @@ export async function getHopDongByKhachHang(maKH: string) {
                 TONG_TIEN: true,
                 LOAI_HD: true,
                 DUYET: true,
-                CONG_TRINH: true,
+
                 MA_BAO_GIA: true,
                 NGUOI_TAO_REL: { select: { HO_TEN: true } },
                 _count: { select: { BAN_GIAO_HD: true } }
@@ -406,8 +406,7 @@ export async function createHopDong(
                 MA_CH: parsed.data.MA_CH || null,
                 MA_BAO_GIA: maBaoGia || null,
                 LOAI_HD: parsed.data.LOAI_HD,
-                CONG_TRINH: parsed.data.CONG_TRINH || null,
-                HANG_MUC: parsed.data.HANG_MUC || null,
+
                 PT_VAT: parsed.data.PT_VAT,
                 TEP_DINH_KEM: parsed.data.TEP_DINH_KEM || [],
                 DUYET: "Chờ duyệt",
@@ -569,8 +568,7 @@ export async function updateHopDong(
                 MA_CH: parsed.data.MA_CH || null,
                 MA_BAO_GIA: maBaoGia || null,
                 LOAI_HD: parsed.data.LOAI_HD,
-                CONG_TRINH: parsed.data.CONG_TRINH || null,
-                HANG_MUC: parsed.data.HANG_MUC || null,
+
                 PT_VAT: parsed.data.PT_VAT,
                 TEP_DINH_KEM: parsed.data.TEP_DINH_KEM || [],
                 NGUOI_TAO: parsed.data.NGUOI_TAO || null,

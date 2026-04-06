@@ -248,7 +248,7 @@ export async function searchHopDongForBanGiao(query?: string) {
                 NGAY_HD: true,
                 LOAI_HD: true,
                 TONG_TIEN: true,
-                CONG_TRINH: true,
+
                 KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIEN_THOAI: true, DIA_CHI: true } },
                 BAN_GIAO_HD: { select: { SO_BAN_GIAO: true } },
                 DK_HD: { select: { HANG_MUC: true, NOI_DUNG: true } },

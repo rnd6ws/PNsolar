@@ -27,29 +27,114 @@ const autoResizeTextarea = (el: HTMLTextAreaElement | null) => {
     el.style.height = el.scrollHeight + 'px';
 };
 
-const generateCustomerInfoRows = (kh: Partial<KHOption>) => {
-    const isHasMST = !!kh.MST;
-    const nguoiDD = kh.NGUOI_DAI_DIEN && kh.NGUOI_DAI_DIEN.length > 0 ? kh.NGUOI_DAI_DIEN[0].NGUOI_DD : (kh.TEN_KH || '');
-    const chucVuDD = kh.NGUOI_DAI_DIEN && kh.NGUOI_DAI_DIEN.length > 0 ? (kh.NGUOI_DAI_DIEN[0].CHUC_VU || '') : '';
-    const ttTemplate: ThongTinKhacRow[] = [
-        { _id: tempId(), TIEU_DE: 'Đại diện', NOI_DUNG: nguoiDD },
-        { _id: tempId(), TIEU_DE: 'Địa chỉ', NOI_DUNG: kh.DIA_CHI || '' },
-        { _id: tempId(), TIEU_DE: 'Điện thoại', NOI_DUNG: kh.DIEN_THOAI || '' },
-        { _id: tempId(), TIEU_DE: 'Email', NOI_DUNG: kh.EMAIL || '' },
-    ];
-    if (isHasMST) {
-        // Chỉ thêm Chức vụ nếu khách hàng là doanh nghiệp (có MST)
-        ttTemplate.splice(1, 0, { _id: tempId(), TIEU_DE: 'Chức vụ', NOI_DUNG: chucVuDD });
-        ttTemplate.push({ _id: tempId(), TIEU_DE: 'Số tài khoản', NOI_DUNG: '' });
-        ttTemplate.push({ _id: tempId(), TIEU_DE: 'Ngân hàng', NOI_DUNG: '' });
-        ttTemplate.push({ _id: tempId(), TIEU_DE: 'Chủ TK', NOI_DUNG: '' });
-        ttTemplate.push({ _id: tempId(), TIEU_DE: 'Mã số thuế', NOI_DUNG: kh.MST || '' });
-    } else {
-        ttTemplate.push({ _id: tempId(), TIEU_DE: 'CCCD', NOI_DUNG: '' });
-        ttTemplate.push({ _id: tempId(), TIEU_DE: 'Cấp ngày', NOI_DUNG: '' });
-        ttTemplate.push({ _id: tempId(), TIEU_DE: 'Nơi cấp', NOI_DUNG: '' });
+const generateCustomerInfoRows = (kh: Partial<KHOption> | null, loaiHD?: string, prevRows?: ThongTinKhacRow[]) => {
+    const isHasMST = kh ? !!kh.MST : false;
+    const nguoiDD = kh && kh.NGUOI_DAI_DIEN && kh.NGUOI_DAI_DIEN.length > 0 ? kh.NGUOI_DAI_DIEN[0].NGUOI_DD : (kh?.TEN_KH || '');
+    const chucVuDD = kh && kh.NGUOI_DAI_DIEN && kh.NGUOI_DAI_DIEN.length > 0 ? (kh.NGUOI_DAI_DIEN[0].CHUC_VU || '') : '';
+    
+    const templateFields = DEFAULT_THONG_TIN_KHAC
+        .filter(t => 
+            (!t.LOAI_HD || t.LOAI_HD === 'ALL' || t.LOAI_HD === loaiHD) && 
+            (loaiHD === 'Công nghiệp' || !t.LOAI_KH || t.LOAI_KH === 'ALL' || (isHasMST ? t.LOAI_KH === 'DOANH_NGHIEP' : t.LOAI_KH === 'CA_NHAN'))
+        );
+
+    if (!prevRows) {
+        return templateFields.map(t => {
+            let noiDung = t.NOI_DUNG || '';
+            switch(t.TIEU_DE) {
+                case 'Đại diện': noiDung = nguoiDD; break;
+                case 'Chức vụ': noiDung = chucVuDD; break;
+                case 'Địa chỉ': noiDung = kh?.DIA_CHI || ''; break;
+                case 'Điện thoại': noiDung = kh?.DIEN_THOAI || ''; break;
+                case 'Email': noiDung = kh?.EMAIL || ''; break;
+                case 'Mã số thuế': noiDung = kh?.MST || ''; break;
+            }
+            return {
+                _id: tempId(),
+                TIEU_DE: t.TIEU_DE,
+                NOI_DUNG: noiDung,
+            };
+        });
     }
-    return ttTemplate;
+
+    const existingMap = new Map(prevRows.map(r => [r.TIEU_DE, r]));
+    const finalRows: ThongTinKhacRow[] = [];
+    
+    templateFields.forEach(tf => {
+        if (tf.TIEU_DE && existingMap.has(tf.TIEU_DE)) {
+            finalRows.push(existingMap.get(tf.TIEU_DE)!);
+            existingMap.delete(tf.TIEU_DE);
+        } else {
+            let noiDung = tf.NOI_DUNG || '';
+            switch(tf.TIEU_DE) {
+                case 'Đại diện': noiDung = nguoiDD; break;
+                case 'Chức vụ': noiDung = chucVuDD; break;
+                case 'Địa chỉ': noiDung = kh?.DIA_CHI || ''; break;
+                case 'Điện thoại': noiDung = kh?.DIEN_THOAI || ''; break;
+                case 'Email': noiDung = kh?.EMAIL || ''; break;
+                case 'Mã số thuế': noiDung = kh?.MST || ''; break;
+            }
+            finalRows.push({ _id: tempId(), TIEU_DE: tf.TIEU_DE, NOI_DUNG: noiDung });
+        }
+    });
+
+    existingMap.forEach(r => {
+        if (r.NOI_DUNG && r.NOI_DUNG.trim() !== '') {
+            finalRows.push(r);
+        } else {
+            const isDefault = DEFAULT_THONG_TIN_KHAC.some(d => d.TIEU_DE === r.TIEU_DE);
+            if (!isDefault) finalRows.push(r);
+        }
+    });
+
+    const orderMap = new Map(DEFAULT_THONG_TIN_KHAC.map((t, i) => [t.TIEU_DE, i]));
+    return finalRows.sort((a, b) => {
+        const idxA = orderMap.get(a.TIEU_DE);
+        const idxB = orderMap.get(b.TIEU_DE);
+        if (idxA !== undefined && idxB !== undefined) return idxA - idxB;
+        if (idxA !== undefined) return -1;
+        if (idxB !== undefined) return 1;
+        return 0;
+    });
+};
+
+const generateDkHdRows = (loaiHD?: string, prevRows?: DkHdRow[]) => {
+    const templateFields = DEFAULT_DK_HD.filter(t => !t.LOAI_HD || t.LOAI_HD === 'ALL' || t.LOAI_HD === loaiHD);
+    if (!prevRows) {
+        return templateFields.map(t => ({ ...t, _id: tempId() }));
+    }
+    const existingMap = new Map(prevRows.map(r => [r.HANG_MUC, r]));
+    const finalRows: DkHdRow[] = [];
+    
+    templateFields.forEach(tf => {
+        if (tf.HANG_MUC && existingMap.has(tf.HANG_MUC)) {
+            finalRows.push(existingMap.get(tf.HANG_MUC)!);
+            existingMap.delete(tf.HANG_MUC);
+        } else {
+            finalRows.push({ _id: tempId(), HANG_MUC: tf.HANG_MUC, NOI_DUNG: tf.NOI_DUNG, AN_HIEN: tf.AN_HIEN });
+        }
+    });
+
+    existingMap.forEach(r => {
+        const defaultMatch = DEFAULT_DK_HD.find(d => d.HANG_MUC === r.HANG_MUC);
+        const isUserEdited = r.NOI_DUNG !== (defaultMatch?.NOI_DUNG || '');
+        
+        if (isUserEdited && r.NOI_DUNG && r.NOI_DUNG.trim() !== '') {
+            finalRows.push(r);
+        } else if (!defaultMatch) {
+            finalRows.push(r);
+        }
+    });
+
+    const orderMap = new Map(DEFAULT_DK_HD.map((t, i) => [t.HANG_MUC, i]));
+    return finalRows.sort((a, b) => {
+        const idxA = orderMap.get(a.HANG_MUC);
+        const idxB = orderMap.get(b.HANG_MUC);
+        if (idxA !== undefined && idxB !== undefined) return idxA - idxB;
+        if (idxA !== undefined) return -1;
+        if (idxB !== undefined) return 1;
+        return 0;
+    });
 };
 
 type TabKey = "general" | "details" | "payment" | "info" | "terms";
@@ -78,8 +163,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const [maBaoGia, setMaBaoGia] = useState("");
     const [selectedBG, setSelectedBG] = useState<BGOption | null>(null);
     const [loaiHD, setLoaiHD] = useState("Dân dụng");
-    const [congTrinh, setCongTrinh] = useState("");
-    const [hangMuc, setHangMuc] = useState("");
+
     const [ptVat, setPtVat] = useState(8);
     const [ttUuDai, setTtUuDai] = useState(0);
     const [tepDinhKems, setTepDinhKems] = useState<string[]>([]);
@@ -153,8 +237,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
             setMaBaoGia(editData.MA_BAO_GIA || "");
             setSelectedBG(editData.BAO_GIA_REL || null);
             setLoaiHD(editData.LOAI_HD || "Dân dụng");
-            setCongTrinh(editData.CONG_TRINH || "");
-            setHangMuc(editData.HANG_MUC || "");
+
             setPtVat(editData.PT_VAT ?? 8);
             setTtUuDai(editData.TT_UU_DAI || 0);
             setTepDinhKems(editData.TEP_DINH_KEM || []);
@@ -169,14 +252,21 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
             if (!groups.includes(DEFAULT_NHOM)) groups.unshift(DEFAULT_NHOM);
             setActiveGroups(groups); setActiveNhomTab(groups[0]);
             setDkttRows((editData.DKTT_HD || []).map((d: any) => ({ _id: tempId(), _dbId: d.ID, LAN_THANH_TOAN: d.LAN_THANH_TOAN, PT_THANH_TOAN: d.PT_THANH_TOAN, SO_TIEN: d.SO_TIEN || 0, NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || "" })));
-            setDkHdRows((editData.DK_HD || []).map((d: any) => ({ _id: tempId(), _dbId: d.ID, HANG_MUC: d.HANG_MUC, NOI_DUNG: d.NOI_DUNG || "", AN_HIEN: d.AN_HIEN !== false })));
+            
+            const dkhdEdit = editData.DK_HD || [];
+            if (dkhdEdit.length > 0) {
+                setDkHdRows(dkhdEdit.map((d: any) => ({ _id: tempId(), _dbId: d.ID, HANG_MUC: d.HANG_MUC, NOI_DUNG: d.NOI_DUNG || "", AN_HIEN: d.AN_HIEN !== false })));
+            } else {
+                setDkHdRows(generateDkHdRows(editData.LOAI_HD || "Dân dụng"));
+            }
+
             const ttk = editData.THONG_TIN_KHAC || [];
             if (ttk.length > 0) {
                 setThongTinRows(ttk.map((t: any) => ({ _id: tempId(), _dbId: t.ID, TIEU_DE: t.TIEU_DE, NOI_DUNG: t.NOI_DUNG || "" })));
             } else if (editData.KHTN_REL) {
-                setThongTinRows(generateCustomerInfoRows(editData.KHTN_REL));
+                setThongTinRows(generateCustomerInfoRows(editData.KHTN_REL, editData.LOAI_HD || "Dân dụng"));
             } else {
-                setThongTinRows(DEFAULT_THONG_TIN_KHAC.map(t => ({ ...t, _id: tempId() })));
+                setThongTinRows(DEFAULT_THONG_TIN_KHAC.filter(t => !t.LOAI_HD || t.LOAI_HD === 'ALL' || t.LOAI_HD === (editData.LOAI_HD || "Dân dụng")).map(t => ({ ...t, _id: tempId() })));
             }
             if (editData.MA_KH) {
                 getCoHoiByKhachHangForHD(editData.MA_KH).then(setCoHois as any);
@@ -185,9 +275,9 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
         } else {
             setNgayHD(new Date().toISOString().slice(0, 10));
             setMaKH(""); setSelectedKH(null); setMaCH(""); setSelectedCH(null); setMaBaoGia(""); setSelectedBG(null);
-            setLoaiHD("Dân dụng"); setCongTrinh(""); setHangMuc(""); setPtVat(8); setTtUuDai(0); setTepDinhKems([]);
-            setChiTiets([]); setDkttRows([]); setDkHdRows(DEFAULT_DK_HD.map(d => ({ ...d, _id: tempId() }))); setCoHois([]); setBaoGias([]);
-            setThongTinRows(DEFAULT_THONG_TIN_KHAC.map(t => ({ ...t, _id: tempId() })));
+            setLoaiHD("Dân dụng"); setPtVat(8); setTtUuDai(0); setTepDinhKems([]);
+            setChiTiets([]); setDkttRows([]); setDkHdRows(generateDkHdRows("Dân dụng")); setCoHois([]); setBaoGias([]);
+            setThongTinRows(DEFAULT_THONG_TIN_KHAC.filter(t => !t.LOAI_HD || t.LOAI_HD === 'ALL' || t.LOAI_HD === "Dân dụng").map(t => ({ ...t, _id: tempId() })));
             setActiveGroups([DEFAULT_NHOM]); setActiveNhomTab(DEFAULT_NHOM);
         }
         setKhQuery(""); setKhResults([]); setKhOpen(false);
@@ -253,10 +343,10 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const handleSelectKH = useCallback(async (kh: KHOption) => {
         setMaKH(kh.MA_KH); setSelectedKH(kh); setKhOpen(false); setKhQuery("");
         setMaCH(""); setSelectedCH(null); setMaBaoGia(""); setSelectedBG(null);
-        setThongTinRows(generateCustomerInfoRows(kh));
+        setThongTinRows(generateCustomerInfoRows(kh, loaiHD));
         const [chs, bgs] = await Promise.all([getCoHoiByKhachHangForHD(kh.MA_KH), getBaoGiaByKhachHang(kh.MA_KH)]);
         setCoHois(chs as any); setBaoGias(bgs as any);
-    }, []);
+    }, [loaiHD]);
 
     const recalcRow = useCallback((row: HopDongChiTietRow): HopDongChiTietRow => {
         const thanhTien = row.GIA_BAN * row.SO_LUONG;
@@ -309,7 +399,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const handleSubmit = () => {
         if (!maKH) { toast.error("Vui lòng chọn khách hàng!"); setActiveTab("general"); return; }
         if (validRows.length === 0) { toast.error("Vui lòng thêm ít nhất 1 hàng hóa!"); setActiveTab("details"); return; }
-        const header = { NGAY_HD: ngayHD, MA_KH: maKH, MA_CH: maCH || null, MA_BAO_GIA: maBaoGia || null, LOAI_HD: loaiHD, CONG_TRINH: congTrinh || null, HANG_MUC: hangMuc || null, PT_VAT: ptVat, TT_UU_DAI: ttUuDai, TEP_DINH_KEM: tepDinhKems, NGUOI_TAO: nguoiTao || null };
+        const header = { NGAY_HD: ngayHD, MA_KH: maKH, MA_CH: maCH || null, MA_BAO_GIA: maBaoGia || null, LOAI_HD: loaiHD, PT_VAT: ptVat, TT_UU_DAI: ttUuDai, TEP_DINH_KEM: tepDinhKems, NGUOI_TAO: nguoiTao || null };
         const details = validRows.map(ct => ({ MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || null, DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT, GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG, THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null }));
         const dktt = dkttRows.filter(d => d.LAN_THANH_TOAN);
         const ttk = thongTinRows.filter(t => t.TIEU_DE && t.TIEU_DE.trim() !== "").map(t => ({ TIEU_DE: t.TIEU_DE, NOI_DUNG: t.NOI_DUNG }));
@@ -365,7 +455,11 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                 <FormSelect
                                     name="loaiHD"
                                     value={loaiHD}
-                                    onChange={setLoaiHD}
+                                    onChange={(newLoai) => {
+                                        setLoaiHD(newLoai);
+                                        setThongTinRows(prev => generateCustomerInfoRows(selectedKH, newLoai, prev));
+                                        setDkHdRows(prev => generateDkHdRows(newLoai, prev));
+                                    }}
                                     options={[
                                         { label: "Dân dụng", value: "Dân dụng" },
                                         { label: "Công nghiệp", value: "Công nghiệp" }
@@ -523,16 +617,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                 {ttUuDai < 0 && <p className="text-xs text-orange-600">Giảm {fmtMoney(Math.abs(ttUuDai))} ₫</p>}
                             </div>
 
-                            {loaiHD === "Công nghiệp" && (
-                                <>
-                                    <div className="space-y-1.5"><label className="text-sm font-semibold text-muted-foreground">Công trình</label>
-                                        <input type="text" value={congTrinh} onChange={e => setCongTrinh(e.target.value)} className="input-modern" placeholder="Tên công trình..." />
-                                    </div>
-                                    <div className="space-y-1.5"><label className="text-sm font-semibold text-muted-foreground">Hạng mục</label>
-                                        <input type="text" value={hangMuc} onChange={e => setHangMuc(e.target.value)} className="input-modern" placeholder="Hạng mục..." />
-                                    </div>
-                                </>
-                            )}
+
 
                             {/* Tệp đính kèm */}
                             <div className="space-y-1.5 md:col-span-2">

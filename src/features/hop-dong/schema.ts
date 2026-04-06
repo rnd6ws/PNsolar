@@ -20,8 +20,7 @@ export const hopDongSchema = z.object({
     MA_CH: z.string().optional().nullable(),
     MA_BAO_GIA: z.string().optional().nullable(),
     LOAI_HD: z.enum(['Dân dụng', 'Công nghiệp']).default('Dân dụng'),
-    CONG_TRINH: z.string().optional().nullable(),
-    HANG_MUC: z.string().optional().nullable(),
+
     PT_VAT: z.number().min(0).max(100).default(8),
     TT_UU_DAI: z.number().default(0),
     TEP_DINH_KEM: z.array(z.string()).default([]),
@@ -48,8 +47,7 @@ export interface HopDongFull {
     MA_CH: string | null;
     MA_BAO_GIA: string;
     LOAI_HD: string;
-    CONG_TRINH: string | null;
-    HANG_MUC: string | null;
+
     PT_VAT: number;
     TT_VAT: number;
     THANH_TIEN: number;
@@ -102,6 +100,10 @@ export interface DkHdRow extends DkHdInput {
     _dbId?: string;
 }
 
+export interface DkHdTemplate extends Omit<DkHdRow, '_id'> {
+    LOAI_HD?: 'ALL' | 'Dân dụng' | 'Công nghiệp';
+}
+
 // ===== Zod Schema cho THONG_TIN_KHAC =====
 export const thongTinKhacSchema = z.object({
     TIEU_DE: z.string().optional().nullable(),
@@ -115,38 +117,66 @@ export interface ThongTinKhacRow extends ThongTinKhacInput {
     _dbId?: string;
 }
 
+export interface ThongTinKhacTemplate extends Omit<ThongTinKhacRow, '_id'> {
+    LOAI_KH?: 'ALL' | 'CA_NHAN' | 'DOANH_NGHIEP';
+    LOAI_HD?: 'ALL' | 'Dân dụng' | 'Công nghiệp';
+}
+
 // ===== Giá trị mặc định cho THONG_TIN_KHAC =====
-export const DEFAULT_THONG_TIN_KHAC: Omit<ThongTinKhacRow, '_id'>[] = [
-    { TIEU_DE: 'Đại diện', NOI_DUNG: '' }, // Tên người đại diện (KHTN_REL.NGUOI_DAI_DIEN.NGUOI_DD)
-    { TIEU_DE: 'Chức vụ', NOI_DUNG: '' }, // Chức vụ (KHTN_REL.NGUOI_DAI_DIEN.CHUC_VU) KHTN có mst
-    { TIEU_DE: 'Địa chỉ', NOI_DUNG: '' }, // Địa chỉ (KHTN_REL.DIA_CHI)
-    { TIEU_DE: 'Điện thoại', NOI_DUNG: '' }, // Số điện thoại (KHTN_REL.DIEN_THOAI)
-    { TIEU_DE: 'Email', NOI_DUNG: '' }, // Email (KHTN_REL.EMAIL)
-    { TIEU_DE: 'CCCD', NOI_DUNG: '' }, // Số CCCD KHTN không có mst
-    { TIEU_DE: 'Cấp ngày', NOI_DUNG: '' }, // Ngày cấp KHTN không có mst
-    { TIEU_DE: 'Nơi cấp', NOI_DUNG: '' }, // Nơi cấp KHTN không có mst
-    { TIEU_DE: 'Số tài khoản', NOI_DUNG: '' }, // Số tài khoản KHTN có mst
-    { TIEU_DE: 'Ngân hàng', NOI_DUNG: '' }, // Ngân hàng KHTN có mst
-    { TIEU_DE: 'Chủ TK', NOI_DUNG: '' }, // Chủ tài khoản KHTN có mst
-    { TIEU_DE: 'Mã số thuế', NOI_DUNG: '' }, // Mã số thuế KHTN có mst
+export const DEFAULT_THONG_TIN_KHAC: ThongTinKhacTemplate[] = [
+    { TIEU_DE: 'Đại diện', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'ALL' }, // Tên người đại diện (KHTN_REL.NGUOI_DAI_DIEN.NGUOI_DD)
+    { TIEU_DE: 'Chức vụ', NOI_DUNG: '', LOAI_KH: 'DOANH_NGHIEP', LOAI_HD: 'ALL' }, // Chức vụ (KHTN_REL.NGUOI_DAI_DIEN.CHUC_VU) KHTN có mst
+    { TIEU_DE: 'Địa chỉ', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'ALL' }, // Địa chỉ (KHTN_REL.DIA_CHI)
+    { TIEU_DE: 'Điện thoại', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'ALL' }, // Số điện thoại (KHTN_REL.DIEN_THOAI)
+    { TIEU_DE: 'Fax', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'Công nghiệp' }, // Fax
+    { TIEU_DE: 'Email', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'ALL' }, // Email (KHTN_REL.EMAIL)
+    { TIEU_DE: 'CCCD', NOI_DUNG: '', LOAI_KH: 'CA_NHAN', LOAI_HD: 'Dân dụng' }, // Số CCCD KHTN không có mst
+    { TIEU_DE: 'Cấp ngày', NOI_DUNG: '', LOAI_KH: 'CA_NHAN', LOAI_HD: 'Dân dụng' }, // Ngày cấp KHTN không có mst
+    { TIEU_DE: 'Nơi cấp', NOI_DUNG: '', LOAI_KH: 'CA_NHAN', LOAI_HD: 'Dân dụng' }, // Nơi cấp KHTN không có mst
+    { TIEU_DE: 'Số tài khoản', NOI_DUNG: '', LOAI_KH: 'DOANH_NGHIEP', LOAI_HD: 'ALL' }, // Số tài khoản KHTN có mst
+    { TIEU_DE: 'Ngân hàng', NOI_DUNG: '', LOAI_KH: 'DOANH_NGHIEP', LOAI_HD: 'ALL' }, // Ngân hàng KHTN có mst
+    { TIEU_DE: 'Chủ TK', NOI_DUNG: '', LOAI_KH: 'DOANH_NGHIEP', LOAI_HD: 'Dân dụng' }, // Chủ tài khoản KHTN có mst
+    { TIEU_DE: 'Mã số thuế', NOI_DUNG: '', LOAI_KH: 'DOANH_NGHIEP', LOAI_HD: 'ALL' }, // Mã số thuế KHTN có mst
 ];
 
 // ===== Giá trị mặc định cho DK_HD (Điều khoản hợp đồng) =====
-export const DEFAULT_DK_HD: Omit<DkHdRow, '_id'>[] = [
+// ===== Giá trị mặc định cho DK_HD (Điều khoản hợp đồng) =====
+export const DEFAULT_DK_HD: DkHdTemplate[] = [
     {
         HANG_MUC: '- Chế độ bảo hành:',
         NOI_DUNG: '+ Tấm pin bảo hành 15 năm, hiệu suất cells pin không dưới 80% trong 30 năm.\n+ Inverter bảo hành 05 năm.\n+ Bình lưu bảo hành 10 năm\n+ Các hạng mục bảo hành theo phụ lục đính kèm.',
         AN_HIEN: true,
+        LOAI_HD: 'Dân dụng',
     },
     {
         HANG_MUC: '- Thời gian giao hàng và lắp đặt:',
         NOI_DUNG: 'Trong vòng 03 ngày kể từ ngày Bên B nhận thanh toán lần 01.(Nếu có thay đổi thời gian giao hàng, Bên B phải báo cho Bên A ít nhất 03 ngày).',
         AN_HIEN: true,
+        LOAI_HD: 'Dân dụng',
     },
     {
         HANG_MUC: '- Địa điểm giao hàng và thi công:',
         NOI_DUNG: '',
         AN_HIEN: true,
+        LOAI_HD: 'Dân dụng',
+    },
+    {
+        HANG_MUC: 'Địa điểm thi công:',
+        NOI_DUNG: '',
+        AN_HIEN: true,
+        LOAI_HD: 'Công nghiệp',
+    },
+    {
+        HANG_MUC: 'Vị trí lắp đặt:',
+        NOI_DUNG: '',
+        AN_HIEN: true,
+        LOAI_HD: 'Công nghiệp',
+    },
+    {
+        HANG_MUC: 'Thời gian thực hiện:',
+        NOI_DUNG: '',
+        AN_HIEN: true,
+        LOAI_HD: 'Công nghiệp',
     },
 ];
 

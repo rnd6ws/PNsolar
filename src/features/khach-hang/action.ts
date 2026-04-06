@@ -756,7 +756,7 @@ export async function getHopDongByKH(maKH: string) {
                 ID: true, SO_HD: true, NGAY_HD: true,
                 LOAI_HD: true, TONG_TIEN: true, DUYET: true,
                 MA_BAO_GIA: true, MA_CH: true,
-                CONG_TRINH: true,
+
                 NGUOI_TAO_REL: { select: { HO_TEN: true } },
                 _count: { select: { HOP_DONG_CT: true } },
             },

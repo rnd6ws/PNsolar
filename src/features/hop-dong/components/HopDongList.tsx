@@ -211,7 +211,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                             {show("coHoi") && <th className={thClass}>Cơ hội</th>}
                             {show("baoGia") && <th className={thClass}>Báo giá</th>}
                             {show("loai") && <th className={`${thClass} text-center`}>Loại</th>}
-                            {show("congTrinh") && <th className={thClass}>Công trình</th>}
+
                             {show("tongTien") && <th className={`${thClass} text-right`} onClick={() => handleSort("TONG_TIEN")}>Tổng tiền <SortIcon columnKey="TONG_TIEN" /></th>}
                             {show("daTT") && <th className={`${thClass} text-right`}>Đã thanh toán</th>}
                             <th className={`${thClass} text-right`}>Hành động</th>
@@ -268,7 +268,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                         </span>
                                     </td>
                                 )}
-                                {show("congTrinh") && <td className={tdClass}><p className="truncate max-w-[250px] text-muted-foreground">{item.CONG_TRINH || "—"}</p></td>}
+
                                 {show("tongTien") && <td className={`${tdClass} text-right font-bold`}>{fmtMoney(item.TONG_TIEN)}</td>}
                                 {show("daTT") && (
                                     <td className={`${tdClass} text-right font-semibold text-emerald-600 dark:text-emerald-400`}>
