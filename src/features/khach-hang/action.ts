@@ -36,6 +36,7 @@ export async function getKhachHangs(filters: {
     if (query) {
         andConditions.push({
             OR: [
+                { MA_KH: { contains: query, mode: "insensitive" } },
                 { TEN_KH: { contains: query, mode: "insensitive" } },
                 { TEN_VT: { contains: query, mode: "insensitive" } },
                 { DIEN_THOAI: { contains: query, mode: "insensitive" } },
@@ -184,7 +185,7 @@ export async function createKhachHang(data: any) {
         const initialLichSu = `${timestamp} Tạo mới khách hàng tiềm năng`;
 
         let maKh = "";
-        const prefix = data.TEN_VT ? `KHTN-${data.TEN_VT.substring(0, 10).toUpperCase()}` : `KHTN-KHAC`;
+        const prefix = data.TEN_VT ? `KHTN-${data.TEN_VT.replace(/\\s+/g, '_').substring(0, 10).toUpperCase()}` : `KHTN-KHAC`;
 
         const lastKh = await prisma.kHTN.findFirst({
             where: { MA_KH: { startsWith: prefix } },
@@ -314,7 +315,7 @@ export async function updateKhachHang(id: string, data: any) {
                 LAT: data.LAT ? parseFloat(data.LAT) : null,
                 LONG: data.LONG ? parseFloat(data.LONG) : null,
                 LINK_MAP: data.LINK_MAP || null,
-                LY_DO_TU_CHOI: data.LY_DO_TU_CHOI || null,
+                LY_DO_TU_CHOI: data.LY_DO_TU_CHOI !== undefined ? (data.LY_DO_TU_CHOI || null) : existing.LY_DO_TU_CHOI,
             },
         });
 
@@ -360,7 +361,7 @@ export async function thamDinhKhachHang(id: string, phanLoai: string, lyDoTuChoi
             where: { ID: id },
             data: {
                 PHAN_LOAI: phanLoai,
-                LY_DO_TU_CHOI: lyDoTuChoi || null,
+                LY_DO_TU_CHOI: phanLoai === 'Không phù hợp' ? (lyDoTuChoi || null) : null,
                 LICH_SU: updatedLichSu,
             },
         });

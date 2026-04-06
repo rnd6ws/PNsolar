@@ -17,7 +17,7 @@ export default function HopDongPageClient({ data }: { data: any[] }) {
     return (
         <>
             {/* Toolbar */}
-            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8">
+            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8 rounded-t-2xl">
                 <div className="flex items-center justify-between gap-3 w-full">
                     <div className="flex-1 w-full lg:max-w-[400px]">
                         <SearchInput placeholder="Tìm theo số HĐ, tên KH..." />

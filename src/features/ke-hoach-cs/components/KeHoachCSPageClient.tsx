@@ -58,10 +58,10 @@ export default function KeHoachCSPageClient({
     return (
         <>
             {/* Toolbar */}
-            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8">
+            <div className="p-5 flex flex-col gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8 rounded-t-2xl">
                 <div className="flex items-center justify-between gap-3 w-full">
                     <div className="flex-1 w-full lg:max-w-[400px]">
-                        <SearchInput placeholder="Tìm tên khách hàng..." />
+                        <SearchInput placeholder="Tìm mã/tên khách hàng, viết tắt..." />
                     </div>
 
                     {/* Mobile toggle */}
@@ -85,11 +85,10 @@ export default function KeHoachCSPageClient({
                         </div>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${
-                                showFilters
+                            className={`p-2 border border-border rounded-lg transition-colors shadow-sm flex items-center justify-center ${showFilters
                                     ? "bg-primary text-primary-foreground border-primary"
                                     : "bg-background hover:bg-muted text-muted-foreground"
-                            }`}
+                                }`}
                             title="Tùy chọn & Thao tác"
                         >
                             <Settings2 className="w-5 h-5" />

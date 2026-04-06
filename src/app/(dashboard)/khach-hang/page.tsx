@@ -35,7 +35,7 @@ function StatsSkeleton() {
 // ── Skeleton cho Table ─────────────────────────────
 function TableSkeleton() {
     return (
-        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col relative overflow-hidden">
+        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col relative">
             <div className="p-5 flex items-center gap-3 border-b">
                 <div className="h-9 flex-1 max-w-[400px] bg-muted rounded-lg animate-pulse" />
                 <div className="hidden lg:flex items-center gap-3">
@@ -91,7 +91,7 @@ async function KhachHangDataSection({
     });
 
     return (
-        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col relative overflow-hidden">
+        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col relative">
             <KhachHangPageClient
                 data={data as any}
                 phanLoais={catalogs.phanLoais as any}

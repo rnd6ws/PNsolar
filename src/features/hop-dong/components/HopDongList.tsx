@@ -296,7 +296,14 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                             <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground group-hover:text-blue-500 hover:text-blue-600" title="Sửa"><Pencil className="w-4 h-4" /></button>
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="hop-dong" level="delete">
-                                            <button onClick={() => setDeleteItem(item)} className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground group-hover:text-destructive hover:text-destructive" title="Xóa"><Trash2 className="w-4 h-4" /></button>
+                                            <button 
+                                                onClick={() => setDeleteItem(item)} 
+                                                disabled={item.DUYET === "Đã duyệt"}
+                                                className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground group-hover:text-destructive hover:text-destructive disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:group-hover:text-muted-foreground disabled:hover:text-muted-foreground" 
+                                                title={item.DUYET === "Đã duyệt" ? "Không thể xóa hợp đồng đã duyệt" : "Xóa"}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </PermissionGuard>
                                     </div>
                                 </td>
@@ -384,7 +391,14 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                     <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold"><Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span></button>
                                 </PermissionGuard>
                                 <PermissionGuard moduleKey="hop-dong" level="delete">
-                                    <button onClick={() => setDeleteItem(item)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                    <button 
+                                        onClick={() => setDeleteItem(item)} 
+                                        disabled={item.DUYET === "Đã duyệt"}
+                                        className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-muted/50 disabled:hover:text-muted-foreground"
+                                        title={item.DUYET === "Đã duyệt" ? "Không thể xóa hợp đồng đã duyệt" : "Xóa"}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </PermissionGuard>
                             </div>
                         </div>
