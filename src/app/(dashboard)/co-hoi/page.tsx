@@ -35,7 +35,7 @@ function StatsSkeleton() {
 
 function TableSkeleton() {
     return (
-        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative overflow-hidden">
+        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative">
             <div className="p-5 flex items-center gap-3 border-b">
                 <div className="h-9 flex-1 max-w-[400px] bg-muted rounded-lg animate-pulse" />
             </div>
@@ -131,7 +131,7 @@ async function CoHoiDataSection({
     });
 
     return (
-        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative overflow-hidden">
+        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative">
             <CoHoiPageClient
                 data={data as any}
                 dmDichVu={dmDichVu as any}

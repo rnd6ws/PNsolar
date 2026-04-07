@@ -333,13 +333,23 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                 <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
                                             </button>
                                             <PermissionGuard moduleKey="co-hoi" level="add">
-                                                <button onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-orange-500/10 text-muted-foreground hover:text-orange-500 rounded-lg transition-colors text-xs font-semibold" title="Tạo cơ hội">
+                                                <button onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-orange-500/10 text-muted-foreground hover:text-orange-500 rounded-lg transition-colors text-xs font-semibold relative group" title="Tạo cơ hội">
                                                     <Target className="w-4 h-4" /> <span className="hidden sm:inline">Cơ hội</span>
+                                                    {item._count?.CO_HOI > 0 && (
+                                                        <span className="absolute top-0.5 right-1 text-[9px] font-bold text-orange-500">
+                                                            {item._count.CO_HOI}
+                                                        </span>
+                                                    )}
                                                 </button>
                                             </PermissionGuard>
                                             <PermissionGuard moduleKey="ke-hoach-cs" level="add">
-                                                <button onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-violet-500/10 text-muted-foreground hover:text-violet-600 rounded-lg transition-colors text-xs font-semibold" title="Lên kế hoạch CSKH">
+                                                <button onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-violet-500/10 text-muted-foreground hover:text-violet-600 rounded-lg transition-colors text-xs font-semibold relative group" title="Lên kế hoạch CSKH">
                                                     <CalendarPlus2 className="w-4 h-4" /> <span className="hidden sm:inline">CSKH</span>
+                                                    {item._count?.KEHOACH_CSKH > 0 && (
+                                                        <span className="absolute top-0.5 right-1 text-[9px] font-bold text-violet-600">
+                                                            {item._count.KEHOACH_CSKH}
+                                                        </span>
+                                                    )}
                                                 </button>
                                             </PermissionGuard>
                                             <PermissionGuard moduleKey="khach-hang" level="add">
@@ -522,6 +532,17 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                                         </DropdownMenu>
                                                                     </PermissionGuard>
                                                                 )}
+                                                                {item.PHAN_LOAI === "Không phù hợp" && (
+                                                                    <PermissionGuard moduleKey="khach-hang" level="edit">
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); setConfirmTiemNangItem({ ID: item.ID, TEN_KH: item.TEN_KH }); }}
+                                                                            className="p-1 hover:bg-emerald-50 text-muted-foreground hover:text-emerald-600 rounded-md transition-colors shadow-sm border border-border bg-background"
+                                                                            title="Xác nhận khách hàng tiềm năng"
+                                                                        >
+                                                                            <UserCheck className="w-3.5 h-3.5 text-emerald-500/80" />
+                                                                        </button>
+                                                                    </PermissionGuard>
+                                                                )}
                                                             </div>
                                                             {item.LY_DO_TU_CHOI && item.PHAN_LOAI === "Không phù hợp" && (
                                                                 <p className="text-[10px] text-destructive italic max-w-[150px] whitespace-normal leading-tight opacity-90 wrap-break-word">
@@ -565,19 +586,29 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                         <PermissionGuard moduleKey="co-hoi" level="add">
                                                             <button
                                                                 onClick={() => setTaoCoHoiItem({ ID_KH: item.ID, KH: item })}
-                                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-orange-500 group-hover/row:text-orange-500 rounded-lg transition-colors"
+                                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-orange-500 group-hover/row:text-orange-500 rounded-lg transition-colors relative group"
                                                                 title="Tạo cơ hội"
                                                             >
                                                                 <Target className="w-4 h-4" />
+                                                                {item._count?.CO_HOI > 0 && (
+                                                                    <span className="absolute top-1 right-0.5 text-[10px] font-bold text-orange-500">
+                                                                        {item._count.CO_HOI}
+                                                                    </span>
+                                                                )}
                                                             </button>
                                                         </PermissionGuard>
                                                         <PermissionGuard moduleKey="ke-hoach-cs" level="add">
                                                             <button
                                                                 onClick={() => setKeHoachCSItem({ ID: item.ID, TEN_KH: item.TEN_KH, TEN_VT: item.TEN_VT ?? null })}
-                                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 group-hover/row:text-violet-600 rounded-lg transition-colors"
+                                                                className="p-2 hover:bg-muted text-muted-foreground hover:text-violet-600 group-hover/row:text-violet-600 rounded-lg transition-colors relative group"
                                                                 title="Lên kế hoạch CSKH"
                                                             >
                                                                 <CalendarPlus2 className="w-4 h-4" />
+                                                                {item._count?.KEHOACH_CSKH > 0 && (
+                                                                    <span className="absolute top-1 right-0.5 text-[10px] font-bold text-violet-600">
+                                                                        {item._count.KEHOACH_CSKH}
+                                                                    </span>
+                                                                )}
                                                             </button>
                                                         </PermissionGuard>
                                                         <PermissionGuard moduleKey="khach-hang" level="add">

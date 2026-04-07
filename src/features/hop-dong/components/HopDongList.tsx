@@ -10,6 +10,7 @@ import type { ColumnKey } from "./ColumnToggleButton";
 import AddEditHopDongModal from "./AddEditHopDongModal";
 import ViewHopDongModal from "./ViewHopDongModal";
 import { exportHopDongDocx } from "../utils/exportHopDong";
+import { exportHopDongCNDocx } from "../utils/exportHopDongCN";
 import { exportPLHopDongDocx } from "../utils/exportPLHopDong";
 import AddEditBanGiaoModal from "@/features/ban-giao/components/AddEditBanGiaoModal";
 import ViewBanGiaoModal from "@/features/ban-giao/components/ViewBanGiaoModal";
@@ -91,7 +92,12 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
             // Load full data if needed
             const result = await getHopDongById(item.ID);
             if (result.success && result.data) {
-                await exportHopDongDocx(result.data);
+                const data = result.data;
+                if (data.LOAI_HD === "Công nghiệp") {
+                    await exportHopDongCNDocx(data);
+                } else {
+                    await exportHopDongDocx(data);
+                }
                 toast.success("Đã xuất file hợp đồng!");
             } else {
                 toast.error(result.message || "Không thể tải dữ liệu");
@@ -211,7 +217,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                             {show("coHoi") && <th className={thClass}>Cơ hội</th>}
                             {show("baoGia") && <th className={thClass}>Báo giá</th>}
                             {show("loai") && <th className={`${thClass} text-center`}>Loại</th>}
-                            {show("congTrinh") && <th className={thClass}>Công trình</th>}
+
                             {show("tongTien") && <th className={`${thClass} text-right`} onClick={() => handleSort("TONG_TIEN")}>Tổng tiền <SortIcon columnKey="TONG_TIEN" /></th>}
                             {show("daTT") && <th className={`${thClass} text-right`}>Đã thanh toán</th>}
                             <th className={`${thClass} text-right`}>Hành động</th>
@@ -268,7 +274,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                         </span>
                                     </td>
                                 )}
-                                {show("congTrinh") && <td className={tdClass}><p className="truncate max-w-[250px] text-muted-foreground">{item.CONG_TRINH || "—"}</p></td>}
+
                                 {show("tongTien") && <td className={`${tdClass} text-right font-bold`}>{fmtMoney(item.TONG_TIEN)}</td>}
                                 {show("daTT") && (
                                     <td className={`${tdClass} text-right font-semibold text-emerald-600 dark:text-emerald-400`}>
@@ -281,7 +287,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                     <div className="flex items-center justify-end gap-1">
                                         <button onClick={() => handleView(item)} disabled={loadingView} className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground group-hover:text-primary hover:text-primary" title="Xem"><Eye className="w-4 h-4" /></button>
                                         <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-green-600 dark:group-hover:text-green-500 hover:text-green-700" title="Xuất HĐ Word"><BookDown className="w-4 h-4" /></button>
-                                        <button onClick={() => handleExportPL(item)} className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-500 hover:text-blue-700" title="Xuất Phụ Lục HĐ"><FileSpreadsheet className="w-4 h-4" /></button>
+                                        <button onClick={() => handleExportPL(item)} disabled={item.LOAI_HD === "Công nghiệp"} className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-500 hover:text-blue-700 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:group-hover:text-muted-foreground" title={item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp không có phụ lục" : "Xuất Phụ Lục HĐ"}><FileSpreadsheet className="w-4 h-4" /></button>
                                         <PermissionGuard moduleKey="hop-dong" level="edit">
                                             <button
                                                 onClick={() => handleBanGiao(item)}
@@ -296,7 +302,14 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                             <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground group-hover:text-blue-500 hover:text-blue-600" title="Sửa"><Pencil className="w-4 h-4" /></button>
                                         </PermissionGuard>
                                         <PermissionGuard moduleKey="hop-dong" level="delete">
-                                            <button onClick={() => setDeleteItem(item)} className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground group-hover:text-destructive hover:text-destructive" title="Xóa"><Trash2 className="w-4 h-4" /></button>
+                                            <button 
+                                                onClick={() => setDeleteItem(item)} 
+                                                disabled={item.DUYET === "Đã duyệt"}
+                                                className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground group-hover:text-destructive hover:text-destructive disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:group-hover:text-muted-foreground disabled:hover:text-muted-foreground" 
+                                                title={item.DUYET === "Đã duyệt" ? "Không thể xóa hợp đồng đã duyệt" : "Xóa"}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </PermissionGuard>
                                     </div>
                                 </td>
@@ -369,7 +382,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 )}
                                 <button onClick={() => handleView(item)} disabled={loadingView} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold"><Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span></button>
                                 <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-green-100 dark:hover:bg-green-900/30 text-muted-foreground hover:text-green-700 rounded-lg transition-colors text-xs font-semibold" title="Xuất HĐ Word"><BookDown className="w-4 h-4" /> <span className="hidden sm:inline">HĐ</span></button>
-                                <button onClick={() => handleExportPL(item)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-muted-foreground hover:text-blue-700 rounded-lg transition-colors text-xs font-semibold" title="Xuất Phụ Lục"><FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">PL</span></button>
+                                <button onClick={() => handleExportPL(item)} disabled={item.LOAI_HD === "Công nghiệp"} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-muted-foreground hover:text-blue-700 rounded-lg transition-colors text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-muted/50 disabled:hover:text-muted-foreground" title={item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp không có phụ lục" : "Xuất Phụ Lục"}><FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">PL</span></button>
                                 <PermissionGuard moduleKey="ban-giao" level="add">
                                     <button
                                         onClick={() => handleBanGiao(item)}
@@ -384,7 +397,14 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                     <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold"><Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span></button>
                                 </PermissionGuard>
                                 <PermissionGuard moduleKey="hop-dong" level="delete">
-                                    <button onClick={() => setDeleteItem(item)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                    <button 
+                                        onClick={() => setDeleteItem(item)} 
+                                        disabled={item.DUYET === "Đã duyệt"}
+                                        className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-muted/50 disabled:hover:text-muted-foreground"
+                                        title={item.DUYET === "Đã duyệt" ? "Không thể xóa hợp đồng đã duyệt" : "Xóa"}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </PermissionGuard>
                             </div>
                         </div>

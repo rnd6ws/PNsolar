@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { exportHopDongDocx } from "../utils/exportHopDong";
+import { exportHopDongCNDocx } from "../utils/exportHopDongCN";
 
 const fmtDate = (d: string | Date | undefined) => d ? new Date(d).toLocaleDateString("vi-VN") : "—";
 const fmtMoney = (v: number | undefined) => (v && v > 0) ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
@@ -66,7 +67,11 @@ export default function ViewHopDongModal({ isOpen, onClose, data }: Props) {
     const handleExport = async () => {
         setExporting(true);
         try {
-            await exportHopDongDocx(data);
+            if (data.LOAI_HD === "Công nghiệp") {
+                await exportHopDongCNDocx(data);
+            } else {
+                await exportHopDongDocx(data);
+            }
             toast.success("Xuất file hợp đồng thành công!");
         } catch (err: any) {
             toast.error(err.message || "Lỗi khi xuất file hợp đồng");
@@ -136,12 +141,7 @@ export default function ViewHopDongModal({ isOpen, onClose, data }: Props) {
                                     <h3 className="text-sm font-bold text-foreground">Dự án & Liên kết</h3>
                                 </div>
                                 <div className="grid grid-cols-2 gap-y-4 gap-x-3">
-                                    {(data.CONG_TRINH || data.HANG_MUC) && (
-                                        <div className="col-span-2 flex flex-col gap-1">
-                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Công trình</span>
-                                            <p className="text-sm font-semibold text-foreground">{data.CONG_TRINH || "—"} {data.HANG_MUC ? `- ${data.HANG_MUC}` : ""}</p>
-                                        </div>
-                                    )}
+
                                     <div className="flex flex-col gap-1">
                                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Cơ hội</span>
                                         <p className="text-sm font-semibold text-foreground">{data.MA_CH || "—"}</p>

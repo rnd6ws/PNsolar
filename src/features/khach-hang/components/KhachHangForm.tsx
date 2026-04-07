@@ -41,7 +41,7 @@ export function KhachHangForm({
     const formRef = useRef<HTMLFormElement>(null);
     const [lookupLoading, setLookupLoading] = useState(false);
     const [coordinateLoading, setCoordinateLoading] = useState(false);
-    const [showCoordinates, setShowCoordinates] = useState(false);
+    const [showCoordinates, setShowCoordinates] = useState(true);
     const [lat, setLat] = useState(defaultValues?.LAT?.toString() || "");
     const [long, setLong] = useState(defaultValues?.LONG?.toString() || "");
     const [linkMap, setLinkMap] = useState(defaultValues?.LINK_MAP || "");

@@ -95,7 +95,7 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, prefill
                         tt.TIEU_DE?.toLowerCase().includes("địa điểm") ||
                         tt.TIEU_DE?.toLowerCase().includes("địa chỉ")
                     )?.NOI_DUNG?.trim();
-                    diaDiemPrefill = prefillHD.CONG_TRINH?.trim() || dkDiaDiemVal || ttkDiaDiemVal || prefillHD.KHTN_REL?.DIA_CHI?.trim() || "";
+                    diaDiemPrefill = dkDiaDiemVal || ttkDiaDiemVal || prefillHD.KHTN_REL?.DIA_CHI?.trim() || "";
                 }
                 setDiaDiem(diaDiemPrefill);
 
@@ -267,8 +267,8 @@ export default function AddEditBanGiaoModal({ isOpen, onClose, editData, prefill
                                                                 tt.TIEU_DE?.toLowerCase().includes("địa chỉ")
                                                             )?.NOI_DUNG?.trim();
 
-                                                            // Ưu tiên CONG_TRINH -> DK_HD -> THONG_TIN_KHAC -> KHTN_REL
-                                                            setDiaDiem(hd.CONG_TRINH?.trim() || dkDiaDiemVal || ttkDiaDiemVal || hd.KHTN_REL?.DIA_CHI?.trim() || "");
+                                                            // Ưu tiên DK_HD -> THONG_TIN_KHAC -> KHTN_REL
+                                                            setDiaDiem(dkDiaDiemVal || ttkDiaDiemVal || hd.KHTN_REL?.DIA_CHI?.trim() || "");
 
                                                             setShowHDDropdown(false);
                                                         }}
