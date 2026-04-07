@@ -192,7 +192,7 @@ export const DEFAULT_DK_HD: DkHdTemplate[] = [
     },
     {
         HANG_MUC: 'Thời gian thực hiện:',
-        NOI_DUNG: '',
+        NOI_DUNG: 'Trong vòng 60 ngày kể từ ngày nhận bàn giao mặt bằng và các hồ sơ liên quan để phục vụ công tác thiết kế, thẩm duyệt hệ thống theo quy định pháp luật (không bao gồm các ngày nghỉ và ngày lễ theo quy định) như sau:',
         AN_HIEN: true,
         LOAI_HD: 'Công nghiệp',
     },

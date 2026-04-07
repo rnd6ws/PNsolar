@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { exportHopDongDocx } from "../utils/exportHopDong";
+import { exportHopDongCNDocx } from "../utils/exportHopDongCN";
 
 const fmtDate = (d: string | Date | undefined) => d ? new Date(d).toLocaleDateString("vi-VN") : "—";
 const fmtMoney = (v: number | undefined) => (v && v > 0) ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
@@ -66,7 +67,11 @@ export default function ViewHopDongModal({ isOpen, onClose, data }: Props) {
     const handleExport = async () => {
         setExporting(true);
         try {
-            await exportHopDongDocx(data);
+            if (data.LOAI_HD === "Công nghiệp") {
+                await exportHopDongCNDocx(data);
+            } else {
+                await exportHopDongDocx(data);
+            }
             toast.success("Xuất file hợp đồng thành công!");
         } catch (err: any) {
             toast.error(err.message || "Lỗi khi xuất file hợp đồng");
