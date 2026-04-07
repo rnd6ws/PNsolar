@@ -913,9 +913,6 @@ model HOP_DONG {
 
   THONG_TIN_KHAC THONG_TIN_KHAC[]
 
-  CONG_TRINH String? // LOAI_HD: Công nghiệp
-  HANG_MUC   String? // LOAI_HD: Công nghiệp
-
   MA_KH    String
   KHTN_REL KHTN   @relation(fields: [MA_KH], references: [MA_KH])
 

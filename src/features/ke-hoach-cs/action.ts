@@ -29,6 +29,7 @@ export async function getKeHoachCSKH(filters: {
     if (query) {
         andConditions.push({
             OR: [
+                { KH_REL: { MA_KH: { contains: query, mode: "insensitive" } } },
                 { KH_REL: { TEN_KH: { contains: query, mode: "insensitive" } } },
                 { KH_REL: { TEN_VT: { contains: query, mode: "insensitive" } } },
             ],
@@ -99,7 +100,7 @@ export async function getKeHoachCSStats() {
     try {
         const user = await getCurrentUser();
         const baseWhere: any = {};
-        
+
         if (user && user.ROLE === "STAFF") {
             const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
             baseWhere.NGUOI_CS = staff?.MA_NV || "NONE";

@@ -76,8 +76,8 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
         }
     };
 
-    // Parse LICH_SU thành mảng entries
-    const lichSuEntries = (kh.LICH_SU || "").split("\n").map((l: string) => l.trim()).filter(Boolean);
+    // Parse LICH_SU thành mảng entries (đảo ngược để hiện mới nhất lên đầu)
+    const lichSuEntries = (kh.LICH_SU || "").split("\n").map((l: string) => l.trim()).filter(Boolean).reverse();
 
     const formatDT = (val: any) => {
         if (!val) return "—";

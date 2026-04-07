@@ -29,7 +29,7 @@ function StatsSkeleton() {
 
 function TableSkeleton() {
     return (
-        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative overflow-hidden">
+        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative">
             <div className="p-5 flex items-center gap-3 border-b">
                 <div className="h-9 flex-1 max-w-[400px] bg-muted rounded-lg animate-pulse" />
             </div>
@@ -72,7 +72,7 @@ async function HopDongDataSection({
     });
 
     return (
-        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative overflow-hidden">
+        <div className="bg-card border border-border/60 rounded-2xl shadow-sm flex flex-col mt-2 relative">
             <HopDongPageClient data={data as any} />
             {(pagination as any) && (
                 <div className="p-4 border-t flex justify-center items-center bg-transparent">
