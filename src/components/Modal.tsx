@@ -17,7 +17,7 @@ interface ModalProps {
     children: ReactNode;
     /** Footer cố định ở dưới cùng modal */
     footer?: ReactNode;
-    size?: 'md' | 'lg' | 'xl' | '2xl';
+    size?: 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | 'full';
     /** 
      * Chế độ fullHeight: header/footer cố định, body scroll.
      * Phù hợp cho modal phức tạp (nhiều tab, bảng dữ liệu...) 
@@ -27,7 +27,7 @@ interface ModalProps {
     bodyClassName?: string;
 }
 
-const sizeClasses = { md: 'max-w-2xl', lg: 'max-w-4xl', xl: 'max-w-5xl', '2xl': 'max-w-6xl' };
+const sizeClasses = { md: 'max-w-2xl', lg: 'max-w-4xl', xl: 'max-w-5xl', '2xl': 'max-w-6xl', '3xl': 'max-w-7xl', '4xl': 'max-w-[95vw]', 'full': 'max-w-[100vw] rounded-none' };
 
 export default function Modal({
     isOpen,

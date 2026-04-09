@@ -776,6 +776,166 @@ export async function getHopDongByKH(maKH: string) {
     }
 }
 
+// ─── Lấy toàn bộ Khách hàng để Export (không phân trang) ──────────
+export async function getAllKhachHangsForExport() {
+    const user = await getCurrentUser();
+
+    const where: any = {};
+    const andConditions: any[] = [];
+
+    if (user?.ROLE === 'STAFF') {
+        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+        if (staff?.MA_NV) {
+            andConditions.push({ SALES_PT: staff.MA_NV });
+        } else {
+            andConditions.push({ SALES_PT: 'NONE' });
+        }
+    }
+
+    if (andConditions.length > 0) where.AND = andConditions;
+
+    try {
+        const data = await prisma.kHTN.findMany({
+            where,
+            orderBy: { NGAY_GHI_NHAN: 'desc' },
+            include: {
+                NGUOI_DAI_DIEN: true,
+            },
+        });
+        return { success: true, data };
+    } catch (error) {
+        console.error('[getAllKhachHangsForExport]', error);
+        return { success: false, data: [] };
+    }
+}
+
+// ─── Import hàng loạt Khách hàng từ Excel ─────────────────────────
+export interface KhachHangImportPayload {
+    TEN_KH: string;
+    TEN_VT?: string;
+    NGAY_THANH_LAP?: string;
+    DIEN_THOAI?: string;
+    EMAIL?: string;
+    DIA_CHI?: string;
+    MST?: string;
+    NGUOI_DAI_DIEN?: string;
+    SDT_NGUOI_DAI_DIEN?: string;
+    NHOM_KH?: string;
+    PHAN_LOAI?: string;
+    NGUON?: string;
+    NGAY_GHI_NHAN?: string;
+    SALES_PT?: string;
+    LINK_MAP?: string;
+    LAT?: string;
+    LONG?: string;
+}
+
+export async function importKhachHangs(rows: KhachHangImportPayload[]) {
+    "use server";
+    try {
+        if (!rows || rows.length === 0) return { success: false, message: 'Không có dữ liệu để import' };
+
+        const user = await getCurrentUser();
+        const now = new Date();
+        const timestamp = `[${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}]`;
+        const initialLichSu = `${timestamp} Import từ file Excel`;
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors: string[] = [];
+
+        // Lấy danh sách nhân viên để map Tên -> Mã NV
+        const dsnvs = await prisma.dSNV.findMany({ select: { MA_NV: true, HO_TEN: true } });
+        const nVMap = new Map(dsnvs.filter(nv => nv.HO_TEN).map(nv => [nv.HO_TEN.toLowerCase().trim(), nv.MA_NV]));
+
+        for (const row of rows) {
+            if (!row.TEN_KH?.trim()) { errorCount++; continue; }
+
+            // Tạo mã KH theo quy chuẩn như createKhachHang
+            const prefix = row.TEN_VT ? `KHTN-${row.TEN_VT.replace(/\s+/g, '_').substring(0, 10).toUpperCase()}` : `KHTN-KHAC`;
+            const lastKh = await prisma.kHTN.findFirst({
+                where: { MA_KH: { startsWith: prefix } },
+                orderBy: { MA_KH: 'desc' },
+                select: { MA_KH: true },
+            });
+
+            let nextNum = 1;
+            if (lastKh?.MA_KH) {
+                const parts = lastKh.MA_KH.split('-');
+                const lastPart = parts[parts.length - 1];
+                const num = parseInt(lastPart, 10);
+                if (!isNaN(num)) nextNum = num + 1;
+            }
+
+            let created = false;
+            let attempts = 0;
+
+            const salesName = row.SALES_PT?.trim();
+            const salesMaNv = salesName ? nVMap.get(salesName.toLowerCase()) || salesName : null;
+
+            while (!created && attempts < 20) {
+                const maKh = `${prefix}-${String(nextNum).padStart(3, '0')}`;
+                try {
+                    await prisma.kHTN.create({
+                        data: {
+                            MA_KH: maKh,
+                            TEN_KH: row.TEN_KH.trim(),
+                            TEN_VT: row.TEN_VT?.trim() || null,
+                            DIEN_THOAI: row.DIEN_THOAI?.trim() || null,
+                            EMAIL: row.EMAIL?.trim() || null,
+                            DIA_CHI: row.DIA_CHI?.trim() || null,
+                            MST: row.MST?.trim() || null,
+                            NHOM_KH: row.NHOM_KH?.trim() || null,
+                            PHAN_LOAI: row.PHAN_LOAI?.trim() || null,
+                            NGUON: row.NGUON?.trim() || null,
+                            SALES_PT: salesMaNv,
+                            NGAY_GHI_NHAN: row.NGAY_GHI_NHAN ? new Date(row.NGAY_GHI_NHAN) : now,
+                            NGAY_THANH_LAP: row.NGAY_THANH_LAP ? new Date(row.NGAY_THANH_LAP) : null,
+                            LINK_MAP: row.LINK_MAP?.trim() || null,
+                            LAT: row.LAT ? parseFloat(row.LAT) : null,
+                            LONG: row.LONG ? parseFloat(row.LONG) : null,
+                            LICH_SU: initialLichSu,
+                            NGUOI_DAI_DIEN: row.NGUOI_DAI_DIEN ? {
+                                create: [{
+                                    NGUOI_DD: row.NGUOI_DAI_DIEN.trim(),
+                                    SDT: row.SDT_NGUOI_DAI_DIEN?.trim() || null
+                                }]
+                            } : undefined,
+                        },
+                    });
+                    created = true;
+                    successCount++;
+                } catch (err: any) {
+                    if (err.code === 'P2002') {
+                        nextNum++;
+                        attempts++;
+                    } else {
+                        errors.push(`"${row.TEN_KH}": ${err.message}`);
+                        errorCount++;
+                        break;
+                    }
+                }
+            }
+
+            if (!created && attempts >= 20) {
+                errors.push(`"${row.TEN_KH}": Không thể tạo mã KH (đã thử 20 lần)`);
+                errorCount++;
+            }
+        }
+
+        revalidatePath('/khach-hang');
+        return {
+            success: true,
+            successCount,
+            errorCount,
+            errors: errors.slice(0, 10), // Chỉ trả tối đa 10 lỗi đầu
+        };
+    } catch (error: any) {
+        console.error('[importKhachHangs]', error);
+        return { success: false, message: error.message || 'Lỗi import khách hàng' };
+    }
+}
+
 // ─── Lấy Khảo sát theo MA_KH ─────────────────────────────────────
 export async function getKhaoSatByKH(maKH: string) {
     try {
