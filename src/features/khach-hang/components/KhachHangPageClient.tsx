@@ -5,7 +5,7 @@ import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
 import KhachHangList from "./KhachHangList";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
-import { Download, Settings2, LayoutList, LayoutGrid, Grid, ChevronDown, X, Users, Tag, UserCheck, Globe, Loader2 } from "lucide-react";
+import { Download, Settings2, LayoutList, LayoutGrid, Grid, ChevronDown, X, Users, Tag, UserCheck, Globe, Loader2, Calendar } from "lucide-react";
 import { exportKhachHangExcel } from "../utils/exportKhachHangExcel";
 import ImportKhachHangModal from "./ImportKhachHangModal";
 import { getAllKhachHangsForExport } from "../action";
@@ -33,12 +33,13 @@ interface Props {
     currentUserId?: string;
 }
 
-export type GroupByKey = "none" | "NHOM_KH" | "PHAN_LOAI" | "NGUON";
+export type GroupByKey = "none" | "NHOM_KH" | "PHAN_LOAI" | "NGUON" | "THANG_GHI_NHAN";
 
 const GROUP_LABELS: Record<string, string> = {
     NHOM_KH: "Nhóm KH",
     PHAN_LOAI: "Phân loại",
     NGUON: "Nguồn / Sales",
+    THANG_GHI_NHAN: "Tháng ghi nhận",
 };
 
 const DEFAULT_COLUMNS: ColumnKey[] = ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "nguonSales"];
@@ -138,6 +139,9 @@ export default function KhachHangPageClient({
                                 <DropdownMenuItem onClick={() => setGroupBy("NGUON")} className={cn("py-2.5", groupBy === "NGUON" && "bg-primary/10 text-primary")}>
                                     <Globe className="w-4 h-4 mr-2" /> Nguồn / Sales
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setGroupBy("THANG_GHI_NHAN")} className={cn("py-2.5", groupBy === "THANG_GHI_NHAN" && "bg-primary/10 text-primary")}>
+                                    <Calendar className="w-4 h-4 mr-2" /> Tháng ghi nhận
+                                </DropdownMenuItem>
                                 {groupBy !== "none" && (
                                     <>
                                         <DropdownMenuSeparator />
@@ -203,6 +207,9 @@ export default function KhachHangPageClient({
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setGroupBy("NGUON")} className={cn("py-2.5", groupBy === "NGUON" && "bg-primary/10 text-primary")}>
                                             <Globe className="w-4 h-4 mr-2" /> Nguồn / Sales
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGroupBy("THANG_GHI_NHAN")} className={cn("py-2.5", groupBy === "THANG_GHI_NHAN" && "bg-primary/10 text-primary")}>
+                                            <Calendar className="w-4 h-4 mr-2" /> Tháng ghi nhận
                                         </DropdownMenuItem>
                                         {groupBy !== "none" && (
                                             <>

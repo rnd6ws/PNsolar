@@ -119,6 +119,14 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                 label = item.PHAN_LOAI || "Chưa phân loại";
             } else if (groupBy === "NGUON") {
                 label = item.NGUON || "Chưa có nguồn";
+            } else if (groupBy === "THANG_GHI_NHAN") {
+                if (item.NGAY_GHI_NHAN) {
+                    const d = new Date(item.NGAY_GHI_NHAN);
+                    const pad = (n: number) => String(n).padStart(2, "0");
+                    label = `Tháng ${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+                } else {
+                    label = "Chưa có ngày ghi nhận";
+                }
             }
             if (labelMap.has(label)) {
                 groups[labelMap.get(label)!].items.push(item);
