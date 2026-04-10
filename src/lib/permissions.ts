@@ -34,6 +34,7 @@ export const MODULES: ModuleDefinition[] = [
     { key: 'thanh-toan', label: 'Thanh toán', href: '/thanh-toan', group: 'main' },
     { key: 'hang-muc-ks', label: 'Hạng mục khảo sát', href: '/hang-muc-ks', group: 'main' },
     { key: 'khao-sat', label: 'Khảo sát công trình', href: '/khao-sat', group: 'main' },
+    { key: 'ban-do-kh', label: 'Bản đồ khách hàng', href: '/ban-do-kh', group: 'main' },
     // Nhóm Hệ thống
     { key: 'settings', label: 'Cài đặt', href: '/settings', group: 'system' },
     { key: 'phan-quyen', label: 'Phân quyền', href: '/phan-quyen', group: 'system' },

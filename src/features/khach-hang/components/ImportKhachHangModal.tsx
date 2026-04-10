@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import { FileSpreadsheet, Upload, Download, CheckCircle2, XCircle, AlertTriangle, Loader2, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { useState, useCallback, useRef, useTransition } from "react";
+import { FileSpreadsheet, Upload, Download, CheckCircle2, XCircle, AlertTriangle, Loader2, ChevronDown, ChevronUp, Trash2, Edit2 } from "lucide-react";
 import Modal from "@/components/Modal";
 import SimpleSelect from "@/components/SimpleSelect";
 import { toast } from "sonner";
@@ -11,9 +11,11 @@ import { importKhachHangs } from "../action";
 // ─── Bảng preview dạng gọn ─────────────────────────────────────
 function PreviewTable({
     rows, showAll, isEditing, showValidation = true, onRowChange, onRemoveRow,
-    nhoms = [], phanLoais = [], nguons = [], nhanViens = []
+    nhoms = [], phanLoais = [], nguons = [], nhanViens = [],
+    filterStatus = "all"
 }: {
     rows: KhachHangImportRow[]; showAll: boolean; isEditing?: boolean; showValidation?: boolean;
+    filterStatus?: "all" | "valid" | "error";
     onRowChange?: (idx: number, field: keyof KhachHangImportRow, val: string) => void;
     onRemoveRow?: (idx: number) => void;
     nhoms?: { ID: string; NHOM: string }[];
@@ -21,7 +23,13 @@ function PreviewTable({
     nguons?: { ID: string; NGUON: string }[];
     nhanViens?: { ID: string; HO_TEN: string }[];
 }) {
-    const displayed = showAll ? rows : rows.slice(0, 8);
+    const validFiltered = rows.filter(r => {
+        if (filterStatus === "valid") return r._valid === true;
+        if (filterStatus === "error") return !r._valid;
+        return true;
+    });
+
+    const displayed = showAll ? validFiltered : validFiltered.slice(0, 8);
 
     const formatDateVN = (dateStr?: string) => {
         if (!dateStr) return "—";
@@ -34,7 +42,7 @@ function PreviewTable({
     };
 
     return (
-        <div className="overflow-auto max-h-[65vh] rounded-xl border border-border text-xs shadow-inner">
+        <div className="overflow-auto flex-1 min-h-0 w-full rounded-xl border border-border text-xs shadow-inner bg-background relative">
             <table className="w-full border-collapse relative" style={{ minWidth: 2200 }}>
                 <thead className="sticky top-0 z-30 shadow-sm outline outline-border">
                     <tr className="text-foreground" style={{ backgroundColor: "color-mix(in oklch, var(--primary) 8%, var(--background))" }}>
@@ -67,7 +75,7 @@ function PreviewTable({
                     {displayed.map((row, i) => (
                         <tr
                             key={i}
-                            className={`border-t border-border transition-colors align-top ${(!showValidation || row._valid)
+                            className={`border-y border-border transition-colors align-top ${(!showValidation || row._valid)
                                 ? (i % 2 === 0 ? "bg-background" : "bg-muted/20")
                                 : "bg-destructive/5"
                                 }`}
@@ -106,7 +114,7 @@ function PreviewTable({
                             <td className="px-3 py-2 font-medium wrap-break-word">
                                 {isEditing
                                     ? <input className={`w-full min-w-0 bg-transparent border-b text-xs px-1 py-0.5 focus:outline-none ${!row.TEN_KH ? "border-destructive bg-destructive/10 text-destructive placeholder:text-destructive/50" : "border-border/50 focus:border-primary text-foreground"}`} placeholder="(Thiếu Tên)" defaultValue={row.TEN_KH || ""} onBlur={e => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "TEN_KH", e.target.value); }} />
-                                    : <span className={!row.TEN_KH ? "text-destructive font-semibold" : "text-foreground"}>{row.TEN_KH || "(Trống)"}</span>
+                                    : <span className={showValidation && !row.TEN_KH ? "text-destructive font-semibold" : "text-foreground"}>{row.TEN_KH || "(Trống)"}</span>
                                 }
                             </td>
                             <td className="px-3 py-2 text-muted-foreground wrap-break-word">
@@ -130,7 +138,7 @@ function PreviewTable({
                             <td className="px-3 py-2 wrap-break-word">
                                 {isEditing
                                     ? <input className={`w-full min-w-0 bg-transparent border-b text-xs px-1 py-0.5 focus:outline-none ${!row.NGUOI_DAI_DIEN ? "border-destructive bg-destructive/10 text-destructive placeholder:text-destructive/50" : "border-border/50 focus:border-primary text-foreground"}`} placeholder="(Thiếu Người ĐD)" defaultValue={row.NGUOI_DAI_DIEN || ""} onBlur={e => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "NGUOI_DAI_DIEN", e.target.value); }} />
-                                    : <span className={!row.NGUOI_DAI_DIEN ? "text-destructive font-semibold" : "text-muted-foreground"}>{row.NGUOI_DAI_DIEN || "(Trống)"}</span>
+                                    : <span className={showValidation && !row.NGUOI_DAI_DIEN ? "text-destructive font-semibold" : "text-muted-foreground"}>{row.NGUOI_DAI_DIEN || "(Trống)"}</span>
                                 }
                             </td>
                             <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
@@ -138,50 +146,74 @@ function PreviewTable({
                             </td>
                             <td className="px-3 py-2 text-muted-foreground wrap-break-word">
                                 {isEditing ? (
-                                    <SimpleSelect
-                                        size="sm"
-                                        value={row.NHOM_KH || ""}
-                                        onChange={val => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "NHOM_KH", val); }}
-                                        options={nhoms.map(n => ({ value: n.NHOM, label: n.NHOM }))}
-                                        placeholder="-- Chọn --"
-                                    />
-                                ) : (row.NHOM_KH || "—")}
+                                    <div className={row.NHOM_KH && !nhoms.some(n => n.NHOM === row.NHOM_KH) ? "ring-1 ring-destructive rounded-md bg-destructive/10" : ""}>
+                                        <SimpleSelect
+                                            size="sm"
+                                            value={row.NHOM_KH || ""}
+                                            onChange={val => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "NHOM_KH", val); }}
+                                            options={nhoms.map(n => ({ value: n.NHOM, label: n.NHOM }))}
+                                            placeholder="-- Chọn --"
+                                        />
+                                    </div>
+                                ) : (
+                                    <span className={showValidation && row.NHOM_KH && !nhoms.some(n => n.NHOM === row.NHOM_KH) ? "text-destructive font-semibold bg-destructive/10 px-1 py-0.5 rounded" : ""}>
+                                        {row.NHOM_KH || "—"}
+                                    </span>
+                                )}
                             </td>
                             <td className="px-3 py-2 text-muted-foreground wrap-break-word">
                                 {isEditing ? (
-                                    <SimpleSelect
-                                        size="sm"
-                                        value={row.PHAN_LOAI || ""}
-                                        onChange={val => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "PHAN_LOAI", val); }}
-                                        options={phanLoais.map(p => ({ value: p.PL_KH, label: p.PL_KH }))}
-                                        placeholder="-- Chọn --"
-                                    />
-                                ) : (row.PHAN_LOAI || "—")}
+                                    <div className={row.PHAN_LOAI && !phanLoais.some(p => p.PL_KH === row.PHAN_LOAI) ? "ring-1 ring-destructive rounded-md bg-destructive/10" : ""}>
+                                        <SimpleSelect
+                                            size="sm"
+                                            value={row.PHAN_LOAI || ""}
+                                            onChange={val => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "PHAN_LOAI", val); }}
+                                            options={phanLoais.map(p => ({ value: p.PL_KH, label: p.PL_KH }))}
+                                            placeholder="-- Chọn --"
+                                        />
+                                    </div>
+                                ) : (
+                                    <span className={showValidation && row.PHAN_LOAI && !phanLoais.some(p => p.PL_KH === row.PHAN_LOAI) ? "text-destructive font-semibold bg-destructive/10 px-1 py-0.5 rounded" : ""}>
+                                        {row.PHAN_LOAI || "—"}
+                                    </span>
+                                )}
                             </td>
                             <td className="px-3 py-2 text-muted-foreground wrap-break-word">
                                 {isEditing ? (
-                                    <SimpleSelect
-                                        size="sm"
-                                        value={row.NGUON || ""}
-                                        onChange={val => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "NGUON", val); }}
-                                        options={nguons.map(n => ({ value: n.NGUON, label: n.NGUON }))}
-                                        placeholder="-- Chọn --"
-                                    />
-                                ) : (row.NGUON || "—")}
+                                    <div className={row.NGUON && !nguons.some(n => n.NGUON === row.NGUON) ? "ring-1 ring-destructive rounded-md bg-destructive/10" : ""}>
+                                        <SimpleSelect
+                                            size="sm"
+                                            value={row.NGUON || ""}
+                                            onChange={val => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "NGUON", val); }}
+                                            options={nguons.map(n => ({ value: n.NGUON, label: n.NGUON }))}
+                                            placeholder="-- Chọn --"
+                                        />
+                                    </div>
+                                ) : (
+                                    <span className={showValidation && row.NGUON && !nguons.some(n => n.NGUON === row.NGUON) ? "text-destructive font-semibold bg-destructive/10 px-1 py-0.5 rounded" : ""}>
+                                        {row.NGUON || "—"}
+                                    </span>
+                                )}
                             </td>
                             <td className="px-3 py-2 text-center text-muted-foreground whitespace-nowrap">
                                 {isEditing ? <input type="date" className="w-full min-w-0 bg-transparent border-b border-border/50 text-xs px-1 py-0.5 text-center focus:border-primary focus:outline-none text-foreground" defaultValue={row.NGAY_GHI_NHAN || ""} onBlur={e => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "NGAY_GHI_NHAN", e.target.value); }} /> : formatDateVN(row.NGAY_GHI_NHAN)}
                             </td>
                             <td className="px-3 py-2 text-muted-foreground wrap-break-word">
                                 {isEditing ? (
-                                    <SimpleSelect
-                                        size="sm"
-                                        value={row.SALES_PT || ""}
-                                        onChange={val => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "SALES_PT", val); }}
-                                        options={nhanViens.map(n => ({ value: n.HO_TEN, label: n.HO_TEN }))}
-                                        placeholder="-- Chọn --"
-                                    />
-                                ) : (row.SALES_PT || "—")}
+                                    <div className={row.SALES_PT && !nhanViens.some(n => n.HO_TEN === row.SALES_PT) ? "ring-1 ring-destructive rounded-md bg-destructive/10" : ""}>
+                                        <SimpleSelect
+                                            size="sm"
+                                            value={row.SALES_PT || ""}
+                                            onChange={val => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "SALES_PT", val); }}
+                                            options={nhanViens.map(n => ({ value: n.HO_TEN, label: n.HO_TEN }))}
+                                            placeholder="-- Chọn --"
+                                        />
+                                    </div>
+                                ) : (
+                                    <span className={showValidation && row.SALES_PT && !nhanViens.some(n => n.HO_TEN === row.SALES_PT) ? "text-destructive font-semibold bg-destructive/10 px-1 py-0.5 rounded" : ""}>
+                                        {row.SALES_PT || "—"}
+                                    </span>
+                                )}
                             </td>
                             <td className="px-3 py-2 text-center wrap-break-word">
                                 {isEditing ? <input className="w-full min-w-0 bg-transparent border-b border-border/50 text-xs px-1 py-0.5 focus:border-primary focus:outline-none text-foreground" defaultValue={row.LINK_MAP || ""} onBlur={e => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "LINK_MAP", e.target.value); }} placeholder="https://..." /> : (
@@ -225,8 +257,10 @@ export default function ImportKhachHangModal({
     const [parsing, setParsing] = useState(false);
     const [importing, setImporting] = useState(false);
     const [rows, setRows] = useState<KhachHangImportRow[]>([]);
-    const [showAll, setShowAll] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isPendingEditing, startTransitionEditing] = useTransition();
+    const [filterStatus, setFilterStatus] = useState<"all" | "valid" | "error">("all");
+    const [hasReachedStep2, setHasReachedStep2] = useState(false);
     const [dataStartRow, setDataStartRow] = useState(3);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [result, setResult] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
@@ -236,8 +270,9 @@ export default function ImportKhachHangModal({
     const reset = () => {
         setStep("upload");
         setRows([]);
-        setShowAll(false);
         setIsEditing(false);
+        setFilterStatus("all");
+        setHasReachedStep2(false);
         setDataStartRow(3);
         setSelectedFile(null);
         setResult(null);
@@ -258,7 +293,13 @@ export default function ImportKhachHangModal({
         setParseError(null);
         try {
             const buffer = await file.arrayBuffer();
-            const parsed = await parseKhachHangExcel(buffer, { dataStartRow: startRowOverride });
+            const parsed = await parseKhachHangExcel(buffer, {
+                dataStartRow: startRowOverride,
+                nhoms: nhoms.map(n => n.NHOM),
+                phanLoais: phanLoais.map(p => p.PL_KH),
+                nguons: nguons.map(n => n.NGUON),
+                nhanViens: nhanViens.map(n => n.HO_TEN),
+            });
             if (parsed.length === 0) {
                 setParseError("Không tìm thấy dữ liệu hợp lệ trong file");
                 return;
@@ -270,7 +311,7 @@ export default function ImportKhachHangModal({
         } finally {
             setParsing(false);
         }
-    }, []);
+    }, [nhoms, phanLoais, nguons, nhanViens]);
 
     const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -295,15 +336,33 @@ export default function ImportKhachHangModal({
         setRows(prev => {
             const newRows = [...prev];
             const item = { ...newRows[idx], [field]: val };
-            // validate lại cơ bản
-            item._valid = true;
-            item._error = undefined;
-            if (!item.TEN_KH) { item._valid = false; item._error = 'Thiếu tên khách hàng'; }
-            else if (!item.NGUOI_DAI_DIEN) { item._valid = false; item._error = 'Thiếu tên người đại diện'; }
+            // validate lại
+            const errors: string[] = [];
+            if (!item.TEN_KH) errors.push('Thiếu tên khách hàng');
+            if (!item.NGUOI_DAI_DIEN) errors.push('Thiếu tên người đại diện');
+
+            const isNhomHopLe = !item.NHOM_KH || nhoms.some(n => n.NHOM === item.NHOM_KH);
+            const isPhanLoaiHopLe = !item.PHAN_LOAI || phanLoais.some(p => p.PL_KH === item.PHAN_LOAI);
+            const isNguonHopLe = !item.NGUON || nguons.some(n => n.NGUON === item.NGUON);
+            const isNhanVienHopLe = !item.SALES_PT || nhanViens.some(n => n.HO_TEN === item.SALES_PT);
+
+            if (!isNhomHopLe) errors.push(`Nhóm KH "${item.NHOM_KH}" không hợp lệ`);
+            if (!isPhanLoaiHopLe) errors.push(`Phân loại KH "${item.PHAN_LOAI}" không hợp lệ`);
+            if (!isNguonHopLe) errors.push(`Nguồn "${item.NGUON}" không hợp lệ`);
+            if (!isNhanVienHopLe) errors.push(`Nhân viên "${item.SALES_PT}" không có trong hệ thống`);
+
+            if (errors.length > 0) {
+                item._valid = false;
+                item._error = errors.join('; ');
+            } else {
+                item._valid = true;
+                item._error = undefined;
+            }
+
             newRows[idx] = item;
             return newRows;
         });
-    }, []);
+    }, [nhoms, phanLoais, nguons, nhanViens]);
 
     const handleRemoveRow = useCallback((idx: number) => {
         setRows(prev => prev.filter((_, i) => i !== idx));
@@ -389,7 +448,7 @@ export default function ImportKhachHangModal({
                 <button type="button" onClick={reset} className="btn-premium-secondary">Hủy bỏ file</button>
                 <div className="flex gap-3 ml-auto">
                     <button type="button" onClick={handleClose} className="btn-premium-secondary">Đóng</button>
-                    <button type="button" onClick={() => setStep("preview")} className="btn-premium-primary">
+                    <button type="button" onClick={() => { setHasReachedStep2(true); setStep("preview"); }} className="btn-premium-primary">
                         Tiếp tục: Dò lỗi & Chỉnh sửa
                     </button>
                 </div>
@@ -452,12 +511,13 @@ export default function ImportKhachHangModal({
                 icon={FileSpreadsheet}
                 size="4xl"
                 fullHeight
+                disableBodyScroll
                 bodyClassName="p-3"
                 footer={renderFooter()}
             >
                 {/* ── Step: Upload ─────────────────────────────── */}
                 {step === "upload" && (
-                    <div className="space-y-5">
+                    <div className="space-y-5 flex-1 min-h-0 overflow-y-auto">
                         {/* Drop zone */}
                         <div
                             onDragOver={e => { e.preventDefault(); setDragging(true); }}
@@ -543,72 +603,88 @@ export default function ImportKhachHangModal({
 
                 {/* ── Step: Config ────────────────────────────── */}
                 {step === "config" && (
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/40">
-                            <div className="flex items-center gap-3 text-sm">
-                                <span className="font-medium text-foreground">Lấy dữ liệu từ dòng:</span>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    value={dataStartRow}
-                                    onChange={(e) => handleStartRowChange(parseInt(e.target.value) || 1)}
-                                    className="w-16 px-2 py-1 bg-background border border-border rounded focus:border-primary focus:outline-none text-center font-semibold text-primary"
-                                    disabled={parsing}
-                                />
-                                {parsing && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+                    <div className="flex flex-col gap-4 flex-1 min-h-0">
+                        <div className="flex flex-col gap-2 shrink-0">
+                            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/40">
+                                <div className="flex items-center gap-3 text-sm">
+                                    <span className="font-medium text-foreground">Lấy dữ liệu từ dòng:</span>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={dataStartRow}
+                                        onChange={(e) => handleStartRowChange(parseInt(e.target.value) || 1)}
+                                        className="w-16 px-2 py-1 bg-background border border-border rounded focus:border-primary focus:outline-none text-center font-semibold text-primary"
+                                        disabled={parsing}
+                                    />
+                                    {parsing && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+                                </div>
+                                <span className="text-xs text-muted-foreground hidden sm:inline">(Chỉnh sửa nếu bị lẹm hàng tiêu đề)</span>
                             </div>
-                            <span className="text-xs text-muted-foreground">(Chỉnh sửa nếu hiển thị biểu tượng X đỏ do tiêu đề)</span>
+
+                            {hasReachedStep2 && (
+                                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg text-xs text-amber-600 dark:text-amber-400 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                    <span><b>Lưu ý:</b> Đổi cột mốc dòng sẽ đọc lại từ file gốc và <b>xoá mất mọi thao tác "Chỉnh sửa" thủ công</b> (nếu có) trước đó của bạn ở Bước 2.</span>
+                                </div>
+                            )}
                         </div>
 
-                        <PreviewTable rows={rows} showAll={showAll} isEditing={false} showValidation={false} nhoms={nhoms} phanLoais={phanLoais} nguons={nguons} nhanViens={nhanViens} />
-
-                        {rows.length > 8 && (
-                            <div className="flex justify-center mt-2">
-                                <button
-                                    onClick={() => setShowAll(!showAll)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-full transition-colors"
-                                >
-                                    {showAll ? <><ChevronUp className="w-3.5 h-3.5" /> Thu gọn</> : <><ChevronDown className="w-3.5 h-3.5" /> Xem toàn bộ ({rows.length} dòng)</>}
-                                </button>
-                            </div>
-                        )}
+                        <PreviewTable rows={rows} showAll={true} isEditing={false} showValidation={false} nhoms={nhoms} phanLoais={phanLoais} nguons={nguons} nhanViens={nhanViens} />
                     </div>
                 )}
 
                 {/* ── Step: Preview ────────────────────────────── */}
                 {step === "preview" && (
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4 flex-1 min-h-0">
                         {/* Thống kê và Toolbar gộp chung cho gọn */}
-                        <div className="flex flex-col gap-2">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 rounded-xl border border-border bg-muted/10">
+                        <div className="flex flex-col gap-2 shrink-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-2 rounded-xl border border-border bg-muted/10">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <div className="px-3 py-1.5 rounded-lg border border-border bg-background text-center flex items-center gap-2 shadow-sm">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFilterStatus("all")}
+                                        className={`px-3 py-1.5 rounded-lg border text-center flex items-center gap-2 shadow-sm transition-all hover:opacity-80 active:scale-95 ${filterStatus === "all" ? "border-foreground bg-foreground/5 shadow-md" : "border-border bg-background"}`}
+                                    >
                                         <span className="text-xs text-muted-foreground uppercase font-medium tracking-wider">Tổng</span>
                                         <span className="text-sm font-bold text-foreground">{rows.length}</span>
-                                    </div>
-                                    <div className="px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 text-center flex items-center gap-2 shadow-sm">
-                                        <span className="text-xs text-emerald-600/80 uppercase font-medium tracking-wider">Hợp lệ</span>
-                                        <span className="text-sm font-bold text-emerald-600">{validCount}</span>
-                                    </div>
-                                    <div className={`px-3 py-1.5 rounded-lg border text-center flex items-center gap-2 shadow-sm ${invalidCount > 0 ? "border-destructive/30 bg-destructive/10" : "border-border bg-background"}`}>
-                                        <span className={`text-xs uppercase font-medium tracking-wider ${invalidCount > 0 ? "text-destructive/80" : "text-muted-foreground"}`}>Lỗi</span>
-                                        <span className={`text-sm font-bold ${invalidCount > 0 ? "text-destructive" : "text-muted-foreground"}`}>{invalidCount}</span>
-                                    </div>
-                                </div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFilterStatus("valid")}
+                                        className={`px-3 py-1.5 rounded-lg border text-center flex items-center gap-2 shadow-sm transition-all hover:opacity-80 active:scale-95 ${filterStatus === "valid" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 shadow-md ring-1 ring-emerald-500/20" : "border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20"}`}
+                                    >
+                                        <span className={`text-xs uppercase font-medium tracking-wider ${filterStatus === "valid" ? "text-emerald-700 dark:text-emerald-400" : "text-emerald-600/80"}`}>Hợp lệ</span>
+                                        <span className={`text-sm font-bold ${filterStatus === "valid" ? "text-emerald-700 dark:text-emerald-400" : "text-emerald-600"}`}>{validCount}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFilterStatus("error")}
+                                        className={`px-3 py-1.5 rounded-lg border text-center flex items-center gap-2 shadow-sm transition-all hover:opacity-80 active:scale-95 ${filterStatus === "error" ? "border-destructive bg-destructive/15 shadow-md ring-1 ring-destructive/20" : invalidCount > 0 ? "border-destructive/30 bg-destructive/10" : "border-border bg-background"}`}
+                                    >
+                                        <span className={`text-xs uppercase font-medium tracking-wider ${filterStatus === "error" ? "text-destructive" : invalidCount > 0 ? "text-destructive/80" : "text-muted-foreground"}`}>Lỗi</span>
+                                        <span className={`text-sm font-bold ${filterStatus === "error" ? "text-destructive" : invalidCount > 0 ? "text-destructive" : "text-muted-foreground"}`}>{invalidCount}</span>
+                                    </button>
 
-                                <div className="flex items-center gap-2 shrink-0">
+                                    <div className="w-px h-6 bg-border mx-1 hidden sm:block"></div>
+
                                     {isEditing && (
                                         <div className="hidden md:flex items-center gap-1.5 px-2 text-primary">
                                             <CheckCircle2 className="w-4 h-4 shrink-0" />
                                             <span className="text-xs font-semibold">Chế độ chỉnh sửa</span>
                                         </div>
                                     )}
+
                                     <button
                                         type="button"
-                                        onClick={() => setIsEditing(!isEditing)}
-                                        className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold border rounded-lg hover:opacity-90 transition-all ${isEditing ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90" : "bg-background border-border text-foreground hover:bg-muted shadow-sm"}`}
+                                        onClick={() => startTransitionEditing(() => setIsEditing(!isEditing))}
+                                        disabled={isPendingEditing}
+                                        className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold border rounded-lg hover:opacity-90 transition-all ${isEditing ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90" : "bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:border-primary/30 shadow-sm ring-1 ring-primary/5"} ${isPendingEditing ? "opacity-70 cursor-wait" : ""}`}
                                     >
-                                        {isEditing ? "Lưu thay đổi" : "Chỉnh sửa dữ liệu"}
+                                        {isPendingEditing ? (
+                                            <><Loader2 className="w-4 h-4 animate-spin" /> Đang thiết lập...</>
+                                        ) : isEditing ? "Lưu thay đổi" : (
+                                            <><Edit2 className="w-3.5 h-3.5" /> Chỉnh sửa dữ liệu</>
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -623,13 +699,13 @@ export default function ImportKhachHangModal({
                         </div>
 
                         {/* Bảng preview */}
-                        <PreviewTable rows={rows} showAll={true} isEditing={isEditing} onRowChange={handleUpdateRow} onRemoveRow={handleRemoveRow} nhoms={nhoms} phanLoais={phanLoais} nguons={nguons} nhanViens={nhanViens} />
+                        <PreviewTable rows={rows} showAll={true} isEditing={isEditing} filterStatus={filterStatus} onRowChange={handleUpdateRow} onRemoveRow={handleRemoveRow} nhoms={nhoms} phanLoais={phanLoais} nguons={nguons} nhanViens={nhanViens} />
                     </div>
                 )}
 
                 {/* ── Step: Done ──────────────────────────────── */}
                 {step === "done" && result && (
-                    <div className="space-y-5 py-2">
+                    <div className="space-y-5 py-2 flex-1 min-h-0 overflow-y-auto">
                         {/* Icon kết quả */}
                         <div className="flex flex-col items-center gap-3 py-4">
                             {result.successCount > 0 ? (

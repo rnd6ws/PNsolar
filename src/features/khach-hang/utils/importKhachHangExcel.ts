@@ -157,7 +157,13 @@ function isNoteRow(firstCellValue: any): boolean {
 // ─── Hàm chính: đọc ArrayBuffer → mảng KhachHangImportRow ──────
 export async function parseKhachHangExcel(
     buffer: ArrayBuffer,
-    options?: { dataStartRow?: number }
+    options?: { 
+        dataStartRow?: number;
+        nhoms?: string[];
+        phanLoais?: string[];
+        nguons?: string[];
+        nhanViens?: string[];
+    }
 ): Promise<KhachHangImportRow[]> {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(buffer);
@@ -246,12 +252,26 @@ export async function parseKhachHangExcel(
         };
 
         // Validate cơ bản
-        if (!item.TEN_KH) {
+        const errors: string[] = [];
+        if (!item.TEN_KH) errors.push('Thiếu tên khách hàng');
+        if (!item.NGUOI_DAI_DIEN) errors.push('Thiếu người đại diện');
+
+        if (item.NHOM_KH && options?.nhoms?.length && !options.nhoms.includes(item.NHOM_KH)) {
+            errors.push(`Nhóm KH "${item.NHOM_KH}" không hợp lệ`);
+        }
+        if (item.PHAN_LOAI && options?.phanLoais?.length && !options.phanLoais.includes(item.PHAN_LOAI)) {
+            errors.push(`Phân loại "${item.PHAN_LOAI}" không hợp lệ`);
+        }
+        if (item.NGUON && options?.nguons?.length && !options.nguons.includes(item.NGUON)) {
+            errors.push(`Nguồn "${item.NGUON}" không hợp lệ`);
+        }
+        if (item.SALES_PT && options?.nhanViens?.length && !options.nhanViens.includes(item.SALES_PT)) {
+            errors.push(`Sales PT "${item.SALES_PT}" không có trong hệ thống`);
+        }
+
+        if (errors.length > 0) {
             item._valid = false;
-            item._error = 'Thiếu tên khách hàng';
-        } else if (!item.NGUOI_DAI_DIEN) {
-            item._valid = false;
-            item._error = 'Thiếu tên người đại diện';
+            item._error = errors.join('; ');
         }
 
         rows.push(item);

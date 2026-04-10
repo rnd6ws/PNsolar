@@ -1,6 +1,9 @@
 'use client';
-import { useState, useRef, useEffect, useId } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Search, Check } from 'lucide-react';
+
+const useSafeLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 export interface SimpleSelectOption {
     label: string;
@@ -37,7 +40,10 @@ export default function SimpleSelect({
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
+
+    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, isTop: false });
 
     const currentLabel = options.find((o) => o.value === value)?.label ?? '';
 
@@ -48,7 +54,10 @@ export default function SimpleSelect({
     // Đóng khi click ngoài
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+            const isClickInContainer = containerRef.current?.contains(e.target as Node);
+            const isClickInDropdown = dropdownRef.current?.contains(e.target as Node);
+            
+            if (!isClickInContainer && !isClickInDropdown) {
                 setOpen(false);
                 setSearch('');
             }
@@ -56,6 +65,34 @@ export default function SimpleSelect({
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, []);
+
+    // Tính toán position
+    useSafeLayoutEffect(() => {
+        if (!open) return;
+        const updatePosition = () => {
+            if (containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                // Nếu ở dưới không đủ 250px và ở trên có nhiều không gian hơn
+                const isTop = spaceBelow < 250 && spaceAbove > spaceBelow;
+                
+                setCoords({
+                    top: isTop ? rect.top : rect.bottom,
+                    left: rect.left,
+                    width: rect.width,
+                    isTop
+                });
+            }
+        };
+        updatePosition();
+        window.addEventListener('scroll', updatePosition, true);
+        window.addEventListener('resize', updatePosition);
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
+    }, [open]);
 
     // Focus ô tìm kiếm khi mở
     useEffect(() => {
@@ -103,15 +140,23 @@ export default function SimpleSelect({
                 />
             </button>
 
-            {/* Dropdown */}
-            {open && (
+            {/* Dropdown in Portal */}
+            {open && typeof document !== 'undefined' && createPortal(
                 <div
+                    ref={dropdownRef}
                     className={[
-                        'absolute z-50 mt-1 left-0 min-w-full',
+                        'fixed z-[9999] min-w-full',
                         'bg-popover border border-border rounded-xl shadow-xl',
-                        'overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100',
+                        'overflow-hidden animate-in fade-in-0 duration-100',
+                        coords.isTop ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'
                     ].join(' ')}
-                    style={{ minWidth: 160, maxWidth: 280 }}
+                    style={{ 
+                        top: coords.isTop ? 'auto' : coords.top + 4,
+                        bottom: coords.isTop ? window.innerHeight - coords.top + 4 : 'auto',
+                        left: coords.left, 
+                        minWidth: Math.max(160, coords.width), 
+                        maxWidth: 280 
+                    }}
                 >
                     {/* Ô tìm kiếm */}
                     {options.length >= searchThreshold && (
@@ -171,7 +216,8 @@ export default function SimpleSelect({
                             ))
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

@@ -36,6 +36,7 @@ interface Props {
 const BREADCRUMB_MAP: Record<string, string> = {
     '/dashboard': 'Tổng quan',
     '/khach-hang': 'Khách hàng',
+    '/ban-do-kh': 'Bản đồ khách hàng',
     '/co-hoi': 'Cơ hội',
     '/ke-hoach-cs': 'Kế hoạch chăm sóc',
     '/phan-loai-hh': 'Phân loại hàng hóa',

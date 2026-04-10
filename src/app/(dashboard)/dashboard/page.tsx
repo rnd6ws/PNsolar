@@ -59,6 +59,18 @@ const moduleGroups: ModuleGroup[] = [
                 moduleKey: "khach-hang",
             },
             {
+                name: "Bản đồ KH",
+                description: "Xem phân bổ biểu đồ địa lý của khách hàng.",
+                href: "/ban-do-kh",
+                icon: MapPin,
+                color: "text-blue-600 dark:text-blue-400",
+                bgColor: "bg-blue-50 dark:bg-blue-950/50",
+                gradientFrom: "from-blue-500/10",
+                gradientTo: "to-cyan-500/10",
+                available: true,
+                moduleKey: "ban-do-kh",
+            },
+            {
                 name: "Cơ hội",
                 description: "Quản lý cơ hội bán hàng và theo dõi pipeline.",
                 href: "/co-hoi",
