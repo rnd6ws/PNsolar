@@ -4,10 +4,11 @@ import {
     getKhachHangForMap,
     getNguonKHForMap,
     getSalesListForMap,
+    getPhanLoaiListForMap,
 } from "@/features/ban-do-kh/action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import type { Metadata } from "next";
-import type { MapKhachHang, NguonKHMap, SalesMap } from "@/features/ban-do-kh/types";
+import type { MapKhachHang, NguonKHMap, SalesMap, PhanLoaiMap } from "@/features/ban-do-kh/types";
 
 export const metadata: Metadata = {
     title: "Bản Đồ Khách Hàng | PNSolar",
@@ -19,15 +20,18 @@ export const dynamic = "force-dynamic";
 
 export default async function BanDoKhachHangPage() {
     // Prefetch tất cả trên server — chạy song song
-    const [khachHangRes, nguonRes, salesRes] = await Promise.all([
+    const [khachHangRes, nguonRes, salesRes, phanLoaiRes] = await Promise.all([
         getKhachHangForMap(),
         getNguonKHForMap(),
         getSalesListForMap(),
+        getPhanLoaiListForMap(),
     ]);
 
     const customers = (khachHangRes.success ? khachHangRes.data : []) as MapKhachHang[];
+    const totalCount = khachHangRes.success ? (khachHangRes as any).totalCount : 0;
     const nguonList = (nguonRes.success ? nguonRes.data : []) as NguonKHMap[];
     const salesList = (salesRes.success ? salesRes.data : []) as SalesMap[];
+    const phanLoaiList = (phanLoaiRes.success ? phanLoaiRes.data : []) as PhanLoaiMap[];
 
     return (
         <PermissionGuard moduleKey="ban-do-kh" level="view" showNoAccess>
@@ -42,8 +46,10 @@ export default async function BanDoKhachHangPage() {
                 >
                     <BanDoKhachHangClient
                         initialCustomers={customers}
+                        totalCustomers={totalCount}
                         nguonList={nguonList}
                         salesList={salesList}
+                        phanLoaiList={phanLoaiList}
                     />
                 </Suspense>
             </div>

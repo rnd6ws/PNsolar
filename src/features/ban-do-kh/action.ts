@@ -9,7 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
  */
 export async function getKhachHangForMap() {
     const user = await getCurrentUser();
-    const where: any = {};
+    const baseWhere: any = {};
 
     // Data isolation: STAFF chỉ thấy KH mình phụ trách
     if (user?.ROLE === "STAFF") {
@@ -17,16 +17,17 @@ export async function getKhachHangForMap() {
             where: { ID: user.userId },
             select: { MA_NV: true },
         });
-        where.SALES_PT = staff?.MA_NV || "NONE";
+        baseWhere.SALES_PT = staff?.MA_NV || "NONE";
     }
 
-    // Chỉ lấy KH có tọa độ hợp lệ
-    where.LAT = { not: null };
-    where.LONG = { not: null };
-
     try {
+        const totalCount = await prisma.kHTN.count({ where: baseWhere });
+
+        // Chỉ lấy KH có tọa độ hợp lệ
+        const whereMap = { ...baseWhere, LAT: { not: null }, LONG: { not: null } };
+        
         const data = await prisma.kHTN.findMany({
-            where,
+            where: whereMap,
             select: {
                 ID: true,
                 MA_KH: true,
@@ -38,6 +39,9 @@ export async function getKhachHangForMap() {
                 PHAN_LOAI: true,
                 NGUON: true,
                 SALES_PT: true,
+                SALES_PT_REL: {
+                    select: { HO_TEN: true },
+                },
                 HINH_ANH: true,
                 LAT: true,
                 LONG: true,
@@ -54,17 +58,21 @@ export async function getKhachHangForMap() {
 
         return {
             success: true,
-            data: data.map((kh) => ({
-                ...kh,
-                LAT: kh.LAT ? kh.LAT.toString() : null,
-                LONG: kh.LONG ? kh.LONG.toString() : null,
-                NGAY_GHI_NHAN: kh.NGAY_GHI_NHAN?.toISOString() ?? null,
-                DANH_GIA: null,
-            })),
+            data: data.map((kh: any) => {
+                const { SALES_PT_REL, ...rest } = kh;
+                return {
+                    ...rest,
+                    SALES_PT_TEN: SALES_PT_REL?.HO_TEN || null,
+                    LAT: kh.LAT ? kh.LAT.toString() : null,
+                    LONG: kh.LONG ? kh.LONG.toString() : null,
+                    NGAY_GHI_NHAN: kh.NGAY_GHI_NHAN?.toISOString() ?? null,
+                };
+            }),
+            totalCount,
         };
     } catch (error) {
         console.error("[getKhachHangForMap]", error);
-        return { success: false, data: [] };
+        return { success: false, data: [], totalCount: 0 };
     }
 }
 
@@ -92,6 +100,21 @@ export async function getSalesListForMap() {
             where: { IS_ACTIVE: true },
             select: { MA_NV: true, HO_TEN: true },
             orderBy: { HO_TEN: "asc" },
+        });
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, data: [] };
+    }
+}
+
+/**
+ * Lấy danh sách phân loại khách hàng cho bộ lọc.
+ */
+export async function getPhanLoaiListForMap() {
+    try {
+        const data = await prisma.pHANLOAI_KH.findMany({
+            orderBy: { PL_KH: "asc" },
+            select: { ID: true, PL_KH: true },
         });
         return { success: true, data };
     } catch (error) {

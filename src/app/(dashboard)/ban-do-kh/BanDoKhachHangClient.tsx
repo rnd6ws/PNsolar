@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import FilterPanel from "@/features/ban-do-kh/components/FilterPanel";
 import StatisticsPanel from "@/features/ban-do-kh/components/StatisticsPanel";
+import KhachHangDetail from "@/features/khach-hang/components/KhachHangDetail";
 import { isValidCoordinate, getMapCenter, debounce } from "@/features/ban-do-kh/utils/mapUtils";
 import { getKhachHangForMap } from "@/features/ban-do-kh/action";
 import type {
@@ -29,6 +30,7 @@ import type {
     SalesMap,
     MapFilters,
     MapStatistics,
+    PhanLoaiMap,
 } from "@/features/ban-do-kh/types";
 import type L from "leaflet";
 
@@ -50,24 +52,24 @@ const DEFAULT_STATS: MapStatistics = {
     byPhanLoai: {},
     byNguon: {},
     bySales: {},
-    byDanhGia: [0, 0, 0, 0, 0],
     coHopDong: 0,
 };
 
 const DEFAULT_FILTERS: MapFilters = {
     nguon: [],
     phanLoai: [],
-    danhGia: [],
     sales: [],
 };
 
 interface Props {
     initialCustomers: MapKhachHang[];
+    totalCustomers: number;
     nguonList: NguonKHMap[];
     salesList: SalesMap[];
+    phanLoaiList: PhanLoaiMap[];
 }
 
-export default function BanDoKhachHangClient({ initialCustomers, nguonList, salesList }: Props) {
+export default function BanDoKhachHangClient({ initialCustomers, totalCustomers, nguonList, salesList, phanLoaiList }: Props) {
     // ─── Data ────────────────────────────────────────────────────────
     const [customers, setCustomers] = useState<MapKhachHang[]>(initialCustomers);
     const validCustomers = useMemo(
@@ -75,10 +77,12 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
         [customers]
     );
     const [filteredCustomers, setFilteredCustomers] = useState<MapKhachHang[]>(validCustomers);
+    const [totalDbCount, setTotalDbCount] = useState<number>(totalCustomers);
 
     // ─── UI ──────────────────────────────────────────────────────────
     const [viewMode, setViewMode] = useState<"cluster" | "heatmap">("cluster");
-    const [detailCustomer, setDetailCustomer] = useState<MapKhachHang | null>(null);
+    const [fullCustomerProps, setFullCustomerProps] = useState<{ kh: any, nhanViens: any[], nguoiGioiThieus: any[] } | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
     const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
     const [showFilterPanel, setShowFilterPanel] = useState(true);
     const [showStatsPanel, setShowStatsPanel] = useState(true);
@@ -110,8 +114,6 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
             result = result.filter((c) => filters.nguon.includes(c.NGUON ?? ""));
         if (filters.phanLoai.length > 0)
             result = result.filter((c) => filters.phanLoai.includes(c.PHAN_LOAI ?? ""));
-        if (filters.danhGia.length > 0)
-            result = result.filter((c) => filters.danhGia.includes(c.DANH_GIA ?? ""));
         if (filters.sales.length > 0)
             result = result.filter((c) => filters.sales.includes(c.SALES_PT ?? ""));
         setFilteredCustomers(result);
@@ -126,16 +128,16 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
         (list: MapKhachHang[], bounds?: L.LatLngBounds) => {
             const inView = bounds?.contains
                 ? list.filter((c) => {
-                      if (!isValidCoordinate(c.LAT, c.LONG)) return false;
-                      try {
-                          return bounds.contains([
-                              parseFloat(String(c.LAT)),
-                              parseFloat(String(c.LONG)),
-                          ]);
-                      } catch {
-                          return false;
-                      }
-                  })
+                    if (!isValidCoordinate(c.LAT, c.LONG)) return false;
+                    try {
+                        return bounds.contains([
+                            parseFloat(String(c.LAT)),
+                            parseFloat(String(c.LONG)),
+                        ]);
+                    } catch {
+                        return false;
+                    }
+                })
                 : list;
 
             const stats: MapStatistics = {
@@ -143,7 +145,6 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                 byPhanLoai: {},
                 byNguon: {},
                 bySales: {},
-                byDanhGia: [0, 0, 0, 0, 0],
                 coHopDong: inView.filter((c) => c._count.HOP_DONG > 0).length,
             };
 
@@ -154,11 +155,8 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                 const ng = c.NGUON || "Khác";
                 stats.byNguon[ng] = (stats.byNguon[ng] || 0) + 1;
 
-                const sales = c.SALES_PT || "Chưa phân công";
+                const sales = c.SALES_PT_TEN || c.SALES_PT || "Chưa phân công";
                 stats.bySales[sales] = (stats.bySales[sales] || 0) + 1;
-
-                const r = (c.DANH_GIA || "").length;
-                if (r > 0 && r <= 5) stats.byDanhGia[r - 1]++;
             });
 
             setStatistics(stats);
@@ -186,6 +184,7 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
             if (res.success && Array.isArray(res.data)) {
                 const valid = res.data.filter((c) => isValidCoordinate(c.LAT, c.LONG));
                 setCustomers(res.data as MapKhachHang[]);
+                setTotalDbCount((res as any).totalCount || 0);
                 setMapCenter(getMapCenter(valid));
                 const noCoords = res.data.length - valid.length;
                 if (noCoords > 0)
@@ -211,11 +210,38 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                 ])
             );
             mapRef.fitBounds(bounds, { padding: [40, 40] });
-        } catch {}
+        } catch { }
     }, [mapRef, filteredCustomers]);
 
+    const handleViewDetail = async (c: MapKhachHang) => {
+        setDetailLoading(true);
+        const toastId = toast.loading("Đang tải dữ liệu khách hàng...");
+        try {
+            const { getKhachHangById, getNVList, getNguoiGioiThieu } = await import("@/features/khach-hang/action");
+            const [khRes, nvRes, ngtRes] = await Promise.all([
+                 getKhachHangById(c.ID),
+                 getNVList(),
+                 getNguoiGioiThieu(),
+            ]);
+            if (khRes.success && khRes.data) {
+                 setFullCustomerProps({
+                     kh: khRes.data,
+                     nhanViens: nvRes.success ? nvRes.data : [],
+                     nguoiGioiThieus: ngtRes.success ? ngtRes.data : []
+                 });
+                 toast.dismiss(toastId);
+            } else {
+                 toast.error("Không thể lấy thông tin chi tiết", { id: toastId });
+            }
+        } catch(e) {
+            toast.error("Lỗi khi lấy thông tin", { id: toastId });
+        } finally {
+            setDetailLoading(false);
+        }
+    };
+
     const activeFilterCount =
-        filters.nguon.length + filters.phanLoai.length + filters.danhGia.length + filters.sales.length;
+        filters.nguon.length + filters.phanLoai.length + filters.sales.length;
 
     return (
         <div className="h-full flex flex-col bg-background">
@@ -230,7 +256,7 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                             Bản Đồ Khách Hàng
                         </h1>
                         <p className="text-xs text-muted-foreground">
-                            {filteredCustomers.length} / {validCustomers.length} khách hàng
+                            {filteredCustomers.length} / {validCustomers.length} KH có tọa độ (Tổng: {totalDbCount})
                         </p>
                     </div>
                 </div>
@@ -241,11 +267,10 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                         <button
                             onClick={() => setViewMode("cluster")}
                             title="Cluster markers"
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
-                                viewMode === "cluster"
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "cluster"
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "text-muted-foreground hover:text-foreground"
-                            }`}
+                                }`}
                         >
                             <MapPin className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">Cluster</span>
@@ -253,11 +278,10 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                         <button
                             onClick={() => setViewMode("heatmap")}
                             title="Heatmap"
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
-                                viewMode === "heatmap"
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "heatmap"
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "text-muted-foreground hover:text-foreground"
-                            }`}
+                                }`}
                         >
                             <Flame className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">Heatmap</span>
@@ -288,11 +312,10 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                             <button
                                 onClick={() => setShowFilterPanel(!showFilterPanel)}
                                 title="Bộ lọc"
-                                className={`p-2 rounded-lg transition-colors border ${
-                                    showFilterPanel
+                                className={`p-2 rounded-lg transition-colors border ${showFilterPanel
                                         ? "bg-primary text-primary-foreground border-primary"
                                         : "text-muted-foreground hover:text-foreground border-border hover:bg-muted"
-                                }`}
+                                    }`}
                             >
                                 <Filter className="h-4 w-4" />
                                 {activeFilterCount > 0 && (
@@ -304,11 +327,10 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                             <button
                                 onClick={() => setShowStatsPanel(!showStatsPanel)}
                                 title="Thống kê"
-                                className={`p-2 rounded-lg transition-colors border ${
-                                    showStatsPanel
+                                className={`p-2 rounded-lg transition-colors border ${showStatsPanel
                                         ? "bg-primary text-primary-foreground border-primary"
                                         : "text-muted-foreground hover:text-foreground border-border hover:bg-muted"
-                                }`}
+                                    }`}
                             >
                                 <BarChart2 className="h-4 w-4" />
                             </button>
@@ -322,9 +344,8 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                 {/* Desktop Filter Sidebar */}
                 {!isMobile && (
                     <div
-                        className={`relative flex shrink-0 transition-all duration-300 ${
-                            showFilterPanel ? "w-72" : "w-0"
-                        } overflow-hidden`}
+                        className={`relative flex shrink-0 transition-all duration-300 ${showFilterPanel ? "w-72" : "w-0"
+                            } overflow-hidden`}
                     >
                         <div className="w-72 bg-card border-r border-border overflow-y-auto h-full">
                             <FilterPanel
@@ -333,6 +354,7 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                                 onClearFilters={() => setFilters(DEFAULT_FILTERS)}
                                 nguonList={nguonList}
                                 salesList={salesList}
+                                phanLoaiList={phanLoaiList}
                                 customerCount={filteredCustomers.length}
                             />
                         </div>
@@ -359,18 +381,19 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                 <div className="flex-1 relative overflow-hidden">
                     <MapContainer
                         customers={filteredCustomers}
+                        phanLoaiList={phanLoaiList}
                         viewMode={viewMode}
                         center={mapCenter}
-                        loading={loading}
-                        onMarkerClick={() => {}}
-                        onViewDetail={(c) => setDetailCustomer(c)}
+                        loading={loading || detailLoading}
+                        onMarkerClick={() => { }}
+                        onViewDetail={handleViewDetail}
                         onBoundsChanged={debouncedBoundsChange}
                         setMapRef={setMapRef}
                     />
 
                     {/* Active filters badge (on map) */}
                     {activeFilterCount > 0 && (
-                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-1000 pointer-events-none">
                             <div className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
                                 {activeFilterCount} bộ lọc · {filteredCustomers.length} KH
                             </div>
@@ -381,9 +404,8 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                 {/* Desktop Stats Sidebar */}
                 {!isMobile && (
                     <div
-                        className={`relative flex shrink-0 transition-all duration-300 ${
-                            showStatsPanel ? "w-72" : "w-0"
-                        } overflow-hidden`}
+                        className={`relative flex shrink-0 transition-all duration-300 ${showStatsPanel ? "w-72" : "w-0"
+                            } overflow-hidden`}
                     >
                         <div className="w-72 bg-card border-l border-border overflow-y-auto h-full">
                             <StatisticsPanel statistics={statistics} />
@@ -411,9 +433,8 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                 {isMobile && (
                     <>
                         <div
-                            className={`fixed inset-y-0 left-0 z-[1001] w-72 bg-card shadow-2xl transform transition-transform duration-300 ${
-                                showFilterPanel ? "translate-x-0" : "-translate-x-full"
-                            }`}
+                            className={`fixed inset-y-0 left-0 z-1001 w-72 bg-card shadow-2xl transform transition-transform duration-300 ${showFilterPanel ? "translate-x-0" : "-translate-x-full"
+                                }`}
                         >
                             <div className="h-full flex flex-col">
                                 <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -432,6 +453,7 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                                         onClearFilters={() => setFilters(DEFAULT_FILTERS)}
                                         nguonList={nguonList}
                                         salesList={salesList}
+                                        phanLoaiList={phanLoaiList}
                                         customerCount={filteredCustomers.length}
                                     />
                                 </div>
@@ -440,9 +462,8 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
 
                         {/* Mobile Stats Bottom Sheet */}
                         <div
-                            className={`fixed inset-x-0 bottom-0 z-[1001] bg-card rounded-t-2xl shadow-2xl transform transition-transform duration-300 ${
-                                showStatsPanel ? "translate-y-0" : "translate-y-full"
-                            }`}
+                            className={`fixed inset-x-0 bottom-0 z-1001 bg-card rounded-t-2xl shadow-2xl transform transition-transform duration-300 ${showStatsPanel ? "translate-y-0" : "translate-y-full"
+                                }`}
                             style={{ maxHeight: "60vh" }}
                         >
                             <div className="h-full flex flex-col">
@@ -464,7 +485,7 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
                         {/* Overlay */}
                         {(showFilterPanel || showStatsPanel) && (
                             <div
-                                className="fixed inset-0 bg-black/50 z-[1000]"
+                                className="fixed inset-0 bg-black/50 z-1000"
                                 onClick={() => {
                                     setShowFilterPanel(false);
                                     setShowStatsPanel(false);
@@ -476,136 +497,26 @@ export default function BanDoKhachHangClient({ initialCustomers, nguonList, sale
             </div>
 
             {/* ── Detail Modal ── */}
-            {detailCustomer && (
+            {fullCustomerProps && (
                 <>
                     <div
-                        className="fixed inset-0 bg-black/60 z-[2000]"
-                        onClick={() => setDetailCustomer(null)}
+                        className="fixed inset-0 bg-black/60 z-2000"
+                        onClick={() => setFullCustomerProps(null)}
                     />
-                    <div className="fixed inset-0 z-[2001] flex items-center justify-center p-4 pointer-events-none">
-                        <div className="w-full max-w-lg bg-card rounded-2xl shadow-2xl pointer-events-auto overflow-hidden">
-                            {/* Modal Header */}
-                            <div className="flex items-start justify-between p-5 border-b border-border">
-                                <div className="flex items-start gap-3 min-w-0">
-                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                                        <Building2 className="h-5 w-5 text-primary" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h2 className="font-bold text-foreground leading-tight">
-                                            {detailCustomer.TEN_KH}
-                                        </h2>
-                                        {detailCustomer.TEN_VT && (
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                {detailCustomer.TEN_VT}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setDetailCustomer(null)}
-                                    className="p-1.5 hover:bg-muted rounded-lg shrink-0 ml-2"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            </div>
-
-                            {/* Modal body */}
-                            <div className="p-5 space-y-4">
-                                {/* Badges */}
-                                <div className="flex flex-wrap gap-2">
-                                    {detailCustomer.PHAN_LOAI && (
-                                        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
-                                            {detailCustomer.PHAN_LOAI}
-                                        </span>
-                                    )}
-                                    {detailCustomer.DANH_GIA && (
-                                        <span className="px-3 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-600 text-xs font-semibold rounded-full border border-amber-200 dark:border-amber-800">
-                                            {detailCustomer.DANH_GIA}
-                                        </span>
-                                    )}
-                                    {detailCustomer.NGUON && (
-                                        <span className="px-3 py-1 bg-muted text-muted-foreground text-xs rounded-full">
-                                            {detailCustomer.NGUON}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Info grid */}
-                                <div className="grid grid-cols-1 gap-3">
-                                    {detailCustomer.DIA_CHI && (
-                                        <InfoRow icon="📍" label="Địa chỉ" value={detailCustomer.DIA_CHI} />
-                                    )}
-                                    {detailCustomer.DIEN_THOAI && (
-                                        <InfoRow icon="📞" label="Điện thoại" value={detailCustomer.DIEN_THOAI} />
-                                    )}
-                                    {detailCustomer.EMAIL && (
-                                        <InfoRow icon="✉️" label="Email" value={detailCustomer.EMAIL} />
-                                    )}
-                                    {detailCustomer.SALES_PT && (
-                                        <InfoRow icon="👤" label="Sales phụ trách" value={detailCustomer.SALES_PT} />
-                                    )}
-                                </div>
-
-                                {/* Stats row */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-muted/50 rounded-xl p-3 text-center">
-                                        <p className="text-xl font-bold text-foreground">
-                                            {detailCustomer._count.CO_HOI}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Cơ hội</p>
-                                    </div>
-                                    <div className="bg-muted/50 rounded-xl p-3 text-center">
-                                        <p className="text-xl font-bold text-foreground">
-                                            {detailCustomer._count.HOP_DONG}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Hợp đồng</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Modal footer */}
-                            <div className="px-5 pb-5 flex gap-2.5">
-                                <a
-                                    href={`/khach-hang?query=${encodeURIComponent(detailCustomer.MA_KH)}`}
-                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-primary-foreground text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors"
-                                >
-                                    <ExternalLink className="h-4 w-4" />
-                                    Xem hồ sơ
-                                </a>
-                                {detailCustomer.LAT && detailCustomer.LONG && (
-                                    <button
-                                        onClick={() => {
-                                            if (!navigator.geolocation) return;
-                                            navigator.geolocation.getCurrentPosition(({ coords }) => {
-                                                window.open(
-                                                    `https://www.google.com/maps/dir/?api=1&origin=${coords.latitude},${coords.longitude}&destination=${detailCustomer.LAT},${detailCustomer.LONG}&travelmode=driving`,
-                                                    "_blank"
-                                                );
-                                            });
-                                        }}
-                                        className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
-                                    >
-                                        <MapPin className="h-4 w-4" />
-                                        Chỉ đường
-                                    </button>
-                                )}
+                    <div className="fixed inset-0 z-2001 flex items-center justify-center p-4 py-8 pointer-events-none">
+                        <div className="w-full max-w-5xl bg-background rounded-2xl shadow-2xl pointer-events-auto shrink-0 animate-in fade-in zoom-in-95 duration-200" style={{ maxHeight: "calc(100vh - 4rem)" }}>
+                            <div className="h-full overflow-y-auto overflow-x-hidden p-5 md:p-6 custom-scrollbar">
+                                <KhachHangDetail 
+                                    kh={fullCustomerProps.kh} 
+                                    nhanViens={fullCustomerProps.nhanViens}
+                                    nguoiGioiThieus={fullCustomerProps.nguoiGioiThieus}
+                                    onClose={() => setFullCustomerProps(null)}
+                                />
                             </div>
                         </div>
                     </div>
                 </>
             )}
-        </div>
-    );
-}
-
-function InfoRow({ icon, label, value }: { icon: string; label: string; value: string }) {
-    return (
-        <div className="flex items-start gap-2.5">
-            <span className="text-sm mt-0.5">{icon}</span>
-            <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-sm text-foreground">{value}</p>
-            </div>
         </div>
     );
 }

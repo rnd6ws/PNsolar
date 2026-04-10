@@ -4,7 +4,7 @@ import { BarChart2, Users, TrendingUp, UserCheck, Star, Building2 } from "lucide
 import type { MapStatistics } from "@/features/ban-do-kh/types";
 
 export default function StatisticsPanel({ statistics }: { statistics: MapStatistics }) {
-    const { total, byPhanLoai, byNguon, bySales, byDanhGia, coHopDong } = statistics;
+    const { total, byPhanLoai, byNguon, bySales, coHopDong } = statistics;
 
     const phanLoaiColors: Record<string, string> = {
         "Tiềm năng": "#f59e0b",
@@ -85,34 +85,6 @@ export default function StatisticsPanel({ statistics }: { statistics: MapStatist
                 </div>
             )}
 
-            {/* Đánh giá */}
-            {byDanhGia.some((c) => c > 0) && (
-                <div className="mb-5">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2.5">
-                        Đánh giá
-                    </h3>
-                    <div className="space-y-1.5">
-                        {[5, 4, 3, 2, 1].map((star) => {
-                            const count = byDanhGia[star - 1] || 0;
-                            const pct = total > 0 ? (count / total) * 100 : 0;
-                            return (
-                                <div key={star} className="flex items-center gap-2">
-                                    <span className="text-xs w-16 shrink-0">{"⭐".repeat(star)}</span>
-                                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-amber-400 rounded-full transition-all"
-                                            style={{ width: `${pct}%` }}
-                                        />
-                                    </div>
-                                    <span className="text-xs text-muted-foreground w-14 text-right shrink-0">
-                                        {count} ({pct.toFixed(0)}%)
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
 
             {/* Nguồn */}
             {Object.keys(byNguon).length > 0 && (

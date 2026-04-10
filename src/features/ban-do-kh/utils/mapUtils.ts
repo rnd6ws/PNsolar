@@ -49,14 +49,22 @@ export function formatCurrency(amount: number): string {
     }).format(amount);
 }
 
-/** Màu marker theo phân loại khách hàng */
-export function getMarkerColor(phanLoai: string | null, danhGia: string | null): string {
-    const pl = (phanLoai || "").toLowerCase();
-    if (pl.includes("triển khai") || pl.includes("đang sử dụng")) return "#10b981"; // emerald
-    if (pl.includes("tiềm năng")) return "#f59e0b"; // amber
-    if (pl.includes("không phù hợp") || pl.includes("ngừng")) return "#ef4444"; // red
-    const rating = (danhGia || "").length;
-    if (rating >= 4) return "#8b5cf6"; // violet
-    if (rating >= 2) return "#6366f1"; // indigo
-    return "#6b7280"; // gray
+export const COLOR_PALETTE = [
+    "#f59e0b", // amber
+    "#ef4444", // red
+    "#10b981", // emerald
+    "#6366f1", // indigo
+    "#8b5cf6", // violet
+    "#14b8a6", // teal
+    "#f97316", // orange
+    "#ec4899", // pink
+    "#06b6d4", // cyan
+    "#84cc16", // lime
+];
+
+export function getDynamicColor(val: string | null, list: Array<{ PL_KH: string | null; ID: string }>): string {
+    if (!val) return "#9ca3af";
+    const index = list.findIndex((item) => (item.PL_KH || item.ID) === val);
+    if (index === -1) return "#6366f1"; // default if not found
+    return COLOR_PALETTE[index % COLOR_PALETTE.length];
 }

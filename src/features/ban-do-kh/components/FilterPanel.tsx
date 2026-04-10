@@ -1,16 +1,9 @@
 "use client";
 
 import { Filter, X } from "lucide-react";
-import type { MapFilters, NguonKHMap, SalesMap } from "@/features/ban-do-kh/types";
+import type { MapFilters, NguonKHMap, SalesMap, PhanLoaiMap } from "@/features/ban-do-kh/types";
+import { COLOR_PALETTE } from "@/features/ban-do-kh/utils/mapUtils";
 
-const PHAN_LOAI_OPTIONS = [
-    { value: "Tiềm năng", label: "Tiềm năng", color: "#f59e0b" },
-    { value: "Đang triển khai", label: "Đang triển khai", color: "#10b981" },
-    { value: "Đang sử dụng", label: "Đang sử dụng", color: "#6366f1" },
-    { value: "Không phù hợp", label: "Không phù hợp", color: "#ef4444" },
-];
-
-const DANH_GIA_OPTIONS = ["⭐⭐⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐", "⭐⭐", "⭐"];
 
 interface FilterPanelProps {
     filters: MapFilters;
@@ -18,6 +11,7 @@ interface FilterPanelProps {
     onClearFilters: () => void;
     nguonList: NguonKHMap[];
     salesList: SalesMap[];
+    phanLoaiList: PhanLoaiMap[];
     customerCount: number;
 }
 
@@ -27,6 +21,7 @@ export default function FilterPanel({
     onClearFilters,
     nguonList,
     salesList,
+    phanLoaiList,
     customerCount,
 }: FilterPanelProps) {
     const toggle = (category: keyof MapFilters, value: string) => {
@@ -40,7 +35,6 @@ export default function FilterPanel({
     const activeCount =
         filters.nguon.length +
         filters.phanLoai.length +
-        filters.danhGia.length +
         filters.sales.length;
 
     return (
@@ -75,29 +69,25 @@ export default function FilterPanel({
 
             <div className="space-y-5">
                 {/* Phân loại */}
-                <FilterSection title="Phân loại">
-                    {PHAN_LOAI_OPTIONS.map((opt) => (
-                        <FilterCheckbox
-                            key={opt.value}
-                            label={opt.value}
-                            checked={filters.phanLoai.includes(opt.value)}
-                            onChange={() => toggle("phanLoai", opt.value)}
-                            dotColor={opt.color}
-                        />
-                    ))}
-                </FilterSection>
-
-                {/* Đánh giá */}
-                <FilterSection title="Đánh giá">
-                    {DANH_GIA_OPTIONS.map((r) => (
-                        <FilterCheckbox
-                            key={r}
-                            label={r}
-                            checked={filters.danhGia.includes(r)}
-                            onChange={() => toggle("danhGia", r)}
-                        />
-                    ))}
-                </FilterSection>
+                {phanLoaiList.length > 0 && (
+                    <FilterSection title="Phân loại">
+                        <div className="max-h-40 overflow-y-auto space-y-0.5">
+                            {phanLoaiList.map((opt, index) => {
+                                const val = opt.PL_KH || opt.ID;
+                                const dotColor = COLOR_PALETTE[index % COLOR_PALETTE.length];
+                                return (
+                                    <FilterCheckbox
+                                        key={opt.ID}
+                                        label={val}
+                                        checked={filters.phanLoai.includes(val)}
+                                        onChange={() => toggle("phanLoai", val)}
+                                        dotColor={dotColor}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </FilterSection>
+                )}
 
                 {/* Nguồn */}
                 {nguonList.length > 0 && (

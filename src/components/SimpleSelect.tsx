@@ -56,7 +56,7 @@ export default function SimpleSelect({
         const handler = (e: MouseEvent) => {
             const isClickInContainer = containerRef.current?.contains(e.target as Node);
             const isClickInDropdown = dropdownRef.current?.contains(e.target as Node);
-            
+
             if (!isClickInContainer && !isClickInDropdown) {
                 setOpen(false);
                 setSearch('');
@@ -76,7 +76,7 @@ export default function SimpleSelect({
                 const spaceAbove = rect.top;
                 // Nếu ở dưới không đủ 250px và ở trên có nhiều không gian hơn
                 const isTop = spaceBelow < 250 && spaceAbove > spaceBelow;
-                
+
                 setCoords({
                     top: isTop ? rect.top : rect.bottom,
                     left: rect.left,
@@ -145,17 +145,17 @@ export default function SimpleSelect({
                 <div
                     ref={dropdownRef}
                     className={[
-                        'fixed z-[9999] min-w-full',
+                        'fixed z-9999 min-w-full',
                         'bg-popover border border-border rounded-xl shadow-xl',
                         'overflow-hidden animate-in fade-in-0 duration-100',
                         coords.isTop ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'
                     ].join(' ')}
-                    style={{ 
+                    style={{
                         top: coords.isTop ? 'auto' : coords.top + 4,
                         bottom: coords.isTop ? window.innerHeight - coords.top + 4 : 'auto',
-                        left: coords.left, 
-                        minWidth: Math.max(160, coords.width), 
-                        maxWidth: 280 
+                        left: coords.left,
+                        minWidth: Math.max(160, coords.width),
+                        maxWidth: 280
                     }}
                 >
                     {/* Ô tìm kiếm */}

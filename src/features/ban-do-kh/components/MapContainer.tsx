@@ -9,8 +9,8 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 // @ts-ignore
 import "leaflet.markercluster";
 import { RefreshCw, MapPin } from "lucide-react";
-import type { MapKhachHang } from "@/features/ban-do-kh/types";
-import { getMarkerColor } from "@/features/ban-do-kh/utils/mapUtils";
+import type { MapKhachHang, PhanLoaiMap } from "@/features/ban-do-kh/types";
+import { getDynamicColor } from "@/features/ban-do-kh/utils/mapUtils";
 
 // ── Fix Leaflet default icon ─────────────────────────────────────────
 const DefaultIcon = L.icon({
@@ -64,10 +64,12 @@ function MapViewController({ center }: { center: { lat: number; lng: number } })
 // ── Cluster Markers ───────────────────────────────────────────────────
 function ClusterMarkers({
     customers,
+    phanLoaiList,
     onMarkerClick,
     onViewDetail,
 }: {
     customers: MapKhachHang[];
+    phanLoaiList: PhanLoaiMap[];
     onMarkerClick: (c: MapKhachHang) => void;
     onViewDetail: (c: MapKhachHang) => void;
 }) {
@@ -117,7 +119,7 @@ function ClusterMarkers({
         customers.forEach((customer) => {
             const lat = parseFloat(String(customer.LAT));
             const lng = parseFloat(String(customer.LONG));
-            const color = getMarkerColor(customer.PHAN_LOAI, customer.DANH_GIA);
+            const color = getDynamicColor(customer.PHAN_LOAI, phanLoaiList);
 
             const icon = L.divIcon({
                 className: "custom-marker-icon",
@@ -133,13 +135,22 @@ function ClusterMarkers({
             const popup = document.createElement("div");
             popup.style.minWidth = "260px";
             popup.style.fontFamily = "inherit";
+            const avatarUrl = customer.HINH_ANH || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.TEN_KH || "KH").substring(0, 50)}&background=random&color=fff&size=40`;
+
             popup.innerHTML = `
-                <div style="padding:12px">
-                    <div style="display:flex;align-items:start;gap:8px;margin-bottom:8px">
-                        <div style="width:10px;height:10px;border-radius:50%;background:${color};margin-top:4px;shrink:0;"></div>
-                        <div>
-                            <p style="font-weight:700;font-size:14px;color:#111827;line-height:1.3">${customer.TEN_KH}</p>
-                            ${customer.TEN_VT ? `<p style="font-size:11px;color:#6b7280">${customer.TEN_VT}</p>` : ""}
+                <div style="padding:12px; max-width: 250px;">
+                    <div style="display:flex;align-items:start;gap:10px;margin-bottom:12px">
+                        <img 
+                            src="${avatarUrl}" 
+                            style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid #e5e7eb;flex-shrink:0;background:#f3f4f6" 
+                            alt="Logo"
+                        />
+                        <div style="min-width:0;">
+                            <div style="display:flex;align-items:start;gap:6px">
+                                <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:4px;"></div>
+                                <p style="font-weight:700;font-size:14px;color:#111827;line-height:1.2;margin:0;word-break:break-word;">${customer.TEN_KH}</p>
+                            </div>
+                            ${customer.TEN_VT ? `<p style="font-size:11px;color:#6b7280;margin:4px 0 0 14px;word-break:break-word;">${customer.TEN_VT}</p>` : ""}
                         </div>
                     </div>
                     ${
@@ -153,11 +164,10 @@ function ClusterMarkers({
                                 ? `<span style="padding:2px 8px;border-radius:20px;font-size:11px;background:${color}20;color:${color};font-weight:600">${customer.PHAN_LOAI}</span>`
                                 : ""
                         }
-                        ${customer.DANH_GIA ? `<span style="font-size:12px">${customer.DANH_GIA}</span>` : ""}
                     </div>
                     ${
                         customer.SALES_PT
-                            ? `<p style="font-size:11px;color:#6b7280;margin-bottom:8px">👤 ${customer.SALES_PT}</p>`
+                            ? `<p style="font-size:11px;color:#6b7280;margin-bottom:8px">👤 ${customer.SALES_PT_TEN || customer.SALES_PT}</p>`
                             : ""
                     }
                     <div style="display:flex;gap:6px">
@@ -198,15 +208,10 @@ function HeatmapLayer({ customers }: { customers: MapKhachHang[] }) {
         import("leaflet.heat" as any).then(() => {
             if (heatRef.current) map.removeLayer(heatRef.current);
             const data = customers.map((c) => {
-                const rating = (c.DANH_GIA || "").length;
                 const pl = (c.PHAN_LOAI || "").toLowerCase();
                 const weight = pl.includes("triển khai") || pl.includes("sử dụng")
                     ? 3
-                    : rating >= 4
-                    ? 2.5
-                    : rating >= 2
-                    ? 1.5
-                    : 1;
+                    : 1.5;
                 return [
                     parseFloat(String(c.LAT)),
                     parseFloat(String(c.LONG)),
@@ -241,6 +246,7 @@ function HeatmapLayer({ customers }: { customers: MapKhachHang[] }) {
 // ── Main MapContainer ─────────────────────────────────────────────────
 export interface MapContainerProps {
     customers: MapKhachHang[];
+    phanLoaiList: PhanLoaiMap[];
     viewMode: "cluster" | "heatmap";
     center: { lat: number; lng: number };
     loading?: boolean;
@@ -252,6 +258,7 @@ export interface MapContainerProps {
 
 export default function MapContainer({
     customers,
+    phanLoaiList,
     viewMode,
     center,
     loading,
@@ -305,6 +312,7 @@ export default function MapContainer({
             {viewMode === "cluster" && (
                 <ClusterMarkers
                     customers={customers}
+                    phanLoaiList={phanLoaiList}
                     onMarkerClick={onMarkerClick}
                     onViewDetail={onViewDetail}
                 />
