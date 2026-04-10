@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import BanDoKhachHangClient from "./BanDoKhachHangClient";
+import BanDoKhachHangClient from "@/features/ban-do-kh/components/BanDoKhachHangClient";
 import {
     getKhachHangForMap,
     getNguonKHForMap,

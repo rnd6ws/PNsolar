@@ -76,6 +76,12 @@ function ClusterMarkers({
     const map = useMap();
     const clusterRef = useRef<any>(null);
 
+    // ── Dùng ref để callbacks luôn up-to-date mà KHÔNG trigger re-run effect ──
+    const onMarkerClickRef = useRef(onMarkerClick);
+    const onViewDetailRef = useRef(onViewDetail);
+    useEffect(() => { onMarkerClickRef.current = onMarkerClick; }, [onMarkerClick]);
+    useEffect(() => { onViewDetailRef.current = onViewDetail; }, [onViewDetail]);
+
     const handleGetDirections = useCallback((customer: MapKhachHang) => {
         if (!navigator.geolocation) return alert("Trình duyệt không hỗ trợ định vị");
         navigator.geolocation.getCurrentPosition(
@@ -104,10 +110,10 @@ function ClusterMarkers({
                     count > 100
                         ? "#7c3aed"
                         : count > 50
-                        ? "#6366f1"
-                        : count > 10
-                        ? "#f59e0b"
-                        : "#10b981";
+                            ? "#6366f1"
+                            : count > 10
+                                ? "#f59e0b"
+                                : "#10b981";
                 return L.divIcon({
                     html: `<div style="background:${c};width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;border:3px solid rgba(255,255,255,0.8);box-shadow:0 2px 8px rgba(0,0,0,0.3);">${count}</div>`,
                     className: "custom-cluster-icon",
@@ -153,23 +159,20 @@ function ClusterMarkers({
                             ${customer.TEN_VT ? `<p style="font-size:11px;color:#6b7280;margin:4px 0 0 14px;word-break:break-word;">${customer.TEN_VT}</p>` : ""}
                         </div>
                     </div>
-                    ${
-                        customer.DIA_CHI
-                            ? `<p style="font-size:12px;color:#6b7280;margin-bottom:8px">📍 ${customer.DIA_CHI}</p>`
-                            : ""
-                    }
+                    ${customer.DIA_CHI
+                    ? `<p style="font-size:12px;color:#6b7280;margin-bottom:8px">📍 ${customer.DIA_CHI}</p>`
+                    : ""
+                }
                     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-                        ${
-                            customer.PHAN_LOAI
-                                ? `<span style="padding:2px 8px;border-radius:20px;font-size:11px;background:${color}20;color:${color};font-weight:600">${customer.PHAN_LOAI}</span>`
-                                : ""
-                        }
+                        ${customer.PHAN_LOAI
+                    ? `<span style="padding:2px 8px;border-radius:20px;font-size:11px;background:${color}20;color:${color};font-weight:600">${customer.PHAN_LOAI}</span>`
+                    : ""
+                }
                     </div>
-                    ${
-                        customer.SALES_PT
-                            ? `<p style="font-size:11px;color:#6b7280;margin-bottom:8px">👤 ${customer.SALES_PT_TEN || customer.SALES_PT}</p>`
-                            : ""
-                    }
+                    ${customer.SALES_PT
+                    ? `<p style="font-size:11px;color:#6b7280;margin-bottom:8px">👤 ${customer.SALES_PT_TEN || customer.SALES_PT}</p>`
+                    : ""
+                }
                     <div style="display:flex;gap:6px">
                         <button class="popup-detail-btn" style="flex:1;padding:7px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:linear-gradient(135deg,#f59e0b,#d97706);color:white">👁️ Chi tiết</button>
                         <button class="popup-dir-btn" style="flex:1;padding:7px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white">🧭 Chỉ đường</button>
@@ -179,14 +182,15 @@ function ClusterMarkers({
 
             popup.querySelector(".popup-detail-btn")?.addEventListener("click", () => {
                 marker.closePopup();
-                onViewDetail(customer);
+                // Dùng ref để luôn gọi callback mới nhất, không gây re-render
+                onViewDetailRef.current(customer);
             });
             popup.querySelector(".popup-dir-btn")?.addEventListener("click", () =>
                 handleGetDirections(customer)
             );
 
             marker.bindPopup(popup, { maxWidth: 320 });
-            marker.on("click", () => onMarkerClick(customer));
+            marker.on("click", () => onMarkerClickRef.current(customer));
             clusterRef.current!.addLayer(marker);
         });
 
@@ -194,7 +198,9 @@ function ClusterMarkers({
         return () => {
             if (clusterRef.current) map.removeLayer(clusterRef.current);
         };
-    }, [map, customers, onMarkerClick, onViewDetail, handleGetDirections]);
+        // ⚠️ onMarkerClick và onViewDetail bị loại khỏi deps vì đã dùng ref
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [map, customers, phanLoaiList, handleGetDirections]);
 
     return null;
 }
@@ -274,7 +280,7 @@ export default function MapContainer({
         return () => clearTimeout(t);
     }, []);
 
-    if (!ready || loading) {
+    if (!ready) {
         return (
             <div className="w-full h-full flex items-center justify-center bg-muted/30">
                 <div className="text-center">
@@ -300,24 +306,37 @@ export default function MapContainer({
     }
 
     return (
-        <LeafletMap
-            center={[center.lat, center.lng]}
-            zoom={12}
-            style={{ width: "100%", height: "100%" }}
-            zoomControl={true}
-        >
-            <TileLayer attribution={TILE_ATTR} url={TILE_URL} />
-            <MapEventHandler onBoundsChanged={onBoundsChanged} setMapRef={setMapRef} />
-            <MapViewController center={center} />
-            {viewMode === "cluster" && (
-                <ClusterMarkers
-                    customers={customers}
-                    phanLoaiList={phanLoaiList}
-                    onMarkerClick={onMarkerClick}
-                    onViewDetail={onViewDetail}
-                />
+        // wrapper relative để overlay loading đè lên map mà không unmount
+        <div className="relative w-full h-full">
+            <LeafletMap
+                center={[center.lat, center.lng]}
+                zoom={12}
+                style={{ width: "100%", height: "100%" }}
+                zoomControl={true}
+            >
+                <TileLayer attribution={TILE_ATTR} url={TILE_URL} />
+                <MapEventHandler onBoundsChanged={onBoundsChanged} setMapRef={setMapRef} />
+                <MapViewController center={center} />
+                {viewMode === "cluster" && (
+                    <ClusterMarkers
+                        customers={customers}
+                        phanLoaiList={phanLoaiList}
+                        onMarkerClick={onMarkerClick}
+                        onViewDetail={onViewDetail}
+                    />
+                )}
+                {viewMode === "heatmap" && <HeatmapLayer customers={customers} />}
+            </LeafletMap>
+
+            {/* Loading overlay — đè lên map, KHÔNG unmount LeafletMap */}
+            {loading && (
+                <div className="absolute inset-0 z-500 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+                    <div className="text-center">
+                        <RefreshCw className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
+                        <p className="text-sm text-muted-foreground font-medium">Đang tải...</p>
+                    </div>
+                </div>
             )}
-            {viewMode === "heatmap" && <HeatmapLayer customers={customers} />}
-        </LeafletMap>
+        </div>
     );
 }

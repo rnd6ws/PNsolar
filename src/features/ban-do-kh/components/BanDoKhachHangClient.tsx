@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import {
     Map,
@@ -11,14 +11,12 @@ import {
     Maximize2,
     MapPin,
     Flame,
-    ExternalLink,
-    Phone,
-    Mail,
-    Building2,
     ChevronLeft,
     ChevronRight,
+    Building2
 } from "lucide-react";
 import { toast } from "sonner";
+import Modal from "@/components/Modal";
 import FilterPanel from "@/features/ban-do-kh/components/FilterPanel";
 import StatisticsPanel from "@/features/ban-do-kh/components/StatisticsPanel";
 import KhachHangDetail from "@/features/khach-hang/components/KhachHangDetail";
@@ -213,27 +211,28 @@ export default function BanDoKhachHangClient({ initialCustomers, totalCustomers,
         } catch { }
     }, [mapRef, filteredCustomers]);
 
+    // ─── View detail ─────────────────────────────────────────────────
     const handleViewDetail = async (c: MapKhachHang) => {
         setDetailLoading(true);
         const toastId = toast.loading("Đang tải dữ liệu khách hàng...");
         try {
             const { getKhachHangById, getNVList, getNguoiGioiThieu } = await import("@/features/khach-hang/action");
             const [khRes, nvRes, ngtRes] = await Promise.all([
-                 getKhachHangById(c.ID),
-                 getNVList(),
-                 getNguoiGioiThieu(),
+                getKhachHangById(c.ID),
+                getNVList(),
+                getNguoiGioiThieu(),
             ]);
             if (khRes.success && khRes.data) {
-                 setFullCustomerProps({
-                     kh: khRes.data,
-                     nhanViens: nvRes.success ? nvRes.data : [],
-                     nguoiGioiThieus: ngtRes.success ? ngtRes.data : []
-                 });
-                 toast.dismiss(toastId);
+                setFullCustomerProps({
+                    kh: khRes.data,
+                    nhanViens: nvRes.success ? nvRes.data : [],
+                    nguoiGioiThieus: ngtRes.success ? ngtRes.data : []
+                });
+                toast.dismiss(toastId);
             } else {
-                 toast.error("Không thể lấy thông tin chi tiết", { id: toastId });
+                toast.error("Không thể lấy thông tin chi tiết", { id: toastId });
             }
-        } catch(e) {
+        } catch {
             toast.error("Lỗi khi lấy thông tin", { id: toastId });
         } finally {
             setDetailLoading(false);
@@ -268,8 +267,8 @@ export default function BanDoKhachHangClient({ initialCustomers, totalCustomers,
                             onClick={() => setViewMode("cluster")}
                             title="Cluster markers"
                             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "cluster"
-                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                    : "text-muted-foreground hover:text-foreground"
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                         >
                             <MapPin className="h-3.5 w-3.5" />
@@ -279,8 +278,8 @@ export default function BanDoKhachHangClient({ initialCustomers, totalCustomers,
                             onClick={() => setViewMode("heatmap")}
                             title="Heatmap"
                             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "heatmap"
-                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                    : "text-muted-foreground hover:text-foreground"
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                         >
                             <Flame className="h-3.5 w-3.5" />
@@ -313,8 +312,8 @@ export default function BanDoKhachHangClient({ initialCustomers, totalCustomers,
                                 onClick={() => setShowFilterPanel(!showFilterPanel)}
                                 title="Bộ lọc"
                                 className={`p-2 rounded-lg transition-colors border ${showFilterPanel
-                                        ? "bg-primary text-primary-foreground border-primary"
-                                        : "text-muted-foreground hover:text-foreground border-border hover:bg-muted"
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "text-muted-foreground hover:text-foreground border-border hover:bg-muted"
                                     }`}
                             >
                                 <Filter className="h-4 w-4" />
@@ -328,8 +327,8 @@ export default function BanDoKhachHangClient({ initialCustomers, totalCustomers,
                                 onClick={() => setShowStatsPanel(!showStatsPanel)}
                                 title="Thống kê"
                                 className={`p-2 rounded-lg transition-colors border ${showStatsPanel
-                                        ? "bg-primary text-primary-foreground border-primary"
-                                        : "text-muted-foreground hover:text-foreground border-border hover:bg-muted"
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "text-muted-foreground hover:text-foreground border-border hover:bg-muted"
                                     }`}
                             >
                                 <BarChart2 className="h-4 w-4" />
@@ -384,7 +383,7 @@ export default function BanDoKhachHangClient({ initialCustomers, totalCustomers,
                         phanLoaiList={phanLoaiList}
                         viewMode={viewMode}
                         center={mapCenter}
-                        loading={loading || detailLoading}
+                        loading={loading}
                         onMarkerClick={() => { }}
                         onViewDetail={handleViewDetail}
                         onBoundsChanged={debouncedBoundsChange}
@@ -496,27 +495,29 @@ export default function BanDoKhachHangClient({ initialCustomers, totalCustomers,
                 )}
             </div>
 
-            {/* ── Detail Modal ── */}
-            {fullCustomerProps && (
-                <>
-                    <div
-                        className="fixed inset-0 bg-black/60 z-2000"
-                        onClick={() => setFullCustomerProps(null)}
+            {/* ── Detail Modal (dùng component Modal chung) ── */}
+            {/* KhachHangDetail tự có header/tab/footer/scroll nên dùng p-0 + disableBodyScroll */}
+            {/* wrapperClassName z-[2000]: Leaflet map dùng z-index 200-700+, cần vượt qua */}
+            <Modal
+                title="Chi tiết khách hàng"
+                icon={Building2}
+                isOpen={!!fullCustomerProps}
+                onClose={() => setFullCustomerProps(null)}
+                size="xl"
+                // fullHeight
+                // bodyClassName="p-3"
+                disableBodyScroll
+                wrapperClassName="z-[2000]"
+            >
+                {fullCustomerProps && (
+                    <KhachHangDetail
+                        kh={fullCustomerProps.kh}
+                        nhanViens={fullCustomerProps.nhanViens}
+                        nguoiGioiThieus={fullCustomerProps.nguoiGioiThieus}
+                        onClose={() => setFullCustomerProps(null)}
                     />
-                    <div className="fixed inset-0 z-2001 flex items-center justify-center p-4 py-8 pointer-events-none">
-                        <div className="w-full max-w-5xl bg-background rounded-2xl shadow-2xl pointer-events-auto shrink-0 animate-in fade-in zoom-in-95 duration-200" style={{ maxHeight: "calc(100vh - 4rem)" }}>
-                            <div className="h-full overflow-y-auto overflow-x-hidden p-5 md:p-6 custom-scrollbar">
-                                <KhachHangDetail 
-                                    kh={fullCustomerProps.kh} 
-                                    nhanViens={fullCustomerProps.nhanViens}
-                                    nguoiGioiThieus={fullCustomerProps.nguoiGioiThieus}
-                                    onClose={() => setFullCustomerProps(null)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
+                )}
+            </Modal>
         </div>
     );
 }
