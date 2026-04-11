@@ -8,17 +8,7 @@ export async function getStats(filterThang?: string) {
     
     // Base Where filter cho HOP_DONG
     const baseWhere: any = {};
-    if (user?.ROLE === 'STAFF') {
-        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-        if (staff?.MA_NV) {
-            baseWhere.OR = [
-                { NGUOI_TAO: staff.MA_NV },
-                { KHTN_REL: { SALES_PT: staff.MA_NV } }
-            ];
-        } else {
-            baseWhere.NGUOI_TAO = 'NONE';
-        }
-    }
+
     
     if (filterThang && filterThang !== 'all') {
         const [year, month] = filterThang.split('-');
@@ -67,18 +57,7 @@ export async function getList(params: { page: number; limit: number; query?: str
     const user = await getCurrentUser();
     const baseWhere: any = {};
     
-    // Data Isolation for HOP_DONG
-    if (user?.ROLE === 'STAFF') {
-        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-        if (staff?.MA_NV) {
-            baseWhere.OR = [
-                { NGUOI_TAO: staff.MA_NV },
-                { KHTN_REL: { SALES_PT: staff.MA_NV } }
-            ];
-        } else {
-            baseWhere.NGUOI_TAO = 'NONE';
-        }
-    }
+
 
     if (params.query) {
         baseWhere.OR = [
@@ -142,17 +121,7 @@ export async function getList(params: { page: number; limit: number; query?: str
 export async function getChartData(filterThang?: string) {
     const user = await getCurrentUser();
     const baseWhere: any = {};
-    if (user?.ROLE === 'STAFF') {
-        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-        if (staff?.MA_NV) {
-            baseWhere.OR = [
-                { NGUOI_TAO: staff.MA_NV },
-                { KHTN_REL: { SALES_PT: staff.MA_NV } }
-            ];
-        } else {
-            baseWhere.NGUOI_TAO = 'NONE';
-        }
-    }
+
 
     const hopDongs = await prisma.hOP_DONG.findMany({
         where: baseWhere,
@@ -194,6 +163,48 @@ export async function getChartData(filterThang?: string) {
     const result = Object.values(monthlyData);
     
     // Nếu có filter thì trả về kết quả 1 tháng, ngược lại lấy 12 tháng gần nhất
+    if (filterThang && filterThang !== 'all') {
+        const [year, month] = filterThang.split('-');
+        const item = result.find(d => d.label === `T${month}/${year}`);
+        return item ? [item] : [];
+    }
+
+    return result.slice(-12);
+}
+
+export async function getCustomerChartData(filterThang?: string) {
+    const user = await getCurrentUser();
+    const baseWhere: any = {};
+
+
+
+    if (filterThang && filterThang !== 'all') {
+        const [year, month] = filterThang.split('-');
+        const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+        baseWhere.CREATED_AT = { gte: startDate, lte: endDate };
+    }
+
+    const customers = await prisma.kHTN.findMany({
+        where: baseWhere,
+        select: { CREATED_AT: true },
+        orderBy: { CREATED_AT: 'asc' },
+    });
+
+    const monthlyData: Record<string, { label: string; count: number }> = {};
+
+    for (const kh of customers) {
+        const mm = (kh.CREATED_AT.getMonth() + 1).toString().padStart(2, '0');
+        const yyyy = kh.CREATED_AT.getFullYear();
+        const key = `${yyyy}-${mm}`;
+        if (!monthlyData[key]) {
+            monthlyData[key] = { label: `T${mm}/${yyyy}`, count: 0 };
+        }
+        monthlyData[key].count += 1;
+    }
+
+    const result = Object.values(monthlyData);
+
     if (filterThang && filterThang !== 'all') {
         const [year, month] = filterThang.split('-');
         const item = result.find(d => d.label === `T${month}/${year}`);

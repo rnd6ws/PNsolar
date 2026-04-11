@@ -3,12 +3,14 @@
 import { Download } from "lucide-react";
 import FilterSelect from "@/components/FilterSelect";
 import BaoCaoKinhDoanhChart from "./BaoCaoKinhDoanhChart";
+import KhachHangChart from "./KhachHangChart";
 
 interface Props {
     chartData: { label: string; revenue: number; collected: number; }[];
+    customerChartData: { label: string; count: number; }[];
 }
 
-export default function BaoCaoKinhDoanhPageClient({ chartData }: Props) {
+export default function BaoCaoKinhDoanhPageClient({ chartData, customerChartData }: Props) {
     const date = new Date();
     const months = Array.from({length: 12}, (_, i) => {
         const d = new Date(date.getFullYear(), date.getMonth() - i, 1);
@@ -34,12 +36,14 @@ export default function BaoCaoKinhDoanhPageClient({ chartData }: Props) {
                     </div>
                 </div>
 
-                <div className="p-5 flex-1 bg-background flex items-center justify-center min-h-[450px]">
-                    <div className="w-full h-full max-w-6xl mx-auto">
+                <div className="p-5 flex-1 bg-background">
+                    <div className="w-full max-w-6xl mx-auto flex flex-col gap-5">
                         <BaoCaoKinhDoanhChart data={chartData} />
+                        <KhachHangChart data={customerChartData} />
                     </div>
                 </div>
             </div>
         </div>
     );
 }
+

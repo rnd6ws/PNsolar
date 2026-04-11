@@ -1,6 +1,6 @@
 import BaoCaoKinhDoanhPageClient from "@/features/bao-cao-kinh-doanh/components/BaoCaoKinhDoanhPageClient";
 import StatCards from "@/features/bao-cao-kinh-doanh/components/StatCards";
-import { getStats, getChartData } from "@/features/bao-cao-kinh-doanh/action";
+import { getStats, getChartData, getCustomerChartData } from "@/features/bao-cao-kinh-doanh/action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 
 export default async function BaoCaoKinhDoanhPage({
@@ -11,8 +11,11 @@ export default async function BaoCaoKinhDoanhPage({
     const params = await searchParams;
     const filterThang = params.filterThang || "all";
 
-    const stats = await getStats(filterThang);
-    const chartData = await getChartData(filterThang);
+    const [stats, chartData, customerChartData] = await Promise.all([
+        getStats(filterThang),
+        getChartData(filterThang),
+        getCustomerChartData(filterThang),
+    ]);
 
     return (
         <PermissionGuard moduleKey="bao-cao-kinh-doanh" level="view" showNoAccess>
@@ -30,6 +33,7 @@ export default async function BaoCaoKinhDoanhPage({
                 
                 <BaoCaoKinhDoanhPageClient 
                     chartData={chartData}
+                    customerChartData={customerChartData}
                 />
             </div>
         </PermissionGuard>
