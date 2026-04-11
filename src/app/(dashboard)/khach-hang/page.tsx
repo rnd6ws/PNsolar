@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getKhachHangs, getKhachHangStats } from "@/features/khach-hang/action";
+import { getKhachHangs, getKhachHangStats, type KHUserContext } from "@/features/khach-hang/action";
 import Pagination from "@/components/Pagination";
 import KhachHangStatCards from "@/features/khach-hang/components/KhachHangStatCards";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
@@ -60,8 +60,8 @@ function TableSkeleton() {
 }
 
 // ── Async Server Component: Stats (stream riêng) ──
-async function KhachHangStatsSection() {
-    const stats = await getKhachHangStats();
+async function KhachHangStatsSection({ userContext }: { userContext: KHUserContext }) {
+    const stats = await getKhachHangStats(userContext);
     return <KhachHangStatCards stats={stats} />;
 }
 
@@ -73,6 +73,7 @@ async function KhachHangDataSection({
     catalogs,
     options,
     currentUserId,
+    userContext,
 }: {
     params: { query?: string; NHOM_KH?: string; PHAN_LOAI?: string; NGUON?: string };
     page: number;
@@ -80,6 +81,7 @@ async function KhachHangDataSection({
     catalogs: any;
     options: any;
     currentUserId?: string;
+    userContext: KHUserContext;
 }) {
     const { data = [], pagination } = await getKhachHangs({
         query: params.query,
@@ -88,6 +90,7 @@ async function KhachHangDataSection({
         NHOM_KH: params.NHOM_KH,
         PHAN_LOAI: params.PHAN_LOAI,
         NGUON: params.NGUON,
+        userContext,  // ←← truyền vào — không cần gọi auth lại bên trong
     });
 
     return (
@@ -150,7 +153,18 @@ export default async function KhachHangPage({
     const catalogs = { phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois };
     const options = { nhomOptions, phanLoaiOptions, nguonOptions, nhanVienOptions };
 
-    const currentUserMaNv = (nhanViens as any[]).find((nv: any) => nv.USER_ID === user?.userId)?.ID || user?.userId;
+    // ── Resolve userContext một lần, truyền xuống cả hai Suspense stream ──
+    // STAFF: dùng MA_NV từ cached nhanViens — không cần DB query thêm
+    const userMaNv = user?.ROLE === 'STAFF'
+        ? (nhanViens as any[]).find((nv: any) => nv.USER_ID === user.userId)?.ID ?? null
+        : null;
+    const userContext: KHUserContext = {
+        role: user?.ROLE ?? 'ADMIN', // null-user bị PermissionGuard chặn trước, 'ADMIN' cho phép xem full
+        maNv: userMaNv,
+    };
+
+    // currentUserMaNv: ID để pre-fill form tạo KH (tái dụng userMaNv nếu là STAFF, còn lại lấy userId)
+    const currentUserMaNv = userMaNv ?? user?.userId;
 
     return (
         <PermissionGuard moduleKey="khach-hang" level="view" showNoAccess>
@@ -187,7 +201,7 @@ export default async function KhachHangPage({
 
                     {/* Stats — stream riêng, không block bảng dữ liệu */}
                     <Suspense fallback={<StatsSkeleton />}>
-                        <KhachHangStatsSection />
+                        <KhachHangStatsSection userContext={userContext} />
                     </Suspense>
                 </div>
 
@@ -200,6 +214,7 @@ export default async function KhachHangPage({
                         catalogs={catalogs}
                         options={options}
                         currentUserId={currentUserMaNv}
+                        userContext={userContext}
                     />
                 </Suspense>
             </div>

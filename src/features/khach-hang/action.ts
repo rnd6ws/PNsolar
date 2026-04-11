@@ -9,6 +9,13 @@ import { resolveMapsInfo } from "@/lib/maps/resolveMapsInfo";
 
 // ─── KHTN (Khách hàng) ────────────────────────────────────────
 
+// ── UserContext: truyền từ page để tránh re-fetch getCurrentUser() trong Suspense ──
+export interface KHUserContext {
+    role: 'ADMIN' | 'MANAGER' | 'STAFF';
+    /** MA_NV đã được resolved (chỉ cần khi role === 'STAFF') */
+    maNv?: string | null;
+}
+
 export async function getKhachHangs(filters: {
     query?: string;
     page?: number;
@@ -16,20 +23,29 @@ export async function getKhachHangs(filters: {
     NHOM_KH?: string;
     PHAN_LOAI?: string;
     NGUON?: string;
+    /** Truyền từ page để tránh gọi lại getCurrentUser() bên trong Suspense */
+    userContext?: KHUserContext;
 } = {}) {
-    const { page = 1, limit = 10, query, NHOM_KH, PHAN_LOAI, NGUON } = filters;
-
-    const user = await getCurrentUser();
+    const { page = 1, limit = 10, query, NHOM_KH, PHAN_LOAI, NGUON, userContext } = filters;
 
     const where: any = {};
     const andConditions: any[] = [];
 
-    if (user?.ROLE === 'STAFF') {
-        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-        if (staff?.MA_NV) {
-            andConditions.push({ SALES_PT: staff.MA_NV });
-        } else {
-            andConditions.push({ SALES_PT: "NONE" });
+    if (userContext) {
+        // Dùng context đã resolve từ page — không cần gọi DB thêm
+        if (userContext.role === 'STAFF') {
+            andConditions.push({ SALES_PT: userContext.maNv ?? "NONE" });
+        }
+    } else {
+        // Fallback: tự lấy user (dùng khi gọi trực tiếp từ nơi khác)
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                andConditions.push({ SALES_PT: staff.MA_NV });
+            } else {
+                andConditions.push({ SALES_PT: "NONE" });
+            }
         }
     }
 
@@ -129,13 +145,24 @@ export async function checkTenVietTatTrung(tenVt: string, currentId?: string) {
     }
 }
 
-export async function getKhachHangStats() {
+export async function getKhachHangStats(
+    /** Truyền từ page để tránh gọi lại getCurrentUser() bên trong Suspense */
+    userContext?: KHUserContext
+) {
     try {
-        const user = await getCurrentUser();
         const where: any = {};
-        if (user?.ROLE === 'STAFF') {
-            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-            where.SALES_PT = staff?.MA_NV || "NONE";
+        if (userContext) {
+            // Dùng context đã resolve từ page
+            if (userContext.role === 'STAFF') {
+                where.SALES_PT = userContext.maNv ?? "NONE";
+            }
+        } else {
+            // Fallback: tự lấy user
+            const user = await getCurrentUser();
+            if (user?.ROLE === 'STAFF') {
+                const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+                where.SALES_PT = staff?.MA_NV || "NONE";
+            }
         }
 
         const total = await prisma.kHTN.count({ where });
@@ -783,14 +810,15 @@ export async function getAllKhachHangsForExport() {
     const where: any = {};
     const andConditions: any[] = [];
 
-    if (user?.ROLE === 'STAFF') {
-        const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-        if (staff?.MA_NV) {
-            andConditions.push({ SALES_PT: staff.MA_NV });
-        } else {
-            andConditions.push({ SALES_PT: 'NONE' });
-        }
-    }
+    // Bỏ phân quyền để ai cũng xuất full dữ liệu
+    // if (user?.ROLE === 'STAFF') {
+    //     const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+    //     if (staff?.MA_NV) {
+    //         andConditions.push({ SALES_PT: staff.MA_NV });
+    //     } else {
+    //         andConditions.push({ SALES_PT: 'NONE' });
+    //     }
+    // }
 
     if (andConditions.length > 0) where.AND = andConditions;
 
