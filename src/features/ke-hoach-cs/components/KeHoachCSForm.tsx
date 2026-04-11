@@ -169,6 +169,22 @@ export default function KeHoachCSForm({
         }
     }, [selectedKH?.ID, isEdit, item?.ID_KH]);
 
+    // Khi cơ hội được chọn, lấy các dịch vụ quan tâm của cơ hội
+    useEffect(() => {
+        if (!idCH) return;
+
+        // Nếu đang edit và ID_CH giữ nguyên, lấy DICH_VU_QT đã lưu của kế hoạch
+        if (isEdit && idCH === item?.ID_CH) {
+            setSelectedDV(Array.isArray(item?.DICH_VU_QT) ? item.DICH_VU_QT : []);
+            return;
+        }
+
+        const selectedCH = coHois.find((c) => c.ID_CH === idCH);
+        if (selectedCH) {
+            setSelectedDV(Array.isArray(selectedCH.DICH_VU_QT) ? selectedCH.DICH_VU_QT : []);
+        }
+    }, [idCH, coHois, isEdit, item]);
+
     // Search KH
     useEffect(() => {
         const timer = setTimeout(async () => {
