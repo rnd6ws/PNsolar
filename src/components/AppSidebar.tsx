@@ -94,6 +94,7 @@ const navGroups: NavGroup[] = [
             { name: "Bàn giao", href: "/ban-giao", icon: PackageCheck, moduleKey: "ban-giao" },
             { name: "Đề nghị TT", href: "/de-nghi-tt", icon: CreditCard, moduleKey: "de-nghi-tt" },
             { name: "Thanh toán", href: "/thanh-toan", icon: DollarSign, moduleKey: "thanh-toan" },
+            { name: "Báo cáo KD", href: "/bao-cao-kinh-doanh", icon: FileText, moduleKey: "bao-cao-kinh-doanh" },
         ],
     },
     {
