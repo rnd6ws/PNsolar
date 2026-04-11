@@ -154,6 +154,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
     const { canInstall, isInstalled: _isInstalled, install } = usePWAInstall();
 
     const isDashboard = pathname === '/dashboard';
+    const isFullHeightPage = pathname.startsWith('/ban-do-kh');
     const isAdminOrManager = currentUser?.ROLE === 'ADMIN' || currentUser?.ROLE === 'MANAGER';
 
     // ── Search ──────────────────────────────────────────
@@ -262,13 +263,27 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
                     </header>
 
                     {/* ── Content ──────────────────────────────── */}
-                    <div ref={contentRef} className="flex-1 overflow-auto min-w-0 p-4 md:p-6">
-                        <div className={cn(
-                            "mx-auto w-full transition-all",
-                            pageLayout === 'full' ? "max-w-[1600px]" : "max-w-[1280px]"
-                        )}>
-                            {children}
-                        </div>
+                    <div
+                        ref={contentRef}
+                        className={cn(
+                            "flex-1 min-w-0",
+                            isFullHeightPage
+                                ? "overflow-hidden flex flex-col"
+                                : "overflow-auto p-4 md:p-6"
+                        )}
+                    >
+                        {isFullHeightPage ? (
+                            <div className="flex-1 h-full flex flex-col min-h-0">
+                                {children}
+                            </div>
+                        ) : (
+                            <div className={cn(
+                                "mx-auto w-full transition-all",
+                                pageLayout === 'full' ? "max-w-[1600px]" : "max-w-[1280px]"
+                            )}>
+                                {children}
+                            </div>
+                        )}
                     </div>
 
                 </SidebarInset>

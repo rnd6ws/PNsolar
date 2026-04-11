@@ -365,7 +365,7 @@ export function KhachHangForm({
                             e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
                         }}
                     />
-                    {linkMap || lat || long ? (
+                    {linkMap ? (
                         <button
                             type="button"
                             onClick={() => {

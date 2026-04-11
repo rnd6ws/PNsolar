@@ -35,8 +35,8 @@ export default async function BanDoKhachHangPage() {
 
     return (
         <PermissionGuard moduleKey="ban-do-kh" level="view" showNoAccess>
-            {/* h-full để map chiếm toàn bộ chiều cao còn lại sau header */}
-            <div className="h-full">
+            {/* h-full flex flex-col để map chiếm toàn bộ chiều cao còn lại */}
+            <div className="h-full flex flex-col">
                 <Suspense
                     fallback={
                         <div className="h-full flex items-center justify-center bg-muted/30">

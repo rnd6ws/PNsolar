@@ -107,6 +107,29 @@ export default function SimpleSelect({
         setSearch('');
     };
 
+    const handleToggle = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!open) {
+            // Tính toán vị trí ngay lập tức trước khi setOpen để tránh chớp ở góc trái trên
+            if (containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                const isTop = spaceBelow < 250 && spaceAbove > spaceBelow;
+
+                setCoords({
+                    top: isTop ? rect.top : rect.bottom,
+                    left: rect.left,
+                    width: rect.width,
+                    isTop
+                });
+            }
+            setOpen(true);
+        } else {
+            setOpen(false);
+        }
+    };
+
     const isSm = size === 'sm';
 
     return (
@@ -116,7 +139,7 @@ export default function SimpleSelect({
                 id={id}
                 type="button"
                 disabled={disabled}
-                onClick={() => setOpen((p) => !p)}
+                onClick={handleToggle}
                 className={[
                     'w-full flex items-center justify-between gap-1 text-left',
                     'bg-transparent border-b transition-colors focus:outline-none',

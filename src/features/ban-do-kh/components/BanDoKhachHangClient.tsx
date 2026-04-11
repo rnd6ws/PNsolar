@@ -243,7 +243,7 @@ export default function BanDoKhachHangClient({ initialCustomers, totalCustomers,
         filters.nguon.length + filters.phanLoai.length + filters.sales.length;
 
     return (
-        <div className="h-full flex flex-col bg-background">
+        <div className="flex-1 min-h-0 flex flex-col bg-background overflow-hidden">
             {/* ── Header ── */}
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card shadow-sm shrink-0">
                 <div className="flex items-center gap-2.5">
@@ -377,7 +377,7 @@ export default function BanDoKhachHangClient({ initialCustomers, totalCustomers,
                 )}
 
                 {/* Map area */}
-                <div className="flex-1 relative overflow-hidden">
+                <div className="flex-1 relative z-0 overflow-hidden">
                     <MapContainer
                         customers={filteredCustomers}
                         phanLoaiList={phanLoaiList}
