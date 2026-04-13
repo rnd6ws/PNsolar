@@ -264,6 +264,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
 
                     {/* ── Content ──────────────────────────────── */}
                     <div
+                        id="dashboard-scroll-area"
                         ref={contentRef}
                         className={cn(
                             "flex-1 min-w-0",

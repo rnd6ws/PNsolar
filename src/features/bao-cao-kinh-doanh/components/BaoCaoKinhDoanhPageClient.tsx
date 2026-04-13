@@ -4,43 +4,118 @@ import { Download } from "lucide-react";
 import FilterSelect from "@/components/FilterSelect";
 import BaoCaoKinhDoanhChart from "./BaoCaoKinhDoanhChart";
 import KhachHangChart from "./KhachHangChart";
+import MarketingChart from "./MarketingChart";
+import PhanLoaiSanPhamChart from "./PhanLoaiSanPhamChart";
+import MarketingWeeklyChart from "./MarketingWeeklyChart";
+
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import StatCards from "./StatCards";
 
 interface Props {
-    chartData: { label: string; revenue: number; collected: number; }[];
+    stats: any;
+    chartData: { label: string; revenue: number; collected?: number; }[];
     customerChartData: { label: string; count: number; }[];
+    marketingChartData: { name: string; value: number }[];
+    productChartData: { name: string; revenue: number }[];
+    marketingWeeklyChart: { data: any[]; channels: string[] };
+    salesList: { label: string; value: string; }[];
 }
 
-export default function BaoCaoKinhDoanhPageClient({ chartData, customerChartData }: Props) {
-    const date = new Date();
-    const months = Array.from({length: 12}, (_, i) => {
-        const d = new Date(date.getFullYear(), date.getMonth() - i, 1);
-        const mm = (d.getMonth() + 1).toString().padStart(2, '0');
-        const yyyy = d.getFullYear();
-        return { label: `Tháng ${mm}/${yyyy}`, value: `${yyyy}-${mm}` };
+export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerChartData, marketingChartData, productChartData, marketingWeeklyChart, salesList }: Props) {
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const scrollContainer = document.getElementById("dashboard-scroll-area");
+        if (!scrollContainer) return;
+
+        const handleScroll = () => {
+            setIsScrolled(scrollContainer.scrollTop > 20);
+        };
+        
+        scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+        // Initial check
+        handleScroll();
+        return () => scrollContainer.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    const currentYear = new Date().getFullYear();
+    const yearOptions = Array.from({ length: 4 }, (_, i) => {
+        const year = currentYear - (i + 1);
+        return { label: `Năm ${year}`, value: year.toString() };
     });
-    months.unshift({ label: "Tất cả các tháng", value: "all" });
+
+    const timeOptions = [
+        { label: "Quý 1", value: "q1" },
+        { label: "Quý 2", value: "q2" },
+        { label: "Quý 3", value: "q3" },
+        { label: "Quý 4", value: "q4" },
+        ...Array.from({ length: 12 }, (_, i) => ({
+            label: `Tháng ${i + 1}`,
+            value: `m${i + 1}`,
+        })),
+    ];
+
+    const salesOptions = salesList || [];
 
     return (
-        <div className="flex flex-col flex-1 h-full animate-in fade-in duration-300 pb-6">
-            <div className="bg-card border border-border shadow-sm rounded-2xl flex flex-col flex-1 relative z-10 overflow-hidden">
-                <div className="p-5 flex items-center justify-between gap-4 text-sm font-medium border-b border-primary/10 bg-linear-to-b from-primary/3 to-primary/8">
-                    <h2 className="text-lg font-semibold text-foreground hidden sm:block">Tổng quan dữ liệu</h2>
-                    <div className="flex-1 sm:hidden"></div>
-                    <div className="flex items-center gap-3 w-auto">
-                        <div className="w-[180px]">
-                            <FilterSelect paramKey="filterThang" options={months} placeholder="Chọn tháng" />
+        <div className="flex flex-col flex-1 animate-in fade-in duration-300">
+            <div 
+                className={cn(
+                    "sticky top-0 z-30 flex flex-col transition-all duration-300 bg-background/95 backdrop-blur border-b border-border mb-6",
+                    "-mx-4 md:-mx-6 px-4 md:px-6 -mt-4 md:-mt-6 pt-4 md:pt-6 pb-4", 
+                    isScrolled ? "gap-2 shadow-sm" : "gap-4"
+                )}
+            >
+                <div className="flex items-start md:items-center justify-between gap-4 flex-col md:flex-row">
+                    <div className="flex flex-col">
+                        <h1 className={cn("font-bold tracking-tight text-foreground transition-all duration-300", isScrolled ? "text-xl md:text-xl" : "text-2xl")}>
+                            Báo cáo kinh doanh
+                        </h1>
+                        <p className={cn("text-muted-foreground transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap", isScrolled ? "opacity-0 max-h-0 m-0" : "text-sm mt-1 opacity-100 max-h-[20px]")}>
+                            Thống kê doanh số, hợp đồng và tình trạng thu chi
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+                        <div className="flex items-center min-w-max">
+                            <div className="w-[110px] md:w-[130px]">
+                                <FilterSelect
+                                    paramKey="filterNam"
+                                    options={yearOptions}
+                                    placeholder={`Năm ${currentYear}`}
+                                    className="rounded-r-none border-r-0 lg:w-full focus:z-10 relative text-xs md:text-sm h-9 md:h-10"
+                                />
+                            </div>
+                            <div className="w-[120px] md:w-[160px]">
+                                <FilterSelect
+                                    paramKey="filterThoiGian"
+                                    options={timeOptions}
+                                    placeholder="Cả năm"
+                                    className="rounded-l-none lg:w-full focus:z-10 relative text-xs md:text-sm h-9 md:h-10"
+                                />
+                            </div>
                         </div>
-                        <button className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0" title="Xuất Excel">
-                            <Download className="w-4 h-4" />
-                        </button>
+                        <div className="w-[140px] md:w-[180px] min-w-max">
+                            <FilterSelect paramKey="filterSales" options={salesOptions} placeholder="Lọc theo Sales" className="lg:w-full text-xs md:text-sm h-9 md:h-10" />
+                        </div>
                     </div>
                 </div>
 
-                <div className="p-5 flex-1 bg-background">
-                    <div className="w-full max-w-6xl mx-auto flex flex-col gap-5">
-                        <BaoCaoKinhDoanhChart data={chartData} />
-                        <KhachHangChart data={customerChartData} />
+                <div className={cn("transition-all duration-300", isScrolled ? "w-full" : "w-full")}>
+                    <StatCards stats={stats} compact={isScrolled} />
+                </div>
+            </div>
+
+            <div className="flex-1">
+                <div className="w-full mx-auto flex flex-col gap-6">
+                    <BaoCaoKinhDoanhChart data={chartData} />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                        <MarketingChart data={marketingChartData} />
+                        <PhanLoaiSanPhamChart data={productChartData} />
                     </div>
+                    <MarketingWeeklyChart data={marketingWeeklyChart.data} channels={marketingWeeklyChart.channels} />
+                    <KhachHangChart data={customerChartData} />
                 </div>
             </div>
         </div>

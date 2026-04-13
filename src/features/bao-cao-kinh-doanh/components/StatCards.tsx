@@ -8,6 +8,7 @@ import { BaoCaoStats } from "../schema";
 
 interface Props {
     stats: BaoCaoStats;
+    compact?: boolean;
 }
 
 const statCards = [
@@ -49,7 +50,7 @@ const statCards = [
     },
 ];
 
-export default function StatCards({ stats }: Props) {
+export default function StatCards({ stats, compact }: Props) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
@@ -81,7 +82,8 @@ export default function StatCards({ stats }: Props) {
                         onClick={() => handleCardClick(stat.filterVal)}
                         disabled={isPending}
                         className={cn(
-                            "group relative rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 cursor-pointer text-left overflow-hidden border",
+                            "group relative rounded-xl flex items-center gap-2 md:gap-3 transition-all duration-200 cursor-pointer text-left overflow-hidden border",
+                            compact ? "p-2" : "p-3.5 md:p-4",
                             isActive
                                 ? "shadow-md scale-[1.02]"
                                 : "hover:shadow-md hover:-translate-y-0.5",
@@ -94,19 +96,22 @@ export default function StatCards({ stats }: Props) {
                         }}
                     >
                         <div
-                            className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105"
+                            className={cn(
+                                "rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105",
+                                compact ? "w-8 h-8" : "w-10 h-10 md:w-11 md:h-11"
+                            )}
                             style={{ backgroundColor: stat.iconBg }}
                         >
                             {isPending && isActive ? (
-                                <Loader2 className="w-5 h-5 text-white animate-spin" />
+                                <Loader2 className={cn("text-white animate-spin", compact ? "w-4 h-4" : "w-5 h-5")} />
                             ) : (
-                                <stat.icon className="w-5 h-5 text-white" />
+                                <stat.icon className={cn("text-white", compact ? "w-4 h-4" : "w-5 h-5")} />
                             )}
                         </div>
 
                         <div className="min-w-0">
-                            <p className="text-xs md:text-sm text-muted-foreground leading-tight">{stat.label}</p>
-                            <p className="text-xl md:text-2xl font-bold text-foreground leading-none mt-1">
+                            <p className={cn("text-muted-foreground leading-tight line-clamp-1", compact ? "text-[10px] md:text-xs" : "text-xs md:text-sm")}>{stat.label}</p>
+                            <p className={cn("font-bold text-foreground leading-none mt-1 line-clamp-1", compact ? "text-base md:text-lg" : "text-xl md:text-2xl")}>
                                 {stat.key === 'totalContracts' ? stats[stat.key] : formatCurrency(stats[stat.key])}
                             </p>
                         </div>

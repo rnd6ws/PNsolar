@@ -1,6 +1,5 @@
 import BaoCaoKinhDoanhPageClient from "@/features/bao-cao-kinh-doanh/components/BaoCaoKinhDoanhPageClient";
-import StatCards from "@/features/bao-cao-kinh-doanh/components/StatCards";
-import { getStats, getChartData, getCustomerChartData } from "@/features/bao-cao-kinh-doanh/action";
+import { getStats, getChartData, getCustomerChartData, getMarketingChartData, getProductClassificationChartData, getMarketingWeeklyChartData, getSalesList } from "@/features/bao-cao-kinh-doanh/action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 
 export default async function BaoCaoKinhDoanhPage({
@@ -9,31 +8,33 @@ export default async function BaoCaoKinhDoanhPage({
     searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
     const params = await searchParams;
-    const filterThang = params.filterThang || "all";
+    const filterNam = params.filterNam;
+    const filterThoiGian = params.filterThoiGian;
+    const filterSales = params.filterSales;
 
-    const [stats, chartData, customerChartData] = await Promise.all([
-        getStats(filterThang),
-        getChartData(filterThang),
-        getCustomerChartData(filterThang),
+    const filterArgs = { filterNam, filterThoiGian, filterSales };
+
+    const [stats, chartData, customerChartData, marketingChartData, productChartData, marketingWeeklyChart, salesList] = await Promise.all([
+        getStats(filterArgs),
+        getChartData(filterArgs),
+        getCustomerChartData(filterArgs),
+        getMarketingChartData(filterArgs),
+        getProductClassificationChartData(filterArgs),
+        getMarketingWeeklyChartData(filterArgs),
+        getSalesList(),
     ]);
 
     return (
         <PermissionGuard moduleKey="bao-cao-kinh-doanh" level="view" showNoAccess>
-            <div className="flex flex-col gap-6 h-full pb-6">
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                        Báo cáo kinh doanh
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Thống kê doanh số, hợp đồng và tình trạng thu chi
-                    </p>
-                </div>
-                
-                <StatCards stats={stats} />
-                
+            <div className="flex flex-col flex-1 min-h-full">
                 <BaoCaoKinhDoanhPageClient 
+                    stats={stats}
                     chartData={chartData}
                     customerChartData={customerChartData}
+                    marketingChartData={marketingChartData}
+                    productChartData={productChartData}
+                    marketingWeeklyChart={marketingWeeklyChart}
+                    salesList={salesList}
                 />
             </div>
         </PermissionGuard>
