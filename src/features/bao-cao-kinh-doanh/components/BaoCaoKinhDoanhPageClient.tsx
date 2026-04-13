@@ -7,6 +7,8 @@ import KhachHangChart from "./KhachHangChart";
 import MarketingChart from "./MarketingChart";
 import PhanLoaiSanPhamChart from "./PhanLoaiSanPhamChart";
 import MarketingWeeklyChart from "./MarketingWeeklyChart";
+import TyLeChuyenDoiChart from "./TyLeChuyenDoiChart";
+import CskhVsDoanhSoChart from "./CskhVsDoanhSoChart";
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -20,9 +22,11 @@ interface Props {
     productChartData: { name: string; revenue: number }[];
     marketingWeeklyChart: { data: any[]; channels: string[] };
     salesList: { label: string; value: string; }[];
+    conversionChartData: { label: string; dataCount: number; hdCount: number; rate: number; }[];
+    cskhVsDoanhSoChartData: { label: string; meetings: number; revenue: number; }[];
 }
 
-export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerChartData, marketingChartData, productChartData, marketingWeeklyChart, salesList }: Props) {
+export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerChartData, marketingChartData, productChartData, marketingWeeklyChart, salesList, conversionChartData, cskhVsDoanhSoChartData }: Props) {
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
@@ -32,7 +36,7 @@ export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerCh
         const handleScroll = () => {
             setIsScrolled(scrollContainer.scrollTop > 20);
         };
-        
+
         scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
         // Initial check
         handleScroll();
@@ -60,10 +64,10 @@ export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerCh
 
     return (
         <div className="flex flex-col flex-1 animate-in fade-in duration-300">
-            <div 
+            <div
                 className={cn(
                     "sticky top-0 z-30 flex flex-col transition-all duration-300 bg-background/95 backdrop-blur border-b border-border mb-6",
-                    "-mx-4 md:-mx-6 px-4 md:px-6 -mt-4 md:-mt-6 pt-4 md:pt-6 pb-4", 
+                    "-mx-4 md:-mx-6 px-4 md:px-6 -mt-4 md:-mt-6 pt-4 md:pt-6 pb-4",
                     isScrolled ? "gap-2 shadow-sm" : "gap-4"
                 )}
             >
@@ -115,6 +119,8 @@ export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerCh
                         <PhanLoaiSanPhamChart data={productChartData} />
                     </div>
                     <MarketingWeeklyChart data={marketingWeeklyChart.data} channels={marketingWeeklyChart.channels} />
+                    <TyLeChuyenDoiChart data={conversionChartData} />
+                    <CskhVsDoanhSoChart data={cskhVsDoanhSoChartData} />
                     <KhachHangChart data={customerChartData} />
                 </div>
             </div>

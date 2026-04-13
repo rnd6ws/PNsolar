@@ -216,12 +216,16 @@ export async function getChartData({ filterNam, filterThoiGian, filterSales }: F
     return weeklyData.map(({ label, revenue }) => ({ label, revenue }));
 }
 
-export async function getCustomerChartData({ filterNam, filterThoiGian }: FilterParams) {
+export async function getCustomerChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
     const user = await getCurrentUser();
     const baseWhere: any = {};
 
     const dateRange = buildDateRange(filterNam, filterThoiGian);
     if (dateRange) baseWhere.CREATED_AT = dateRange;
+
+    if (filterSales && filterSales !== 'all') {
+        baseWhere.SALES_PT = filterSales;
+    }
 
     const customers = await prisma.kHTN.findMany({
         where: baseWhere,
@@ -387,6 +391,122 @@ export async function getMarketingWeeklyChartData({ filterNam, filterThoiGian, f
         data: formattedData,
         channels: Array.from(uniqueChannels)
     };
+}
+
+export async function getTyLeChuyenDoiChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+    const user = await getCurrentUser();
+
+    // 1. Data (KHTN)
+    const khtnWhere: any = {};
+    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    if (dateRange) khtnWhere.CREATED_AT = dateRange;
+    if (filterSales && filterSales !== 'all') {
+        khtnWhere.SALES_PT = filterSales;
+    }
+
+    const customers = await prisma.kHTN.findMany({
+        where: khtnWhere,
+        select: { CREATED_AT: true },
+        orderBy: { CREATED_AT: 'asc' },
+    });
+
+    // 2. Hợp đồng (HOP_DONG)
+    const hdWhere: any = { DUYET: "Đã duyệt" };
+    if (dateRange) hdWhere.NGAY_HD = dateRange;
+    if (filterSales && filterSales !== 'all') {
+        hdWhere.KHTN_REL = { SALES_PT: filterSales };
+    }
+
+    const hopDongs = await prisma.hOP_DONG.findMany({
+        where: hdWhere,
+        select: { NGAY_HD: true },
+        orderBy: { NGAY_HD: 'asc' },
+    });
+
+    // 3. Phân bổ vào các tuần
+    const startDate = dateRange?.gte ?? new Date(new Date().getFullYear(), 0, 1);
+    const endDate = dateRange?.lte ?? new Date(new Date().getFullYear(), 11, 31, 23, 59, 59);
+
+    const weekSlots = buildWeeklySlots(startDate, endDate);
+    const weeklyData = weekSlots.map(w => ({ ...w, dataCount: 0, hdCount: 0, rate: 0 }));
+
+    for (const kh of customers) {
+        if (!kh.CREATED_AT) continue;
+        const t = kh.CREATED_AT.getTime();
+        const week = weeklyData.find(w => t >= w.start && t <= w.end);
+        if (week) week.dataCount += 1;
+    }
+
+    for (const hd of hopDongs) {
+        if (!hd.NGAY_HD) continue;
+        const t = hd.NGAY_HD.getTime();
+        const week = weeklyData.find(w => t >= w.start && t <= w.end);
+        if (week) week.hdCount += 1;
+    }
+
+    // Tính tỷ lệ
+    for (const w of weeklyData) {
+        if (w.dataCount > 0) {
+            w.rate = Math.round((w.hdCount / w.dataCount) * 100 * 10) / 10;
+        } else {
+            w.rate = w.hdCount > 0 ? 100 : 0;
+        }
+    }
+
+    return weeklyData.map(({ label, dataCount, hdCount, rate }) => ({ label, dataCount, hdCount, rate }));
+}
+
+export async function getCskhVsDoanhSoChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+    const user = await getCurrentUser();
+
+    // 1. Số cuộc gặp (KEHOACH_CSKH có TRANG_THAI = 'Đã báo cáo')
+    const cskhWhere: any = { TRANG_THAI: "Đã báo cáo" };
+    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    if (dateRange) cskhWhere.NGAY_CS_TT = dateRange;
+    if (filterSales && filterSales !== 'all') {
+        cskhWhere.NGUOI_CS = filterSales;
+    }
+
+    const cskhList = await prisma.kEHOACH_CSKH.findMany({
+        where: cskhWhere,
+        select: { NGAY_CS_TT: true, CREATED_AT: true },
+    });
+
+    // 2. Doanh số (HOP_DONG)
+    const hdWhere: any = { DUYET: "Đã duyệt" };
+    if (dateRange) hdWhere.NGAY_HD = dateRange;
+    if (filterSales && filterSales !== 'all') {
+        hdWhere.KHTN_REL = { SALES_PT: filterSales };
+    }
+
+    const hopDongs = await prisma.hOP_DONG.findMany({
+        where: hdWhere,
+        select: { NGAY_HD: true, TONG_TIEN: true },
+    });
+
+    // 3. Phân bổ tuần
+    const startDate = dateRange?.gte ?? new Date(new Date().getFullYear(), 0, 1);
+    const endDate = dateRange?.lte ?? new Date(new Date().getFullYear(), 11, 31, 23, 59, 59);
+
+    const weekSlots = buildWeeklySlots(startDate, endDate);
+    const weeklyData = weekSlots.map(w => ({ ...w, meetings: 0, revenue: 0 }));
+
+    for (const c of cskhList) {
+        const timeCalc = c.NGAY_CS_TT || c.CREATED_AT;
+        if (!timeCalc) continue;
+        const t = timeCalc.getTime();
+        const week = weeklyData.find(w => t >= w.start && t <= w.end);
+        if (week) week.meetings += 1;
+    }
+
+    for (const hd of hopDongs) {
+        if (!hd.NGAY_HD) continue;
+        const t = hd.NGAY_HD.getTime();
+        const week = weeklyData.find(w => t >= w.start && t <= w.end);
+        if (week) week.revenue += hd.TONG_TIEN || 0;
+    }
+
+    return weeklyData.map(({ label, meetings, revenue }) => ({ label, meetings, revenue }));
 }
 
 export async function getSalesList() {

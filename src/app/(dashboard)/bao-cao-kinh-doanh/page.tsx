@@ -1,5 +1,5 @@
 import BaoCaoKinhDoanhPageClient from "@/features/bao-cao-kinh-doanh/components/BaoCaoKinhDoanhPageClient";
-import { getStats, getChartData, getCustomerChartData, getMarketingChartData, getProductClassificationChartData, getMarketingWeeklyChartData, getSalesList } from "@/features/bao-cao-kinh-doanh/action";
+import { getStats, getChartData, getCustomerChartData, getMarketingChartData, getProductClassificationChartData, getMarketingWeeklyChartData, getSalesList, getTyLeChuyenDoiChartData, getCskhVsDoanhSoChartData } from "@/features/bao-cao-kinh-doanh/action";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 
 export default async function BaoCaoKinhDoanhPage({
@@ -14,7 +14,7 @@ export default async function BaoCaoKinhDoanhPage({
 
     const filterArgs = { filterNam, filterThoiGian, filterSales };
 
-    const [stats, chartData, customerChartData, marketingChartData, productChartData, marketingWeeklyChart, salesList] = await Promise.all([
+    const [stats, chartData, customerChartData, marketingChartData, productChartData, marketingWeeklyChart, salesList, conversionChartData, cskhVsDoanhSoChartData] = await Promise.all([
         getStats(filterArgs),
         getChartData(filterArgs),
         getCustomerChartData(filterArgs),
@@ -22,6 +22,8 @@ export default async function BaoCaoKinhDoanhPage({
         getProductClassificationChartData(filterArgs),
         getMarketingWeeklyChartData(filterArgs),
         getSalesList(),
+        getTyLeChuyenDoiChartData(filterArgs),
+        getCskhVsDoanhSoChartData(filterArgs),
     ]);
 
     return (
@@ -35,6 +37,8 @@ export default async function BaoCaoKinhDoanhPage({
                     productChartData={productChartData}
                     marketingWeeklyChart={marketingWeeklyChart}
                     salesList={salesList}
+                    conversionChartData={conversionChartData}
+                    cskhVsDoanhSoChartData={cskhVsDoanhSoChartData}
                 />
             </div>
         </PermissionGuard>
