@@ -147,7 +147,7 @@ export default function CskhVsDoanhSoChart({ data }: Props) {
                             barSize={12} 
                             fill="#8b5cf6" 
                             radius={[4, 4, 0, 0]}
-                            isAnimationActive={false}
+                            isAnimationActive={true}
                         />
                         <Line 
                             yAxisId="right"
@@ -158,7 +158,7 @@ export default function CskhVsDoanhSoChart({ data }: Props) {
                             strokeWidth={2}
                             dot={{ r: 4, fill: "#fff", stroke: "#0ea5e9", strokeWidth: 2 }}
                             activeDot={{ r: 6, fill: "#0ea5e9", stroke: "#fff", strokeWidth: 2 }}
-                            isAnimationActive={false}
+                            isAnimationActive={true}
                         />
                     </ComposedChart>
                 </ResponsiveContainer>

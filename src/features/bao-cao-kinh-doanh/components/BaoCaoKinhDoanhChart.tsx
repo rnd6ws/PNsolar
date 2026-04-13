@@ -80,7 +80,7 @@ export default function BaoCaoKinhDoanhChart({ data }: Props) {
                             }}
                             formatter={(value: any) => [`${new Intl.NumberFormat("vi-VN").format(Number(value) || 0)} ₫`, "Doanh thu"]}
                         />
-                        <Bar dataKey="revenue" name="Doanh thu" fill="#10b981" radius={[4, 4, 0, 0]} activeBar={false} isAnimationActive={false} />
+                        <Bar dataKey="revenue" name="Doanh thu" fill="#10b981" radius={[4, 4, 0, 0]} activeBar={false} isAnimationActive={true} />
                     </BarChart>
                 </ResponsiveContainer>
             </div>

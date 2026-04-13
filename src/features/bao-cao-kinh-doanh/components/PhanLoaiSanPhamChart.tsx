@@ -104,7 +104,7 @@ export default function PhanLoaiSanPhamChart({ data }: Props) {
                             dataKey="revenue"
                             fill="#f43f5e" // Màu hồng đậm như trong ảnh 
                             radius={[0, 4, 4, 0]}
-                            isAnimationActive={false}
+                            isAnimationActive={true}
                         />
                     </BarChart>
                 </ResponsiveContainer>

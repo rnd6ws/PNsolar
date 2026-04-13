@@ -71,7 +71,7 @@ export default function MarketingChart({ data }: Props) {
                             outerRadius={120}
                             paddingAngle={2}
                             dataKey="value"
-                            isAnimationActive={false}
+                            isAnimationActive={true}
                             stroke={isDark ? "#1f2937" : "#ffffff"}
                             strokeWidth={2}
                         >

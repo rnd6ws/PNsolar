@@ -104,7 +104,7 @@ export default function KhachHangChart({ data }: Props) {
                             fillOpacity={1} 
                             fill="url(#colorCount)" 
                             strokeWidth={2}
-                            isAnimationActive={false}
+                            isAnimationActive={true}
                             activeDot={{ r: 6, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }}
                             dot={{ r: 3, fill: "#fff", stroke: "#3b82f6", strokeWidth: 2 }}
                         />

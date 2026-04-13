@@ -143,7 +143,7 @@ export default function TyLeChuyenDoiChart({ data }: Props) {
                             barSize={12} 
                             fill="#9ca3af" 
                             radius={[4, 4, 0, 0]}
-                            isAnimationActive={false}
+                            isAnimationActive={true}
                         />
                         <Bar 
                             yAxisId="left"
@@ -152,7 +152,7 @@ export default function TyLeChuyenDoiChart({ data }: Props) {
                             barSize={12} 
                             fill="#10b981" 
                             radius={[4, 4, 0, 0]}
-                            isAnimationActive={false}
+                            isAnimationActive={true}
                         />
                         <Line 
                             yAxisId="right"
@@ -163,7 +163,7 @@ export default function TyLeChuyenDoiChart({ data }: Props) {
                             strokeWidth={2}
                             dot={{ r: 4, fill: "#fff", stroke: "#f59e0b", strokeWidth: 2 }}
                             activeDot={{ r: 6, fill: "#f59e0b", stroke: "#fff", strokeWidth: 2 }}
-                            isAnimationActive={false}
+                            isAnimationActive={true}
                         />
                     </ComposedChart>
                 </ResponsiveContainer>

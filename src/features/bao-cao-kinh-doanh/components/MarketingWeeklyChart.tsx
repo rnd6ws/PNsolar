@@ -84,7 +84,7 @@ export default function MarketingWeeklyChart({ data, channels }: Props) {
                                 dataKey={channel} 
                                 stackId="a" 
                                 fill={COLORS[index % COLORS.length]} 
-                                isAnimationActive={false}
+                                isAnimationActive={true}
                                 radius={index === channels.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                             />
                         ))}
