@@ -41,8 +41,8 @@ export default function FilterSelect({ paramKey, options, placeholder = 'Tất c
         });
     };
 
-    const currentLabel = currentValue === 'all' 
-        ? placeholder 
+    const currentLabel = currentValue === 'all'
+        ? placeholder
         : options.find((opt) => opt.value === currentValue)?.label || placeholder;
 
     return (
