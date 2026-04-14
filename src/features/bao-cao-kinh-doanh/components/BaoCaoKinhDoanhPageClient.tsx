@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useTransition, useState, useEffect } from "react";
 import FilterSelect from "@/components/FilterSelect";
 import BaoCaoKinhDoanhChart from "./BaoCaoKinhDoanhChart";
 import KhachHangChart from "./KhachHangChart";
@@ -19,11 +21,104 @@ interface Props {
     productChartData: { name: string; revenue: number }[];
     marketingWeeklyChart: { data: any[]; channels: string[] };
     salesList: { label: string; value: string; }[];
+    nguonList: { label: string; value: string; }[];
     conversionChartData: { label: string; dataCount: number; hdCount: number; rate: number; }[];
     cskhVsDoanhSoChartData: { label: string; meetings: number; revenue: number; }[];
 }
 
-export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerChartData, marketingChartData, productChartData, marketingWeeklyChart, salesList, conversionChartData, cskhVsDoanhSoChartData }: Props) {
+function DateFilter() {
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
+    const [isPending, startTransition] = useTransition();
+
+    // Local state — không navigate ngay khi chọn ngày
+    const [localTuNgay, setLocalTuNgay] = useState(searchParams.get('filterTuNgay') || '');
+    const [localDenNgay, setLocalDenNgay] = useState(searchParams.get('filterDenNgay') || '');
+
+    // Sync lại nếu URL thay đổi từ bên ngoài (ví dụ xóa filter)
+    const urlTuNgay = searchParams.get('filterTuNgay') || '';
+    const urlDenNgay = searchParams.get('filterDenNgay') || '';
+    useEffect(() => { setLocalTuNgay(urlTuNgay); }, [urlTuNgay]);
+    useEffect(() => { setLocalDenNgay(urlDenNgay); }, [urlDenNgay]);
+
+    const hasChanged = localTuNgay !== urlTuNgay || localDenNgay !== urlDenNgay;
+
+    const handleApply = () => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (localTuNgay || localDenNgay) {
+            if (localTuNgay) params.set('filterTuNgay', localTuNgay);
+            else params.delete('filterTuNgay');
+            if (localDenNgay) params.set('filterDenNgay', localDenNgay);
+            else params.delete('filterDenNgay');
+            // Xóa bộ lọc năm/thời gian để tránh xung đột
+            params.delete('filterNam');
+            params.delete('filterThoiGian');
+        } else {
+            params.delete('filterTuNgay');
+            params.delete('filterDenNgay');
+        }
+        params.delete('page');
+        startTransition(() => {
+            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        });
+    };
+
+    const handleClear = () => {
+        setLocalTuNgay('');
+        setLocalDenNgay('');
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('filterTuNgay');
+        params.delete('filterDenNgay');
+        params.delete('page');
+        startTransition(() => {
+            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        });
+    };
+
+    const isActive = !!(urlTuNgay || urlDenNgay);
+
+    return (
+        <div className="flex items-center gap-1">
+            <input 
+                type="date"
+                value={localTuNgay}
+                onChange={e => setLocalTuNgay(e.target.value)}
+                className="h-9 w-[130px] rounded-l-md border border-input border-r-0 bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                title="Từ ngày"
+            />
+            <input 
+                type="date"
+                value={localDenNgay}
+                onChange={e => setLocalDenNgay(e.target.value)}
+                className="h-9 w-[130px] border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                title="Đến ngày"
+            />
+            {hasChanged && (
+                <button
+                    onClick={handleApply}
+                    disabled={isPending}
+                    className="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    title="Áp dụng bộ lọc ngày"
+                >
+                    {isPending ? '...' : 'Áp dụng'}
+                </button>
+            )}
+            {isActive && !hasChanged && (
+                <button
+                    onClick={handleClear}
+                    disabled={isPending}
+                    className="h-9 px-2 rounded-md border border-input bg-background text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
+                    title="Xóa bộ lọc ngày"
+                >
+                    ✕
+                </button>
+            )}
+        </div>
+    );
+}
+
+export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerChartData, marketingChartData, productChartData, marketingWeeklyChart, salesList, nguonList, conversionChartData, cskhVsDoanhSoChartData }: Props) {
 
     const currentYear = new Date().getFullYear();
     const yearOptions = Array.from({ length: 4 }, (_, i) => {
@@ -75,11 +170,18 @@ export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerCh
                                 className="rounded-l-none w-[130px] md:w-[150px] text-sm h-9"
                             />
                         </div>
+                        <DateFilter />
                         <FilterSelect
                             paramKey="filterSales"
                             options={salesOptions}
                             placeholder="Lọc theo Sales"
-                            className="w-[150px] md:w-[180px] text-sm h-9"
+                            className="w-[150px] md:w-[150px] text-sm h-9"
+                        />
+                        <FilterSelect
+                            paramKey="filterNguon"
+                            options={nguonList || []}
+                            placeholder="Nguồn Marketing"
+                            className="w-[150px] md:w-[150px] text-sm h-9"
                         />
                     </div>
                 </div>

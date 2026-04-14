@@ -125,8 +125,8 @@ export default function KetLuanSection({
     const hotDataWeeks = conversionChartData.filter(w => w.dataCount >= 3 && w.rate < 30);
 
     // ── 4. Tỷ lệ chốt cao nhất
-    const sortedConversion = [...conversionChartData].filter(w => w.dataCount > 0).sort((a, b) => b.rate - a.rate);
-    const topConversionWeek = sortedConversion[0] ?? null;
+    const sortedConversion = [...conversionChartData].filter(w => w.dataCount > 0 && w.rate > 0).sort((a, b) => b.rate - a.rate);
+    const topConversionWeek = sortedConversion.length > 0 ? sortedConversion[0] : null;
 
     // ── 5. Tuần doanh thu đỉnh
     const sortedRevenue = [...chartData].sort((a, b) => b.revenue - a.revenue);
@@ -166,7 +166,7 @@ export default function KetLuanSection({
     const insights: InsightItem[] = [];
 
     // #1 Kênh marketing
-    if (topMarketing) {
+    if (topMarketing && topMarketing.value > 0) {
         insights.push({
             id: "marketing",
             icon: TrendingUp,
@@ -208,32 +208,47 @@ export default function KetLuanSection({
         });
     }
 
-    // #3 Tuần chuyển đổi cao nhất
-    if (topConversionWeek) {
+    // #3 Tuần chuyển đổi cao nhất / Hiệu quả CSKH
+    const isValidMeeting = topMeetingWeek && topMeetingWeek.meetings > 0;
+    
+    if (topConversionWeek || isValidMeeting) {
         insights.push({
             id: "top-conversion",
             icon: Zap,
             color: "purple",
-            title: "Hiệu quả cuộc gặp:",
+            title: "Hiệu quả chăm sóc khách hàng:",
             content: (
                 <span>
-                    Tuần{" "}
-                    <strong style={{ color: "#8b5cf6" }}>{topConversionWeek.label}</strong>{" "}
-                    có tỷ lệ chốt cao nhất ({topConversionWeek.rate}%).
-                    {topMeetingWeek && (
-                        <> Tuần nhiều cuộc gặp nhất là{" "}
-                            <strong style={{ color: "#8b5cf6" }}>{topMeetingWeek.label}</strong>{" "}
-                            ({topMeetingWeek.meetings} cuộc
-                            {topMeetingWeekRevenue > 0 && `, doanh thu ${formatCurrency(topMeetingWeekRevenue)}`}).
+                    {topConversionWeek ? (
+                        <>
+                            Tuần <strong style={{ color: "#8b5cf6" }}>{topConversionWeek.label}</strong> có tỷ lệ chốt cao nhất ({topConversionWeek.rate}%).
                         </>
+                    ) : (
+                        <>Chưa ghi nhận tuần nào chốt thành công. </>
                     )}
+                    {isValidMeeting && (
+                        <> Tuần nhiều lịch chăm sóc/tương tác nhất là <strong style={{ color: "#8b5cf6" }}>{topMeetingWeek.label}</strong> ({topMeetingWeek.meetings} lượt{topMeetingWeekRevenue > 0 && `, doanh thu ${formatCurrency(topMeetingWeekRevenue)}`}).</>
+                    )}
+                </span>
+            ),
+        });
+    } else {
+        // Cả rate tỷ lệ chốt đều 0 và không có cuộc gặp nào
+        insights.push({
+            id: "no-cskh",
+            icon: AlertTriangle,
+            color: "amber",
+            title: "Chăm sóc khách hàng:",
+            content: (
+                <span>
+                    Hiện tại <strong>chưa có dữ liệu chăm sóc khách hàng</strong> hoặc <strong>chưa chốt được hợp đồng (0%)</strong> trong thời gian này. Hệ thống khuyến nghị cần đẩy mạnh tương tác với Khách hàng tiềm năng.
                 </span>
             ),
         });
     }
 
     // #4 Sản phẩm dẫn đầu
-    if (topProduct) {
+    if (topProduct && topProduct.revenue > 0) {
         insights.push({
             id: "top-product",
             icon: BarChart2,
@@ -253,26 +268,28 @@ export default function KetLuanSection({
     }
 
     // #5 Tỷ lệ thu hồi công nợ
-    insights.push({
-        id: "collect-rate",
-        icon: collectRate >= 80 ? TrendingUp : collectRate >= 50 ? Activity : TrendingDown,
-        color: collectRate >= 80 ? "emerald" : collectRate >= 50 ? "amber" : "red",
-        title: "Tỷ lệ thu hồi công nợ:",
-        content: (
-            <span>
-                Đã thu{" "}
-                <strong style={{ color: collectRate >= 80 ? "#10b981" : collectRate >= 50 ? "#f59e0b" : "#ef4444" }}>
-                    {collectRate}%
-                </strong>{" "}
-                tổng doanh thu ({formatCurrencyFull(stats.totalCollected)} / {formatCurrencyFull(stats.totalRevenue)}).
-                {stats.remainingAmount > 0 && (
-                    <> Còn <strong>{formatCurrencyFull(stats.remainingAmount)}</strong> chưa thu.{" "}
-                        {collectRate < 70 && "Cần đẩy mạnh thu hồi công nợ."}
-                    </>
-                )}
-            </span>
-        ),
-    });
+    if (stats.totalRevenue > 0) {
+        insights.push({
+            id: "collect-rate",
+            icon: collectRate >= 80 ? TrendingUp : collectRate >= 50 ? Activity : TrendingDown,
+            color: collectRate >= 80 ? "emerald" : collectRate >= 50 ? "amber" : "red",
+            title: "Tỷ lệ thu hồi công nợ:",
+            content: (
+                <span>
+                    Đã thu{" "}
+                    <strong style={{ color: collectRate >= 80 ? "#10b981" : collectRate >= 50 ? "#f59e0b" : "#ef4444" }}>
+                        {collectRate}%
+                    </strong>{" "}
+                    tổng doanh thu ({formatCurrencyFull(stats.totalCollected)} / {formatCurrencyFull(stats.totalRevenue)}).
+                    {stats.remainingAmount > 0 && (
+                        <> Còn <strong>{formatCurrencyFull(stats.remainingAmount)}</strong> chưa thu.{" "}
+                            {collectRate < 70 && "Cần đẩy mạnh thu hồi công nợ."}
+                        </>
+                    )}
+                </span>
+            ),
+        });
+    }
 
     // #6 Đánh giá tổng quan
     insights.push({
@@ -299,8 +316,8 @@ export default function KetLuanSection({
     });
 
     // ── Render ────────────────────────────────────────────────────────────────
-    if (stats.totalContracts === 0 && stats.totalRevenue === 0) {
-        return null;
+    if (insights.length === 0 && stats.totalContracts === 0 && totalData === 0) {
+        return null; // Không có bất kỳ dữ liệu nào để hiển thị kết luận
     }
 
     // Split into 2 columns

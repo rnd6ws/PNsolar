@@ -3,8 +3,29 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 
-// Helper: tính khoảng ngày từ năm + thời gian (quý/tháng)
-function buildDateRange(filterNam?: string, filterThoiGian?: string): { gte: Date; lte: Date } | undefined {
+// Helper: tính khoảng ngày từ năm + thời gian (quý/tháng), hoặc theo từ ngày - đến ngày
+function buildDateRange(filterNam?: string, filterThoiGian?: string, filterTuNgay?: string, filterDenNgay?: string): { gte: Date; lte: Date } | undefined {
+    if (filterTuNgay || filterDenNgay) {
+        let gte: Date;
+        let lte: Date;
+        if (filterTuNgay && filterDenNgay) {
+            gte = new Date(`${filterTuNgay}T00:00:00`);
+            lte = new Date(`${filterDenNgay}T23:59:59.999`);
+        } else if (filterTuNgay) {
+            gte = new Date(`${filterTuNgay}T00:00:00`);
+            // Fallback lte = 1 năm sau tuNgay (thay vì năm 2100)
+            lte = new Date(gte);
+            lte.setFullYear(lte.getFullYear() + 1);
+            lte.setHours(23, 59, 59, 999);
+        } else {
+            lte = new Date(`${filterDenNgay}T23:59:59.999`);
+            // Fallback gte = 1 năm trước denNgay (thay vì năm 2000)
+            gte = new Date(lte);
+            gte.setFullYear(gte.getFullYear() - 1);
+            gte.setHours(0, 0, 0, 0);
+        }
+        return { gte, lte };
+    }
     const year = filterNam ? parseInt(filterNam) : new Date().getFullYear();
 
     if (!filterThoiGian || filterThoiGian === 'all') {
@@ -79,18 +100,23 @@ interface FilterParams {
     filterNam?: string;
     filterThoiGian?: string;
     filterSales?: string;
+    filterNguon?: string;
+    filterTuNgay?: string;
+    filterDenNgay?: string;
 }
 
-export async function getStats({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+export async function getStats({ filterNam, filterThoiGian, filterSales, filterNguon, filterTuNgay, filterDenNgay }: FilterParams) {
     const user = await getCurrentUser();
 
     const baseWhere: any = { DUYET: "Đã duyệt" };
 
-    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
     if (dateRange) baseWhere.NGAY_HD = dateRange;
 
-    if (filterSales && filterSales !== 'all') {
-        baseWhere.KHTN_REL = { SALES_PT: filterSales };
+    if ((filterSales && filterSales !== 'all') || (filterNguon && filterNguon !== 'all')) {
+        baseWhere.KHTN_REL = {};
+        if (filterSales && filterSales !== 'all') baseWhere.KHTN_REL.SALES_PT = filterSales;
+        if (filterNguon && filterNguon !== 'all') baseWhere.KHTN_REL.NGUON = filterNguon;
     }
 
     const hopDongs = await prisma.hOP_DONG.findMany({
@@ -186,16 +212,18 @@ export async function getList(params: { page: number; limit: number; query?: str
     }
 }
 
-export async function getChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+export async function getChartData({ filterNam, filterThoiGian, filterSales, filterNguon, filterTuNgay, filterDenNgay }: FilterParams) {
     const user = await getCurrentUser();
 
     const baseWhere: any = { DUYET: "Đã duyệt" };
 
-    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
     if (dateRange) baseWhere.NGAY_HD = dateRange;
 
-    if (filterSales && filterSales !== 'all') {
-        baseWhere.KHTN_REL = { SALES_PT: filterSales };
+    if ((filterSales && filterSales !== 'all') || (filterNguon && filterNguon !== 'all')) {
+        baseWhere.KHTN_REL = {};
+        if (filterSales && filterSales !== 'all') baseWhere.KHTN_REL.SALES_PT = filterSales;
+        if (filterNguon && filterNguon !== 'all') baseWhere.KHTN_REL.NGUON = filterNguon;
     }
 
     const hopDongs = await prisma.hOP_DONG.findMany({
@@ -225,15 +253,18 @@ export async function getChartData({ filterNam, filterThoiGian, filterSales }: F
     return weeklyData.map(({ label, revenue }) => ({ label, revenue }));
 }
 
-export async function getCustomerChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+export async function getCustomerChartData({ filterNam, filterThoiGian, filterSales, filterNguon, filterTuNgay, filterDenNgay }: FilterParams) {
     const user = await getCurrentUser();
     const baseWhere: any = {};
 
-    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
     if (dateRange) baseWhere.CREATED_AT = dateRange;
 
     if (filterSales && filterSales !== 'all') {
         baseWhere.SALES_PT = filterSales;
+    }
+    if (filterNguon && filterNguon !== 'all') {
+        baseWhere.NGUON = filterNguon;
     }
 
     const customers = await prisma.kHTN.findMany({
@@ -257,16 +288,18 @@ export async function getCustomerChartData({ filterNam, filterThoiGian, filterSa
     return weeklyData.map(({ label, count }) => ({ label, count }));
 }
 
-export async function getMarketingChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+export async function getMarketingChartData({ filterNam, filterThoiGian, filterSales, filterNguon, filterTuNgay, filterDenNgay }: FilterParams) {
     const user = await getCurrentUser();
 
     const baseWhere: any = { DUYET: "Đã duyệt" };
 
-    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
     if (dateRange) baseWhere.NGAY_HD = dateRange;
 
-    if (filterSales && filterSales !== 'all') {
-        baseWhere.KHTN_REL = { SALES_PT: filterSales };
+    if ((filterSales && filterSales !== 'all') || (filterNguon && filterNguon !== 'all')) {
+        baseWhere.KHTN_REL = {};
+        if (filterSales && filterSales !== 'all') baseWhere.KHTN_REL.SALES_PT = filterSales;
+        if (filterNguon && filterNguon !== 'all') baseWhere.KHTN_REL.NGUON = filterNguon;
     }
 
     const hopDongs = await prisma.hOP_DONG.findMany({
@@ -297,16 +330,18 @@ export async function getMarketingChartData({ filterNam, filterThoiGian, filterS
     return result;
 }
 
-export async function getProductClassificationChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+export async function getProductClassificationChartData({ filterNam, filterThoiGian, filterSales, filterNguon, filterTuNgay, filterDenNgay }: FilterParams) {
     const user = await getCurrentUser();
 
     const baseWhere: any = { DUYET: "Đã duyệt" };
 
-    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
     if (dateRange) baseWhere.NGAY_HD = dateRange;
 
-    if (filterSales && filterSales !== 'all') {
-        baseWhere.KHTN_REL = { SALES_PT: filterSales };
+    if ((filterSales && filterSales !== 'all') || (filterNguon && filterNguon !== 'all')) {
+        baseWhere.KHTN_REL = {};
+        if (filterSales && filterSales !== 'all') baseWhere.KHTN_REL.SALES_PT = filterSales;
+        if (filterNguon && filterNguon !== 'all') baseWhere.KHTN_REL.NGUON = filterNguon;
     }
 
     const hopDongCts = await prisma.hOP_DONG_CT.findMany({
@@ -343,16 +378,18 @@ export async function getProductClassificationChartData({ filterNam, filterThoiG
     return result;
 }
 
-export async function getMarketingWeeklyChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+export async function getMarketingWeeklyChartData({ filterNam, filterThoiGian, filterSales, filterNguon, filterTuNgay, filterDenNgay }: FilterParams) {
     const user = await getCurrentUser();
 
     const baseWhere: any = { DUYET: "Đã duyệt" };
 
-    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
     if (dateRange) baseWhere.NGAY_HD = dateRange;
 
-    if (filterSales && filterSales !== 'all') {
-        baseWhere.KHTN_REL = { SALES_PT: filterSales };
+    if ((filterSales && filterSales !== 'all') || (filterNguon && filterNguon !== 'all')) {
+        baseWhere.KHTN_REL = {};
+        if (filterSales && filterSales !== 'all') baseWhere.KHTN_REL.SALES_PT = filterSales;
+        if (filterNguon && filterNguon !== 'all') baseWhere.KHTN_REL.NGUON = filterNguon;
     }
 
     const hopDongs = await prisma.hOP_DONG.findMany({
@@ -402,15 +439,18 @@ export async function getMarketingWeeklyChartData({ filterNam, filterThoiGian, f
     };
 }
 
-export async function getTyLeChuyenDoiChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+export async function getTyLeChuyenDoiChartData({ filterNam, filterThoiGian, filterSales, filterNguon, filterTuNgay, filterDenNgay }: FilterParams) {
     const user = await getCurrentUser();
 
     // 1. Data (KHTN)
     const khtnWhere: any = {};
-    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
     if (dateRange) khtnWhere.CREATED_AT = dateRange;
     if (filterSales && filterSales !== 'all') {
         khtnWhere.SALES_PT = filterSales;
+    }
+    if (filterNguon && filterNguon !== 'all') {
+        khtnWhere.NGUON = filterNguon;
     }
 
     const customers = await prisma.kHTN.findMany({
@@ -422,8 +462,10 @@ export async function getTyLeChuyenDoiChartData({ filterNam, filterThoiGian, fil
     // 2. Hợp đồng (HOP_DONG)
     const hdWhere: any = { DUYET: "Đã duyệt" };
     if (dateRange) hdWhere.NGAY_HD = dateRange;
-    if (filterSales && filterSales !== 'all') {
-        hdWhere.KHTN_REL = { SALES_PT: filterSales };
+    if ((filterSales && filterSales !== 'all') || (filterNguon && filterNguon !== 'all')) {
+        hdWhere.KHTN_REL = {};
+        if (filterSales && filterSales !== 'all') hdWhere.KHTN_REL.SALES_PT = filterSales;
+        if (filterNguon && filterNguon !== 'all') hdWhere.KHTN_REL.NGUON = filterNguon;
     }
 
     const hopDongs = await prisma.hOP_DONG.findMany({
@@ -465,15 +507,18 @@ export async function getTyLeChuyenDoiChartData({ filterNam, filterThoiGian, fil
     return weeklyData.map(({ label, dataCount, hdCount, rate }) => ({ label, dataCount, hdCount, rate }));
 }
 
-export async function getCskhVsDoanhSoChartData({ filterNam, filterThoiGian, filterSales }: FilterParams) {
+export async function getCskhVsDoanhSoChartData({ filterNam, filterThoiGian, filterSales, filterNguon, filterTuNgay, filterDenNgay }: FilterParams) {
     const user = await getCurrentUser();
 
     // 1. Số cuộc gặp (KEHOACH_CSKH có TRANG_THAI = 'Đã báo cáo')
     const cskhWhere: any = { TRANG_THAI: "Đã báo cáo" };
-    const dateRange = buildDateRange(filterNam, filterThoiGian);
+    const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
     if (dateRange) cskhWhere.NGAY_CS_TT = dateRange;
     if (filterSales && filterSales !== 'all') {
         cskhWhere.NGUOI_CS = filterSales;
+    }
+    if (filterNguon && filterNguon !== 'all') {
+        cskhWhere.KH_REL = { NGUON: filterNguon };
     }
 
     const cskhList = await prisma.kEHOACH_CSKH.findMany({
@@ -484,8 +529,10 @@ export async function getCskhVsDoanhSoChartData({ filterNam, filterThoiGian, fil
     // 2. Doanh số (HOP_DONG)
     const hdWhere: any = { DUYET: "Đã duyệt" };
     if (dateRange) hdWhere.NGAY_HD = dateRange;
-    if (filterSales && filterSales !== 'all') {
-        hdWhere.KHTN_REL = { SALES_PT: filterSales };
+    if ((filterSales && filterSales !== 'all') || (filterNguon && filterNguon !== 'all')) {
+        hdWhere.KHTN_REL = {};
+        if (filterSales && filterSales !== 'all') hdWhere.KHTN_REL.SALES_PT = filterSales;
+        if (filterNguon && filterNguon !== 'all') hdWhere.KHTN_REL.NGUON = filterNguon;
     }
 
     const hopDongs = await prisma.hOP_DONG.findMany({
@@ -528,6 +575,22 @@ export async function getSalesList() {
             label: nv.HO_TEN || nv.MA_NV,
             value: nv.MA_NV,
         }));
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
+}
+
+export async function getNguonList() {
+    try {
+        const list = await prisma.kHTN.findMany({
+            select: { NGUON: true },
+            distinct: ['NGUON'],
+        });
+        return list
+            .map(item => item.NGUON)
+            .filter(Boolean)
+            .map(nguon => ({ label: nguon as string, value: nguon as string }));
     } catch (e) {
         console.error(e);
         return [];
