@@ -86,7 +86,7 @@ export default function LeadTheoKenhChart({ data, channels, totalByChannel }: Pr
                     </span>
                 </div>
                 <p className="text-xs md:text-sm text-muted-foreground ml-1">
-                    Stacked Column — Số Lead mới theo kênh marketing qua từng kỳ
+                    Phân bổ khách hàng tiềm năng mới theo nguồn/kênh marketing qua các mốc thời gian
                 </p>
             </div>
 

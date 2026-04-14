@@ -111,9 +111,9 @@ export default function LeadToHenBySalesChart({ data }: Props) {
                         Chỉ tính hẹn đã báo cáo
                     </span>
                 </div>
-                {/* <p className="text-xs md:text-sm text-muted-foreground ml-1">
-                    Công thức: Hẹn đã gặp / Tổng Lead × 100%
-                </p> */}
+                <p className="text-xs md:text-sm text-muted-foreground ml-1">
+                    Hiệu suất khai thác khách hàng tiềm năng thành lịch hẹn
+                </p>
             </div>
 
             {/* Score board mini */}

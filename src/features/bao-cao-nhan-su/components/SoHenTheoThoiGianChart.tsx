@@ -69,9 +69,9 @@ export default function SoHenTheoThoiGianChart({ data, salesLabels }: Props) {
                         1.2b · Số Cuộc Hẹn Theo Thời Gian &amp; Sales
                     </h3>
                 </div>
-                {/* <p className="text-xs md:text-sm text-muted-foreground ml-1">
-                    Chỉ tính hẹn đã gặp (Đã báo cáo) — So sánh mức độ hoạt động của từng Sales
-                </p> */}
+                <p className="text-xs md:text-sm text-muted-foreground ml-1">
+                    Số lượng lịch hẹn thực tế theo thời gian, giúp theo dõi mức độ hoạt động của từng nhân viên
+                </p>
             </div>
 
             {!hasData ? (

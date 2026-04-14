@@ -107,9 +107,9 @@ export default function CoHoiToHDChart({ data }: Props) {
                         1.3 · % Cơ hội → HĐ theo Sales (Chốt Sales)
                     </h3>
                 </div>
-                {/* <p className="text-xs md:text-sm text-muted-foreground ml-1">
-                    Công thức: Số HĐ ký / Tổng Cơ hội × 100%
-                </p> */}
+                <p className="text-xs md:text-sm text-muted-foreground ml-1">
+                    Hiệu suất chốt hợp đồng từ cơ hội bán hàng
+                </p>
             </div>
 
             {/* Top 3 */}

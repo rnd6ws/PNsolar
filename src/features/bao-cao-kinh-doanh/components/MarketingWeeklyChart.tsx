@@ -33,11 +33,14 @@ export default function MarketingWeeklyChart({ data, channels }: Props) {
 
     return (
         <div className="w-full bg-card border border-border rounded-2xl shadow-sm p-5 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col mb-4">
                 <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-primary" />
                     Doanh thu kênh Marketing theo tuần
                 </h3>
+                <p className="text-xs md:text-sm text-muted-foreground ml-1">
+                    Phân tích biến động doanh thu theo từng kênh marketing qua các tuần
+                </p>
             </div>
             <div className="w-full h-[350px] [&_.recharts-wrapper]:outline-none! [&_.recharts-surface]:outline-none! **:focus:outline-none!">
                 <ResponsiveContainer width="100%" height="100%">

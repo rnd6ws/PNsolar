@@ -103,9 +103,9 @@ export default function DoanhSoKeHoachChart({ data }: Props) {
                         1.4 · Doanh Số — Kế Hoạch vs Thực Tế
                     </h3>
                 </div>
-                {/* <p className="text-xs md:text-sm text-muted-foreground ml-1">
-                    Combo Chart (Cột thực tế + Line kế hoạch) — Đo kết quả kinh doanh
-                </p> */}
+                <p className="text-xs md:text-sm text-muted-foreground ml-1">
+                    So sánh doanh số thực tế đạt được so với chỉ tiêu kế hoạch đề ra theo thời gian
+                </p>
             </div>
 
             {/* Summary row */}
