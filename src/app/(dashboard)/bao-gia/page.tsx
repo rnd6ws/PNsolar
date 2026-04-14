@@ -7,6 +7,8 @@ import AddBaoGiaButton from "@/features/bao-gia/components/AddBaoGiaButton";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { getRowsPerPage } from '@/lib/getRowsPerPage';
 import { Suspense } from "react";
+import { Button } from "@/components/ui/button";
+import { ExternalLink, Table2 } from "lucide-react";
 
 export const metadata: Metadata = {
     title: "Báo giá | PN Solar",
@@ -109,6 +111,12 @@ export default async function BaoGiaPage({
                             <p className="text-sm text-muted-foreground mt-1">Quản lý báo giá cho khách hàng.</p>
                         </div>
                         <div className="flex items-center gap-3">
+                            <Button variant="outline" asChild className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:border-emerald-900/30 transition-colors">
+                                <a href="https://docs.google.com/spreadsheets/d/1d0FhHP32gNd14_WjgcwHmFwhI8BevM_lOiN52Twn8bY/edit?usp=sharing" target="_blank" rel="noopener noreferrer">
+                                    <Table2 className="w-4 h-4 mr-2" />
+                                    Mở trang tính
+                                </a>
+                            </Button>
                             <PermissionGuard moduleKey="bao-gia" level="add">
                                 <AddBaoGiaButton />
                             </PermissionGuard>

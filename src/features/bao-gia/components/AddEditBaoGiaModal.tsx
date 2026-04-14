@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useTransition, useRef } from "react";
-import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, ExternalLink, X, CreditCard, ScrollText, Eye, EyeOff } from "lucide-react";
+import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, ExternalLink, X, CreditCard, ScrollText, Eye, EyeOff, Table2 } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
 import { useFileUpload } from "@/hooks/useFileUpload";
@@ -449,6 +449,15 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                         )}
                     </div>
                     <div className="flex items-center gap-3">
+                        <a 
+                            href="https://docs.google.com/spreadsheets/d/1d0FhHP32gNd14_WjgcwHmFwhI8BevM_lOiN52Twn8bY/edit?usp=sharing" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 h-10 text-sm font-medium text-emerald-600 border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-all"
+                        >
+                            <Table2 className="w-4 h-4" />
+                            Mở trang tính
+                        </a>
                         <button type="button" onClick={onClose} disabled={isPending} className="btn-premium-secondary px-6 h-10 text-sm">Hủy</button>
                         <button type="button" onClick={handleSubmit} disabled={isPending} className="btn-premium-primary px-6 h-10 text-sm flex items-center gap-2">
                             {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
