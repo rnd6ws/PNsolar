@@ -157,7 +157,7 @@ export default function CoHoiToHDChart({ data }: Props) {
                             axisLine={false}
                             tickLine={false}
                             tick={{ fill: isDark ? "#d1d5db" : "#374151", fontSize: 12, fontWeight: 500 }}
-                            width={90}
+                            width={140}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }} />
                         <Bar dataKey="rate" name="% Chốt" radius={[0, 6, 6, 0]} barSize={20} isAnimationActive={true}>

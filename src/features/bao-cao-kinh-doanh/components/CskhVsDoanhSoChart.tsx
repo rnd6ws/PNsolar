@@ -97,7 +97,7 @@ export default function CskhVsDoanhSoChart({ data }: Props) {
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                         data={chartData}
-                        margin={{ top: 20, right: 0, left: 0, bottom: 20 }}
+                        margin={{ top: 20, right: 0, left: 20, bottom: 20 }}
                         style={{ outline: "none" }}
                     >
                         <CartesianGrid
@@ -124,7 +124,7 @@ export default function CskhVsDoanhSoChart({ data }: Props) {
                             tickLine={false}
                             tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 11 }}
                             allowDecimals={false}
-                            label={{ value: 'Số cuộc gặp', angle: -90, position: 'insideLeft', fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12, dy: 30, dx: -5 }}
+                            label={{ value: 'Số cuộc gặp', angle: -90, position: 'insideLeft', fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12, dy: 30, dx: 10 }}
                             domain={yAxisMeetingsDomain}
                         />
                         {/* Trục Y cho doanh thu (ẩn bên phải) */}
