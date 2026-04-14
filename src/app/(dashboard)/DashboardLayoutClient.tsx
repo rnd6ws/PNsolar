@@ -56,6 +56,8 @@ const BREADCRUMB_MAP: Record<string, string> = {
     '/phan-quyen': 'Phân quyền',
     '/ban-giao': 'Bàn giao',
     '/de-nghi-tt': 'Đề nghị thanh toán',
+    '/bao-cao-nhan-su': 'Báo cáo nhân sự',
+    '/bao-cao-kinh-doanh': 'Báo cáo kinh doanh',
 };
 
 function getBreadcrumb(pathname: string): string {
