@@ -62,19 +62,19 @@ function DateFilter() {
     };
 
     return (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0">
             <input
                 type="date"
                 value={localTuNgay}
                 onChange={e => setLocalTuNgay(e.target.value)}
-                className="h-9 w-[130px] rounded-l-md border border-input border-r-0 bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="h-9 w-[130px] rounded-l-md border border-input border-r-0 bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 title="Từ ngày"
             />
             <input
                 type="date"
                 value={localDenNgay}
                 onChange={e => setLocalDenNgay(e.target.value)}
-                className={`h-9 w-[130px] border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${hasChanged || isActive ? 'border-r-0 rounded-none' : 'rounded-r-md'}`}
+                className={`h-9 w-[130px] border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${hasChanged || isActive ? 'border-r-0 rounded-none' : 'rounded-r-md'}`}
                 title="Đến ngày"
             />
             {hasChanged && (
@@ -138,8 +138,8 @@ function StatCards({ leadTheoKenhData, leadToHenData, coHoiToHDData, doanhSoData
             value: totalDoanhSo >= 1_000_000_000
                 ? `${(totalDoanhSo / 1_000_000_000).toFixed(1)}B ₫`
                 : totalDoanhSo >= 1_000_000
-                ? `${(totalDoanhSo / 1_000_000).toFixed(0)}M ₫`
-                : `${totalDoanhSo.toLocaleString("vi-VN")} ₫`,
+                    ? `${(totalDoanhSo / 1_000_000).toFixed(0)}M ₫`
+                    : `${totalDoanhSo.toLocaleString("vi-VN")} ₫`,
             icon: TrendingUp,
             color: "#8b5cf6",
         },
