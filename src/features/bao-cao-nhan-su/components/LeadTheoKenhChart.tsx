@@ -131,7 +131,7 @@ export default function LeadTheoKenhChart({ data, channels, totalByChannel }: Pr
                                 textAnchor="end"
                                 height={65}
                                 dx={-4} dy={4}
-                                interval={0}
+                                minTickGap={20}
                             />
                             <YAxis
                                 axisLine={false}

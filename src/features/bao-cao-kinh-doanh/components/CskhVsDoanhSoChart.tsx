@@ -115,7 +115,7 @@ export default function CskhVsDoanhSoChart({ data }: Props) {
                             height={70}
                             dx={-5}
                             dy={5}
-                            interval={0}
+                            minTickGap={20}
                         />
                         {/* Trục Y cho số cuộc gặp */}
                         <YAxis

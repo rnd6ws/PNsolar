@@ -111,7 +111,7 @@ export default function TyLeChuyenDoiChart({ data }: Props) {
                             height={70}
                             dx={-5}
                             dy={5}
-                            interval={0}
+                            minTickGap={20}
                         />
                         {/* Trục Y cho số lượng (Data, Hợp đồng) */}
                         <YAxis

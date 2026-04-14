@@ -88,7 +88,7 @@ export default function KhachHangChart({ data }: Props) {
                             height={70}
                             dx={-5}
                             dy={5}
-                            interval={0}
+                            minTickGap={20}
                         />
                         <YAxis
                             axisLine={false}

@@ -20,9 +20,14 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 export default function MarketingChart({ data }: Props) {
     const { theme } = useTheme();
     const [mounted, setMounted] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         setMounted(true);
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
     const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -96,12 +101,10 @@ export default function MarketingChart({ data }: Props) {
                             formatter={(value: any, name: any) => [formatCurrency(Number(value) || 0), name]}
                         />
                         <Legend 
-                            layout="vertical" 
-                            verticalAlign="middle" 
-                            align="right"
-                            wrapperStyle={{
-                                paddingLeft: "20px"
-                            }}
+                            layout={isMobile ? "horizontal" : "vertical"} 
+                            verticalAlign={isMobile ? "bottom" : "middle"} 
+                            align={isMobile ? "center" : "right"}
+                            wrapperStyle={isMobile ? { paddingTop: "20px" } : { paddingLeft: "20px" }}
                         />
                     </PieChart>
                 </ResponsiveContainer>
