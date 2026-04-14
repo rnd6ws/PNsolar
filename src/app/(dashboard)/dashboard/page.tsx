@@ -251,18 +251,18 @@ const moduleGroups: ModuleGroup[] = [
         icon: BarChart2,
         accentColor: "from-violet-500 to-purple-500",
         modules: [
-            {
-                name: "Tổng quan",
-                description: "Bảng điều khiển và thống kê tổng quan.",
-                href: "/dashboard",
-                icon: LayoutDashboard,
-                color: "text-primary",
-                bgColor: "bg-primary/10",
-                gradientFrom: "from-primary/10",
-                gradientTo: "to-primary/5",
-                available: true,
-                moduleKey: "dashboard",
-            },
+            // {
+            //     name: "Tổng quan",
+            //     description: "Bảng điều khiển và thống kê tổng quan.",
+            //     href: "/dashboard",
+            //     icon: LayoutDashboard,
+            //     color: "text-primary",
+            //     bgColor: "bg-primary/10",
+            //     gradientFrom: "from-primary/10",
+            //     gradientTo: "to-primary/5",
+            //     available: true,
+            //     moduleKey: "dashboard",
+            // },
             {
                 name: "Báo cáo nhân sự",
                 description: "Thống kê nhân viên, chấm công, KPI.",
@@ -272,7 +272,8 @@ const moduleGroups: ModuleGroup[] = [
                 bgColor: "bg-indigo-50 dark:bg-indigo-950/50",
                 gradientFrom: "from-indigo-500/10",
                 gradientTo: "to-blue-500/10",
-                available: false,
+                available: true,
+                moduleKey: "bao-cao-nhan-su",
             },
             {
                 name: "Báo cáo kinh doanh",
@@ -677,7 +678,7 @@ function ModuleCard({
                         "absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200",
                         isFav
                             ? "opacity-100"
-                            : "opacity-0 group-hover:opacity-70 hover:!opacity-100"
+                            : "opacity-0 group-hover:opacity-70 hover:opacity-100!"
                     )}
                     title={isFav ? 'Bỏ khỏi truy cập nhanh' : 'Thêm vào truy cập nhanh'}
                 >
