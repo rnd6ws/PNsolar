@@ -127,14 +127,14 @@ export async function getLeadTheoKenhData(params: FilterParams) {
 
     const baseWhere: any = {};
     const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
-    if (dateRange) baseWhere.CREATED_AT = dateRange;
+    if (dateRange) baseWhere.NGAY_GHI_NHAN = dateRange;
     if (filterSales && filterSales !== "all") baseWhere.SALES_PT = filterSales;
     if (filterNguon && filterNguon !== "all") baseWhere.NGUON = filterNguon;
 
     const khtnList = await prisma.kHTN.findMany({
         where: baseWhere,
-        select: { CREATED_AT: true, NGUON: true },
-        orderBy: { CREATED_AT: "asc" },
+        select: { NGAY_GHI_NHAN: true, NGUON: true },
+        orderBy: { NGAY_GHI_NHAN: "asc" },
     });
 
     const startDate = dateRange?.gte ?? new Date(new Date().getFullYear(), 0, 1);
@@ -152,8 +152,8 @@ export async function getLeadTheoKenhData(params: FilterParams) {
         monthSlots.forEach(m => slotMap.set(m.label, {}));
 
         for (const kh of khtnList) {
-            if (!kh.CREATED_AT) continue;
-            const t = kh.CREATED_AT.getTime();
+            if (!kh.NGAY_GHI_NHAN) continue;
+            const t = kh.NGAY_GHI_NHAN.getTime();
             const slot = monthSlots.find(m => t >= m.start && t <= m.end);
             if (!slot) continue;
             const ch = kh.NGUON || "Khác";
@@ -167,8 +167,8 @@ export async function getLeadTheoKenhData(params: FilterParams) {
         weekSlots.forEach(w => slotMap.set(w.label, {}));
 
         for (const kh of khtnList) {
-            if (!kh.CREATED_AT) continue;
-            const t = kh.CREATED_AT.getTime();
+            if (!kh.NGAY_GHI_NHAN) continue;
+            const t = kh.NGAY_GHI_NHAN.getTime();
             const slot = weekSlots.find(w => t >= w.start && t <= w.end);
             if (!slot) continue;
             const ch = kh.NGUON || "Khác";
@@ -216,7 +216,7 @@ export async function getLeadToHenBySalesData(params: FilterParams) {
         filteredSales.map(async (nv) => {
             // Lead của sales này
             const leadWhere: any = { SALES_PT: nv.MA_NV };
-            if (dateRange) leadWhere.CREATED_AT = dateRange;
+            if (dateRange) leadWhere.NGAY_GHI_NHAN = dateRange;
             if (filterNguon && filterNguon !== "all") leadWhere.NGUON = filterNguon;
 
             const totalLead = await prisma.kHTN.count({ where: leadWhere });
@@ -331,7 +331,7 @@ export async function getCoHoiToHDData(params: FilterParams) {
         filteredSales.map(async (nv) => {
             // Tổng cơ hội (đề xuất báo giá đã gặp hoặc tất cả KHTN)
             const khtnWhere: any = { SALES_PT: nv.MA_NV };
-            if (dateRange) khtnWhere.CREATED_AT = dateRange;
+            if (dateRange) khtnWhere.NGAY_GHI_NHAN = dateRange;
             if (filterNguon && filterNguon !== "all") khtnWhere.NGUON = filterNguon;
             const totalCoHoi = await prisma.kHTN.count({ where: khtnWhere });
 

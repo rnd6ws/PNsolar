@@ -74,14 +74,14 @@ function DateFilter() {
                 type="date"
                 value={localDenNgay}
                 onChange={e => setLocalDenNgay(e.target.value)}
-                className="h-9 w-[130px] border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className={`h-9 w-[130px] border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${hasChanged || isActive ? 'border-r-0 rounded-none' : 'rounded-r-md'}`}
                 title="Đến ngày"
             />
             {hasChanged && (
                 <button
                     onClick={apply}
                     disabled={isPending}
-                    className="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    className="h-9 px-3 rounded-l-none rounded-r-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
                     {isPending ? "..." : "Áp dụng"}
                 </button>
@@ -90,7 +90,7 @@ function DateFilter() {
                 <button
                     onClick={clear}
                     disabled={isPending}
-                    className="h-9 px-2 rounded-md border border-input bg-background text-sm text-muted-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                    className="h-9 px-2 rounded-l-none rounded-r-md border border-input bg-background text-sm text-muted-foreground hover:bg-accent transition-colors disabled:opacity-50"
                     title="Xóa bộ lọc ngày"
                 >
                     ✕

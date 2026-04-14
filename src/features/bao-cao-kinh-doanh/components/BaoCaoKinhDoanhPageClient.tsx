@@ -79,26 +79,26 @@ function DateFilter() {
     const isActive = !!(urlTuNgay || urlDenNgay);
 
     return (
-        <div className="flex items-center gap-1">
-            <input 
+        <div className="flex items-center gap-0">
+            <input
                 type="date"
                 value={localTuNgay}
                 onChange={e => setLocalTuNgay(e.target.value)}
                 className="h-9 w-[130px] rounded-l-md border border-input border-r-0 bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 title="Từ ngày"
             />
-            <input 
+            <input
                 type="date"
                 value={localDenNgay}
                 onChange={e => setLocalDenNgay(e.target.value)}
-                className="h-9 w-[130px] border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className={`h-9 w-[130px] border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${hasChanged || isActive ? 'border-r-0 rounded-none' : 'rounded-r-md'}`}
                 title="Đến ngày"
             />
             {hasChanged && (
                 <button
                     onClick={handleApply}
                     disabled={isPending}
-                    className="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    className="h-9 px-3 rounded-l-none rounded-r-md bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
                     title="Áp dụng bộ lọc ngày"
                 >
                     {isPending ? '...' : 'Áp dụng'}
@@ -108,7 +108,7 @@ function DateFilter() {
                 <button
                     onClick={handleClear}
                     disabled={isPending}
-                    className="h-9 px-2 rounded-md border border-input bg-background text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
+                    className="h-9 px-2 rounded-l-none rounded-r-md border border-input bg-background text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
                     title="Xóa bộ lọc ngày"
                 >
                     ✕

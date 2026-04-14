@@ -258,7 +258,7 @@ export async function getCustomerChartData({ filterNam, filterThoiGian, filterSa
     const baseWhere: any = {};
 
     const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
-    if (dateRange) baseWhere.CREATED_AT = dateRange;
+    if (dateRange) baseWhere.NGAY_GHI_NHAN = dateRange;
 
     if (filterSales && filterSales !== 'all') {
         baseWhere.SALES_PT = filterSales;
@@ -269,8 +269,8 @@ export async function getCustomerChartData({ filterNam, filterThoiGian, filterSa
 
     const customers = await prisma.kHTN.findMany({
         where: baseWhere,
-        select: { CREATED_AT: true },
-        orderBy: { CREATED_AT: 'asc' },
+        select: { NGAY_GHI_NHAN: true },
+        orderBy: { NGAY_GHI_NHAN: 'asc' },
     });
 
     const startDate = dateRange?.gte ?? new Date(new Date().getFullYear(), 0, 1);
@@ -280,7 +280,8 @@ export async function getCustomerChartData({ filterNam, filterThoiGian, filterSa
     const weeklyData = weekSlots.map(w => ({ ...w, count: 0 }));
 
     for (const kh of customers) {
-        const khTime = kh.CREATED_AT.getTime();
+        if (!kh.NGAY_GHI_NHAN) continue;
+        const khTime = kh.NGAY_GHI_NHAN.getTime();
         const week = weeklyData.find(w => khTime >= w.start && khTime <= w.end);
         if (week) week.count += 1;
     }
@@ -445,7 +446,7 @@ export async function getTyLeChuyenDoiChartData({ filterNam, filterThoiGian, fil
     // 1. Data (KHTN)
     const khtnWhere: any = {};
     const dateRange = buildDateRange(filterNam, filterThoiGian, filterTuNgay, filterDenNgay);
-    if (dateRange) khtnWhere.CREATED_AT = dateRange;
+    if (dateRange) khtnWhere.NGAY_GHI_NHAN = dateRange;
     if (filterSales && filterSales !== 'all') {
         khtnWhere.SALES_PT = filterSales;
     }
@@ -455,8 +456,8 @@ export async function getTyLeChuyenDoiChartData({ filterNam, filterThoiGian, fil
 
     const customers = await prisma.kHTN.findMany({
         where: khtnWhere,
-        select: { CREATED_AT: true },
-        orderBy: { CREATED_AT: 'asc' },
+        select: { NGAY_GHI_NHAN: true },
+        orderBy: { NGAY_GHI_NHAN: 'asc' },
     });
 
     // 2. Hợp đồng (HOP_DONG)
@@ -482,8 +483,8 @@ export async function getTyLeChuyenDoiChartData({ filterNam, filterThoiGian, fil
     const weeklyData = weekSlots.map(w => ({ ...w, dataCount: 0, hdCount: 0, rate: 0 }));
 
     for (const kh of customers) {
-        if (!kh.CREATED_AT) continue;
-        const t = kh.CREATED_AT.getTime();
+        if (!kh.NGAY_GHI_NHAN) continue;
+        const t = kh.NGAY_GHI_NHAN.getTime();
         const week = weeklyData.find(w => t >= w.start && t <= w.end);
         if (week) week.dataCount += 1;
     }
