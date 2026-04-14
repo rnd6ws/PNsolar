@@ -51,12 +51,13 @@ export default function MarketingWeeklyChart({ data, channels }: Props) {
                             dataKey="label"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12 }}
+                            tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 10 }}
                             angle={-45}
                             textAnchor="end"
                             height={70}
                             dx={-5}
                             dy={5}
+                            interval={0}
                         />
                         <YAxis
                             axisLine={false}

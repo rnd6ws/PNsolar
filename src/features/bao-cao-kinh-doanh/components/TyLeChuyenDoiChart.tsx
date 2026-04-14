@@ -105,12 +105,13 @@ export default function TyLeChuyenDoiChart({ data }: Props) {
                             dataKey="label"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 11 }}
+                            tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 10 }}
                             angle={-45}
                             textAnchor="end"
                             height={70}
                             dx={-5}
                             dy={5}
+                            interval={0}
                         />
                         {/* Trục Y cho số lượng (Data, Hợp đồng) */}
                         <YAxis

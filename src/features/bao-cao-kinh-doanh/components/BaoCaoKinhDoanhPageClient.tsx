@@ -1,6 +1,5 @@
 "use client";
 
-import { Download } from "lucide-react";
 import FilterSelect from "@/components/FilterSelect";
 import BaoCaoKinhDoanhChart from "./BaoCaoKinhDoanhChart";
 import KhachHangChart from "./KhachHangChart";
@@ -9,9 +8,7 @@ import PhanLoaiSanPhamChart from "./PhanLoaiSanPhamChart";
 import MarketingWeeklyChart from "./MarketingWeeklyChart";
 import TyLeChuyenDoiChart from "./TyLeChuyenDoiChart";
 import CskhVsDoanhSoChart from "./CskhVsDoanhSoChart";
-
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import KetLuanSection from "./KetLuanSection";
 import StatCards from "./StatCards";
 
 interface Props {
@@ -27,21 +24,6 @@ interface Props {
 }
 
 export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerChartData, marketingChartData, productChartData, marketingWeeklyChart, salesList, conversionChartData, cskhVsDoanhSoChartData }: Props) {
-    const [isScrolled, setIsScrolled] = useState(false);
-
-    useEffect(() => {
-        const scrollContainer = document.getElementById("dashboard-scroll-area");
-        if (!scrollContainer) return;
-
-        const handleScroll = () => {
-            setIsScrolled(scrollContainer.scrollTop > 20);
-        };
-
-        scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
-        // Initial check
-        handleScroll();
-        return () => scrollContainer.removeEventListener("scroll", handleScroll);
-    }, []);
 
     const currentYear = new Date().getFullYear();
     const yearOptions = Array.from({ length: 4 }, (_, i) => {
@@ -64,51 +46,46 @@ export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerCh
 
     return (
         <div className="flex flex-col flex-1 animate-in fade-in duration-300">
-            <div
-                className={cn(
-                    "sticky top-0 z-30 flex flex-col transition-all duration-300 bg-background/95 backdrop-blur border-b border-border mb-6",
-                    "-mx-4 md:-mx-6 px-4 md:px-6 -mt-4 md:-mt-6 pt-4 md:pt-6 pb-4",
-                    isScrolled ? "gap-2 shadow-sm" : "gap-4"
-                )}
-            >
-                <div className="flex items-start md:items-center justify-between gap-4 flex-col md:flex-row">
-                    <div className="flex flex-col">
-                        <h1 className={cn("font-bold tracking-tight text-foreground transition-all duration-300", isScrolled ? "text-xl md:text-xl" : "text-2xl")}>
+            {/* ── Header ── */}
+            <div className="flex flex-col gap-5 mb-6">
+                {/* Title row */}
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-foreground">
                             Báo cáo kinh doanh
                         </h1>
-                        <p className={cn("text-muted-foreground transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap", isScrolled ? "opacity-0 max-h-0 m-0" : "text-sm mt-1 opacity-100 max-h-[20px]")}>
+                        <p className="text-sm text-muted-foreground mt-0.5">
                             Thống kê doanh số, hợp đồng và tình trạng thu chi
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-                        <div className="flex items-center min-w-max">
-                            <div className="w-[110px] md:w-[130px]">
-                                <FilterSelect
-                                    paramKey="filterNam"
-                                    options={yearOptions}
-                                    placeholder={`Năm ${currentYear}`}
-                                    className="rounded-r-none border-r-0 lg:w-full focus:z-10 relative text-xs md:text-sm h-9 md:h-10"
-                                />
-                            </div>
-                            <div className="w-[120px] md:w-[160px]">
-                                <FilterSelect
-                                    paramKey="filterThoiGian"
-                                    options={timeOptions}
-                                    placeholder="Cả năm"
-                                    className="rounded-l-none lg:w-full focus:z-10 relative text-xs md:text-sm h-9 md:h-10"
-                                />
-                            </div>
+                    {/* Filters */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center">
+                            <FilterSelect
+                                paramKey="filterNam"
+                                options={yearOptions}
+                                placeholder={`Năm ${currentYear}`}
+                                className="rounded-r-none border-r-0 w-[120px] md:w-[130px] text-sm h-9"
+                            />
+                            <FilterSelect
+                                paramKey="filterThoiGian"
+                                options={timeOptions}
+                                placeholder="Cả năm"
+                                className="rounded-l-none w-[130px] md:w-[150px] text-sm h-9"
+                            />
                         </div>
-                        <div className="w-[140px] md:w-[180px] min-w-max">
-                            <FilterSelect paramKey="filterSales" options={salesOptions} placeholder="Lọc theo Sales" className="lg:w-full text-xs md:text-sm h-9 md:h-10" />
-                        </div>
+                        <FilterSelect
+                            paramKey="filterSales"
+                            options={salesOptions}
+                            placeholder="Lọc theo Sales"
+                            className="w-[150px] md:w-[180px] text-sm h-9"
+                        />
                     </div>
                 </div>
 
-                <div className={cn("transition-all duration-300", isScrolled ? "w-full" : "w-full")}>
-                    <StatCards stats={stats} compact={isScrolled} />
-                </div>
+                {/* Stat Cards */}
+                <StatCards stats={stats} />
             </div>
 
             <div className="flex-1">
@@ -122,6 +99,16 @@ export default function BaoCaoKinhDoanhPageClient({ stats, chartData, customerCh
                     <TyLeChuyenDoiChart data={conversionChartData} />
                     <CskhVsDoanhSoChart data={cskhVsDoanhSoChartData} />
                     <KhachHangChart data={customerChartData} />
+                    <KetLuanSection
+                        stats={stats}
+                        chartData={chartData}
+                        customerChartData={customerChartData}
+                        marketingChartData={marketingChartData}
+                        productChartData={productChartData}
+                        conversionChartData={conversionChartData}
+                        cskhVsDoanhSoChartData={cskhVsDoanhSoChartData}
+                        salesList={salesList}
+                    />
                 </div>
             </div>
         </div>

@@ -52,13 +52,22 @@ function buildWeeklySlots(startDate: Date, endDate: Date) {
         sunday.setDate(current.getDate() + 6);
         sunday.setHours(23, 59, 59, 999);
 
-        const startStr = `${current.getDate().toString().padStart(2, '0')}/${(current.getMonth() + 1).toString().padStart(2, '0')}`;
-        const endStr = `${sunday.getDate().toString().padStart(2, '0')}/${(sunday.getMonth() + 1).toString().padStart(2, '0')}`;
+        let displayStart = new Date(current);
+        if (displayStart < startDate) displayStart = new Date(startDate);
+        
+        let displayEnd = new Date(sunday);
+        if (displayEnd > endDate) displayEnd = new Date(endDate);
+
+        const startStr = `${displayStart.getDate().toString().padStart(2, '0')}/${(displayStart.getMonth() + 1).toString().padStart(2, '0')}`;
+        const endStr = `${displayEnd.getDate().toString().padStart(2, '0')}/${(displayEnd.getMonth() + 1).toString().padStart(2, '0')}`;
+
+        let label = `${startStr} - ${endStr}`;
+        if (startStr === endStr) label = startStr;
 
         weeks.push({
             start: current.getTime(),
             end: sunday.getTime(),
-            label: `${startStr} - ${endStr}`,
+            label: label,
         });
 
         current.setDate(current.getDate() + 7);
