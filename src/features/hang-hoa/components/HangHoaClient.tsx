@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, startTransition, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Box, Tag, Package, Search, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronRight, Download, Settings2, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, History, X, Eye, Printer, Grid, Layers, LayoutList, LayoutGrid } from 'lucide-react';
+import { Plus, Pencil, Trash2, Box, Tag, Package, Search, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronRight, Download, Settings2, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, History, X, Eye, Printer, Grid, Layers, LayoutList, LayoutGrid, HelpCircle } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,7 +23,7 @@ import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuar
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
 import Modal from '@/components/Modal';
 import BangGiaSelectModal from './BangGiaSelectModal';
-
+import HangHoaInstructionModal from './HangHoaInstructionModal';
 // ===== TYPES =====
 interface Product {
     ID: string;
@@ -577,6 +577,7 @@ export default function HangHoaClient({
     const [loadingGiaBanHistory, setLoadingGiaBanHistory] = useState(false);
     const [viewProduct, setViewProduct] = useState<Product | null>(null);
     const [isBangGiaOpen, setIsBangGiaOpen] = useState(false);
+    const [isInstructionOpen, setIsInstructionOpen] = useState(false);
 
     const GROUP_LABELS: Record<string, string> = {
         'NHOM_HH': 'Nhóm HH',
@@ -681,7 +682,16 @@ export default function HangHoaClient({
                 {/* Page Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh mục hàng hóa</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh mục hàng hóa</h1>
+                            <button
+                                onClick={() => setIsInstructionOpen(true)}
+                                className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                title="Hướng dẫn sử dụng"
+                            >
+                                <HelpCircle className="w-5 h-5" />
+                            </button>
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1">
                             Quản lý sản phẩm, thiết bị và linh kiện solar
                         </p>
@@ -1569,6 +1579,12 @@ export default function HangHoaClient({
                     </div>
                 )}
             </Modal>
+
+            {/* Modal Hướng dẫn sử dụng */}
+            <HangHoaInstructionModal
+                isOpen={isInstructionOpen}
+                onClose={() => setIsInstructionOpen(false)}
+            />
 
             {/* Modal chọn sản phẩm in bảng giá */}
             <BangGiaSelectModal isOpen={isBangGiaOpen} onClose={() => setIsBangGiaOpen(false)} />
