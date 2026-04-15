@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Settings2, Download, DollarSign, Package, TrendingUp, Grid, Tag, Layers, Box, X, ChevronDown, Calendar, LayoutList, LayoutGrid } from "lucide-react";
+import { Settings2, Download, DollarSign, Package, TrendingUp, Grid, Tag, Layers, Box, X, ChevronDown, Calendar, LayoutList, LayoutGrid, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
@@ -10,6 +10,7 @@ import GiaBanList from "./GiaBanList";
 import AddGiaBanButton from "./AddGiaBanButton";
 import BulkAddGiaBanButton from "./BulkAddGiaBanButton";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
+import GiaBanInstructionModal from "./GiaBanInstructionModal";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface NhomHhOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
@@ -55,6 +56,7 @@ export default function GiaBanPageClient({
     const [showFilters, setShowFilters] = useState(false);
     const [viewMode, setViewMode] = useState<"list" | "card">("list");
     const [groupBy, setGroupBy] = useState<GroupByKey>('none');
+    const [isInstructionOpen, setIsInstructionOpen] = useState(false);
 
     // Date filter state (synced with URL)
     const fromDate = searchParams.get('fromDate') || '';
@@ -99,7 +101,16 @@ export default function GiaBanPageClient({
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Giá bán</h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Giá bán</h1>
+                        <button
+                            onClick={() => setIsInstructionOpen(true)}
+                            className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            title="Hướng dẫn sử dụng"
+                        >
+                            <HelpCircle className="w-5 h-5" />
+                        </button>
+                    </div>
                     <p className="text-sm text-muted-foreground mt-1">Quản lý giá bán hàng hóa theo gói giá.</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -340,6 +351,11 @@ export default function GiaBanPageClient({
                     viewMode={viewMode}
                 />
             </div>
+
+            <GiaBanInstructionModal
+                isOpen={isInstructionOpen}
+                onClose={() => setIsInstructionOpen(false)}
+            />
         </div>
     );
 }

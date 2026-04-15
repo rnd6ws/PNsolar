@@ -12,6 +12,7 @@ import Pagination from "@/components/Pagination";
 import KhaoSatPageClient from "@/features/khao-sat/components/KhaoSatPageClient";
 import KhaoSatStatCards from "@/features/khao-sat/components/KhaoSatStatCards";
 import AddKhaoSatButton from "@/features/khao-sat/components/AddKhaoSatButton";
+import KhaoSatInstructionButton from "@/features/khao-sat/components/KhaoSatInstructionButton";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
@@ -160,7 +161,10 @@ export default async function KhaoSatPage({
                 {/* Header — render ngay */}
                 <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Khảo sát công trình</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Khảo sát công trình</h1>
+                            <KhaoSatInstructionButton />
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1">Quản lý phiếu khảo sát theo loại công trình.</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
