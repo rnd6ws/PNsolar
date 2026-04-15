@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import AddNhaCungCapButton from "@/features/nha-cung-cap/components/AddNhaCungCapButton";
 import NhaCungCapPageClient from "@/features/nha-cung-cap/components/NhaCungCapPageClient";
+import NhaCungCapInstructionButton from "@/features/nha-cung-cap/components/NhaCungCapInstructionButton";
 import { getRowsPerPage } from '@/lib/getRowsPerPage';
 
 export const metadata: Metadata = {
@@ -35,7 +36,10 @@ export default async function NhaCungCapPage({
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Nhà cung cấp</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Nhà cung cấp</h1>
+                                <NhaCungCapInstructionButton />
+                            </div>
                             <p className="text-sm text-muted-foreground mt-1">Quản lý thông tin nhà cung cấp.</p>
                         </div>
                         <div className="flex items-center gap-3">
