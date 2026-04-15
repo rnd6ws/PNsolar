@@ -9,6 +9,7 @@ import {
     Image as ImageIcon,
     LayoutGrid,
     LayoutList,
+    User,
     Pencil,
     Search,
     Settings2,
@@ -72,15 +73,43 @@ export default function NhaCungCapInstructionModal({ isOpen, onClose }: NhaCungC
                         </li>
                         <li className="flex items-start gap-2">
                             <Search className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
-                            <span className="flex-1 leading-relaxed">
-                                Nút tra cứu cạnh trường <strong className="text-foreground">MST</strong> giúp tự điền tên công ty, tên viết tắt và địa chỉ (nếu tìm thấy dữ liệu).
-                            </span>
+                            <div className="flex-1">
+                                <p className="leading-relaxed text-muted-foreground">
+                                    Nút tra cứu cạnh trường <strong className="text-foreground">MST</strong> giúp tự điền tên công ty, tên viết tắt và địa chỉ (nếu tìm thấy dữ liệu).
+                                </p>
+                                <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-border/70 bg-background/80 p-1.5">
+                                    <input
+                                        value="0123456789"
+                                        readOnly
+                                        className="input-modern h-8 w-36 text-xs"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn-premium-primary flex h-8 items-center justify-center gap-1.5 px-3"
+                                        aria-label="Tra cứu MST"
+                                    >
+                                        <Search className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
                         </li>
                         <li className="flex items-start gap-2">
                             <ImageIcon className="w-3.5 h-3.5 mt-0.5 text-blue-600 shrink-0" />
-                            <span className="flex-1 leading-relaxed">
-                                Có thể upload ảnh nhận diện NCC để dễ nhận biết trong danh sách và màn hình chi tiết.
-                            </span>
+                            <div className="flex-1">
+                                <p className="leading-relaxed text-muted-foreground">
+                                    Có thể upload ảnh nhận diện NCC để dễ nhận biết trong danh sách và màn hình chi tiết.
+                                </p>
+                                <div className="mt-2 inline-flex flex-col items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-4 py-3">
+                                    <div className="relative h-[50px] w-[50px]">
+                                        <div className="h-full w-full rounded-full border-2 border-dashed border-border bg-muted/30 flex items-center justify-center">
+                                            <User className="h-8 w-8 text-muted-foreground/40" />
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground text-center">
+                                        Nhấp để chọn ảnh
+                                    </p>
+                                </div>
+                            </div>
                         </li>
                         <li className="flex items-start gap-2">
                             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
