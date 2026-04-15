@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, startTransition, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, DollarSign, Search, AlertTriangle, Package, Hash, ListPlus, X, Settings2, ArrowUpDown, ArrowUp, ArrowDown, Grid, Tag, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, DollarSign, Search, AlertTriangle, Package, Hash, ListPlus, X, Settings2, ArrowUpDown, ArrowUp, ArrowDown, Grid, Tag, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -12,6 +12,7 @@ import Pagination from '@/components/Pagination';
 import FilterSelect from '@/components/FilterSelect';
 import { PermissionGuard } from '@/features/phan-quyen/components/PermissionGuard';
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
+import GoiGiaInstructionModal from './GoiGiaInstructionModal';
 
 // ===== TYPES =====
 interface GoiGia {
@@ -576,6 +577,7 @@ export default function GoiGiaClient({
     const [isBulkOpen, setIsBulkOpen] = useState(false);
     const [editRecord, setEditRecord] = useState<GoiGia | null>(null);
     const [deleteRecord, setDeleteRecord] = useState<GoiGia | null>(null);
+    const [isInstructionOpen, setIsInstructionOpen] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
     const [groupBy, setGroupBy] = useState<'none' | 'MA_DONG_HANG'>('none');
@@ -649,7 +651,16 @@ export default function GoiGiaClient({
                 {/* Page Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Gói giá</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Gói giá</h1>
+                            <button
+                                onClick={() => setIsInstructionOpen(true)}
+                                className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                title="Hướng dẫn sử dụng"
+                            >
+                                <HelpCircle className="w-5 h-5" />
+                            </button>
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1">
                             Quản lý gói giá theo dòng hàng và số lượng
                         </p>
@@ -1025,6 +1036,10 @@ export default function GoiGiaClient({
                     onSuccess={handleSuccess}
                     dongHangOptions={dongHangOptions}
                     nhomKHOptions={nhomKHOptions}
+                />
+                <GoiGiaInstructionModal
+                    isOpen={isInstructionOpen}
+                    onClose={() => setIsInstructionOpen(false)}
                 />
             </div>
         </PermissionGuard>
