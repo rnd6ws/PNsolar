@@ -4,6 +4,7 @@ import Pagination from "@/components/Pagination";
 import BanGiaoStatCards from "@/features/ban-giao/components/StatCards";
 import BanGiaoPageClient from "@/features/ban-giao/components/BanGiaoPageClient";
 import AddBanGiaoButton from "@/features/ban-giao/components/AddBanGiaoButton";
+import BanGiaoInstructionButton from "@/features/ban-giao/components/BanGiaoInstructionButton";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { getRowsPerPage } from "@/lib/getRowsPerPage";
 import { Suspense } from "react";
@@ -101,7 +102,10 @@ export default async function BanGiaoPage({
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Bàn giao & Nghiệm thu</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold text-foreground tracking-tight">Bàn giao & Nghiệm thu</h1>
+                                <BanGiaoInstructionButton />
+                            </div>
                             <p className="text-sm text-muted-foreground mt-1">Quản lý biên bản bàn giao và nghiệm thu công trình.</p>
                         </div>
                         <div className="flex items-center gap-3">
