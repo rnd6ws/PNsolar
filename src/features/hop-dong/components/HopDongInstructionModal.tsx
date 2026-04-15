@@ -53,8 +53,8 @@ export default function HopDongInstructionModal({ isOpen, onClose }: HopDongInst
         >
             <div className="space-y-4 text-sm px-1 pb-2">
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-primary">
-                    <div className="flex items-center gap-2 font-semibold">
-                        <CheckCircle2 className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-lg font-extrabold tracking-wide text-primary">
+                        <CheckCircle2 className="w-5 h-5" />
                         Luồng thao tác nhanh
                     </div>
                     <p className="mt-1.5 text-xs text-foreground/80">
@@ -64,8 +64,8 @@ export default function HopDongInstructionModal({ isOpen, onClose }: HopDongInst
                 </div>
 
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-emerald-600" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-emerald-600">
+                        <FileText className="w-5 h-5 text-emerald-600" />
                         1. Tạo và chỉnh sửa hợp đồng
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
@@ -97,8 +97,8 @@ export default function HopDongInstructionModal({ isOpen, onClose }: HopDongInst
                 </div>
 
                 <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <Package className="w-4 h-4 text-blue-600" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-blue-600">
+                        <Package className="w-5 h-5 text-blue-600" />
                         2. Quản lý hàng hóa, thông tin và điều khoản
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
@@ -130,8 +130,8 @@ export default function HopDongInstructionModal({ isOpen, onClose }: HopDongInst
                 </div>
 
                 <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <SlidersHorizontal className="w-4 h-4 text-amber-600" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-amber-600">
+                        <SlidersHorizontal className="w-5 h-5 text-amber-600" />
                         3. Danh sách, duyệt và xuất tài liệu
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
@@ -216,8 +216,8 @@ export default function HopDongInstructionModal({ isOpen, onClose }: HopDongInst
                 </div>
 
                 <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-destructive" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-destructive">
+                        <AlertTriangle className="w-5 h-5 text-destructive" />
                         Lưu ý quan trọng
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">

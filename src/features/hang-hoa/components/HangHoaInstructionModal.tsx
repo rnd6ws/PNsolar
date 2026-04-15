@@ -53,8 +53,8 @@ export default function HangHoaInstructionModal({ isOpen, onClose }: HangHoaInst
         >
             <div className="space-y-4 text-sm px-1 pb-2">
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-primary">
-                    <div className="flex items-center gap-2 font-semibold">
-                        <CheckCircle2 className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-lg font-extrabold tracking-wide text-primary">
+                        <CheckCircle2 className="w-5 h-5" />
                         Luồng chuẩn để nhập nhanh
                     </div>
                     <p className="mt-1.5 text-xs text-foreground/80">
@@ -64,8 +64,8 @@ export default function HangHoaInstructionModal({ isOpen, onClose }: HangHoaInst
                 </div>
 
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <Plus className="w-4 h-4 text-emerald-600" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-emerald-700">
+                        <Plus className="w-5 h-5 text-emerald-700" />
                         1. Thêm và chỉnh sửa hàng hóa
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
@@ -114,8 +114,8 @@ export default function HangHoaInstructionModal({ isOpen, onClose }: HangHoaInst
                 </div>
 
                 <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <Settings2 className="w-4 h-4 text-violet-600" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-violet-700">
+                        <Settings2 className="w-5 h-5 text-violet-700" />
                         2. Tìm kiếm, lọc và hiển thị
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
@@ -153,8 +153,8 @@ export default function HangHoaInstructionModal({ isOpen, onClose }: HangHoaInst
                 </div>
 
                 <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <History className="w-4 h-4 text-rose-600" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-rose-700">
+                        <History className="w-5 h-5 text-rose-700" />
                         3. Giá nhập, giá bán và lịch sử
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
@@ -180,35 +180,53 @@ export default function HangHoaInstructionModal({ isOpen, onClose }: HangHoaInst
                 </div>
 
                 <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <Printer className="w-4 h-4 text-amber-600" />
-                        4. In bảng giá và thao tác dòng
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-amber-700">
+                        <Printer className="w-5 h-5 text-amber-700" />
+                        4. In bảng giá: chọn và in đúng quy trình
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
                         <li className="flex items-start gap-2">
                             <Printer className="w-3.5 h-3.5 mt-0.5 text-amber-600 shrink-0" />
                             <span className="flex-1 leading-relaxed">
-                                Nút <strong className="text-foreground">In bảng giá</strong>: chọn ngày hiệu lực + chọn sản phẩm, hệ thống mở trang in ở tab mới.
+                                Từ trang hàng hóa, bấm <strong className="text-foreground">In bảng giá</strong> để mở modal chọn danh sách in.
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-emerald-600 shrink-0" />
+                            <span className="flex-1 leading-relaxed">
+                                Chọn <strong className="text-foreground">Ngày hiệu lực</strong> trước; giá bán/giá nhập sẽ lấy theo mốc mới nhất có hiệu lực đến ngày đó.
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-emerald-600 shrink-0" />
+                            <span className="flex-1 leading-relaxed">
+                                Chọn sản phẩm theo 1 trong 3 cách: <strong className="text-foreground">Chọn tất cả</strong>, chọn theo <strong className="text-foreground">từng nhóm</strong>, hoặc chọn <strong className="text-foreground">từng dòng</strong> sau khi lọc Nhóm/Phân loại/Dòng hàng.
                             </span>
                         </li>
                         <li className="flex items-start gap-2">
                             <Eye className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
                             <span className="flex-1 leading-relaxed">
-                                Mỗi dòng có 3 thao tác nhanh: <strong className="text-foreground">Xem chi tiết</strong>, <strong className="text-foreground">Chỉnh sửa</strong>, <strong className="text-foreground">Xóa</strong>.
+                                Bấm <strong className="text-foreground">Tạo bảng giá</strong> để mở tab xem trước in. Tại đây có thể chỉnh <strong className="text-foreground">Tiêu đề</strong>, <strong className="text-foreground">Ghi chú</strong> và bật/tắt cột hiển thị.
                             </span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <Trash2 className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
+                            <Printer className="w-3.5 h-3.5 mt-0.5 text-amber-600 shrink-0" />
                             <span className="flex-1 leading-relaxed">
-                                Xóa sản phẩm luôn có bước xác nhận để tránh thao tác nhầm.
+                                Trên trang xem trước, bấm <strong className="text-foreground">In bảng giá</strong> để gọi hộp thoại in của trình duyệt (A4 ngang).
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
+                            <span className="flex-1 leading-relaxed">
+                                Nút tạo bảng giá chỉ hoạt động khi đã chọn sản phẩm; nếu trình duyệt chặn popup thì tab in mới sẽ không mở.
                             </span>
                         </li>
                     </ul>
                 </div>
 
                 <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-destructive" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-destructive">
+                        <AlertTriangle className="w-5 h-5 text-destructive" />
                         Lưu ý quan trọng
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">

@@ -48,8 +48,8 @@ export default function NhaCungCapInstructionModal({ isOpen, onClose }: NhaCungC
         >
             <div className="space-y-4 text-sm px-1 pb-2">
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-primary">
-                    <div className="flex items-center gap-2 font-semibold">
-                        <CheckCircle2 className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-lg font-extrabold tracking-wide text-primary">
+                        <CheckCircle2 className="w-5 h-5" />
                         Luồng thao tác nhanh
                     </div>
                     <p className="mt-1.5 text-xs text-foreground/80">
@@ -59,8 +59,8 @@ export default function NhaCungCapInstructionModal({ isOpen, onClose }: NhaCungC
                 </div>
 
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-emerald-600" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-emerald-600">
+                        <Building2 className="w-5 h-5 text-emerald-600" />
                         1. Thêm và chỉnh sửa nhà cung cấp
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
@@ -92,8 +92,8 @@ export default function NhaCungCapInstructionModal({ isOpen, onClose }: NhaCungC
                 </div>
 
                 <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <Settings2 className="w-4 h-4 text-violet-600" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-violet-600">
+                        <Settings2 className="w-5 h-5 text-violet-600" />
                         2. Tìm kiếm và hiển thị danh sách
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
@@ -125,8 +125,8 @@ export default function NhaCungCapInstructionModal({ isOpen, onClose }: NhaCungC
                 </div>
 
                 <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <Eye className="w-4 h-4 text-blue-600" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-blue-600">
+                        <Eye className="w-5 h-5 text-blue-600" />
                         3. Chi tiết và thao tác từng dòng
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
@@ -152,8 +152,8 @@ export default function NhaCungCapInstructionModal({ isOpen, onClose }: NhaCungC
                 </div>
 
                 <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-3.5">
-                    <h4 className="font-semibold text-foreground mb-2.5 text-sm flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-destructive" />
+                    <h4 className="mb-2.5 flex items-center gap-2 text-lg font-extrabold tracking-wide text-destructive">
+                        <AlertTriangle className="w-5 h-5 text-destructive" />
                         Lưu ý quan trọng
                     </h4>
                     <ul className="space-y-2 text-muted-foreground">
