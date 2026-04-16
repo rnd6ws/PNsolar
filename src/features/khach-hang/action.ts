@@ -34,18 +34,26 @@ export async function getKhachHangs(filters: {
     if (userContext) {
         // Dùng context đã resolve từ page — không cần gọi DB thêm
         if (userContext.role === 'STAFF') {
-            andConditions.push({ SALES_PT: userContext.maNv ?? "NONE" });
+            const maNv = userContext.maNv ?? "NONE";
+            andConditions.push({
+                OR: [
+                    { SALES_PT: maNv },
+                    { KY_THUAT_PT: { has: maNv } }
+                ]
+            });
         }
     } else {
         // Fallback: tự lấy user (dùng khi gọi trực tiếp từ nơi khác)
         const user = await getCurrentUser();
         if (user?.ROLE === 'STAFF') {
             const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-            if (staff?.MA_NV) {
-                andConditions.push({ SALES_PT: staff.MA_NV });
-            } else {
-                andConditions.push({ SALES_PT: "NONE" });
-            }
+            const maNv = staff?.MA_NV ?? "NONE";
+            andConditions.push({
+                OR: [
+                    { SALES_PT: maNv },
+                    { KY_THUAT_PT: { has: maNv } }
+                ]
+            });
         }
     }
 
@@ -154,14 +162,22 @@ export async function getKhachHangStats(
         if (userContext) {
             // Dùng context đã resolve từ page
             if (userContext.role === 'STAFF') {
-                where.SALES_PT = userContext.maNv ?? "NONE";
+                const maNv = userContext.maNv ?? "NONE";
+                where.OR = [
+                    { SALES_PT: maNv },
+                    { KY_THUAT_PT: { has: maNv } }
+                ];
             }
         } else {
             // Fallback: tự lấy user
             const user = await getCurrentUser();
             if (user?.ROLE === 'STAFF') {
                 const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-                where.SALES_PT = staff?.MA_NV || "NONE";
+                const maNv = staff?.MA_NV ?? "NONE";
+                where.OR = [
+                    { SALES_PT: maNv },
+                    { KY_THUAT_PT: { has: maNv } }
+                ];
             }
         }
 
