@@ -3,7 +3,9 @@
 import {
     AlertTriangle,
     Calendar,
+    Check,
     CheckCircle2,
+    ChevronDown,
     DollarSign,
     Grid,
     HelpCircle,
@@ -15,6 +17,7 @@ import {
     Search,
     Settings2,
     Trash2,
+    X,
 } from 'lucide-react';
 import Modal from '@/components/Modal';
 
@@ -100,32 +103,270 @@ export default function GiaBanInstructionModal({ isOpen, onClose }: GiaBanInstru
                     <ul className="space-y-2 text-muted-foreground">
                         <li className="flex items-start gap-2">
                             <Calendar className="w-3.5 h-3.5 mt-0.5 text-blue-600 shrink-0" />
-                            <span className="flex-1 leading-relaxed">
-                                Ngày hiệu lực dùng chung cho toàn bộ dòng lưu trong phiên hàng loạt; khi đổi ngày hệ thống tải lại giá nhập tương ứng.
-                            </span>
+                            <div className="flex-1">
+                                <p className="leading-relaxed text-muted-foreground">
+                                    Mở modal từ nút <strong className="text-foreground">Thêm hàng loạt</strong>. <strong className="text-foreground">Ngày hiệu lực (chung)</strong> sẽ áp dụng cho toàn bộ dòng trong lần lưu đó.
+                                </p>
+                                <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-md border border-border/70 bg-background/80 p-1">
+                                    <span className="text-[10px] font-semibold text-muted-foreground">Ngày hiệu lực</span>
+                                    <input
+                                        type="date"
+                                        value="2026-04-15"
+                                        readOnly
+                                        className="input-modern h-4 w-36 text-[11px]"
+                                    />
+                                </div>
+                            </div>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <Package className="w-3.5 h-3.5 mt-0.5 text-amber-600 shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <p className="leading-relaxed">
+                                    Chọn tổ hợp lọc theo thứ tự: <strong className="text-foreground">Nhóm HH &rarr; Phân loại &rarr; Dòng hàng</strong>, sau đó chọn nhiều <strong className="text-foreground">Gói giá</strong> và <strong className="text-foreground">Hàng hóa</strong>.
+                                </p>
+                                <div className="rounded-lg border border-border/70 bg-muted/30 p-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">NHÓM HH</p>
+                                            <div className="input-modern h-8 rounded-md border border-border/70 bg-background px-2 text-xs text-muted-foreground flex items-center">
+                                                -- Nhóm HH --
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">PHÂN LOẠI</p>
+                                            <div className="input-modern h-8 rounded-md border border-border/70 bg-background px-2 text-xs text-muted-foreground flex items-center">
+                                                -- Phân loại --
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">DÒNG HÀNG</p>
+                                            <div className="input-modern h-8 rounded-md border border-border/70 bg-background px-2 text-xs text-muted-foreground flex items-center">
+                                                -- Dòng hàng --
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </li>
                         <li className="flex items-start gap-2">
                             <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-emerald-600 shrink-0" />
-                            <span className="flex-1 leading-relaxed">
-                                Sau khi chọn nhóm, danh sách <strong className="text-foreground">Gói giá</strong> và <strong className="text-foreground">Hàng hóa</strong> được hỗ trợ chọn nhiều; có thể chọn tất cả nhanh.
-                            </span>
+                            <div className="flex-1 space-y-2">
+                                <p className="leading-relaxed">
+                                    Sau khi chọn <strong className="text-foreground">Nhóm HH</strong>, danh sách <strong className="text-foreground">Gói giá</strong> và <strong className="text-foreground">Hàng hóa</strong> sẽ cho phép tick nhiều và chọn tất cả nhanh.
+                                </p>
+                                <div className="rounded-lg border border-border/70 bg-background p-2">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[11px] font-semibold text-muted-foreground">
+                                                    Gói giá <span className="text-destructive">*</span> <span className="text-primary font-bold">(2/3)</span>
+                                                </label>
+                                                <button type="button" className="text-[10px] font-medium text-primary hover:underline" disabled>
+                                                    Chọn tất cả
+                                                </button>
+                                            </div>
+                                            <div className="bg-background border border-input rounded-lg max-h-40 overflow-y-auto">
+                                                <div className="flex items-center justify-between gap-2.5 px-3 py-2 bg-muted/30 border-b border-border/50">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <div className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 bg-primary border-primary">
+                                                            <Check className="w-3 h-3 text-primary-foreground" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <span className="text-sm font-medium block truncate text-foreground">GIÁ NIÊM YẾT (VND)</span>
+                                                            <span className="text-[10px] text-muted-foreground block truncate">SUN_GIA_NIEM_YET_VND</span>
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        value="1.1"
+                                                        readOnly
+                                                        className="w-16 h-7 px-2 text-xs bg-background border border-primary/30 rounded-md text-right font-medium"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2.5 px-3 py-2 bg-muted/30 border-b border-border/50">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <div className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 bg-primary border-primary">
+                                                            <Check className="w-3 h-3 text-primary-foreground" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <span className="text-sm font-medium block truncate text-foreground">1-3 BỘ (VND)</span>
+                                                            <span className="text-[10px] text-muted-foreground block truncate">SUN_1_3_BO_VND</span>
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        value="1.2"
+                                                        readOnly
+                                                        className="w-16 h-7 px-2 text-xs bg-background border border-primary/30 rounded-md text-right font-medium"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 select-none">
+                                                    <div className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 border-input" />
+                                                    <div className="min-w-0">
+                                                        <span className="text-sm font-medium block truncate text-foreground">{'=>'}4 BỘ (VND)</span>
+                                                        <span className="text-[10px] text-muted-foreground block truncate">SUN_4_BO_VND</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[11px] font-semibold text-muted-foreground">
+                                                    Hàng hóa <span className="text-destructive">*</span> <span className="text-primary font-bold">(2/3)</span>
+                                                </label>
+                                                <button type="button" className="text-[10px] font-medium text-primary hover:underline" disabled>
+                                                    Chọn tất cả
+                                                </button>
+                                            </div>
+                                            <div className="bg-background border border-input rounded-lg max-h-40 overflow-y-auto">
+                                                <div className="flex items-center gap-2.5 px-3 py-2 bg-muted/30 border-b border-border/50 select-none">
+                                                    <div className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 bg-primary border-primary">
+                                                        <Check className="w-3 h-3 text-primary-foreground" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <span className="text-sm font-medium block truncate text-foreground">HYBRID ALPSOLARR PULSE S3 - 6KW</span>
+                                                        <span className="text-[10px] text-muted-foreground block truncate">PULSE S3</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2.5 px-3 py-2 bg-muted/30 border-b border-border/50 select-none">
+                                                    <div className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 bg-primary border-primary">
+                                                        <Check className="w-3 h-3 text-primary-foreground" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <span className="text-sm font-medium block truncate text-foreground">HYBRID ALPSOLARR ROSA G2 - 12KW</span>
+                                                        <span className="text-[10px] text-muted-foreground block truncate">ROSA G2</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 select-none">
+                                                    <div className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 border-input" />
+                                                    <div className="min-w-0">
+                                                        <span className="text-sm font-medium block truncate text-foreground">HYBRID ALPSOLARR PULSE S2 - 11KW</span>
+                                                        <span className="text-[10px] text-muted-foreground block truncate">PULSE S2</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <ListPlus className="w-3.5 h-3.5 mt-0.5 text-blue-600 shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <p className="leading-relaxed">
+                                    Nhấn <strong className="text-foreground">Thêm xuống chi tiết</strong> để tạo danh sách dòng theo tổ hợp đã chọn.
+                                </p>
+                                <div className="rounded-lg border border-border/70 bg-background p-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[11px] text-muted-foreground">
+                                            2 hàng hóa × 2 gói giá = <strong className="text-primary">4 dòng</strong>
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className="inline-flex items-center gap-2 h-9 px-4 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-all active:scale-95 shadow-sm"
+                                        >
+                                            <ChevronDown className="w-4 h-4" />
+                                            Thêm xuống chi tiết
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </li>
                         <li className="flex items-start gap-2">
                             <DollarSign className="w-3.5 h-3.5 mt-0.5 text-emerald-600 shrink-0" />
-                            <span className="flex-1 leading-relaxed">
-                                Khi có <strong className="text-foreground">Giá nhập</strong> và <strong className="text-foreground">Hệ số</strong>, đơn giá được tự tính theo công thức: <strong className="text-foreground">Đơn giá = Giá nhập × Hệ số</strong>.
-                            </span>
+                            <div className="flex-1 space-y-2">
+                                <p className="leading-relaxed">
+                                    Trong bảng chi tiết có thể sửa trực tiếp <strong className="text-foreground">Hệ số / Đơn giá / Ghi chú</strong>. Khi có giá nhập, hệ thống hỗ trợ đối chiếu theo công thức <strong className="text-foreground">Đơn giá = Giá nhập × Hệ số</strong>.
+                                </p>
+                                <div className="border border-border rounded-xl overflow-hidden">
+                                    <div>
+                                        <table className="w-full table-fixed text-left border-collapse text-xs">
+                                            <thead className="bg-muted/40">
+                                                <tr className="border-b border-border">
+                                                    <th className="px-2 py-2 text-[10px] font-bold text-muted-foreground uppercase w-7">#</th>
+                                                    <th className="px-2 py-2 text-[10px] font-bold text-muted-foreground uppercase w-[22%]">Hàng hóa</th>
+                                                    <th className="px-2 py-2 text-[10px] font-bold text-muted-foreground uppercase w-[16%]">Gói giá</th>
+                                                    <th className="px-2 py-2 text-[10px] font-bold text-muted-foreground uppercase text-right w-[11%]">Giá nhập</th>
+                                                    <th className="px-2 py-2 text-[10px] font-bold text-muted-foreground uppercase text-center w-[9%]">Hệ số</th>
+                                                    <th className="px-2 py-2 text-[10px] font-bold text-muted-foreground uppercase w-[13%]">Đơn giá <span className="text-destructive">*</span></th>
+                                                    <th className="px-2 py-2 text-[10px] font-bold text-muted-foreground uppercase text-right w-[10%]">Chênh lệch</th>
+                                                    <th className="px-2 py-2 text-[10px] font-bold text-muted-foreground uppercase w-[15%]">Ghi chú</th>
+                                                    <th className="px-2 py-2 w-7"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-border/50">
+                                                <tr className="hover:bg-muted/20 transition-colors">
+                                                    <td className="px-2 py-2 text-[11px] text-muted-foreground font-medium">1</td>
+                                                    <td className="px-2 py-2">
+                                                        <div className="text-[11px] font-medium text-foreground leading-snug wrap-break-word">HYBRID ALPSOLARR PULSE S3 - 6KW</div>
+                                                        <div className="text-[10px] text-muted-foreground">PULSE S3</div>
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <div className="text-[11px] text-foreground leading-snug wrap-break-word">Gói đại lý miền Bắc</div>
+                                                        <div className="text-[10px] text-muted-foreground">GOI_MIEN_BAC</div>
+                                                    </td>
+                                                    <td className="px-2 py-2 text-right">
+                                                        <span className="text-[11px] font-medium text-blue-600">14.500.000 ₫</span>
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <input type="number" readOnly value="1.1" className="input-modern h-7 px-1.5 text-[11px] text-center font-semibold" />
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <input type="text" inputMode="numeric" readOnly value="15.950.000" className="input-modern h-7 px-1.5 text-[11px] text-right font-semibold" />
+                                                    </td>
+                                                    <td className="px-2 py-2 text-right">
+                                                        <span className="text-[11px] font-semibold text-emerald-600">+10.0%</span>
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <input type="text" readOnly value="Giá quý 2" className="input-modern h-7 px-1.5 text-[11px]" />
+                                                    </td>
+                                                    <td className="px-2 py-2 text-center">
+                                                        <button type="button" className="p-1 text-muted-foreground rounded transition-colors" disabled>
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr className="hover:bg-muted/20 transition-colors">
+                                                    <td className="px-2 py-2 text-[11px] text-muted-foreground font-medium">2</td>
+                                                    <td className="px-2 py-2">
+                                                        <div className="text-[11px] font-medium text-foreground leading-snug wrap-break-word">HYBRID ALPSOLARR ROSA G2 - 12KW</div>
+                                                        <div className="text-[10px] text-muted-foreground">ROSA G2</div>
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <div className="text-[11px] text-foreground leading-snug wrap-break-word">Gói đại lý miền Nam</div>
+                                                        <div className="text-[10px] text-muted-foreground">GOI_MIEN_NAM</div>
+                                                    </td>
+                                                    <td className="px-2 py-2 text-right">
+                                                        <span className="text-[11px] font-medium text-blue-600">18.900.000 ₫</span>
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <input type="number" readOnly value="1.2" className="input-modern h-7 px-1.5 text-[11px] text-center font-semibold" />
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <input type="text" inputMode="numeric" readOnly value="22.680.000" className="input-modern h-7 px-1.5 text-[11px] text-right font-semibold" />
+                                                    </td>
+                                                    <td className="px-2 py-2 text-right">
+                                                        <span className="text-[11px] font-semibold text-emerald-600">+20.0%</span>
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <input type="text" readOnly value="" className="input-modern h-7 px-1.5 text-[11px]" />
+                                                    </td>
+                                                    <td className="px-2 py-2 text-center">
+                                                        <button type="button" className="p-1 text-muted-foreground rounded transition-colors" disabled>
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </li>
                         <li className="flex items-start gap-2">
                             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
-                            <span className="flex-1 leading-relaxed">
-                                Dòng trùng tổ hợp <strong className="text-foreground">Mã HH + Gói giá</strong> trong bảng chi tiết hiện tại sẽ bị bỏ qua khi thêm xuống chi tiết.
-                            </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
-                            <span className="flex-1 leading-relaxed">
-                                Khi lưu, các dòng có <strong className="text-foreground">Đơn giá = 0</strong> sẽ không được gửi lên server.
+                            <span className="flex-1 leading-relaxed text-red-600">
+                                Dòng trùng tổ hợp <strong className="text-foreground">Mã HH + Gói giá</strong> sẽ bị bỏ qua khi thêm; và dòng có <strong className="text-foreground">Đơn giá = 0</strong> sẽ không được lưu.
                             </span>
                         </li>
                     </ul>
@@ -215,4 +456,3 @@ export default function GiaBanInstructionModal({ isOpen, onClose }: GiaBanInstru
         </Modal>
     );
 }
-
