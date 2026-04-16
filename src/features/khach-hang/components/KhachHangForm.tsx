@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Search, MapPin, Link2, ChevronDown, ChevronUp, Plus, X, UserPlus } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 import FormSelect from "@/components/FormSelect";
+import FormMultiSelect from "@/components/FormMultiSelect";
 import { lookupCompanyByTaxCode, getCoordinatesFromAddress, createNguoiGioiThieu, checkTenVietTatTrung } from "@/features/khach-hang/action";
 import { useResolveMapsUrl } from "@/hooks/useResolveMapsUrl";
 import { toast } from "sonner";
@@ -54,6 +55,8 @@ export function KhachHangForm({
 
     const [viettatLoading, setViettatLoading] = useState(false);
     const [viettatError, setViettatError] = useState<string | null>(null);
+
+    const [kyThuatPts, setKyThuatPts] = useState<string[]>(defaultValues?.KY_THUAT_PT || []);
 
     // Người đại diện
     const defaultNguoiDaiDien = defaultValues?.NGUOI_DAI_DIEN?.[0] || null;
@@ -575,15 +578,27 @@ export function KhachHangForm({
                 </div>
             )}
 
-            {/* Row 7: Sales phụ trách */}
-            <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
-                <FormSelect
-                    name="SALES_PT"
-                    defaultValue={defaultValues?.SALES_PT || currentUserId || ""}
-                    options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
-                    placeholder="-- Chọn nhân viên --"
-                />
+            {/* Row 7: Phụ trách */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
+                    <FormSelect
+                        name="SALES_PT"
+                        defaultValue={defaultValues?.SALES_PT || currentUserId || ""}
+                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
+                        placeholder="-- Chọn nhân viên --"
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-muted-foreground">Kỹ thuật phụ trách</label>
+                    <input type="hidden" name="KY_THUAT_PT" value={JSON.stringify(kyThuatPts)} />
+                    <FormMultiSelect
+                        value={kyThuatPts}
+                        onChange={setKyThuatPts}
+                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
+                        placeholder="-- Chọn nhiều kỹ thuật --"
+                    />
+                </div>
             </div>
 
             {/* Nút submit */}

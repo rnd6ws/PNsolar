@@ -249,6 +249,7 @@ export async function createKhachHang(data: any) {
                         PHAN_LOAI: data.PHAN_LOAI || null,
                         MA_NGT: data.NGUOI_GIOI_THIEU || null,
                         SALES_PT: data.SALES_PT || null,
+                        KY_THUAT_PT: data.KY_THUAT_PT ? JSON.parse(data.KY_THUAT_PT) : [],
                         LICH_SU: initialLichSu,
                         NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
                         NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
@@ -336,6 +337,7 @@ export async function updateKhachHang(id: string, data: any) {
                 PHAN_LOAI: data.PHAN_LOAI || null,
                 MA_NGT: data.NGUOI_GIOI_THIEU || null,
                 SALES_PT: data.SALES_PT || null,
+                KY_THUAT_PT: data.KY_THUAT_PT ? JSON.parse(data.KY_THUAT_PT) : [],
                 LICH_SU: updatedLichSu,
                 NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
                 NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
@@ -853,6 +855,7 @@ export interface KhachHangImportPayload {
     NGUON?: string;
     NGAY_GHI_NHAN?: string;
     SALES_PT?: string;
+    KY_THUAT_PT?: string;
     LINK_MAP?: string;
     LAT?: string;
     LONG?: string;
@@ -901,6 +904,12 @@ export async function importKhachHangs(rows: KhachHangImportPayload[]) {
             const salesName = row.SALES_PT?.trim();
             const salesMaNv = salesName ? nVMap.get(salesName.toLowerCase()) || salesName : null;
 
+            const kyThuatStr = row.KY_THUAT_PT?.trim();
+            let kyThuatArr: string[] = [];
+            if (kyThuatStr) {
+                kyThuatArr = kyThuatStr.split(',').map(n => n.trim()).filter(Boolean).map(n => nVMap.get(n.toLowerCase()) || n);
+            }
+
             while (!created && attempts < 20) {
                 const maKh = `${prefix}-${String(nextNum).padStart(3, '0')}`;
                 try {
@@ -917,6 +926,7 @@ export async function importKhachHangs(rows: KhachHangImportPayload[]) {
                             PHAN_LOAI: row.PHAN_LOAI?.trim() || null,
                             NGUON: row.NGUON?.trim() || null,
                             SALES_PT: salesMaNv,
+                            KY_THUAT_PT: kyThuatArr.length > 0 ? kyThuatArr : [],
                             NGAY_GHI_NHAN: row.NGAY_GHI_NHAN ? new Date(row.NGAY_GHI_NHAN) : now,
                             NGAY_THANH_LAP: row.NGAY_THANH_LAP ? new Date(row.NGAY_THANH_LAP) : null,
                             LINK_MAP: row.LINK_MAP?.trim() || null,

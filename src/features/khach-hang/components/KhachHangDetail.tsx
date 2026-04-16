@@ -223,6 +223,7 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                 { label: "Nguồn", value: kh.NGUON || "-" },
                                 { label: "Nhóm KH", value: kh.NHOM_KH || "-" },
                                 { label: "Sales phụ trách", value: kh.SALES_PT ? getNVName(kh.SALES_PT) : "-" },
+                                { label: "Kỹ thuật phụ trách", value: kh.KY_THUAT_PT && kh.KY_THUAT_PT.length > 0 ? kh.KY_THUAT_PT.map((id: string) => getNVName(id)).join(", ") : "-" },
                                 { label: "Người giới thiệu", value: kh.MA_NGT ? getNGTName(kh.MA_NGT) : "-" },
                             ].map(({ label, value }) => value ? (
                                 <div key={label} className="flex items-start gap-2 text-sm">

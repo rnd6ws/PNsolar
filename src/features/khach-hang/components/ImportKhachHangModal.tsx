@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useTransition } from "react";
 import { FileSpreadsheet, Upload, Download, CheckCircle2, XCircle, AlertTriangle, Loader2, ChevronDown, ChevronUp, Trash2, Edit2, Info, FileDown, TableProperties, MousePointerClick, ShieldCheck, HelpCircle, Copy } from "lucide-react";
 import Modal from "@/components/Modal";
 import SimpleSelect from "@/components/SimpleSelect";
+import FormMultiSelect from "@/components/FormMultiSelect";
 import { toast } from "sonner";
 import { parseKhachHangExcel, downloadKhachHangTemplate, type KhachHangImportRow, type KhachHangTemplateOptions } from "../utils/importKhachHangExcel";
 import { importKhachHangs } from "../action";
@@ -66,6 +67,7 @@ function PreviewTable({
                         <th className="px-3 py-2 text-left font-semibold tracking-wide" style={{ minWidth: 140 }}>Nguồn</th>
                         <th className="px-3 py-2 text-center font-semibold tracking-wide" style={{ minWidth: 110 }}>Ngày GN</th>
                         <th className="px-3 py-2 text-left font-semibold tracking-wide" style={{ minWidth: 160 }}>Sales PT</th>
+                        <th className="px-3 py-2 text-left font-semibold tracking-wide" style={{ minWidth: 200 }}>Kỹ thuật PT</th>
                         <th className="px-3 py-2 text-left font-semibold tracking-wide" style={{ minWidth: 100 }}>Link Map</th>
                         <th className="px-2 py-2 text-center font-semibold tracking-wide" style={{ minWidth: 90 }}>LAT</th>
                         <th className="px-2 py-2 text-center font-semibold tracking-wide" style={{ minWidth: 90 }}>LONG</th>
@@ -215,6 +217,23 @@ function PreviewTable({
                                     </span>
                                 )}
                             </td>
+                            <td className="px-3 py-2 text-muted-foreground wrap-break-word">
+                                {isEditing ? (
+                                    <div className={row.KY_THUAT_PT && itemHasError(row, nhanViens) ? "ring-1 ring-destructive rounded-md bg-destructive/10" : ""}>
+                                        <FormMultiSelect
+                                            options={nhanViens.map(n => ({ value: n.HO_TEN, label: n.HO_TEN }))}
+                                            value={row.KY_THUAT_PT ? row.KY_THUAT_PT.split(',').map(s => s.trim()).filter(Boolean) : []}
+                                            onChange={val => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "KY_THUAT_PT", val.join(', ')); }}
+                                            placeholder="-- Chọn --"
+                                            size="sm"
+                                        />
+                                    </div>
+                                ) : (
+                                    <span className={showValidation && row.KY_THUAT_PT && itemHasError(row, nhanViens) ? "text-destructive font-semibold bg-destructive/10 px-1 py-0.5 rounded" : ""}>
+                                        {row.KY_THUAT_PT || "—"}
+                                    </span>
+                                )}
+                            </td>
                             <td className="px-3 py-2 text-center wrap-break-word">
                                 {isEditing ? <input className="w-full min-w-0 bg-transparent border-b border-border/50 text-xs px-1 py-0.5 focus:border-primary focus:outline-none text-foreground" defaultValue={row.LINK_MAP || ""} onBlur={e => { const idx = rows.findIndex(r => r === row); if (idx >= 0) onRowChange?.(idx, "LINK_MAP", e.target.value); }} placeholder="https://..." /> : (
                                     row.LINK_MAP
@@ -234,6 +253,12 @@ function PreviewTable({
             </table>
         </div>
     );
+}
+
+function itemHasError(row: KhachHangImportRow, nhanViens: { ID: string; HO_TEN: string }[]) {
+    if (!row.KY_THUAT_PT) return false;
+    const names = row.KY_THUAT_PT.split(',').map(n => n.trim()).filter(Boolean);
+    return names.some(n => !nhanViens.some(nv => nv.HO_TEN === n));
 }
 
 
@@ -365,11 +390,13 @@ export default function ImportKhachHangModal({
             const isPhanLoaiHopLe = !item.PHAN_LOAI || phanLoais.some(p => p.PL_KH === item.PHAN_LOAI);
             const isNguonHopLe = !item.NGUON || nguons.some(n => n.NGUON === item.NGUON);
             const isNhanVienHopLe = !item.SALES_PT || nhanViens.some(n => n.HO_TEN === item.SALES_PT);
+            const isKyThuatHopLe = !item.KY_THUAT_PT || item.KY_THUAT_PT.split(',').map(n => n.trim()).filter(Boolean).every(n => nhanViens.some(nv => nv.HO_TEN === n));
 
             if (!isNhomHopLe) errors.push(`Nhóm KH "${item.NHOM_KH}" không hợp lệ`);
             if (!isPhanLoaiHopLe) errors.push(`Phân loại KH "${item.PHAN_LOAI}" không hợp lệ`);
             if (!isNguonHopLe) errors.push(`Nguồn "${item.NGUON}" không hợp lệ`);
-            if (!isNhanVienHopLe) errors.push(`Nhân viên "${item.SALES_PT}" không có trong hệ thống`);
+            if (!isNhanVienHopLe) errors.push(`Sales "${item.SALES_PT}" không có trong hệ thống`);
+            if (!isKyThuatHopLe) errors.push(`Kỹ thuật PT có tên không hợp lệ`);
 
             if (errors.length > 0) {
                 item._valid = false;
@@ -410,6 +437,7 @@ export default function ImportKhachHangModal({
                 NGUON: r.NGUON,
                 NGAY_GHI_NHAN: r.NGAY_GHI_NHAN || new Date().toISOString(),
                 SALES_PT: r.SALES_PT,
+                KY_THUAT_PT: r.KY_THUAT_PT,
                 LINK_MAP: r.LINK_MAP,
                 LAT: r.LAT,
                 LONG: r.LONG,

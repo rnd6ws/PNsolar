@@ -75,7 +75,7 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
     const [lyDoTuChoiSelect, setLyDoTuChoiSelect] = useState("");
 
     // default show all if not provided
-    const cols = visibleColumns ?? ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "nguonSales"] as ColumnKey[];
+    const cols = visibleColumns ?? ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "kyThuatPT", "nguonSales"] as ColumnKey[];
     const show = (col: ColumnKey) => cols.includes(col);
 
     const sortedData = useMemo(() => {
@@ -421,6 +421,9 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                 {show("nhanVienPT") && (
                                     <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell text-center">Sales phụ trách</th>
                                 )}
+                                {show("kyThuatPT") && (
+                                    <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden lg:table-cell text-center">Kỹ thuật phụ trách</th>
+                                )}
                                 {show("nguonSales") && (
                                     <th className="h-11 px-4 align-middle font-bold text-muted-foreground tracking-widest text-[12px] max-md:table-cell hidden xl:table-cell text-center">Nguồn KH</th>
                                 )}
@@ -564,6 +567,19 @@ export default function KhachHangList({ data, phanLoais, nguons, nhoms, nhanVien
                                                     <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell text-xs text-muted-foreground text-center">
                                                         {item.SALES_PT
                                                             ? <span className="font-medium text-foreground">{nhanViens.find((n: any) => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT}</span>
+                                                            : <span>—</span>}
+                                                    </td>
+                                                )}
+                                                {show("kyThuatPT") && (
+                                                    <td className="px-4 py-3 align-middle max-md:table-cell hidden lg:table-cell text-xs text-muted-foreground text-center">
+                                                        {item.KY_THUAT_PT && item.KY_THUAT_PT.length > 0
+                                                            ? <div className="flex flex-wrap justify-center gap-1">
+                                                                {item.KY_THUAT_PT.map((ktCode: string) => (
+                                                                    <span key={ktCode} className="font-medium text-foreground bg-primary/10 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">
+                                                                        {nhanViens.find((n: any) => n.ID === ktCode)?.HO_TEN || ktCode}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
                                                             : <span>—</span>}
                                                     </td>
                                                 )}

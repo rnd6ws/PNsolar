@@ -19,6 +19,7 @@ export interface KhachHangImportRow {
     NGUON?: string;
     NGAY_GHI_NHAN?: string;    // ISO string "YYYY-MM-DD"
     SALES_PT?: string;
+    KY_THUAT_PT?: string;
     LINK_MAP?: string;
     LAT?: string;
     LONG?: string;
@@ -90,6 +91,11 @@ const COLUMN_MAP: Record<string, keyof KhachHangImportRow> = {
     'sales phu trach': 'SALES_PT',
     'nhân viên': 'SALES_PT',
     'nhan vien': 'SALES_PT',
+    // Kỹ thuật PT
+    'kỹ thuật pt': 'KY_THUAT_PT',
+    'ky thuat pt': 'KY_THUAT_PT',
+    'kỹ thuật phụ trách': 'KY_THUAT_PT',
+    'ky thuat phu trach': 'KY_THUAT_PT',
     // Bản đồ
     'link google map': 'LINK_MAP',
     'link map': 'LINK_MAP',
@@ -245,6 +251,7 @@ export async function parseKhachHangExcel(
             NGUON: String(raw.NGUON ?? '').trim() || undefined,
             NGAY_GHI_NHAN: ngayGhiNhan,
             SALES_PT: String(raw.SALES_PT ?? '').trim() || undefined,
+            KY_THUAT_PT: String(raw.KY_THUAT_PT ?? '').trim() || undefined,
             LINK_MAP: String(raw.LINK_MAP ?? '').trim() || undefined,
             LAT: String(raw.LAT ?? '').trim() || undefined,
             LONG: String(raw.LONG ?? '').trim() || undefined,
@@ -267,6 +274,14 @@ export async function parseKhachHangExcel(
         }
         if (item.SALES_PT && options?.nhanViens?.length && !options.nhanViens.includes(item.SALES_PT)) {
             errors.push(`Sales PT "${item.SALES_PT}" không có trong hệ thống`);
+        }
+        if (item.KY_THUAT_PT && options?.nhanViens?.length) {
+            const pts = item.KY_THUAT_PT.split(',').map(n => n.trim()).filter(Boolean);
+            for (const pt of pts) {
+                if (!options.nhanViens.includes(pt)) {
+                    errors.push(`Kỹ thuật PT "${pt}" không có trong hệ thống`);
+                }
+            }
         }
 
         if (errors.length > 0) {
@@ -314,6 +329,7 @@ function applyDropdown(
     startRow: number,       // Dòng bắt đầu dữ liệu
     totalRows: number,      // Giới hạn số dòng
     formulae: string,       // Ví dụ: '__Lists!$A$2:$A$10'
+    allowCustom: boolean = false // Cho phép nhập tay không báo block
 ) {
     (ws as any).dataValidations.add(`${dataColLetter}${startRow}:${dataColLetter}${startRow + totalRows}`, {
         type: 'list',
@@ -321,11 +337,11 @@ function applyDropdown(
         formulae: [formulae],
         showInputMessage: true,
         promptTitle: 'Chọn từ danh sách',
-        prompt: 'Nhấn mũi tên để chọn giá trị hợp lệ.',
-        showErrorMessage: true,
-        errorStyle: 'stop',
-        errorTitle: 'Giá trị không hợp lệ',
-        error: 'Chỉ được chọn giá trị trong danh sách. Vui lòng nhấn mũi tên ▼ để chọn.',
+        prompt: allowCustom ? 'Nhấn ▼ để chọn hoặc gõ tay (cách nhau bởi dấu phẩy).' : 'Nhấn mũi tên để chọn giá trị hợp lệ.',
+        showErrorMessage: !allowCustom,
+        errorStyle: allowCustom ? 'warning' : 'stop',
+        errorTitle: 'Giá trị có thể không chính xác',
+        error: allowCustom ? 'Dữ liệu không nằm trong danh sách. Vẫn muốn tiếp tục?' : 'Chỉ được chọn giá trị trong danh sách. Vui lòng nhấn mũi tên ▼ để chọn.',
     });
 }
 
@@ -400,18 +416,19 @@ export async function downloadKhachHangTemplate(options: KhachHangTemplateOption
         'Nguồn',
         'Ngày Ghi Nhận',
         'Sales PT',
+        'Kỹ thuật PT',
         'Link google map',
         'LAT',
         'LONG'
     ];
 
-    // Cột map (17 cột):
+    // Cột map (18 cột):
     // A=1(Tên KH*)  B=2(Tên VT)  C=3(Ngày TL)  D=4(SĐT)  E=5(Email)
     // F=6(Địa chỉ)  G=7(MST)  H=8(Người ĐD*)  I=9(SĐT ĐV) J=10(Nhóm KH▼)  K=11(Phân loại▼)  L=12(Nguồn▼)
-    // M=13(Ngày GN)  N=14(Sales PT▼)  O=15(Link map)  P=16(LAT)  Q=17(LONG)
+    // M=13(Ngày GN)  N=14(Sales PT▼)  O=15(Kỹ thuật PT▼)  P=16(Link map)  Q=17(LAT)  R=18(LONG)
 
     // Màu header: cam = bắt buộc, xanh lá = có dropdown, xanh dương = nhập tự do
-    const HAS_DROPDOWN: Record<number, boolean> = { 10: true, 11: true, 12: true, 14: true };
+    const HAS_DROPDOWN: Record<number, boolean> = { 10: true, 11: true, 12: true, 14: true, 15: true };
     const HAS_REQUIRED: Record<number, boolean> = { 1: true, 8: true };
 
     const headerRow = ws.addRow(headers);
@@ -451,10 +468,11 @@ export async function downloadKhachHangTemplate(options: KhachHangTemplateOption
         phanLoais.length > 0 ? `▼ Chọn trong danh sách (${phanLoais.length})` : 'VD: Tiềm năng',  // K
         nguons.length > 0 ? `▼ Chọn trong danh sách (${nguons.length})` : 'VD: Facebook',        // L
         'DD/MM/YYYY',              // M - Ngày GN
-        nhanViens.length > 0 ? `▼ Chọn trong danh sách (${nhanViens.length})` : 'Tên NV',            // N
-        'VD: https://maps.app.goo.gl/...', // O - Link map
-        'VD: 10.7769',            // P - LAT
-        'VD: 106.7009',           // Q - LONG
+        nhanViens.length > 0 ? `▼ Chọn trong danh sách (${nhanViens.length})` : 'Tên NV',            // N - Sales PT
+        nhanViens.length > 0 ? `▼ Chọn / Nhập (cách bằng dấu ,)` : 'VD: NV A, NV B',          // O - Kỹ thuật PT
+        'VD: https://maps.app.goo.gl/...', // P - Link map
+        'VD: 10.7769',            // Q - LAT
+        'VD: 106.7009',           // R - LONG
     ]);
     noteRow.eachCell((cell, colNum) => {
         const isDropdown = HAS_DROPDOWN[colNum];
@@ -488,9 +506,10 @@ export async function downloadKhachHangTemplate(options: KhachHangTemplateOption
         nguons[0] ?? '',       // L - Nguồn
         todayStr,                  // M - Ngày GN
         nhanViens[0] ?? '',            // N - Sales PT
-        '',                            // O - Link map
-        '',                            // P - LAT
-        '',                            // Q - LONG
+        '',                            // O - Kỹ thuật PT
+        '',                            // P - Link map
+        '',                            // Q - LAT
+        '',                            // R - LONG
     ]);
     example.eachCell(cell => {
         cell.font = { name: 'Arial', size: 10, color: { argb: 'FF333333' } };
@@ -516,20 +535,24 @@ export async function downloadKhachHangTemplate(options: KhachHangTemplateOption
         { width: 16 }, // L — Nguồn
         { width: 14 }, // M — Ngày GN
         { width: 20 }, // N — Sales PT
-        { width: 36 }, // O — Link map
-        { width: 12 }, // P — LAT
-        { width: 12 }, // Q — LONG
+        { width: 25 }, // O — Kỹ thuật PT
+        { width: 36 }, // P — Link map
+        { width: 12 }, // Q — LAT
+        { width: 12 }, // R — LONG
     ];
 
     // ── Gán Data Validation và Format giới hạn số dòng để tránh lỗi bộ nhớ (RAM) ───
     const DATA_START = 3;
     const FORMAT_ROWS_LIMIT = 1000; // Định dạng khung và màu nền chỉ cần cho 1000 dòng để tiết kiệm RAM.
 
-    // Dropdown: J=Nhóm KH, K=Phân loại, L=Nguồn, N=Sales PT
+    // Dropdown: J=Nhóm KH, K=Phân loại, L=Nguồn, N=Sales PT, O=Kỹ Thuật PT (allow multiple warnings)
     if (refNhom) applyDropdown(ws, 'J', DATA_START, FORMAT_ROWS_LIMIT, refNhom);
     if (refPhanLoai) applyDropdown(ws, 'K', DATA_START, FORMAT_ROWS_LIMIT, refPhanLoai);
     if (refNguon) applyDropdown(ws, 'L', DATA_START, FORMAT_ROWS_LIMIT, refNguon);
-    if (refNhanVien) applyDropdown(ws, 'N', DATA_START, FORMAT_ROWS_LIMIT, refNhanVien);
+    if (refNhanVien) {
+        applyDropdown(ws, 'N', DATA_START, FORMAT_ROWS_LIMIT, refNhanVien);
+        applyDropdown(ws, 'O', DATA_START, FORMAT_ROWS_LIMIT, refNhanVien, true);
+    }
 
     // Ngày bắt buộc nhập ngày (C=Ngày TL, M=Ngày GN)
     applyDateValidation(ws, 'C', DATA_START, FORMAT_ROWS_LIMIT);
@@ -537,7 +560,7 @@ export async function downloadKhachHangTemplate(options: KhachHangTemplateOption
 
     // ── Tự động kẻ khung khi có dữ liệu ở cột Tên KH (A) ─────────
     ws.addConditionalFormatting({
-        ref: `A${DATA_START}:Q${DATA_START + FORMAT_ROWS_LIMIT - 1}`,
+        ref: `A${DATA_START}:R${DATA_START + FORMAT_ROWS_LIMIT - 1}`,
         rules: [
             {
                 type: 'expression',
@@ -570,14 +593,14 @@ export async function downloadKhachHangTemplate(options: KhachHangTemplateOption
                 type: 'pattern', pattern: 'solid',
                 fgColor: { argb: isOdd ? 'FFF0FFF4' : 'FFE6F9ED' },
             };
-            // Cột nhập tự do (A->G, H, I, M, O, P, Q)
-            (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'M', 'O', 'P', 'Q'] as const).forEach(col => {
+            // Cột nhập tự do (A->I, M, P, Q, R)
+            (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'M', 'P', 'Q', 'R'] as const).forEach(col => {
                 ws.getCell(`${col}${r}`).fill = baseFill;
             });
-            // Cột dropdown (tô xanh nhạt) (J, K, L, N)
-            (['J', 'K', 'L', 'N'] as const).forEach(col => {
+            // Cột dropdown (tô xanh nhạt) (J, K, L, N, O)
+            (['J', 'K', 'L', 'N', 'O'] as const).forEach(col => {
                 if ((col === 'J' && refNhom) || (col === 'K' && refPhanLoai) ||
-                    (col === 'L' && refNguon) || (col === 'N' && refNhanVien)) {
+                    (col === 'L' && refNguon) || ((col === 'N' || col === 'O') && refNhanVien)) {
                     ws.getCell(`${col}${r}`).fill = dropdownFill;
                 }
             });

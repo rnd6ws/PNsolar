@@ -42,7 +42,7 @@ const GROUP_LABELS: Record<string, string> = {
     THANG_GHI_NHAN: "Tháng ghi nhận",
 };
 
-const DEFAULT_COLUMNS: ColumnKey[] = ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "nguonSales"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "kyThuatPT", "nguonSales"];
 
 export default function KhachHangPageClient({
     data, phanLoais, nguons, nhoms, nhanViens, nguoiGioiThieus, lyDoTuChois,

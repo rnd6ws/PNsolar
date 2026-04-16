@@ -59,7 +59,7 @@ export async function exportKhachHangExcel({
         },
     });
 
-    // ── Độ rộng cột (18 cột: A..R) ──
+    // ── Độ rộng cột (19 cột: A..S) ──
     ws.columns = [
         { width: 6 },  // A  — STT
         { width: 28 },  // B  — Tên Khách Hàng
@@ -75,34 +75,35 @@ export async function exportKhachHangExcel({
         { width: 14 },  // L  — Nhóm KH
         { width: 18 },  // M  — Phân loại
         { width: 20 },  // N  — Sales PT
-        { width: 16 },  // O  — Nguồn KH
-        { width: 36 },  // P  — Link Map
-        { width: 14 },  // Q  — LAT
-        { width: 14 },  // R  — LONG
+        { width: 25 },  // O  — Kỹ thuật PT
+        { width: 16 },  // P  — Nguồn KH
+        { width: 36 },  // Q  — Link Map
+        { width: 14 },  // R  — LAT
+        { width: 14 },  // S  — LONG
     ];
 
     // ════════════════════════════════════
     // HEADER CÔNG TY  (5 dòng, row 1–5)
-    // Cột A: logo | Cột B–R: text
+    // Cột A: logo | Cột B–S: text
     // ════════════════════════════════════
 
     // Dòng 1: Tên công ty
     ws.getRow(1).height = 22;
-    ws.mergeCells('B1:R1');
+    ws.mergeCells('B1:S1');
     ws.getCell('B1').value = COMPANY.name;
     ws.getCell('B1').font = { name: F, bold: true, size: 14, color: { argb: 'FF003366' } };
     ws.getCell('B1').alignment = { vertical: 'middle' };
 
     // Dòng 2: Địa chỉ
     ws.getRow(2).height = 18;
-    ws.mergeCells('B2:R2');
+    ws.mergeCells('B2:S2');
     ws.getCell('B2').value = `                Địa chỉ: ${COMPANY.address}`;
     ws.getCell('B2').font = { name: F, size: 10 };
     ws.getCell('B2').alignment = { vertical: 'middle' };
 
     // Dòng 3: Website / ĐT
     ws.getRow(3).height = 18;
-    ws.mergeCells('B3:R3');
+    ws.mergeCells('B3:S3');
     ws.getCell('B3').value = COMPANY.contact;
     ws.getCell('B3').font = { name: F, size: 10, color: { argb: 'FF0066CC' }, underline: false };
     ws.getCell('B3').alignment = { vertical: 'middle' };
@@ -112,7 +113,7 @@ export async function exportKhachHangExcel({
 
     // Dòng 5: Tên báo cáo
     ws.getRow(5).height = 28;
-    ws.mergeCells('A5:R5');
+    ws.mergeCells('A5:S5');
     ws.getCell('A5').value = 'DANH SÁCH KHÁCH HÀNG';
     ws.getCell('A5').font = { name: F, bold: true, size: 16, color: { argb: 'FF003366' } };
     ws.getCell('A5').alignment = { horizontal: 'center', vertical: 'middle' };
@@ -135,7 +136,7 @@ export async function exportKhachHangExcel({
     // Dòng 6: Ngày xuất + tổng
     ws.getRow(6).height = 16;
     const now = new Date();
-    ws.mergeCells('A6:R6');
+    ws.mergeCells('A6:S6');
     ws.getCell('A6').value = `Ngày xuất: ${fmtDate(now)}   —   Tổng số: ${data.length} khách hàng`;
     ws.getCell('A6').font = { name: F, size: 10, italic: true, color: { argb: 'FF666666' } };
     ws.getCell('A6').alignment = { horizontal: 'center', vertical: 'middle' };
@@ -158,10 +159,11 @@ export async function exportKhachHangExcel({
         'Nhóm KH',       // L
         'Phân loại',     // M
         'Sales PT',      // N
-        'Nguồn KH',      // O
-        'Link Map',      // P
-        'LAT',           // Q
-        'LONG',          // R
+        'Kỹ thuật PT',   // O
+        'Nguồn KH',      // P
+        'Link Map',      // Q
+        'LAT',           // R
+        'LONG',          // S
     ];
     const headerRow = ws.getRow(7);
     headerRow.height = 22;
@@ -182,6 +184,7 @@ export async function exportKhachHangExcel({
         dataRow.height = 18;
         const isOdd = idx % 2 === 0;
         const salesName = nhanViens.find(n => n.ID === item.SALES_PT)?.HO_TEN || item.SALES_PT || '';
+        const ktName = (item.KY_THUAT_PT || []).map((id: string) => nhanViens.find(n => n.ID === id)?.HO_TEN || id).join(', ');
         const nguoiDD = item.NGUOI_DAI_DIEN?.[0] ?? item.NGUOI_DAI_DIEN ?? null;
 
         const values: any[] = [
@@ -199,16 +202,17 @@ export async function exportKhachHangExcel({
             item.NHOM_KH || '',                         // L  Nhóm KH
             item.PHAN_LOAI || '',                       // M  Phân loại
             salesName,                                  // N  Sales PT
-            item.NGUON || '',                           // O  Nguồn KH
-            item.LINK_MAP || '',                        // P  Link Map
-            item.LAT != null ? item.LAT : '',           // Q  LAT
-            item.LONG != null ? item.LONG : '',         // R  LONG
+            ktName,                                     // O  Kỹ thuật PT
+            item.NGUON || '',                           // P  Nguồn KH
+            item.LINK_MAP || '',                        // Q  Link Map
+            item.LAT != null ? item.LAT : '',           // R  LAT
+            item.LONG != null ? item.LONG : '',         // S  LONG
         ];
 
-        // Cột căn trái: B(1) Tên KH, G(6) Email, H(7) Địa chỉ, J(9) Người DD, P(15) Link Map
-        const LEFT_COLS = new Set([1, 6, 7, 9, 15]);
-        // Cột căn phải (số): Q(16) LAT, R(17) LONG
-        const RIGHT_COLS = new Set([16, 17]);
+        // Cột căn trái: B(1) Tên KH, G(6) Email, H(7) Địa chỉ, J(9) Người DD, Q(16) Link Map
+        const LEFT_COLS = new Set([1, 6, 7, 9, 16]);
+        // Cột căn phải (số): R(17) LAT, S(18) LONG
+        const RIGHT_COLS = new Set([17, 18]);
 
         values.forEach((v, ci) => {
             const cell = dataRow.getCell(ci + 1);
@@ -232,7 +236,7 @@ export async function exportKhachHangExcel({
     // ════════════════════════════════════
     const summaryRow = ws.getRow(8 + data.length + 1);
     summaryRow.height = 18;
-    ws.mergeCells(`A${8 + data.length + 1}:R${8 + data.length + 1}`);
+    ws.mergeCells(`A${8 + data.length + 1}:S${8 + data.length + 1}`);
     summaryRow.getCell(1).value = `Tổng cộng: ${data.length} khách hàng`;
     summaryRow.getCell(1).font = { name: F, bold: true, size: 11, italic: true, color: { argb: 'FF003366' } };
     summaryRow.getCell(1).alignment = { horizontal: 'right', vertical: 'middle' };
