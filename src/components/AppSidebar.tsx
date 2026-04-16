@@ -6,7 +6,7 @@ import {
     LayoutDashboard, Users, Package, Settings, HelpCircle,
     LogOut, EllipsisVertical, Shield, UserRound, DollarSign, Truck, Target,
     CalendarCheck2, ClipboardCheck, FileText, CreditCard, MapPin,
-    ChevronRight, PackageCheck,
+    ChevronRight, PackageCheck, Map, BarChart2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutUser } from "@/features/auth/action";
@@ -68,6 +68,7 @@ const navGroups: NavGroup[] = [
         defaultOpen: true,
         items: [
             { name: "Khách hàng", href: "/khach-hang", icon: UserRound, moduleKey: "khach-hang" },
+            { name: "Bản đồ KH", href: "/ban-do-kh", icon: Map, moduleKey: "ban-do-kh" },
             { name: "Cơ hội", href: "/co-hoi", icon: Target, moduleKey: "co-hoi" },
             { name: "Kế hoạch CS", href: "/ke-hoach-cs", icon: CalendarCheck2, moduleKey: "ke-hoach-cs" },
         ],
@@ -93,6 +94,14 @@ const navGroups: NavGroup[] = [
             { name: "Bàn giao", href: "/ban-giao", icon: PackageCheck, moduleKey: "ban-giao" },
             { name: "Đề nghị TT", href: "/de-nghi-tt", icon: CreditCard, moduleKey: "de-nghi-tt" },
             { name: "Thanh toán", href: "/thanh-toan", icon: DollarSign, moduleKey: "thanh-toan" },
+        ],
+    },
+    {
+        label: "Báo cáo & Phân tích",
+        defaultOpen: true,
+        items: [
+            { name: "Báo cáo KD", href: "/bao-cao-kinh-doanh", icon: FileText, moduleKey: "bao-cao-kinh-doanh" },
+            { name: "Báo cáo Nhân Sự", href: "/bao-cao-nhan-su", icon: BarChart2, moduleKey: "bao-cao-nhan-su" },
         ],
     },
     {

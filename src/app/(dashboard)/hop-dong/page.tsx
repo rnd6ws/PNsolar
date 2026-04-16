@@ -4,6 +4,7 @@ import Pagination from "@/components/Pagination";
 import HopDongStatCards from "@/features/hop-dong/components/StatCards";
 import HopDongPageClient from "@/features/hop-dong/components/HopDongPageClient";
 import AddHopDongButton from "@/features/hop-dong/components/AddHopDongButton";
+import HopDongInstructionButton from "@/features/hop-dong/components/HopDongInstructionButton";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { getRowsPerPage } from "@/lib/getRowsPerPage";
 import { Suspense } from "react";
@@ -103,7 +104,10 @@ export default async function HopDongPage({
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Hợp đồng</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Hợp đồng</h1>
+                                <HopDongInstructionButton />
+                            </div>
                             <p className="text-sm text-muted-foreground mt-1">Quản lý hợp đồng với khách hàng.</p>
                         </div>
                         <div className="flex items-center gap-3">

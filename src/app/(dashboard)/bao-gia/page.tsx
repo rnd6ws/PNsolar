@@ -4,9 +4,12 @@ import Pagination from "@/components/Pagination";
 import BaoGiaStatCards from "@/features/bao-gia/components/StatCards";
 import BaoGiaPageClient from "@/features/bao-gia/components/BaoGiaPageClient";
 import AddBaoGiaButton from "@/features/bao-gia/components/AddBaoGiaButton";
+import BaoGiaInstructionButton from "@/features/bao-gia/components/BaoGiaInstructionButton";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { getRowsPerPage } from '@/lib/getRowsPerPage';
 import { Suspense } from "react";
+import { Button } from "@/components/ui/button";
+import { Table2 } from "lucide-react";
 
 export const metadata: Metadata = {
     title: "Báo giá | PN Solar",
@@ -105,10 +108,19 @@ export default async function BaoGiaPage({
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Báo giá</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Báo giá</h1>
+                                <BaoGiaInstructionButton />
+                            </div>
                             <p className="text-sm text-muted-foreground mt-1">Quản lý báo giá cho khách hàng.</p>
                         </div>
                         <div className="flex items-center gap-3">
+                            <Button variant="outline" asChild className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:border-emerald-900/30 transition-colors">
+                                <a href="https://docs.google.com/spreadsheets/d/1d0FhHP32gNd14_WjgcwHmFwhI8BevM_lOiN52Twn8bY/edit?usp=sharing" target="_blank" rel="noopener noreferrer">
+                                    <Table2 className="w-4 h-4 mr-2" />
+                                    Mở trang tính
+                                </a>
+                            </Button>
                             <PermissionGuard moduleKey="bao-gia" level="add">
                                 <AddBaoGiaButton />
                             </PermissionGuard>

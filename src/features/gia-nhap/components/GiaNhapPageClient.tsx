@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Settings2, Download, DollarSign, Building2, Package, TrendingUp, LayoutList, LayoutGrid } from "lucide-react";
+import { Settings2, DollarSign, Building2, Package, TrendingUp, LayoutList, LayoutGrid, HelpCircle } from "lucide-react";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
 import GiaNhapList from "./GiaNhapList";
 import AddGiaNhapButton from "./AddGiaNhapButton";
 import BulkAddGiaNhapButton from "./BulkAddGiaNhapButton";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
+import GiaNhapInstructionModal from "./GiaNhapInstructionModal";
 
 // ===== TYPES =====
 interface NhomHHOption { ID: string; MA_NHOM: string; TEN_NHOM: string; }
@@ -46,6 +47,7 @@ export default function GiaNhapPageClient({
     const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
     const [showFilters, setShowFilters] = useState(false);
     const [viewMode, setViewMode] = useState<"list" | "card">("list");
+    const [isInstructionOpen, setIsInstructionOpen] = useState(false);
 
     const uniqueNcc = useMemo(() => new Set(data.map((d: any) => d.MA_NCC)).size, [data]);
     const uniqueHH = useMemo(() => new Set(data.map((d: any) => d.MA_HH)).size, [data]);
@@ -73,7 +75,16 @@ export default function GiaNhapPageClient({
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Giá nhập</h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Danh sách Giá nhập</h1>
+                        <button
+                            onClick={() => setIsInstructionOpen(true)}
+                            className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            title="Hướng dẫn sử dụng"
+                        >
+                            <HelpCircle className="w-5 h-5" />
+                        </button>
+                    </div>
                     <p className="text-sm text-muted-foreground mt-1">Quản lý giá nhập hàng hóa từ nhà cung cấp.</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -177,6 +188,11 @@ export default function GiaNhapPageClient({
                     viewMode={viewMode}
                 />
             </div>
+
+            <GiaNhapInstructionModal
+                isOpen={isInstructionOpen}
+                onClose={() => setIsInstructionOpen(false)}
+            />
         </div>
     );
 }

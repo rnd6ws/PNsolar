@@ -36,6 +36,7 @@ interface Props {
 const BREADCRUMB_MAP: Record<string, string> = {
     '/dashboard': 'Tổng quan',
     '/khach-hang': 'Khách hàng',
+    '/ban-do-kh': 'Bản đồ khách hàng',
     '/co-hoi': 'Cơ hội',
     '/ke-hoach-cs': 'Kế hoạch chăm sóc',
     '/phan-loai-hh': 'Phân loại hàng hóa',
@@ -55,6 +56,8 @@ const BREADCRUMB_MAP: Record<string, string> = {
     '/phan-quyen': 'Phân quyền',
     '/ban-giao': 'Bàn giao',
     '/de-nghi-tt': 'Đề nghị thanh toán',
+    '/bao-cao-nhan-su': 'Báo cáo nhân sự',
+    '/bao-cao-kinh-doanh': 'Báo cáo kinh doanh',
 };
 
 function getBreadcrumb(pathname: string): string {
@@ -153,6 +156,7 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
     const { canInstall, isInstalled: _isInstalled, install } = usePWAInstall();
 
     const isDashboard = pathname === '/dashboard';
+    const isFullHeightPage = pathname.startsWith('/ban-do-kh');
     const isAdminOrManager = currentUser?.ROLE === 'ADMIN' || currentUser?.ROLE === 'MANAGER';
 
     // ── Search ──────────────────────────────────────────
@@ -261,13 +265,28 @@ export default function DashboardLayoutClient({ children, permissions, isAdmin, 
                     </header>
 
                     {/* ── Content ──────────────────────────────── */}
-                    <div ref={contentRef} className="flex-1 overflow-auto min-w-0 p-4 md:p-6">
-                        <div className={cn(
-                            "mx-auto w-full transition-all",
-                            pageLayout === 'full' ? "max-w-[1600px]" : "max-w-[1280px]"
-                        )}>
-                            {children}
-                        </div>
+                    <div
+                        id="dashboard-scroll-area"
+                        ref={contentRef}
+                        className={cn(
+                            "flex-1 min-w-0",
+                            isFullHeightPage
+                                ? "overflow-hidden flex flex-col"
+                                : "overflow-auto p-4 md:p-6"
+                        )}
+                    >
+                        {isFullHeightPage ? (
+                            <div className="flex-1 h-full flex flex-col min-h-0">
+                                {children}
+                            </div>
+                        ) : (
+                            <div className={cn(
+                                "mx-auto w-full transition-all",
+                                pageLayout === 'full' ? "max-w-[1600px]" : "max-w-[1280px]"
+                            )}>
+                                {children}
+                            </div>
+                        )}
                     </div>
 
                 </SidebarInset>

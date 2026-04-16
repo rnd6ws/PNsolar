@@ -5,6 +5,7 @@ import Pagination from "@/components/Pagination";
 import StatCards from "@/features/thanh-toan/components/StatCards";
 import ThanhToanPageClient from "@/features/thanh-toan/components/ThanhToanPageClient";
 import AddThanhToanButton from "@/features/thanh-toan/components/AddThanhToanButton";
+import ThanhToanInstructionButton from "@/features/thanh-toan/components/ThanhToanInstructionButton";
 import TaiKhoanTTSettings from "@/features/thanh-toan/components/TaiKhoanTTSettings";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { getRowsPerPage } from "@/lib/getRowsPerPage";
@@ -112,7 +113,10 @@ export default async function ThanhToanPage({
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Thanh toán</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold text-foreground tracking-tight">Thanh toán</h1>
+                                <ThanhToanInstructionButton />
+                            </div>
                             <p className="text-sm text-muted-foreground mt-1">Quản lý các khoản thanh toán và hoàn tiền theo hợp đồng.</p>
                         </div>
                         <Suspense fallback={

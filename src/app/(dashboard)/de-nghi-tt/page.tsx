@@ -4,6 +4,7 @@ import Pagination from "@/components/Pagination";
 import StatCards from "@/features/de-nghi-tt/components/StatCards";
 import DeNghiTTPageClient from "@/features/de-nghi-tt/components/DeNghiTTPageClient";
 import AddDeNghiTTButton from "@/features/de-nghi-tt/components/AddDeNghiTTButton";
+import DeNghiTTInstructionButton from "@/features/de-nghi-tt/components/DeNghiTTInstructionButton";
 import TaiKhoanTTSettings from "@/features/de-nghi-tt/components/TaiKhoanTTSettings";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import { getRowsPerPage } from "@/lib/getRowsPerPage";
@@ -111,7 +112,10 @@ export default async function DeNghiTTPage({
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Đề nghị thanh toán</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold text-foreground tracking-tight">Đề nghị thanh toán</h1>
+                                <DeNghiTTInstructionButton />
+                            </div>
                             <p className="text-sm text-muted-foreground mt-1">Quản lý các đề nghị thanh toán theo hợp đồng.</p>
                         </div>
                         <Suspense fallback={

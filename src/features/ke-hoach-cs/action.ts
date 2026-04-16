@@ -385,10 +385,10 @@ export async function getCoHoiByKH(idKh: string) {
 
         const data = await prisma.cO_HOI.findMany({
             where: { MA_KH: maKh },
-            select: { ID: true, MA_CH: true, TINH_TRANG: true },
+            select: { ID: true, MA_CH: true, TINH_TRANG: true, NHU_CAU: true },
             orderBy: { NGAY_TAO: "desc" },
         });
-        const mapped = data.map(d => ({ ID: d.MA_CH, ID_CH: d.MA_CH, TINH_TRANG: d.TINH_TRANG }));
+        const mapped = data.map(d => ({ ID: d.MA_CH, ID_CH: d.MA_CH, TINH_TRANG: d.TINH_TRANG, DICH_VU_QT: d.NHU_CAU }));
         return { success: true, data: mapped };
     } catch {
         return { success: false, data: [] };

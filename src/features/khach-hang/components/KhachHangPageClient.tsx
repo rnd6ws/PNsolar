@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import SearchInput from "@/components/SearchInput";
 import FilterSelect from "@/components/FilterSelect";
 import KhachHangList from "./KhachHangList";
 import ColumnToggleButton, { type ColumnKey } from "./ColumnToggleButton";
-import { Download, Settings2, LayoutList, LayoutGrid, Grid, ChevronDown, X, Users, Tag, UserCheck, Globe } from "lucide-react";
+import { Download, Settings2, LayoutList, LayoutGrid, Grid, ChevronDown, X, Users, Tag, UserCheck, Globe, Loader2, Calendar } from "lucide-react";
+import { exportKhachHangExcel } from "../utils/exportKhachHangExcel";
+import ImportKhachHangModal from "./ImportKhachHangModal";
+import { getAllKhachHangsForExport } from "../action";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -30,12 +33,13 @@ interface Props {
     currentUserId?: string;
 }
 
-export type GroupByKey = "none" | "NHOM_KH" | "PHAN_LOAI" | "NGUON";
+export type GroupByKey = "none" | "NHOM_KH" | "PHAN_LOAI" | "NGUON" | "THANG_GHI_NHAN";
 
 const GROUP_LABELS: Record<string, string> = {
     NHOM_KH: "Nhóm KH",
     PHAN_LOAI: "Phân loại",
     NGUON: "Nguồn / Sales",
+    THANG_GHI_NHAN: "Tháng ghi nhận",
 };
 
 const DEFAULT_COLUMNS: ColumnKey[] = ["ngayGhiNhan", "lienHe", "nhom", "phanLoai", "nhanVienPT", "nguonSales"];
@@ -48,6 +52,25 @@ export default function KhachHangPageClient({
     const [showFilters, setShowFilters] = useState(false);
     const [viewMode, setViewMode] = useState<"list" | "card">("list");
     const [groupBy, setGroupBy] = useState<GroupByKey>("none");
+    const [exporting, setExporting] = useState(false);
+
+    const handleExportExcel = useCallback(async () => {
+        if (exporting) return;
+        setExporting(true);
+        // Nhường cho React flush state → hiển thị spinner trước khi ExcelJS chạy
+        await new Promise(resolve => setTimeout(resolve, 50));
+        try {
+            const result = await getAllKhachHangsForExport();
+            const allData = result.success ? result.data : data;
+            await exportKhachHangExcel({
+                data: allData,
+                nhanViens,
+                fileName: 'DanhSachKhachHang',
+            });
+        } finally {
+            setExporting(false);
+        }
+    }, [data, nhanViens, exporting]);
 
     return (
         <>
@@ -116,6 +139,9 @@ export default function KhachHangPageClient({
                                 <DropdownMenuItem onClick={() => setGroupBy("NGUON")} className={cn("py-2.5", groupBy === "NGUON" && "bg-primary/10 text-primary")}>
                                     <Globe className="w-4 h-4 mr-2" /> Nguồn / Sales
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setGroupBy("THANG_GHI_NHAN")} className={cn("py-2.5", groupBy === "THANG_GHI_NHAN" && "bg-primary/10 text-primary")}>
+                                    <Calendar className="w-4 h-4 mr-2" /> Tháng ghi nhận
+                                </DropdownMenuItem>
                                 {groupBy !== "none" && (
                                     <>
                                         <DropdownMenuSeparator />
@@ -128,11 +154,22 @@ export default function KhachHangPageClient({
                         </DropdownMenu>
 
                         <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
+                        <ImportKhachHangModal
+                            nhoms={nhoms}
+                            phanLoais={phanLoais}
+                            nguons={nguons}
+                            nhanViens={nhanViens}
+                        />
                         <button
-                            className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex shrink-0"
+                            onClick={handleExportExcel}
+                            disabled={exporting}
+                            className="group p-2 border border-border bg-background hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 text-muted-foreground rounded-lg transition-all duration-300 shadow-sm flex items-center shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
                             title="Xuất Excel"
                         >
-                            <Download className="w-4 h-4" />
+                            {exporting ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <Download className="w-4 h-4 shrink-0" />}
+                            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2 transition-all duration-300 ease-out text-sm font-medium">
+                                Xuất Excel
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -171,6 +208,9 @@ export default function KhachHangPageClient({
                                         <DropdownMenuItem onClick={() => setGroupBy("NGUON")} className={cn("py-2.5", groupBy === "NGUON" && "bg-primary/10 text-primary")}>
                                             <Globe className="w-4 h-4 mr-2" /> Nguồn / Sales
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGroupBy("THANG_GHI_NHAN")} className={cn("py-2.5", groupBy === "THANG_GHI_NHAN" && "bg-primary/10 text-primary")}>
+                                            <Calendar className="w-4 h-4 mr-2" /> Tháng ghi nhận
+                                        </DropdownMenuItem>
                                         {groupBy !== "none" && (
                                             <>
                                                 <DropdownMenuSeparator />
@@ -184,11 +224,22 @@ export default function KhachHangPageClient({
                                 <ColumnToggleButton visibleColumns={visibleColumns} onChange={setVisibleColumns} />
                             </div>
                             <div className="flex items-center gap-2">
+                                <ImportKhachHangModal
+                                    nhoms={nhoms}
+                                    phanLoais={phanLoais}
+                                    nguons={nguons}
+                                    nhanViens={nhanViens}
+                                />
                                 <button
-                                    className="p-2 border border-border bg-background hover:bg-muted text-muted-foreground rounded-lg transition-colors shadow-sm flex"
+                                    onClick={handleExportExcel}
+                                    disabled={exporting}
+                                    className="group p-2 border border-border bg-background hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 text-muted-foreground rounded-lg transition-all duration-300 shadow-sm flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
                                     title="Xuất Excel"
                                 >
-                                    <Download className="w-4 h-4" />
+                                    {exporting ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <Download className="w-4 h-4 shrink-0" />}
+                                    <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2 transition-all duration-300 ease-out text-sm font-medium">
+                                        Xuất Excel
+                                    </span>
                                 </button>
                             </div>
                         </div>

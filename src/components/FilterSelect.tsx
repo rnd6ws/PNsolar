@@ -1,5 +1,6 @@
 'use client';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useTransition } from 'react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 
@@ -19,6 +20,7 @@ export default function FilterSelect({ paramKey, options, placeholder = 'Tất c
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
 
     const currentValue = searchParams.get(paramKey) || 'all';
 
@@ -34,11 +36,13 @@ export default function FilterSelect({ paramKey, options, placeholder = 'Tất c
         // Reset page to 1 on filter change
         params.delete('page');
 
-        router.replace(`${pathname}?${params.toString()}`);
+        startTransition(() => {
+            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        });
     };
 
-    const currentLabel = currentValue === 'all' 
-        ? placeholder 
+    const currentLabel = currentValue === 'all'
+        ? placeholder
         : options.find((opt) => opt.value === currentValue)?.label || placeholder;
 
     return (

@@ -17,7 +17,7 @@ interface ModalProps {
     children: ReactNode;
     /** Footer cố định ở dưới cùng modal */
     footer?: ReactNode;
-    size?: 'md' | 'lg' | 'xl' | '2xl';
+    size?: 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | 'full';
     /** 
      * Chế độ fullHeight: header/footer cố định, body scroll.
      * Phù hợp cho modal phức tạp (nhiều tab, bảng dữ liệu...) 
@@ -25,9 +25,11 @@ interface ModalProps {
     fullHeight?: boolean;
     disableBodyScroll?: boolean;
     bodyClassName?: string;
+    /** Override className cho wrapper ngoài cùng (fixed inset-0). Dùng khi cần z-index cao hơn mặc định (VD: render trên Leaflet map) */
+    wrapperClassName?: string;
 }
 
-const sizeClasses = { md: 'max-w-2xl', lg: 'max-w-4xl', xl: 'max-w-5xl', '2xl': 'max-w-6xl' };
+const sizeClasses = { md: 'max-w-2xl', lg: 'max-w-4xl', xl: 'max-w-5xl', '2xl': 'max-w-6xl', '3xl': 'max-w-7xl', '4xl': 'max-w-[95vw]', 'full': 'max-w-[100vw] rounded-none' };
 
 export default function Modal({
     isOpen,
@@ -42,6 +44,7 @@ export default function Modal({
     fullHeight = false,
     disableBodyScroll = false,
     bodyClassName,
+    wrapperClassName,
 }: ModalProps) {
     useEffect(() => {
         if (isOpen) document.body.style.overflow = 'hidden';
@@ -80,7 +83,7 @@ export default function Modal({
     // ─── Chế độ fullHeight (header + body scroll + footer cố định) ──
     if (fullHeight) {
         return (
-            <div className="fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+            <div className={`fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 ${wrapperClassName ?? ''}`}>
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
                 <div className={`relative bg-card border border-border rounded-2xl shadow-2xl w-full ${sizeClasses[size]} animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden`}
                     style={{ maxHeight: 'min(calc(100vh - 1.5rem), 92vh)', minHeight: 'min(calc(100vh - 1.5rem), 92vh)' }}>
@@ -110,7 +113,7 @@ export default function Modal({
 
     // ─── Chế độ mặc định (modal bình thường, centred) ───────
     return (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4">
+        <div className={`fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4 ${wrapperClassName ?? ''}`}>
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200" onClick={onClose} />
 
             <div className={`relative bg-card w-full ${sizeClasses[size]} rounded-2xl border border-border shadow-2xl overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 flex flex-col`}
