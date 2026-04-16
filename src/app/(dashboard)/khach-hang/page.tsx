@@ -163,8 +163,9 @@ export default async function KhachHangPage({
         maNv: userMaNv,
     };
 
-    // currentUserMaNv: ID để pre-fill form tạo KH (tái dụng userMaNv nếu là STAFF, còn lại lấy userId)
-    const currentUserMaNv = userMaNv ?? user?.userId;
+    // currentUserMaNv: ID nhân viên để pre-fill SALES_PT trong form tạo KH
+    // Tìm trong bảng nhanViens cho tất cả role (STAFF, ADMIN, MANAGER...) theo USER_ID
+    const currentUserMaNv = (nhanViens as any[]).find((nv: any) => nv.USER_ID === user?.userId)?.ID ?? null;
 
     return (
         <PermissionGuard moduleKey="khach-hang" level="view" showNoAccess>
