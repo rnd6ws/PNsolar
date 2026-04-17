@@ -24,6 +24,7 @@
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import { saveAs } from "file-saver";
+import { exportPLHopDongDocx, PLHopDongExportData } from "./exportPLHopDong";
 
 // ─── Số tiền bằng chữ tiếng Việt ──────────────────────────────────────────
 const DVN = ["", "nghìn", "triệu", "tỷ"];
@@ -242,4 +243,189 @@ export async function exportHopDongDocx(item: HopDongExportData): Promise<void> 
     const dateStr = `${NGAY}-${THANG}-${NAM}`;
     const fileName = `HopDong_${item.SO_HD}_${dateStr}.docx`;
     saveAs(output, fileName);
+}
+
+// ─── Số La Mã ─────────────────────────────────────────────────────────────
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"];
+
+// ─── Format số thuần (không có đơn vị) ───────────────────────────────────
+function fmtNum(v: number): string {
+    return new Intl.NumberFormat("vi-VN").format(v);
+}
+
+// ─── Xuất Hợp Đồng gộp Phụ Lục — 1 file duy nhất ────────────────────────
+/**
+ * Template HOP_DONG_DAN_DUNG.docx đã được cập nhật, bao gồm cả phần
+ * phụ lục ở cuối. Hàm này điền toàn bộ placeholder của hợp đồng lẫn
+ * phụ lục vào cùng 1 lần render và trả về 1 file duy nhất.
+ *
+ * VAT tự động: PT_VAT = 0 → không VAT, PT_VAT > 0 → có VAT.
+ */
+export async function exportHopDongAndPLDocx(
+    item: HopDongExportData & PLHopDongExportData
+): Promise<void> {
+    // ── 1. Fetch template ─────────────────────────────────────────────────
+    const response = await fetch("/templates/HOP_DONG_DAN_DUNG.docx");
+    if (!response.ok) {
+        throw new Error("Không tìm thấy file template hợp đồng. Vui lòng kiểm tra /public/templates/HOP_DONG_DAN_DUNG.docx");
+    }
+    const arrayBuffer = await response.arrayBuffer();
+
+    // ── 2. Xác định có VAT không ─────────────────────────────────────────
+    const coVat = (item.PT_VAT || 0) > 0;
+
+    // ── 3. Dữ liệu phần HỢP ĐỒNG ─────────────────────────────────────────
+    const ngayHD = new Date(item.NGAY_HD);
+    const NGAY = String(ngayHD.getDate()).padStart(2, "0");
+    const THANG = String(ngayHD.getMonth() + 1).padStart(2, "0");
+    const NAM = String(ngayHD.getFullYear());
+
+    const ttk = item.THONG_TIN_KHAC || [];
+    const TEN_NDD = ttk.find(t => t.TIEU_DE === "Đại diện")?.NOI_DUNG || "";
+    const rawChucVu = ttk.find(t => t.TIEU_DE === "Chức vụ")?.NOI_DUNG || "";
+    const CHUC_VU = rawChucVu ? `Chức Vụ: ${rawChucVu}` : "";
+    const BEN_A = TEN_NDD.replace(/^(Ông|Bà|ông|bà)\s+/i, "").trim().toUpperCase();
+
+    const SKIP_TIEU_DE = new Set(["Đại diện", "Chức vụ"]);
+    const THONG_TIN_KH = ttk
+        .filter(t => t.TIEU_DE && !SKIP_TIEU_DE.has(t.TIEU_DE))
+        .map(t => ({ TIEU_DE: t.TIEU_DE || "", NOI_DUNG: t.NOI_DUNG || "" }));
+
+    const BAO_HANH_KEY = "- Chế độ bảo hành:";
+    const BAO_HANH = (item.DK_HD || []).find(d => d.HANG_MUC === BAO_HANH_KEY)?.NOI_DUNG || "";
+
+    const tongTien = item.TONG_TIEN || 0;
+    const TT_HD = `${new Intl.NumberFormat("vi-VN").format(tongTien)} VNĐ (Bằng chữ: ${soThanhChu(tongTien)})`;
+
+    const DK_TT = (item.DKTT_HD || []).map(d => {
+        const soTien = Math.round(Number(d.SO_TIEN || tongTien * ((d.PT_THANH_TOAN || 0) / 100)));
+        return {
+            LAN_TT: d.LAN_THANH_TOAN || "",
+            PT_TT: `${d.PT_THANH_TOAN || 0}%`,
+            ND_TT: d.NOI_DUNG_YEU_CAU || "",
+            ST_TT: new Intl.NumberFormat("vi-VN").format(soTien),
+            BANG_CHU: `(Bằng chữ: ${soThanhChu(soTien)})`,
+        };
+    });
+
+    const DK_HD = (item.DK_HD || [])
+        .filter(d => d.HANG_MUC !== BAO_HANH_KEY && d.AN_HIEN !== false)
+        .map(d => ({ TIEU_DE: d.HANG_MUC || "", NOI_DUNG: d.NOI_DUNG || "" }));
+
+    // ── 4. Dữ liệu phần PHỤ LỤC ──────────────────────────────────────────
+    const chiTiets = item.HOP_DONG_CT || [];
+    const nhomMap = new Map<string, typeof chiTiets>();
+    for (const ct of chiTiets) {
+        const nhom = ct.NHOM_HH || ct.HH_REL?.NHOM_HH || "";
+        if (!nhomMap.has(nhom)) nhomMap.set(nhom, []);
+        nhomMap.get(nhom)!.push(ct);
+    }
+
+    const CT_HD = Array.from(nhomMap.entries()).map(([nhomName, items], groupIdx) => {
+        const sttNhom = ROMAN[groupIdx] ?? String(groupIdx + 1);
+        const groupNo = groupIdx + 1;
+        let tongNhom = 0;
+
+        const DMHH = items.map((ct, ctIdx) => {
+            const donGia = coVat ? (ct.GIA_BAN_CHUA_VAT || 0) : (ct.GIA_BAN || 0);
+            const thanhTien = Math.round(donGia * ct.SO_LUONG);
+            tongNhom += thanhTien;
+            const tenHH = ct.HH_REL?.TEN_HH || ct.MA_HH;
+            const moTa = ct.HH_REL?.MO_TA || ct.GHI_CHU || "";
+            const tenHHFull = moTa.trim() ? `${tenHH}\n${moTa.trim()}` : tenHH;
+            return {
+                STT: `${groupNo}.${ctIdx + 1}`,
+                TEN_HH: tenHHFull,
+                DVT: ct.DON_VI_TINH || ct.HH_REL?.DON_VI_TINH || "",
+                MODEL: ct.HH_REL?.MODEL || "",
+                XUAT_XU: ct.HH_REL?.XUAT_XU || "",
+                BAO_HANH: ct.HH_REL?.BAO_HANH || "",
+                SL: ct.SO_LUONG,
+                DON_GIA: fmtNum(donGia),
+                THANH_TIEN: fmtNum(thanhTien),
+            };
+        });
+
+        return { STT_NHH: sttNhom, NHOM_HH: nhomName, TONG_TT_NHOM: fmtNum(tongNhom), DMHH };
+    });
+
+    // ── 5. Bảng thanh toán phụ lục ────────────────────────────────────────
+    const ttUuDai = Math.abs(item.TT_UU_DAI || 0);
+    let THANH_TOAN: { TT: string; TIEN_TT: string }[];
+
+    if (coVat) {
+        const tongChuaVat = chiTiets.reduce(
+            (sum, ct) => sum + Math.round((ct.GIA_BAN_CHUA_VAT || 0) * ct.SO_LUONG), 0
+        );
+        const ptVat = item.PT_VAT || 0;
+        const vatAmount = Math.round(tongChuaVat * ptVat / 100);
+        THANH_TOAN = [
+            { TT: "Tổng Thanh Toán ( Chưa bao gồm VAT)", TIEN_TT: fmtNum(tongChuaVat) },
+            { TT: `VAT (${ptVat}%)`, TIEN_TT: fmtNum(vatAmount) },
+            ...(ttUuDai > 0 ? [{ TT: "Tiền Ưu Đãi", TIEN_TT: fmtNum(ttUuDai) }] : []),
+            { TT: "Tổng Thanh Toán ( Đã bao gồm VAT)", TIEN_TT: fmtNum(tongTien) },
+        ];
+    } else {
+        const tongGiaBan = chiTiets.reduce(
+            (sum, ct) => sum + Math.round((ct.GIA_BAN || 0) * ct.SO_LUONG), 0
+        );
+        THANH_TOAN = ttUuDai > 0 ? [
+            { TT: "Thành Tiền", TIEN_TT: fmtNum(tongGiaBan) },
+            { TT: "Tiền Ưu Đãi", TIEN_TT: fmtNum(ttUuDai) },
+            { TT: "Tổng Thanh Toán", TIEN_TT: fmtNum(tongTien) },
+        ] : [
+            { TT: "Tổng Thanh Toán", TIEN_TT: fmtNum(tongTien) },
+        ];
+    }
+
+    const TT_CHU = `(Bằng chữ: ${soThanhChu(tongTien)})`;
+
+    // ── 6. Gộp toàn bộ vào 1 templateData ────────────────────────────────
+    const templateData = {
+        // Phần hợp đồng
+        SO_HD: item.SO_HD || "",
+        NGAY, THANG, NAM,
+        TEN_KH: item.KHTN_REL?.TEN_KH || "",
+        TEN_NDD, CHUC_VU,
+        THONG_TIN_KH,
+        BAO_HANH,
+        TT_HD,
+        DK_TT,
+        DK_HD,
+        BEN_A,
+        // Phần phụ lục
+        CT_HD,
+        THANH_TOAN,
+        TT_CHU,
+    };
+
+    // ── 7. Render template ────────────────────────────────────────────────
+    const zip = new PizZip(arrayBuffer);
+    const doc = new Docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
+        delimiters: { start: "{", end: "}" },
+        nullGetter() { return ""; },
+    });
+
+    try {
+        doc.render(templateData);
+    } catch (err: any) {
+        if (err.properties?.errors?.length) {
+            const details = err.properties.errors
+                .map((e: any) => e.properties?.explanation || e.message)
+                .join(" | ");
+            throw new Error(`Lỗi template hợp đồng: ${details}`);
+        }
+        throw err;
+    }
+
+    // ── 8. Lưu 1 file duy nhất ───────────────────────────────────────────
+    const output = doc.getZip().generate({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    const dateStr = `${NGAY}-${THANG}-${NAM}`;
+    saveAs(output, `HopDong_${item.SO_HD}_${dateStr}.docx`);
 }

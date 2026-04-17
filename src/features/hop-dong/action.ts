@@ -32,14 +32,29 @@ const HOP_DONG_INCLUDE = {
 };
 
 // ─── Sinh số hợp đồng tự động ───────────────────────────────
-async function generateSoHD(maKH: string): Promise<string> {
+async function generateSoHD(maKH: string, loaiHD?: string): Promise<string> {
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yyyy = String(now.getFullYear());
     const datePrefix = `${dd}${mm}${yyyy}`;
-    const prefix = `${datePrefix}/HĐSL-PNS`;
 
+    // ── Hợp đồng Mua bán: DDMMYYYY/HDMB-PNS-001 ──
+    if (loaiHD === 'Mua bán') {
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
+        const count = await prisma.hOP_DONG.count({
+            where: {
+                LOAI_HD: 'Mua bán',
+                CREATED_AT: { gte: startOfDay, lte: endOfDay },
+            },
+        });
+        const seq = String(count + 1).padStart(3, '0');
+        return `${datePrefix}/HDMB-PNS-${seq}`;
+    }
+
+    // ── Các loại HD khác (Dân dụng, Công nghiệp ...): DDMMYYYY/HĐSL-PNS-<TEN_VT|seq> ──
+    const prefix = `${datePrefix}/HĐSL-PNS`;
     let seqOrVt = '';
     if (maKH) {
         const kh = await prisma.kHTN.findUnique({
@@ -52,10 +67,8 @@ async function generateSoHD(maKH: string): Promise<string> {
     }
 
     if (!seqOrVt) {
-        // Đếm số HĐ trong ngày hôm nay nếu không có tên viết tắt
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
-
         const count = await prisma.hOP_DONG.count({
             where: {
                 CREATED_AT: { gte: startOfDay, lte: endOfDay },
@@ -386,7 +399,7 @@ export async function createHopDong(
             }
         }
 
-        const soHD = await generateSoHD(parsed.data.MA_KH);
+        const soHD = await generateSoHD(parsed.data.MA_KH, parsed.data.LOAI_HD);
 
         // NGUOI_TAO
         let nguoiTao = parsed.data.NGUOI_TAO;
