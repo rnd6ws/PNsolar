@@ -222,6 +222,9 @@ export default function KhachHangDetail({ kh, nhanViens, nguoiGioiThieus, onClos
                                 { label: "Phân loại", value: kh.PHAN_LOAI || "-" },
                                 { label: "Nguồn", value: kh.NGUON || "-" },
                                 { label: "Nhóm KH", value: kh.NHOM_KH || "-" },
+                                kh.CCCD
+                                    ? { label: "CCCD", value: kh.CCCD }
+                                    : { label: "Mã số thuế", value: kh.MST || "-" },
                                 { label: "Sales phụ trách", value: kh.SALES_PT ? getNVName(kh.SALES_PT) : "-" },
                                 { label: "Kỹ thuật phụ trách", value: kh.KY_THUAT_PT && kh.KY_THUAT_PT.length > 0 ? kh.KY_THUAT_PT.map((id: string) => getNVName(id)).join(", ") : "-" },
                                 { label: "Người giới thiệu", value: kh.MA_NGT ? getNGTName(kh.MA_NGT) : "-" },

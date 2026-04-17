@@ -32,15 +32,15 @@ model DSNV {
   AUDIT_LOGS AUDIT_LOG[]
   PHAN_QUYEN PHAN_QUYEN[]
 
-  KHTN_SALES_PT    KHTN[]         @relation("SALES_PT")
-  KEHOACH_CSKH     KEHOACH_CSKH[] @relation("NGUOI_CS")
-  KHAO_SAT         KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
-  BAO_GIA_GUI      BAO_GIA[]      @relation("NGUOI_GUI_BG")
-  HOP_DONG_DUYET   HOP_DONG[]     @relation("NGUOI_DUYET")
-  HOP_DONG_TAO     HOP_DONG[]     @relation("NGUOI_TAO")
-  BAN_GIAO_TAO     BAN_GIAO_HD[]  @relation("NGUOI_TAO_BG")
-  DE_NGHI_TT_TAO   DE_NGHI_TT[]   @relation("NGUOI_TAO_DNTT")
-  THANH_TOAN_TAO   THANH_TOAN[]   @relation("NGUOI_TAO_TT")
+  KHTN_SALES_PT  KHTN[]         @relation("SALES_PT")
+  KEHOACH_CSKH   KEHOACH_CSKH[] @relation("NGUOI_CS")
+  KHAO_SAT       KHAO_SAT[]     @relation("NGUOI_KHAO_SAT")
+  BAO_GIA_GUI    BAO_GIA[]      @relation("NGUOI_GUI_BG")
+  HOP_DONG_DUYET HOP_DONG[]     @relation("NGUOI_DUYET")
+  HOP_DONG_TAO   HOP_DONG[]     @relation("NGUOI_TAO")
+  BAN_GIAO_TAO   BAN_GIAO_HD[]  @relation("NGUOI_TAO_BG")
+  DE_NGHI_TT_TAO DE_NGHI_TT[]   @relation("NGUOI_TAO_DNTT")
+  THANH_TOAN_TAO THANH_TOAN[]   @relation("NGUOI_TAO_TT")
 
   NOTIFICATIONS_RECEIVED NOTIFICATION[]      @relation("NotificationRecipient")
   NOTIFICATIONS_SENT     NOTIFICATION[]      @relation("NotificationSender")
@@ -265,6 +265,7 @@ model KHTN {
   DIEN_THOAI     String?
   EMAIL          String?
   MST            String?
+  CCCD           String?
   NGAY_THANH_LAP DateTime?
   LINK_MAP       String?
   DIA_CHI        String?
@@ -276,7 +277,7 @@ model KHTN {
   SALES_PT     String? //DSNV.MA_NV
   SALES_PT_REL DSNV?   @relation("SALES_PT", fields: [SALES_PT], references: [MA_NV])
 
-  KY_THUAT_PT     String[] //DSNV.MA_NV
+  KY_THUAT_PT String[] //DSNV.MA_NV
 
   PHAN_LOAI String? //PHANLOAI_KH.PL_KH
 

@@ -7,6 +7,7 @@ export const khachHangSchema = z.object({
     DIEN_THOAI: z.string().optional().or(z.literal('')),
     EMAIL: z.string().email('Email không hợp lệ').optional().or(z.literal('')),
     MST: z.string().optional().or(z.literal('')),
+    CCCD: z.string().optional().or(z.literal('')),
     DIA_CHI: z.string().optional().or(z.literal('')),
     NHOM_KH: z.string().optional().or(z.literal('')),
     NGUON: z.string().optional().or(z.literal('')),
