@@ -449,9 +449,9 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                         )}
                     </div>
                     <div className="flex items-center gap-3">
-                        <a 
-                            href="https://docs.google.com/spreadsheets/d/1d0FhHP32gNd14_WjgcwHmFwhI8BevM_lOiN52Twn8bY/edit?usp=sharing" 
-                            target="_blank" 
+                        <a
+                            href="https://docs.google.com/spreadsheets/d/1d0FhHP32gNd14_WjgcwHmFwhI8BevM_lOiN52Twn8bY/edit?usp=sharing"
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 h-10 text-sm font-medium text-emerald-600 border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-all"
                         >
@@ -745,25 +745,25 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                         ) : (
                             <div className="border border-border rounded-xl overflow-hidden">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-[12px]">
+                                    <table className="w-full text-left text-[12px] min-w-[1000px]">
                                         <thead>
                                             <tr className="bg-primary/10 border-b">
-                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8">#</th>
-                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[200px]">Hàng hóa</th>
-                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-16">ĐVT</th>
-                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Giá chưa VAT</th>
-                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Giá bán</th>
-                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-16">SL</th>
-                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-24">Thành tiền</th>
-                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-28">Ghi chú</th>
-                                                <th className="px-2 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8"></th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-10">#</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[250px]">Hàng hóa</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-10">ĐVT</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-right text-[10px] w-30">Giá chưa VAT</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-35">Giá bán</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-15">SL</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-30">Thành tiền</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-35">Ghi chú</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-12"></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {groupRows.map((row, idx) => (
                                                 <tr key={row._id} className={`border-b transition-colors ${row.MA_HH ? "hover:bg-muted/30" : "bg-yellow-50/50 dark:bg-yellow-900/5"}`}>
-                                                    <td className="px-2 py-1.5 text-muted-foreground">{idx + 1}</td>
-                                                    <td className="px-2 py-1.5 relative" data-hh-row-id={row._id}>
+                                                    <td className="px-1.5 py-1.5 text-center text-muted-foreground">{idx + 1}</td>
+                                                    <td className="px-1.5 py-1.5 relative" data-hh-row-id={row._id}>
                                                         {row.MA_HH ? (
                                                             <div className="flex items-center gap-1.5">
                                                                 <div className="min-w-0 flex-1">
@@ -781,19 +781,19 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                                             </div>
                                                         )}
                                                     </td>
-                                                    <td className="px-2 py-1.5 text-muted-foreground">{row.DON_VI_TINH || "—"}</td>
-                                                    <td className="px-2 py-1.5 text-right text-muted-foreground">{row.MA_HH ? fmtMoney(row.GIA_BAN_CHUA_VAT) : "—"}</td>
-                                                    <td className="px-2 py-1.5">
+                                                    <td className="px-1.5 py-1.5 text-muted-foreground">{row.DON_VI_TINH || "—"}</td>
+                                                    <td className="px-1.5 py-1.5 text-right text-muted-foreground">{row.MA_HH ? fmtMoney(row.GIA_BAN_CHUA_VAT) : "—"}</td>
+                                                    <td className="px-1.5 py-1.5">
                                                         <input type="text" inputMode="numeric" value={row.GIA_BAN > 0 ? fmtMoney(row.GIA_BAN) : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); updateRow(row._id!, "GIA_BAN", parseInt(raw, 10) || 0); }} disabled={!row.MA_HH} className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
                                                     </td>
-                                                    <td className="px-2 py-1.5">
+                                                    <td className="px-1.5 py-1.5">
                                                         <input type="number" min="0" step="1" value={row.SO_LUONG || ""} onChange={e => handleSoLuongChange(row._id!, parseFloat(e.target.value) || 0)} disabled={!row.MA_HH} className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
                                                     </td>
-                                                    <td className="px-2 py-1.5 text-right font-bold text-foreground">{row.MA_HH ? fmtMoney(row.THANH_TIEN) : "—"}</td>
-                                                    <td className="px-2 py-1.5">
+                                                    <td className="px-1.5 py-1.5 text-right font-bold text-foreground">{row.MA_HH ? fmtMoney(row.THANH_TIEN) : "—"}</td>
+                                                    <td className="px-1.5 py-1.5">
                                                         <input type="text" value={row.GHI_CHU || ""} onChange={e => updateRow(row._id!, "GHI_CHU", e.target.value)} disabled={!row.MA_HH} placeholder="..." className="w-full px-1 py-1 border border-border rounded text-[11px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
                                                     </td>
-                                                    <td className="px-2 py-1.5">
+                                                    <td className="px-1.5 py-1.5">
                                                         <button type="button" onClick={() => removeRow(row._id!)} className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors">
                                                             <Trash2 className="w-3.5 h-3.5" />
                                                         </button>

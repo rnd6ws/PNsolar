@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
-import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
+import { PermissionGuard, usePermissions } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import Modal from "@/components/Modal";
 import { deleteHopDong, getHopDongById, duyetHopDong } from "../action";
@@ -22,6 +22,7 @@ const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v)
 interface Props { data: any[]; visibleColumns: ColumnKey[]; viewMode?: "list" | "card"; }
 
 export default function HopDongList({ data, visibleColumns, viewMode = "list" }: Props) {
+    const { isAdmin } = usePermissions();
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
     const [editModal, setEditModal] = useState(false);
@@ -237,12 +238,12 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                     {!item.DUYET || item.DUYET === "Chờ duyệt" ? (
                                         <div className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800/50 transition-all hover:shadow-sm">
                                             <span className="pl-2.5 pr-1.5 py-0.5 text-yellow-700 dark:text-yellow-400 text-[11px] font-medium">Chờ duyệt</span>
-                                            <PermissionGuard moduleKey="hop-dong" level="manage">
+                                            {isAdmin && (
                                                 <div className="flex items-center gap-1 pr-1 py-0.5 pl-1.5 border-l border-yellow-200/80 dark:border-yellow-800/60">
                                                     <button onClick={() => openDuyetConfirm(item, "Đã duyệt")} className="p-1 bg-background/40 dark:bg-background/20 hover:bg-green-500 hover:text-white text-green-600 dark:hover:bg-green-600 dark:text-green-400 rounded-full transition-all" title="Duyệt"><CheckCircle2 className="w-3.5 h-3.5" /></button>
                                                     <button onClick={() => openDuyetConfirm(item, "Không duyệt")} className="p-1 bg-background/40 dark:bg-background/20 hover:bg-red-500 hover:text-white text-red-600 dark:hover:bg-red-600 dark:text-red-400 rounded-full transition-all" title="Không duyệt"><XCircle className="w-3.5 h-3.5" /></button>
                                                 </div>
-                                            </PermissionGuard>
+                                            )}
                                         </div>
                                     ) : item.DUYET === "Đã duyệt" ? (
                                         <div className="flex flex-col items-center gap-1">
@@ -372,11 +373,11 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
 
                             {/* Footer: Actions */}
                             <div className="flex items-center gap-2 pt-1 border-t border-border">
-                                {(!item.DUYET || item.DUYET === "Chờ duyệt") && (
-                                    <PermissionGuard moduleKey="hop-dong" level="manage">
+                                {(!item.DUYET || item.DUYET === "Chờ duyệt") && isAdmin && (
+                                    <>
                                         <button onClick={() => openDuyetConfirm(item, "Đã duyệt")} className="flex-none p-2 bg-muted/50 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors border border-transparent hover:border-green-200" title="Duyệt"><CheckCircle2 className="w-4 h-4" /></button>
                                         <button onClick={() => openDuyetConfirm(item, "Không duyệt")} className="flex-none p-2 bg-muted/50 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors border border-transparent hover:border-red-200" title="Không duyệt"><XCircle className="w-4 h-4" /></button>
-                                    </PermissionGuard>
+                                    </>
                                 )}
                                 <button onClick={() => handleView(item)} disabled={loadingView} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold"><Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span></button>
                                 <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-green-100 dark:hover:bg-green-900/30 text-muted-foreground hover:text-green-700 rounded-lg transition-colors text-xs font-semibold" title="Xuất HĐ Word"><BookDown className="w-4 h-4" /> <span className="hidden sm:inline">HĐ</span></button>

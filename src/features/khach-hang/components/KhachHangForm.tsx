@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Search, MapPin, Link2, ChevronDown, ChevronUp, Plus, X, UserPlus } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 import FormSelect from "@/components/FormSelect";
+import FormMultiSelect from "@/components/FormMultiSelect";
 import { lookupCompanyByTaxCode, getCoordinatesFromAddress, createNguoiGioiThieu, checkTenVietTatTrung } from "@/features/khach-hang/action";
 import { useResolveMapsUrl } from "@/hooks/useResolveMapsUrl";
 import { toast } from "sonner";
@@ -41,6 +42,10 @@ export function KhachHangForm({
     const formRef = useRef<HTMLFormElement>(null);
     const [lookupLoading, setLookupLoading] = useState(false);
     const [coordinateLoading, setCoordinateLoading] = useState(false);
+    // Toggle giữa nhập MST (doanh nghiệp) và CCCD (cá nhân)
+    const [inputMode, setInputMode] = useState<'MST' | 'CCCD'>(
+        defaultValues?.CCCD && !defaultValues?.MST ? 'CCCD' : 'MST'
+    );
     const [showCoordinates, setShowCoordinates] = useState(true);
     const [lat, setLat] = useState(defaultValues?.LAT?.toString() || "");
     const [long, setLong] = useState(defaultValues?.LONG?.toString() || "");
@@ -54,6 +59,8 @@ export function KhachHangForm({
 
     const [viettatLoading, setViettatLoading] = useState(false);
     const [viettatError, setViettatError] = useState<string | null>(null);
+
+    const [kyThuatPts, setKyThuatPts] = useState<string[]>(defaultValues?.KY_THUAT_PT || []);
 
     // Người đại diện
     const defaultNguoiDaiDien = defaultValues?.NGUOI_DAI_DIEN?.[0] || null;
@@ -313,7 +320,7 @@ export function KhachHangForm({
                 </div>
             </div>
 
-            {/* Row 3: Điện thoại & Email & MST */}
+            {/* Row 3: Điện thoại & Email & MST/CCCD */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 <div className="space-y-1.5 md:col-span-4 lg:col-span-3">
                     <label className="text-sm font-semibold text-muted-foreground">Điện thoại</label>
@@ -324,13 +331,53 @@ export function KhachHangForm({
                     <input name="EMAIL" type="email" className="input-modern" placeholder="email@gmail.com" defaultValue={defaultValues?.EMAIL ?? ""} />
                 </div>
                 <div className="space-y-1.5 md:col-span-12 lg:col-span-4">
-                    <label className="text-sm font-semibold text-muted-foreground">Mã số thuế</label>
-                    <div className="flex gap-2">
-                        <input name="MST" className="input-modern" placeholder="0123456789" defaultValue={defaultValues?.MST ?? ""} />
-                        <button type="button" onClick={handleLookup} disabled={lookupLoading} className="btn-premium-primary flex items-center justify-center gap-1.5 px-3">
-                            {lookupLoading ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <Search className="w-4 h-4" />}
+                    {/* Toggle label MST / CCCD */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setInputMode('MST')}
+                            className={`text-sm font-semibold transition-colors ${inputMode === 'MST'
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            Mã số thuế
                         </button>
+                        <span className="text-muted-foreground/40 text-sm select-none">/</span>
+                        <button
+                            type="button"
+                            onClick={() => setInputMode('CCCD')}
+                            className={`text-sm font-semibold transition-colors ${inputMode === 'CCCD'
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            CCCD
+                        </button>
+                        <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${inputMode === 'MST'
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                            }`}>
+                            {inputMode === 'MST' ? 'Doanh nghiệp' : 'Cá nhân'}
+                        </span>
                     </div>
+                    {/* Ẩn field không hoạt động để giữ giá trị cũ khi submit */}
+                    {inputMode === 'MST' ? (
+                        <>
+                            <input type="hidden" name="CCCD" value="" />
+                            <div className="flex gap-2">
+                                <input name="MST" className="input-modern" placeholder="0123456789" defaultValue={defaultValues?.MST ?? ""} />
+                                <button type="button" onClick={handleLookup} disabled={lookupLoading} className="btn-premium-primary flex items-center justify-center gap-1.5 px-3" title="Tra cứu thông tin doanh nghiệp theo MST">
+                                    {lookupLoading ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <Search className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <input type="hidden" name="MST" value="" />
+                            <input name="CCCD" className="input-modern" placeholder="012345678901" defaultValue={defaultValues?.CCCD ?? ""} />
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -487,7 +534,7 @@ export function KhachHangForm({
                     <label className="text-sm font-semibold text-muted-foreground">Nhóm KH</label>
                     <FormSelect
                         name="NHOM_KH"
-                        defaultValue={defaultValues?.NHOM_KH || ""}
+                        defaultValue={defaultValues?.NHOM_KH || "Khách lẻ"}
                         options={nhoms.map((n) => ({ label: n.NHOM, value: n.NHOM }))}
                         placeholder="-- Chọn nhóm --"
                     />
@@ -575,15 +622,27 @@ export function KhachHangForm({
                 </div>
             )}
 
-            {/* Row 7: Sales phụ trách */}
-            <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
-                <FormSelect
-                    name="SALES_PT"
-                    defaultValue={defaultValues?.SALES_PT || currentUserId || ""}
-                    options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
-                    placeholder="-- Chọn nhân viên --"
-                />
+            {/* Row 7: Phụ trách */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-muted-foreground">Sales phụ trách</label>
+                    <FormSelect
+                        name="SALES_PT"
+                        defaultValue={defaultValues?.SALES_PT || currentUserId || ""}
+                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
+                        placeholder="-- Chọn nhân viên --"
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-muted-foreground">Kỹ thuật phụ trách</label>
+                    <input type="hidden" name="KY_THUAT_PT" value={JSON.stringify(kyThuatPts)} />
+                    <FormMultiSelect
+                        value={kyThuatPts}
+                        onChange={setKyThuatPts}
+                        options={nhanViens.map((nv) => ({ label: nv.HO_TEN, value: nv.ID }))}
+                        placeholder="-- Chọn nhiều kỹ thuật --"
+                    />
+                </div>
             </div>
 
             {/* Nút submit */}

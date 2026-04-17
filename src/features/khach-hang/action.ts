@@ -34,18 +34,26 @@ export async function getKhachHangs(filters: {
     if (userContext) {
         // Dùng context đã resolve từ page — không cần gọi DB thêm
         if (userContext.role === 'STAFF') {
-            andConditions.push({ SALES_PT: userContext.maNv ?? "NONE" });
+            const maNv = userContext.maNv ?? "NONE";
+            andConditions.push({
+                OR: [
+                    { SALES_PT: maNv },
+                    { KY_THUAT_PT: { has: maNv } }
+                ]
+            });
         }
     } else {
         // Fallback: tự lấy user (dùng khi gọi trực tiếp từ nơi khác)
         const user = await getCurrentUser();
         if (user?.ROLE === 'STAFF') {
             const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-            if (staff?.MA_NV) {
-                andConditions.push({ SALES_PT: staff.MA_NV });
-            } else {
-                andConditions.push({ SALES_PT: "NONE" });
-            }
+            const maNv = staff?.MA_NV ?? "NONE";
+            andConditions.push({
+                OR: [
+                    { SALES_PT: maNv },
+                    { KY_THUAT_PT: { has: maNv } }
+                ]
+            });
         }
     }
 
@@ -154,14 +162,22 @@ export async function getKhachHangStats(
         if (userContext) {
             // Dùng context đã resolve từ page
             if (userContext.role === 'STAFF') {
-                where.SALES_PT = userContext.maNv ?? "NONE";
+                const maNv = userContext.maNv ?? "NONE";
+                where.OR = [
+                    { SALES_PT: maNv },
+                    { KY_THUAT_PT: { has: maNv } }
+                ];
             }
         } else {
             // Fallback: tự lấy user
             const user = await getCurrentUser();
             if (user?.ROLE === 'STAFF') {
                 const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-                where.SALES_PT = staff?.MA_NV || "NONE";
+                const maNv = staff?.MA_NV ?? "NONE";
+                where.OR = [
+                    { SALES_PT: maNv },
+                    { KY_THUAT_PT: { has: maNv } }
+                ];
             }
         }
 
@@ -243,12 +259,14 @@ export async function createKhachHang(data: any) {
                         DIEN_THOAI: data.DIEN_THOAI || null,
                         EMAIL: data.EMAIL || null,
                         MST: data.MST || null,
+                        CCCD: data.CCCD || null,
                         DIA_CHI: data.DIA_CHI || null,
                         NHOM_KH: data.NHOM_KH || null,
                         NGUON: data.NGUON || null,
                         PHAN_LOAI: data.PHAN_LOAI || null,
                         MA_NGT: data.NGUOI_GIOI_THIEU || null,
                         SALES_PT: data.SALES_PT || null,
+                        KY_THUAT_PT: data.KY_THUAT_PT ? JSON.parse(data.KY_THUAT_PT) : [],
                         LICH_SU: initialLichSu,
                         NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
                         NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
@@ -330,12 +348,14 @@ export async function updateKhachHang(id: string, data: any) {
                 DIEN_THOAI: data.DIEN_THOAI || null,
                 EMAIL: data.EMAIL || null,
                 MST: data.MST || null,
+                CCCD: data.CCCD || null,
                 DIA_CHI: data.DIA_CHI || null,
                 NHOM_KH: data.NHOM_KH || null,
                 NGUON: data.NGUON || null,
                 PHAN_LOAI: data.PHAN_LOAI || null,
                 MA_NGT: data.NGUOI_GIOI_THIEU || null,
                 SALES_PT: data.SALES_PT || null,
+                KY_THUAT_PT: data.KY_THUAT_PT ? JSON.parse(data.KY_THUAT_PT) : [],
                 LICH_SU: updatedLichSu,
                 NGAY_GHI_NHAN: data.NGAY_GHI_NHAN ? new Date(data.NGAY_GHI_NHAN) : null,
                 NGAY_THANH_LAP: data.NGAY_THANH_LAP ? new Date(data.NGAY_THANH_LAP) : null,
@@ -853,6 +873,7 @@ export interface KhachHangImportPayload {
     NGUON?: string;
     NGAY_GHI_NHAN?: string;
     SALES_PT?: string;
+    KY_THUAT_PT?: string;
     LINK_MAP?: string;
     LAT?: string;
     LONG?: string;
@@ -901,6 +922,12 @@ export async function importKhachHangs(rows: KhachHangImportPayload[]) {
             const salesName = row.SALES_PT?.trim();
             const salesMaNv = salesName ? nVMap.get(salesName.toLowerCase()) || salesName : null;
 
+            const kyThuatStr = row.KY_THUAT_PT?.trim();
+            let kyThuatArr: string[] = [];
+            if (kyThuatStr) {
+                kyThuatArr = kyThuatStr.split(',').map(n => n.trim()).filter(Boolean).map(n => nVMap.get(n.toLowerCase()) || n);
+            }
+
             while (!created && attempts < 20) {
                 const maKh = `${prefix}-${String(nextNum).padStart(3, '0')}`;
                 try {
@@ -917,6 +944,7 @@ export async function importKhachHangs(rows: KhachHangImportPayload[]) {
                             PHAN_LOAI: row.PHAN_LOAI?.trim() || null,
                             NGUON: row.NGUON?.trim() || null,
                             SALES_PT: salesMaNv,
+                            KY_THUAT_PT: kyThuatArr.length > 0 ? kyThuatArr : [],
                             NGAY_GHI_NHAN: row.NGAY_GHI_NHAN ? new Date(row.NGAY_GHI_NHAN) : now,
                             NGAY_THANH_LAP: row.NGAY_THANH_LAP ? new Date(row.NGAY_THANH_LAP) : null,
                             LINK_MAP: row.LINK_MAP?.trim() || null,

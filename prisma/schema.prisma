@@ -265,6 +265,7 @@ model KHTN {
   DIEN_THOAI     String?
   EMAIL          String?
   MST            String?
+  CCCD           String?
   NGAY_THANH_LAP DateTime?
   LINK_MAP       String?
   DIA_CHI        String?
@@ -275,6 +276,8 @@ model KHTN {
 
   SALES_PT     String? //DSNV.MA_NV
   SALES_PT_REL DSNV?   @relation("SALES_PT", fields: [SALES_PT], references: [MA_NV])
+
+  KY_THUAT_PT String[] //DSNV.MA_NV
 
   PHAN_LOAI String? //PHANLOAI_KH.PL_KH
 

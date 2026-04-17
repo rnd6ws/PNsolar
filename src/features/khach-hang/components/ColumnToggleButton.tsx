@@ -7,6 +7,7 @@ export type ColumnKey =
     | "nhom"
     | "phanLoai"
     | "nhanVienPT"
+    | "kyThuatPT"
     | "nguonSales"
     | "ngayGhiNhan"
     | "diaChi"
@@ -23,6 +24,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: "nhom", label: "Nhóm khách hàng" },
     { key: "phanLoai", label: "Phân loại" },
     { key: "nhanVienPT", label: "NV phụ trách" },
+    { key: "kyThuatPT", label: "Kỹ thuật phụ trách" },
     { key: "nguonSales", label: "Nguồn KH" },
     { key: "diaChi", label: "Địa chỉ" },
     { key: "mst", label: "Mã số thuế" },
