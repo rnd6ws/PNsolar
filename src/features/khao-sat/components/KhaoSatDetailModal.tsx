@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Building2, MapPin, User, Calendar, ChevronDown, ChevronRight, ImageIcon, X } from "lucide-react";
+import { ClipboardList, Building2, MapPin, User, Calendar, ChevronDown, ChevronRight, ImageIcon, X, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import Modal from "@/components/Modal";
 import Image from "next/image";
@@ -15,6 +15,7 @@ interface Props {
         CONG_SUAT: string | null;
         DIA_CHI_CONG_TRINH: string | null;
         DIA_CHI: string | null;
+        LINK_MAP?: string | null;
         NGUOI_KHAO_SAT_REL: { HO_TEN: string; MA_NV: string } | null;
         KHTN_REL: { TEN_KH: string; MA_KH: string } | null;
         CO_HOI_REL: { MA_CH: string } | null;
@@ -140,7 +141,7 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                                 <InfoCard icon={Calendar} label="Ngày khảo sát" value={formatDate(item.NGAY_KHAO_SAT)} />
                                 <InfoCard icon={User} label="Nhân viên khảo sát" value={renderNguoiKSTags(finalNguoiKSName)} className="md:col-span-2 lg:col-span-1" />
                                 <InfoCard icon={User} label="Khách hàng" value={item.KHTN_REL?.TEN_KH || "—"} className="md:col-span-2 lg:col-span-3" />
-                                <InfoCard icon={MapPin} label="Địa chỉ" value={item.DIA_CHI || "—"} className="md:col-span-2 lg:col-span-3" />
+                                <InfoCard icon={MapPin} label="Địa chỉ" value={item.DIA_CHI || "—"} className="md:col-span-2 lg:col-span-3" linkMap={item.LINK_MAP ?? undefined} />
                                 <InfoCard icon={MapPin} label="Địa điểm lắp đặt" value={item.DIA_CHI_CONG_TRINH || "—"} className="md:col-span-2 lg:col-span-3" />
                                 <InfoCard icon={Building2} label="Hạng mục" value={item.HANG_MUC || "—"} className="md:col-span-2 lg:col-span-2" />
                                 <InfoCard icon={Building2} label="Công suất" value={item.CONG_SUAT || "—"} className="md:col-span-2 lg:col-span-1" />
@@ -264,12 +265,27 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
     );
 }
 
-function InfoCard({ icon: Icon, label, value, className = "" }: { icon: any; label: string; value: React.ReactNode; className?: string }) {
+function InfoCard({ icon: Icon, label, value, className = "", linkMap }: { icon: any; label: string; value: React.ReactNode; className?: string; linkMap?: string }) {
     return (
         <div className={`bg-muted/30 rounded-lg p-3 flex items-start gap-2.5 ${className}`}>
             <Icon className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-            <div className="min-w-0 flex flex-col justify-center">
-                <p className="text-[11px] text-muted-foreground font-semibold tracking-wide">{label}</p>
+            <div className="min-w-0 flex flex-col justify-center flex-1">
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] text-muted-foreground font-semibold tracking-wide">{label}</p>
+                    {linkMap && (
+                        <a
+                            href={linkMap}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Mở bản đồ"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white shadow-sm hover:shadow-emerald-500/30 hover:shadow-md transition-all duration-150 shrink-0"
+                        >
+                            <MapPin className="w-3 h-3" />
+                            Mở bản đồ
+                            <ExternalLink className="w-2.5 h-2.5 opacity-80" />
+                        </a>
+                    )}
+                </div>
                 <div className="text-sm font-medium text-foreground mt-0.5 wrap-break-word leading-relaxed">{value}</div>
             </div>
         </div>

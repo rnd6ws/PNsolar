@@ -776,6 +776,7 @@ model KHAO_SAT {
   CO_HOI_REL CO_HOI? @relation(fields: [MA_CH], references: [MA_CH])
 
   DIA_CHI           String?
+  LINK_MAP          String?
   NGUOI_LIEN_HE     String?
   NGUOI_LIEN_HE_REL NGUOI_LIENHE? @relation(fields: [NGUOI_LIEN_HE], references: [MA_NLH])
 

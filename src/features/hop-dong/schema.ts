@@ -19,7 +19,7 @@ export const hopDongSchema = z.object({
     MA_KH: z.string().min(1, 'Vui lòng chọn khách hàng'),
     MA_CH: z.string().optional().nullable(),
     MA_BAO_GIA: z.string().optional().nullable(),
-    LOAI_HD: z.enum(['Dân dụng', 'Công nghiệp']).default('Dân dụng'),
+    LOAI_HD: z.enum(['Dân dụng', 'Công nghiệp', 'Mua bán']).default('Dân dụng'),
 
     PT_VAT: z.number().min(0).max(100).default(8),
     TT_UU_DAI: z.number().default(0),
@@ -101,7 +101,7 @@ export interface DkHdRow extends DkHdInput {
 }
 
 export interface DkHdTemplate extends Omit<DkHdRow, '_id'> {
-    LOAI_HD?: 'ALL' | 'Dân dụng' | 'Công nghiệp';
+    LOAI_HD?: 'ALL' | 'Dân dụng' | 'Công nghiệp' | 'Mua bán';
 }
 
 // ===== Zod Schema cho THONG_TIN_KHAC =====
@@ -119,7 +119,7 @@ export interface ThongTinKhacRow extends ThongTinKhacInput {
 
 export interface ThongTinKhacTemplate extends Omit<ThongTinKhacRow, '_id'> {
     LOAI_KH?: 'ALL' | 'CA_NHAN' | 'DOANH_NGHIEP';
-    LOAI_HD?: 'ALL' | 'Dân dụng' | 'Công nghiệp';
+    LOAI_HD?: 'ALL' | 'Dân dụng' | 'Công nghiệp' | 'Mua bán';
 }
 
 // ===== Giá trị mặc định cho THONG_TIN_KHAC =====
@@ -129,7 +129,8 @@ export const DEFAULT_THONG_TIN_KHAC: ThongTinKhacTemplate[] = [
     { TIEU_DE: 'Địa chỉ', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'ALL' }, // Địa chỉ (KHTN_REL.DIA_CHI)
     { TIEU_DE: 'Điện thoại', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'ALL' }, // Số điện thoại (KHTN_REL.DIEN_THOAI)
     { TIEU_DE: 'Fax', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'Công nghiệp' }, // Fax
-    { TIEU_DE: 'Email', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'ALL' }, // Email (KHTN_REL.EMAIL)
+    { TIEU_DE: 'Email', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'Công nghiệp' }, // Email (KHTN_REL.EMAIL)
+    { TIEU_DE: 'Email', NOI_DUNG: '', LOAI_KH: 'ALL', LOAI_HD: 'Dân dụng' }, // Email (KHTN_REL.EMAIL)
     { TIEU_DE: 'CCCD', NOI_DUNG: '', LOAI_KH: 'CA_NHAN', LOAI_HD: 'Dân dụng' }, // Số CCCD KHTN không có mst
     { TIEU_DE: 'Cấp ngày', NOI_DUNG: '', LOAI_KH: 'CA_NHAN', LOAI_HD: 'Dân dụng' }, // Ngày cấp KHTN không có mst
     { TIEU_DE: 'Nơi cấp', NOI_DUNG: '', LOAI_KH: 'CA_NHAN', LOAI_HD: 'Dân dụng' }, // Nơi cấp KHTN không có mst
@@ -139,7 +140,6 @@ export const DEFAULT_THONG_TIN_KHAC: ThongTinKhacTemplate[] = [
     { TIEU_DE: 'Mã số thuế', NOI_DUNG: '', LOAI_KH: 'DOANH_NGHIEP', LOAI_HD: 'ALL' }, // Mã số thuế KHTN có mst
 ];
 
-// ===== Giá trị mặc định cho DK_HD (Điều khoản hợp đồng) =====
 // ===== Giá trị mặc định cho DK_HD (Điều khoản hợp đồng) =====
 export const DEFAULT_DK_HD: DkHdTemplate[] = [
     {
@@ -201,6 +201,24 @@ export const DEFAULT_DK_HD: DkHdTemplate[] = [
         NOI_DUNG: 'Trong vòng 60 ngày kể từ ngày nhận bàn giao mặt bằng và các hồ sơ liên quan để phục vụ công tác thiết kế, thẩm duyệt hệ thống theo quy định pháp luật (không bao gồm các ngày nghỉ và ngày lễ theo quy định) như sau:',
         AN_HIEN: true,
         LOAI_HD: 'Công nghiệp',
+    },
+    {
+        HANG_MUC: 'Thời gian giao hàng',
+        NOI_DUNG: '',
+        AN_HIEN: true,
+        LOAI_HD: 'Mua bán',
+    },
+    {
+        HANG_MUC: 'Địa điểm giao hàng',
+        NOI_DUNG: 'Kho hàng bên B',
+        AN_HIEN: true,
+        LOAI_HD: 'Mua bán',
+    },
+    {
+        HANG_MUC: 'Thời gian bảo hành kỹ thuật',
+        NOI_DUNG: 'theo chính sách nhà sản xuất.',
+        AN_HIEN: true,
+        LOAI_HD: 'Mua bán',
     },
 ];
 

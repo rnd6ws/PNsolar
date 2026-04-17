@@ -497,8 +497,16 @@ export async function searchKhachHang(query?: string) {
         const user = await getCurrentUser();
         if (user?.ROLE === 'STAFF') {
             const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-            if (staff?.MA_NV) andConditions.push({ SALES_PT: staff.MA_NV });
-            else andConditions.push({ MA_KH: 'NONE' });
+            if (staff?.MA_NV) {
+                andConditions.push({
+                    OR: [
+                        { SALES_PT: staff.MA_NV },
+                        { KY_THUAT_PT: { has: staff.MA_NV } },
+                    ]
+                });
+            } else {
+                andConditions.push({ MA_KH: 'NONE' });
+            }
         }
 
         if (query?.trim()) {
