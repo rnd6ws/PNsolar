@@ -204,7 +204,7 @@ export const DEFAULT_DK_HD: DkHdTemplate[] = [
     },
     {
         HANG_MUC: 'Thời gian giao hàng',
-        NOI_DUNG: '',
+        NOI_DUNG: '- Bên B sẽ giao hàng ngay cho bên A sau khi bên B nhận được tiền thanh toán từ bên A (theo điều 6 của hợp đồng).',
         AN_HIEN: true,
         LOAI_HD: 'Mua bán',
     },

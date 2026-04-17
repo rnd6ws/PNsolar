@@ -12,6 +12,7 @@ import ViewHopDongModal from "./ViewHopDongModal";
 import { exportHopDongDocx, exportHopDongAndPLDocx } from "../utils/exportHopDong";
 import { exportHopDongCNDocx } from "../utils/exportHopDongCN";
 import { exportPLHopDongDocx } from "../utils/exportPLHopDong";
+import { exportHopDongMuaBanDocx } from "../utils/exportHopDongMuaBan";
 import AddEditBanGiaoModal from "@/features/ban-giao/components/AddEditBanGiaoModal";
 import ViewBanGiaoModal from "@/features/ban-giao/components/ViewBanGiaoModal";
 import { getBanGiaoById } from "@/features/ban-giao/action";
@@ -97,6 +98,9 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                 if (data.LOAI_HD === "Công nghiệp") {
                     await exportHopDongCNDocx(data);
                     toast.success("Đã xuất file hợp đồng!");
+                } else if (data.LOAI_HD === "Mua bán") {
+                    await exportHopDongMuaBanDocx(data);
+                    toast.success("Đã xuất file hợp đồng mua bán!");
                 } else {
                     // Dân dụng: xuất đồng thời HĐ + Phụ Lục (VAT tự động từ PT_VAT)
                     await exportHopDongAndPLDocx(data);

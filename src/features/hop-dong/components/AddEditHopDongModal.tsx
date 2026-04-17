@@ -396,6 +396,27 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
         });
     }, [tongTien]);
 
+    useEffect(() => {
+        if (loaiHD === "Mua bán") {
+            setDkttRows(prev => {
+                const existing = prev[0] || {};
+                const isAlreadySet = prev.length === 1 &&
+                    prev[0].LAN_THANH_TOAN === "Lần 1" &&
+                    prev[0].PT_THANH_TOAN === 100 &&
+                    prev[0].NOI_DUNG_YEU_CAU === "ngay khi ký kết hợp đồng";
+                if (isAlreadySet) return prev;
+                return [{
+                    ...existing,
+                    _id: existing._id || tempId(),
+                    LAN_THANH_TOAN: "Lần 1",
+                    PT_THANH_TOAN: 100,
+                    SO_TIEN: tongTien > 0 ? tongTien : 0,
+                    NOI_DUNG_YEU_CAU: "ngay khi ký kết hợp đồng"
+                }];
+            });
+        }
+    }, [loaiHD, tongTien]);
+
     const handleSubmit = () => {
         if (!maKH) { toast.error("Vui lòng chọn khách hàng!"); setActiveTab("general"); return; }
         if (validRows.length === 0) { toast.error("Vui lòng thêm ít nhất 1 hàng hóa!"); setActiveTab("details"); return; }
@@ -550,7 +571,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                         setActiveGroups(groups);
                                                         setActiveNhomTab(groups[0]);
                                                     }
-                                                    if (dkttData && dkttData.length > 0) {
+                                                    if (dkttData && dkttData.length > 0 && loaiHD !== "Mua bán") {
                                                         const newDktt: DkttHdRow[] = dkttData.map((d: any, index: number) => ({
                                                             _id: tempId(),
                                                             LAN_THANH_TOAN: `Lần ${index + 1}`,
@@ -923,7 +944,9 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                 <span className="text-muted-foreground">{dkttRows.filter(d => d.LAN_THANH_TOAN).length} lần thanh toán</span>
                             </div>
                         </div>
-                        <button type="button" onClick={() => setDkttRows(prev => [...prev, { _id: tempId(), LAN_THANH_TOAN: `Lần ${prev.length + 1}`, PT_THANH_TOAN: 0, SO_TIEN: 0, NOI_DUNG_YEU_CAU: "" }])} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"><Plus className="w-4 h-4" />Thêm lần</button>
+                        {loaiHD !== "Mua bán" && (
+                            <button type="button" onClick={() => setDkttRows(prev => [...prev, { _id: tempId(), LAN_THANH_TOAN: `Lần ${prev.length + 1}`, PT_THANH_TOAN: 0, SO_TIEN: 0, NOI_DUNG_YEU_CAU: "" }])} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"><Plus className="w-4 h-4" />Thêm lần</button>
+                        )}
                     </div>
                     {dkttRows.length === 0 ? (
                         <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-xl"><CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="text-sm">Chưa có điều kiện thanh toán.</p></div>
@@ -943,19 +966,23 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                         {dkttRows.map((row, idx) => (
                                             <tr key={row._id} className="border-b hover:bg-muted/30 transition-colors">
                                                 <td className="px-3 py-2 text-muted-foreground">{idx + 1}</td>
-                                                <td className="px-3 py-2"><input type="text" value={row.LAN_THANH_TOAN} onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, LAN_THANH_TOAN: e.target.value } : r))} className="w-full px-2 py-1.5 border border-border rounded text-[13px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="VD: Lần 1" /></td>
+                                                <td className="px-3 py-2"><input type="text" value={row.LAN_THANH_TOAN} onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, LAN_THANH_TOAN: e.target.value } : r))} className="w-full px-2 py-1.5 border border-border rounded text-[13px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-50" placeholder="VD: Lần 1" disabled={loaiHD === "Mua bán"} /></td>
                                                 <td className="px-3 py-2">
                                                     <div className="relative"><input type="number" min="0" max="100" step="0.1" value={row.PT_THANH_TOAN || ""} onChange={e => {
                                                         const pt = parseFloat(e.target.value) || 0;
                                                         const st = tongTien > 0 ? Math.round((tongTien * pt) / 100) : 0;
                                                         setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, PT_THANH_TOAN: pt, SO_TIEN: st } : r));
-                                                    }} className="w-full px-2 py-1.5 pr-7 border border-border rounded text-[13px] text-right bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="0" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span></div>
+                                                    }} className="w-full px-2 py-1.5 pr-7 border border-border rounded text-[13px] text-right bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-50" placeholder="0" disabled={loaiHD === "Mua bán"} /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span></div>
                                                 </td>
                                                 <td className="px-3 py-2 text-right font-medium text-foreground text-[13px]">
                                                     {row.SO_TIEN > 0 ? fmtMoney(row.SO_TIEN) : "0"} ₫
                                                 </td>
-                                                <td className="px-3 py-2"><input type="text" value={row.NOI_DUNG_YEU_CAU || ""} onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG_YEU_CAU: e.target.value } : r))} className="w-full px-2 py-1.5 border border-border rounded text-[13px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="Nội dung yêu cầu..." /></td>
-                                                <td className="px-3 py-2"><button type="button" onClick={() => setDkttRows(prev => prev.filter(r => r._id !== row._id))} className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors"><Trash2 className="w-3.5 h-3.5" /></button></td>
+                                                <td className="px-3 py-2"><input type="text" value={row.NOI_DUNG_YEU_CAU || ""} onChange={e => setDkttRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG_YEU_CAU: e.target.value } : r))} className="w-full px-2 py-1.5 border border-border rounded text-[13px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-50" placeholder="Nội dung yêu cầu..." /></td>
+                                                <td className="px-3 py-2">
+                                                    {loaiHD !== "Mua bán" && (
+                                                        <button type="button" onClick={() => setDkttRows(prev => prev.filter(r => r._id !== row._id))} className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
