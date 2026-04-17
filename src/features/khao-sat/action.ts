@@ -188,6 +188,7 @@ export async function createKhaoSat(data: {
     MA_KH?: string;
     MA_CH?: string;
     DIA_CHI?: string;
+    LINK_MAP?: string;
     NGUOI_LIEN_HE?: string;
     DIA_CHI_CONG_TRINH?: string;
     HANG_MUC?: string;
@@ -208,6 +209,7 @@ export async function createKhaoSat(data: {
                 MA_KH: data.MA_KH || null,
                 MA_CH: data.MA_CH || null,
                 DIA_CHI: data.DIA_CHI || null,
+                LINK_MAP: data.LINK_MAP || null,
                 NGUOI_LIEN_HE: data.NGUOI_LIEN_HE || null,
                 DIA_CHI_CONG_TRINH: data.DIA_CHI_CONG_TRINH || null,
                 HANG_MUC: data.HANG_MUC || null,
@@ -227,6 +229,7 @@ export async function updateKhaoSat(id: string, data: {
     MA_KH?: string;
     MA_CH?: string;
     DIA_CHI?: string;
+    LINK_MAP?: string;
     NGUOI_LIEN_HE?: string;
     DIA_CHI_CONG_TRINH?: string;
     HANG_MUC?: string;
@@ -243,6 +246,7 @@ export async function updateKhaoSat(id: string, data: {
                 MA_KH: data.MA_KH || null,
                 MA_CH: data.MA_CH || null,
                 DIA_CHI: data.DIA_CHI || null,
+                LINK_MAP: data.LINK_MAP || null,
                 NGUOI_LIEN_HE: data.NGUOI_LIEN_HE || null,
                 DIA_CHI_CONG_TRINH: data.DIA_CHI_CONG_TRINH || null,
                 HANG_MUC: data.HANG_MUC || null,

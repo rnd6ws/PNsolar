@@ -43,6 +43,7 @@ export default function KhaoSatFormModal({
         MA_KH: "",
         MA_CH: "",
         DIA_CHI: "",
+        LINK_MAP: "",
         NGUOI_LIEN_HE: "",
         DIA_CHI_CONG_TRINH: "",
         HANG_MUC: "",
@@ -94,6 +95,7 @@ export default function KhaoSatFormModal({
                     MA_KH: initialData.MA_KH || "",
                     MA_CH: initialData.MA_CH || "",
                     DIA_CHI: initialData.DIA_CHI || "",
+                    LINK_MAP: initialData.LINK_MAP || "",
                     NGUOI_LIEN_HE: initialData.NGUOI_LIEN_HE || "",
                     DIA_CHI_CONG_TRINH: initialData.DIA_CHI_CONG_TRINH || "",
                     HANG_MUC: initialData.HANG_MUC || "",
@@ -123,6 +125,7 @@ export default function KhaoSatFormModal({
                     MA_KH: "",
                     MA_CH: "",
                     DIA_CHI: "",
+                    LINK_MAP: "",
                     DIA_CHI_CONG_TRINH: "",
                     HANG_MUC: "",
                     CONG_SUAT: "",
@@ -292,6 +295,15 @@ export default function KhaoSatFormModal({
                                 value={form.DIA_CHI}
                                 onChange={(e) => setForm((f) => ({ ...f, DIA_CHI: e.target.value }))}
                                 placeholder="Địa chỉ liên hệ"
+                            />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Link bản đồ</label>
+                            <input
+                                className="input-modern"
+                                value={form.LINK_MAP}
+                                onChange={(e) => setForm((f) => ({ ...f, LINK_MAP: e.target.value }))}
+                                placeholder="https://maps.google.com/..."
                             />
                         </div>
                         <div className="space-y-2">

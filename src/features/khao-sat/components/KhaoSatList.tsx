@@ -32,6 +32,7 @@ type KhaoSatItem = {
     CONG_SUAT: string | null;
     DIA_CHI_CONG_TRINH: string | null;
     DIA_CHI: string | null;
+    LINK_MAP?: string | null;
     NGUOI_KHAO_SAT: string | null;
     MA_KH: string | null;
     MA_CH: string | null;
