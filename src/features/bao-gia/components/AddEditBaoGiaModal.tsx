@@ -33,6 +33,7 @@ interface Props {
     onClose: () => void;
     onSuccess: () => void;
     editData?: any;
+    copyData?: any;
 }
 
 const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v) : "0";
@@ -49,8 +50,9 @@ const autoResizeTextarea = (el: HTMLTextAreaElement | null) => {
 
 type TabKey = "general" | "details" | "payment" | "terms";
 
-export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editData }: Props) {
+export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editData, copyData }: Props) {
     const isEdit = !!editData;
+    const isCopy = !!copyData && !editData;
     const [isPending, startTransition] = useTransition();
     const [activeTab, setActiveTab] = useState<TabKey>("general");
 
@@ -113,7 +115,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     const [hhDropdownStyle, setHhDropdownStyle] = useState<React.CSSProperties>({});
     const hhCacheRef = useRef<HHOption[]>([]);
 
-    // ═══ Init from editData ═══
+    // ═══ Init from editData / copyData ═══
     useEffect(() => {
         if (!isOpen) return;
         setActiveTab("general");
@@ -178,6 +180,62 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             if (editData.MA_KH) {
                 getCoHoiByKhachHang(editData.MA_KH).then(setCoHois);
             }
+        } else if (copyData) {
+            // ═══ COPY mode: ngày = hôm nay, KH/NV/tệp/ghi chú reset, loại BG & VAT giữ nguyên, các tab còn lại copy ═══
+            const today = new Date().toISOString().slice(0, 10);
+            setNgayBaoGia(today);
+            // Khách hàng: xóa để chọn lại
+            setMaKH(""); setSelectedKH(null);
+            // Cơ hội: reset
+            setMaCH(""); setSelectedCH(null); setCoHois([]);
+            // Loại báo giá & VAT: giữ nguyên
+            setLoaiBaoGia(copyData.LOAI_BAO_GIA || "Dân dụng");
+            setPtVat(copyData.PT_VAT ?? 8);
+            setTtUuDai(copyData.TT_UU_DAI || 0);
+            // Ghi chú & tệp đính kèm: xóa trắng
+            setGhiChu("");
+            setTepDinhKems([]);
+            // Người gửi: xóa để chọn lại
+            setNguoiGui(""); setSelectedNV(null);
+
+            // Chi tiết hàng hóa: copy nguyên (bỏ _dbId để tạo mới)
+            const rows: BaoGiaChiTietRow[] = (copyData.CHI_TIETS || []).map((ct: any) => ({
+                _id: tempId(),
+                _tenHH: ct.HH_REL?.TEN_HH || ct.MA_HH,
+                MA_HH: ct.MA_HH,
+                NHOM_HH: ct.NHOM_HH || ct.HH_REL?.NHOM_HH || DEFAULT_NHOM,
+                DON_VI_TINH: ct.DON_VI_TINH,
+                GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT || 0,
+                GIA_BAN: ct.GIA_BAN,
+                SO_LUONG: ct.SO_LUONG,
+                THANH_TIEN: ct.THANH_TIEN,
+                GHI_CHU: ct.GHI_CHU || "",
+            }));
+            setChiTiets(rows);
+
+            const existingGroups = [...new Set(rows.map(r => r.NHOM_HH || DEFAULT_NHOM))];
+            if (!existingGroups.includes(DEFAULT_NHOM)) existingGroups.unshift(DEFAULT_NHOM);
+            setActiveGroups(existingGroups);
+            setActiveNhomTab(existingGroups[0]);
+
+            // Điều kiện thanh toán: copy (bỏ _dbId)
+            const dkttData: DkttBgRow[] = (copyData.DKTT_BG || []).map((d: any) => ({
+                _id: tempId(),
+                DOT_THANH_TOAN: d.DOT_THANH_TOAN,
+                PT_THANH_TOAN: d.PT_THANH_TOAN,
+                NOI_DUNG_YEU_CAU: d.NOI_DUNG_YEU_CAU || "",
+            }));
+            setDkttRows(dkttData);
+
+            // Điều khoản báo giá: copy (bỏ _dbId)
+            const dkData: DkBaoGiaRow[] = (copyData.DIEU_KHOAN_BG || []).map((dk: any) => ({
+                _id: tempId(),
+                HANG_MUC: dk.HANG_MUC,
+                NOI_DUNG: dk.NOI_DUNG ?? null,
+                GIA_TRI: dk.GIA_TRI ?? null,
+                AN_HIEN: dk.AN_HIEN ?? true,
+            }));
+            setDkBaoGiaRows(dkData.length > 0 ? dkData : DEFAULT_DIEU_KHOAN_BG.map(d => ({ ...d, _id: tempId() })));
         } else {
             const today = new Date().toISOString().slice(0, 10);
             setNgayBaoGia(today);
@@ -194,7 +252,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
         setKhQuery(""); setKhResults([]); setKhOpen(false);
         setNvQuery(""); setNvResults([]); setNvOpen(false);
         setHhRowId(null); setHhQuery(""); setHhResults([]); setShowNhomPicker(false);
-    }, [isOpen, editData]);
+    }, [isOpen, editData, copyData]);
 
     useEffect(() => { chiTietsRef.current = chiTiets; }, [chiTiets]);
 
@@ -440,7 +498,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     ];
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? "Sửa báo giá" : "Thêm báo giá mới"} icon={FileText} size="xl" fullHeight
+        <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? "Sửa báo giá" : isCopy ? "Copy báo giá" : "Thêm báo giá mới"} icon={FileText} size="xl" fullHeight
             footer={
                 <>
                     <div className="text-sm text-muted-foreground">
@@ -461,7 +519,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                         <button type="button" onClick={onClose} disabled={isPending} className="btn-premium-secondary px-6 h-10 text-sm">Hủy</button>
                         <button type="button" onClick={handleSubmit} disabled={isPending} className="btn-premium-primary px-6 h-10 text-sm flex items-center gap-2">
                             {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {isEdit ? "Cập nhật báo giá" : "Tạo báo giá"}
+                            {isEdit ? "Cập nhật báo giá" : isCopy ? "Tạo báo giá (từ bản copy)" : "Tạo báo giá"}
                         </button>
                     </div>
                 </>

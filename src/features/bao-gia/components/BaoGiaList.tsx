@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, FileDown, FileSpreadsheet, Loader2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -35,6 +35,9 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
     const [viewData, setViewData] = useState<any>(null);
     const [loadingView, setLoadingView] = useState(false);
     const [exportingId, setExportingId] = useState<string | null>(null);
+    const [copyModal, setCopyModal] = useState(false);
+    const [copyData, setCopyData] = useState<any>(null);
+    const [loadingCopy, setLoadingCopy] = useState(false);
 
     // ═══ Sort ════════════════════════════════════════════════
     const sortedData = useMemo(() => {
@@ -104,6 +107,24 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
     const handleSuccess = () => {
         setEditModal(false);
         setEditData(null);
+    };
+
+    // ═══ Copy ══════════════════════════════════════════════
+    const handleCopy = async (item: any) => {
+        setLoadingCopy(true);
+        const result = await getBaoGiaById(item.ID);
+        setLoadingCopy(false);
+        if (result.success && result.data) {
+            setCopyData(result.data);
+            setCopyModal(true);
+        } else {
+            toast.error(result.message || "Không thể tải chi tiết báo giá");
+        }
+    };
+
+    const handleCopySuccess = () => {
+        setCopyModal(false);
+        setCopyData(null);
     };
 
     // ═══ Export PDF / Excel ════════════════════════════════
@@ -251,6 +272,14 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
                                             </button>
                                             <PermissionGuard moduleKey="bao-gia" level="edit">
                                                 <button
+                                                    onClick={() => handleCopy(item)}
+                                                    disabled={loadingCopy}
+                                                    className="p-1.5 hover:bg-blue-500/10 rounded-lg transition-colors text-muted-foreground hover:text-blue-500"
+                                                    title="Copy báo giá"
+                                                >
+                                                    {loadingCopy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
+                                                </button>
+                                                <button
                                                     onClick={() => handleEdit(item)}
                                                     disabled={loadingEdit}
                                                     className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
@@ -319,6 +348,9 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
                                     {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />} <span className="hidden sm:inline">Excel</span>
                                 </button>
                                 <PermissionGuard moduleKey="bao-gia" level="edit">
+                                    <button onClick={() => handleCopy(item)} disabled={loadingCopy} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-500 rounded-lg transition-colors text-xs font-semibold" title="Copy báo giá">
+                                        {loadingCopy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />} <span className="hidden sm:inline">Copy</span>
+                                    </button>
                                     <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
                                         <Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
                                     </button>
@@ -365,6 +397,14 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
                 onClose={() => { setEditModal(false); setEditData(null); }}
                 onSuccess={handleSuccess}
                 editData={editData}
+            />
+
+            {/* ═══ Copy Modal ═══ */}
+            <AddEditBaoGiaModal
+                isOpen={copyModal}
+                onClose={() => { setCopyModal(false); setCopyData(null); }}
+                onSuccess={handleCopySuccess}
+                copyData={copyData}
             />
         </>
     );
