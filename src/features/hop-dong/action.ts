@@ -49,7 +49,7 @@ async function generateSoHD(maKH: string, loaiHD?: string): Promise<string> {
                 CREATED_AT: { gte: startOfDay, lte: endOfDay },
             },
         });
-        const seq = String(count + 1).padStart(3, '0');
+        const seq = String(count + 1).padStart(2, '0');
         return `${datePrefix}/HDMB-PNS-${seq}`;
     }
 
@@ -288,7 +288,7 @@ export async function getHopDongById(id: string) {
 export async function getHopDongByKhachHang(maKH: string) {
     try {
         if (!maKH) return { success: false, data: [] };
-        
+
         const data = await prisma.hOP_DONG.findMany({
             where: { MA_KH: maKH },
             select: {
@@ -482,7 +482,7 @@ export async function createHopDong(
                         type: 'HOP_DONG',
                         recipientId: mgr.ID,
                         link: hdLink,
-                    }).catch(() => {});
+                    }).catch(() => { });
                 }
 
                 // Gửi cho người tạo (nếu chưa gửi trùng)
@@ -495,10 +495,10 @@ export async function createHopDong(
                             type: 'HOP_DONG',
                             recipientId: creator.ID,
                             link: hdLink,
-                        }).catch(() => {});
+                        }).catch(() => { });
                     }
                 }
-            } catch {}
+            } catch { }
         })();
 
         return { success: true, message: 'Tạo hợp đồng thành công!' };
@@ -929,9 +929,9 @@ export async function duyetHopDong(id: string, trangThai: "Đã duyệt" | "Ch�
                             type: 'HOP_DONG',
                             recipientId: creator.ID,
                             link: `/hop-dong?query=${encodeURIComponent(hopDong.SO_HD)}`,
-                        }).catch(() => {});
+                        }).catch(() => { });
                     }
-                }).catch(() => {});
+                }).catch(() => { });
         }
 
         return { success: true, message: `Thao tác hợp đồng: ${trangThai} thành công!` };
@@ -950,10 +950,10 @@ export async function getDsnvAndRole() {
             select: { MA_NV: true, HO_TEN: true },
             orderBy: { HO_TEN: 'asc' }
         });
-        
+
         if (!user) return { dsnv, role: 'STAFF', currentMaNv: null };
         const currentUserDb = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
-        
+
         return {
             dsnv,
             role: user.ROLE || 'STAFF',

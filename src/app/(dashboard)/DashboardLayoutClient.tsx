@@ -1,6 +1,6 @@
 "use client";
 // src/app/(dashboard)/DashboardLayoutClient.tsx
-import { Search, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronDown, Shield, Download, Bell } from 'lucide-react';
+import { Search, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronDown, Shield, Download, Bell, RefreshCw, RotateCw } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useTheme } from '@/components/ThemeProvider';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -112,14 +112,26 @@ const UserMenu = memo(function UserMenu({
 
             {open && (
                 <div className="absolute right-0 top-full mt-2 w-56 bg-popover border border-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="flex items-center gap-2.5 px-3 py-3 bg-muted/30 border-b border-border">
-                        <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shadow-sm shrink-0">
-                            <User className="w-4 h-4" />
+                    <div className="flex items-center justify-between px-3 py-3 bg-muted/30 border-b border-border">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shadow-sm shrink-0">
+                                <User className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <p className="text-[13px] font-semibold text-foreground leading-tight">{displayName}</p>
+                                <p className="text-[11px] text-muted-foreground">{displayRole}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-[13px] font-semibold text-foreground leading-tight">{displayName}</p>
-                            <p className="text-[11px] text-muted-foreground">{displayRole}</p>
-                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.reload();
+                            }}
+                            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-background rounded-md border border-transparent hover:border-border transition-all"
+                            title="Tải lại trang (F5)"
+                        >
+                            <RotateCw className="w-3.5 h-3.5" />
+                        </button>
                     </div>
                     <div className="py-1.5 px-1.5 space-y-0.5">
                         <Link href="/settings?tab=profile" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors">
