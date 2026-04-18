@@ -18,16 +18,16 @@ const HOP_DONG_INCLUDE = {
         include: {
             HH_REL: { select: { TEN_HH: true, MA_HH: true, DON_VI_TINH: true, NHOM_HH: true, MODEL: true, MO_TA: true, XUAT_XU: true, BAO_HANH: true } },
         },
-        orderBy: { CREATED_AT: 'asc' as const },
+        orderBy: { ID: 'asc' as const },
     },
     DKTT_HD: {
-        orderBy: { CREATED_AT: 'asc' as const },
+        orderBy: { ID: 'asc' as const },
     },
     THONG_TIN_KHAC: {
-        orderBy: { CREATED_AT: 'asc' as const },
+        orderBy: { ID: 'asc' as const },
     },
     DK_HD: {
-        orderBy: { CREATED_AT: 'asc' as const },
+        orderBy: { ID: 'asc' as const },
     },
 };
 
@@ -738,7 +738,7 @@ export async function getBaoGiaDkttForHopDong(maBaoGia: string) {
         if (!maBaoGia) return [];
         const data = await prisma.dKTT_BG.findMany({
             where: { MA_BAO_GIA: maBaoGia },
-            orderBy: { CREATED_AT: 'asc' },
+            orderBy: { ID: 'asc' },
         });
         return data.map(d => ({
             ...d,
@@ -760,7 +760,7 @@ export async function getBaoGiaDetailsForHopDong(maBaoGia: string) {
             include: {
                 HH_REL: { select: { MA_HH: true, TEN_HH: true, DON_VI_TINH: true, NHOM_HH: true } },
             },
-            orderBy: { CREATED_AT: 'asc' },
+            orderBy: { ID: 'asc' },
         });
         return data.map(ct => ({
             ...ct,

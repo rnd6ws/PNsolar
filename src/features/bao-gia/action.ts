@@ -28,13 +28,13 @@ const BAO_GIA_INCLUDE = {
                 },
             },
         },
-        orderBy: { CREATED_AT: 'asc' as const },
+        orderBy: { ID: 'asc' as const },
     },
     DKTT_BG: {
-        orderBy: { CREATED_AT: 'asc' as const },
+        orderBy: { ID: 'asc' as const },
     },
     DIEU_KHOAN_BG: {
-        orderBy: { CREATED_AT: 'asc' as const },
+        orderBy: { ID: 'asc' as const },
     },
 };
 

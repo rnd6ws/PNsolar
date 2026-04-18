@@ -91,6 +91,8 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     const [nhomHHList, setNhomHHList] = useState<NhomHHOption[]>([]);
     const [activeGroups, setActiveGroups] = useState<string[]>([DEFAULT_NHOM]);
     const [activeNhomTab, setActiveNhomTab] = useState(DEFAULT_NHOM);
+    const [draggedGroup, setDraggedGroup] = useState<string | null>(null);
+    const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
     const [showNhomPicker, setShowNhomPicker] = useState(false);
     const nhomPickerRef = useRef<HTMLDivElement>(null);
 
@@ -469,12 +471,18 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             TEP_DINH_KEM: tepDinhKems,
         };
 
-        const details = validRows.map(ct => ({
-            MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || null,
-            DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT,
-            GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG,
-            THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null,
-        }));
+        const details = [...validRows]
+            .sort((a, b) => {
+                const aIdx = activeGroups.indexOf(a.NHOM_HH || DEFAULT_NHOM);
+                const bIdx = activeGroups.indexOf(b.NHOM_HH || DEFAULT_NHOM);
+                return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+            })
+            .map(ct => ({
+                MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || null,
+                DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT,
+                GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG,
+                THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null,
+            }));
 
         const dkBaoGiaData = dkBaoGiaRows.filter(dk => dk.HANG_MUC).map(dk => ({
             HANG_MUC: dk.HANG_MUC, NOI_DUNG: dk.NOI_DUNG || null,
@@ -748,7 +756,43 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                 const count = chiTiets.filter(r => (r.NHOM_HH || DEFAULT_NHOM) === nhom && r.MA_HH).length;
                                 return (
                                     <div key={nhom} role="button" tabIndex={0} onClick={() => setActiveNhomTab(nhom)}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold rounded-lg border transition-all cursor-pointer select-none ${activeNhomTab === nhom ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:border-border"}`}>
+                                        draggable
+                                        onDragStart={(e) => {
+                                            setDraggedGroup(nhom);
+                                            e.dataTransfer.effectAllowed = "move";
+                                            setTimeout(() => { (e.target as HTMLElement).style.opacity = '0.5'; }, 0);
+                                        }}
+                                        onDragEnter={(e) => e.preventDefault()}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            setDragOverGroup(nhom);
+                                        }}
+                                        onDragLeave={(e) => {
+                                            e.preventDefault();
+                                            if (dragOverGroup === nhom) setDragOverGroup(null);
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            if (draggedGroup && draggedGroup !== nhom) {
+                                                setActiveGroups(prev => {
+                                                    const draggedIdx = prev.indexOf(draggedGroup);
+                                                    const dropIdx = prev.indexOf(nhom);
+                                                    if (draggedIdx === -1 || dropIdx === -1) return prev;
+                                                    const newGroups = [...prev];
+                                                    const [removed] = newGroups.splice(draggedIdx, 1);
+                                                    newGroups.splice(dropIdx, 0, removed);
+                                                    return newGroups;
+                                                });
+                                            }
+                                            setDragOverGroup(null);
+                                            setDraggedGroup(null);
+                                        }}
+                                        onDragEnd={(e) => {
+                                            (e.target as HTMLElement).style.opacity = '1';
+                                            setDraggedGroup(null);
+                                            setDragOverGroup(null);
+                                        }}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold rounded-lg border transition-all cursor-move select-none ${activeNhomTab === nhom ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground hover:text-foreground"} ${dragOverGroup === nhom ? "ring-2 ring-primary/50 border-primary shadow-md transform scale-105" : ""}`}>
                                         {nhom}
                                         {count > 0 && <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">{count}</span>}
                                         {nhom !== DEFAULT_NHOM && (
@@ -803,18 +847,18 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                         ) : (
                             <div className="border border-border rounded-xl overflow-hidden">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-[12px] min-w-[1000px]">
+                                    <table className="w-full text-left text-[12px] min-w-[800px]">
                                         <thead>
                                             <tr className="bg-primary/10 border-b">
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-10">#</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[250px]">Hàng hóa</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-10">ĐVT</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-right text-[10px] w-30">Giá chưa VAT</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-35">Giá bán</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-15">SL</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-30">Thành tiền</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-35">Ghi chú</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-12"></th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-8">#</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[200px]">Hàng hóa</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-12">ĐVT</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-right text-[10px] w-[100px]">Giá chưa VAT</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] min-w-[90px] w-28">Giá bán</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[60px] w-16">SL</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-[110px]">Thành tiền</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[120px] w-32">Ghi chú</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8"></th>
                                             </tr>
                                         </thead>
                                         <tbody>
