@@ -179,6 +179,8 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
     const [nhomHHList, setNhomHHList] = useState<NhomHHOption[]>([]);
     const [activeGroups, setActiveGroups] = useState<string[]>([DEFAULT_NHOM]);
     const [activeNhomTab, setActiveNhomTab] = useState(DEFAULT_NHOM);
+    const [draggedGroup, setDraggedGroup] = useState<string | null>(null);
+    const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
 
     // Search state
     const [khQuery, setKhQuery] = useState("");
@@ -421,7 +423,13 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
         if (!maKH) { toast.error("Vui lòng chọn khách hàng!"); setActiveTab("general"); return; }
         if (validRows.length === 0) { toast.error("Vui lòng thêm ít nhất 1 hàng hóa!"); setActiveTab("details"); return; }
         const header = { NGAY_HD: ngayHD, MA_KH: maKH, MA_CH: maCH || null, MA_BAO_GIA: maBaoGia || null, LOAI_HD: loaiHD, PT_VAT: ptVat, TT_UU_DAI: ttUuDai, TEP_DINH_KEM: tepDinhKems, NGUOI_TAO: nguoiTao || null };
-        const details = validRows.map(ct => ({ MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || null, DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT, GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG, THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null }));
+        const details = [...validRows]
+            .sort((a, b) => {
+                const aIdx = activeGroups.indexOf(a.NHOM_HH || DEFAULT_NHOM);
+                const bIdx = activeGroups.indexOf(b.NHOM_HH || DEFAULT_NHOM);
+                return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+            })
+            .map(ct => ({ MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || null, DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT, GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG, THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null }));
         const dktt = dkttRows.filter(d => d.LAN_THANH_TOAN);
         const ttk = thongTinRows.filter(t => t.TIEU_DE && t.TIEU_DE.trim() !== "").map(t => ({ TIEU_DE: t.TIEU_DE, NOI_DUNG: t.NOI_DUNG }));
         const dkHd = dkHdRows.filter(d => d.HANG_MUC && d.HANG_MUC.trim() !== "").map(d => ({ HANG_MUC: d.HANG_MUC, NOI_DUNG: d.NOI_DUNG, AN_HIEN: d.AN_HIEN }));
@@ -826,7 +834,43 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                 const count = chiTiets.filter(r => (r.NHOM_HH || DEFAULT_NHOM) === nhom && r.MA_HH).length;
                                 return (
                                     <div key={nhom} role="button" tabIndex={0} onClick={() => setActiveNhomTab(nhom)}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold rounded-lg border transition-all cursor-pointer select-none ${activeNhomTab === nhom ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground hover:text-foreground"}`}>
+                                        draggable
+                                        onDragStart={(e) => {
+                                            setDraggedGroup(nhom);
+                                            e.dataTransfer.effectAllowed = "move";
+                                            setTimeout(() => { (e.target as HTMLElement).style.opacity = '0.5'; }, 0);
+                                        }}
+                                        onDragEnter={(e) => e.preventDefault()}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            setDragOverGroup(nhom);
+                                        }}
+                                        onDragLeave={(e) => {
+                                            e.preventDefault();
+                                            if (dragOverGroup === nhom) setDragOverGroup(null);
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            if (draggedGroup && draggedGroup !== nhom) {
+                                                setActiveGroups(prev => {
+                                                    const draggedIdx = prev.indexOf(draggedGroup);
+                                                    const dropIdx = prev.indexOf(nhom);
+                                                    if (draggedIdx === -1 || dropIdx === -1) return prev;
+                                                    const newGroups = [...prev];
+                                                    const [removed] = newGroups.splice(draggedIdx, 1);
+                                                    newGroups.splice(dropIdx, 0, removed);
+                                                    return newGroups;
+                                                });
+                                            }
+                                            setDragOverGroup(null);
+                                            setDraggedGroup(null);
+                                        }}
+                                        onDragEnd={(e) => {
+                                            (e.target as HTMLElement).style.opacity = '1';
+                                            setDraggedGroup(null);
+                                            setDragOverGroup(null);
+                                        }}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold rounded-lg border transition-all cursor-move select-none ${activeNhomTab === nhom ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground hover:text-foreground"} ${dragOverGroup === nhom ? "ring-2 ring-primary/50 border-primary shadow-md transform scale-105" : ""}`}>
                                         {nhom}{count > 0 && <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary rounded-full">{count}</span>}
                                         {nhom !== DEFAULT_NHOM && <button type="button" onClick={e => { e.stopPropagation(); setActiveGroups(prev => prev.filter(g => g !== nhom)); setChiTiets(prev => prev.filter(r => (r.NHOM_HH || DEFAULT_NHOM) !== nhom)); if (activeNhomTab === nhom) setActiveNhomTab(DEFAULT_NHOM); }} className="p-0.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded ml-1"><X className="w-3 h-3" /></button>}
                                     </div>
@@ -854,16 +898,16 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                         ) : (
                             <div className="border border-border rounded-xl overflow-hidden">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-[12px] min-w-[850px]">
+                                    <table className="w-full text-left text-[12px] min-w-[800px]">
                                         <thead><tr className="bg-primary/10 border-b">
-                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-10">#</th>
-                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[250px]">Hàng hóa</th>
-                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-20">ĐVT</th>
-                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-right text-[10px] w-32">Giá chưa VAT</th>
-                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-32">Giá bán</th>
-                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-20">SL</th>
-                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-36">Thành tiền</th>
-                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-12"></th>
+                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-8">#</th>
+                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[200px]">Hàng hóa</th>
+                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-12">ĐVT</th>
+                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-right text-[10px] w-[100px]">Giá chưa VAT</th>
+                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] min-w-[90px] w-28">Giá bán</th>
+                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[60px] w-16">SL</th>
+                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-[110px]">Thành tiền</th>
+                                            <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-8"></th>
                                         </tr></thead>
                                         <tbody>
                                             {groupRows.map((row, idx) => (

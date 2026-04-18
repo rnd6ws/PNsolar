@@ -119,6 +119,80 @@ export default function GoiGiaInstructionModal({ isOpen, onClose }: GoiGiaInstru
                             </span>
                         </li>
                     </ul>
+
+                    {/* Form Mockup Render */}
+                    <div className="mt-4 border border-blue-500/20 rounded-xl bg-background/60 p-3.5 shadow-sm select-none overflow-x-auto scrollbar-thin scrollbar-thumb-muted">
+                        <div className="min-w-[550px]">
+                            <div className="flex items-center justify-between mb-3 border-b border-border/50 pb-2.5">
+                                <span className="text-[13px] font-semibold text-muted-foreground flex items-center gap-2">
+                                    <ListPlus className="w-4 h-4 text-blue-500" /> 
+                                    Minh họa form thêm hàng loạt (2 dòng)
+                                </span>
+                                <div className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium bg-primary/10 text-primary rounded-md border border-primary/20">
+                                    <Plus className="w-3 h-3" />
+                                    Thêm dòng
+                                </div>
+                            </div>
+                            {/* Headers */}
+                            <div className="grid grid-cols-[1fr_0.8fr_0.7fr_60px_60px_30px] gap-2 mb-2 px-1">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dòng hàng <span className="text-destructive">*</span></span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gói giá <span className="text-destructive">*</span></span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Nhóm KH</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest align-right">SL Min</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest align-right">SL Max</span>
+                                <span></span>
+                            </div>
+                            {/* Rows */}
+                            <div className="space-y-2 opacity-90 transition-opacity">
+                                {/* Row 1 */}
+                                <div className="grid grid-cols-[1fr_0.8fr_0.7fr_60px_60px_30px] gap-2">
+                                    <div className="h-8 bg-background rounded-md border border-input flex items-center px-2 text-xs text-foreground shadow-sm font-medium">
+                                        Inverter Hybrid
+                                    </div>
+                                    <div className="h-8 bg-background border border-input rounded-md flex items-center px-2 text-xs text-foreground shadow-sm font-medium">
+                                        Đại lý cấp 1
+                                    </div>
+                                    <div className="h-8 bg-background border border-input rounded-md flex items-center px-2 text-xs text-muted-foreground shadow-sm">
+                                        Đại lý
+                                    </div>
+                                    <div className="h-8 bg-background border border-input rounded-md flex items-center px-2 text-xs text-foreground shadow-sm justify-end">
+                                        10
+                                    </div>
+                                    <div className="h-8 bg-background border border-input rounded-md flex items-center px-2 text-xs text-foreground shadow-sm justify-end">
+                                        50
+                                    </div>
+                                    <div className="flex items-center justify-center">
+                                        <div className="p-1.5 text-muted-foreground/40">
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Row 2 - Active simulation */}
+                                <div className="grid grid-cols-[1fr_0.8fr_0.7fr_60px_60px_30px] gap-2 relative">
+                                    <div className="absolute inset-y-0 -inset-x-1.5 bg-blue-500/5 rounded-lg -z-10 border border-blue-500/20 border-dashed" />
+                                    
+                                    <div className="h-8 bg-background rounded-md border border-blue-500/40 flex items-center px-2 text-xs text-foreground shadow-sm font-medium ring-1 ring-blue-500/20">
+                                        Tấm pin Solar
+                                    </div>
+                                    <div className="h-8 bg-background border border-blue-500/40 rounded-md flex items-center px-2 text-xs text-foreground shadow-sm ring-1 ring-blue-500/20 font-medium">
+                                        Giá bán lẻ
+                                    </div>
+                                    <div className="h-8 bg-muted border border-input rounded-md flex items-center px-2 text-[11px] text-muted-foreground/60 shadow-sm italic">
+                                        -- Tất cả --
+                                    </div>
+                                    <div className="h-8 bg-muted border border-input rounded-md flex items-center px-2 text-xs text-muted-foreground/50 shadow-sm">
+                                    </div>
+                                    <div className="h-8 bg-muted border border-input rounded-md flex items-center px-2 text-xs text-muted-foreground/50 shadow-sm">
+                                    </div>
+                                    <div className="flex items-center justify-center">
+                                        <div className="p-1.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer">
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3.5">
