@@ -117,6 +117,28 @@ export async function exportBaoGiaExcel(data: any) {
         ws.addImage(imgId, { tl: { col: 0, row: 0 }, ext: { width: 90, height: 90 } });
     } catch { /* skip */ }
 
+    // ── Mộc ──
+    let mocImgId: number | null = null;
+    let mocRatio = 1;
+    try {
+        const resp = await fetch('/images/MOC.jpg');
+        if (resp.ok) {
+            const blob = await resp.blob();
+            // Lấy tỷ lệ ảnh
+            const url = URL.createObjectURL(blob);
+            mocRatio = await new Promise<number>((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img.width / img.height);
+                img.onerror = () => resolve(1);
+                img.src = url;
+            });
+            URL.revokeObjectURL(url);
+
+            const buf = await blob.arrayBuffer();
+            mocImgId = wb.addImage({ buffer: new Uint8Array(buf) as any, extension: 'jpeg' });
+        }
+    } catch { /* skip */ }
+
     // ════════════════════════════════════════════
     // HEADER CÔNG TY
     // ════════════════════════════════════════════
@@ -510,6 +532,27 @@ export async function exportBaoGiaExcel(data: any) {
     ws.getCell(`F${row}`).value = 'XÁC NHẬN BÁO GIÁ';
     ws.getCell(`F${row}`).font = { name: F, bold: true, size: 12 };
     ws.getCell(`F${row}`).alignment = { horizontal: 'center' };
+
+    row++;
+
+    if (mocImgId) {
+        // Tăng kích thước hình: Giữ chiều cao tầm 130px (~ 7 dòng Excel)
+        const targetHeight = 130;
+        const targetWidth = targetHeight * mocRatio;
+
+        // Căn giữa hơn cho dải cột F-J (Đã lệch sang cột I ~ 8.3 để cân đẹp)
+        ws.addImage(mocImgId, { tl: { col: 7.9999999999999, row: row }, ext: { width: targetWidth, height: targetHeight } });
+
+        row += 8; // Dành đủ 8 dòng bảo đảm không bị đè
+    } else {
+        row += 6;
+    }
+
+    ws.mergeCells(`F${row}:J${row}`);
+    ws.getCell(`F${row}`).value = 'NGUYỄN THANH LONG';
+    ws.getCell(`F${row}`).font = { name: F, bold: true, size: 12 };
+    ws.getCell(`F${row}`).alignment = { horizontal: 'center' };
+    row++;
 
     // ═══ SAVE ═══
     const buffer = await wb.xlsx.writeBuffer();
