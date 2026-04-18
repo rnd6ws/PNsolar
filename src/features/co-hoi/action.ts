@@ -79,6 +79,22 @@ export async function createDmDichVu(nhomDv: string, dichVu: string, giaTri: num
     }
 }
 
+export async function updateDmDichVu(id: string, nhomDv: string, dichVu: string, giaTri: number) {
+    try {
+        if (!nhomDv.trim() || !dichVu.trim()) {
+            return { success: false, message: "Vui lòng nhập đầy đủ thông tin" };
+        }
+        await prisma.dM_DICH_VU.update({
+            where: { MA_DV: id },
+            data: { NHOM_DV: nhomDv.trim(), DICH_VU: dichVu.trim(), GIA_TRI_TB: giaTri },
+        });
+        revalidatePath("/co-hoi");
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, message: error.message || "Lỗi cập nhật danh mục" };
+    }
+}
+
 export async function deleteDmDichVu(id: string) {
     try {
         await prisma.dM_DICH_VU.delete({ where: { MA_DV: id } });

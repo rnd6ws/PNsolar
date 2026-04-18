@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Settings, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Settings, Plus, Trash2, ChevronDown, ChevronUp, Edit2, X } from "lucide-react";
 import Modal from "@/components/Modal";
-import { createDmDichVu, deleteDmDichVu } from "@/features/co-hoi/action";
+import { createDmDichVu, deleteDmDichVu, updateDmDichVu } from "@/features/co-hoi/action";
 import { toast } from "sonner";
 
 interface Props {
@@ -30,6 +30,7 @@ export default function SettingCoHoiButton({ dmDichVu }: Props) {
     const [nhomDv, setNhomDv] = useState("");
     const [dichVu, setDichVu] = useState("");
     const [giaTri, setGiaTri] = useState("");
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
     // Combobox state cho Nhóm dịch vụ
@@ -73,14 +74,38 @@ export default function SettingCoHoiButton({ dmDichVu }: Props) {
             return;
         }
         setLoading(true);
-        const res = await createDmDichVu(nhomDv.trim(), dichVu.trim(), parseNumberInput(giaTri));
-        if (res.success) {
-            toast.success("Đã thêm dịch vụ");
-            setNhomDv(""); setDichVu(""); setGiaTri("");
+        if (editingId) {
+            const res = await updateDmDichVu(editingId, nhomDv.trim(), dichVu.trim(), parseNumberInput(giaTri));
+            if (res.success) {
+                toast.success("Đã cập nhật dịch vụ");
+                handleCancelEdit();
+            } else {
+                toast.error((res as any).message || "Lỗi cập nhật dịch vụ");
+            }
         } else {
-            toast.error((res as any).message || "Lỗi thêm dịch vụ");
+            const res = await createDmDichVu(nhomDv.trim(), dichVu.trim(), parseNumberInput(giaTri));
+            if (res.success) {
+                toast.success("Đã thêm dịch vụ");
+                setNhomDv(""); setDichVu(""); setGiaTri("");
+            } else {
+                toast.error((res as any).message || "Lỗi thêm dịch vụ");
+            }
         }
         setLoading(false);
+    };
+
+    const handleEdit = (item: { ID: string; NHOM_DV: string; DICH_VU: string; GIA_TRI_TB: number }) => {
+        setEditingId(item.ID);
+        setNhomDv(item.NHOM_DV);
+        setDichVu(item.DICH_VU);
+        setGiaTri(item.GIA_TRI_TB ? item.GIA_TRI_TB.toString() : "");
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setNhomDv("");
+        setDichVu("");
+        setGiaTri("");
     };
 
     const handleDelete = async (id: string) => {
@@ -118,9 +143,9 @@ export default function SettingCoHoiButton({ dmDichVu }: Props) {
                 }
             >
                 <div className="space-y-5">
-                    {/* Form thêm mới */}
-                    <div className="bg-muted/30 rounded-xl border border-border p-4 space-y-3">
-                        <p className="text-sm font-semibold text-foreground">Thêm dịch vụ mới</p>
+                    {/* Form thêm mới / Sửa */}
+                    <div className={editingId ? "bg-primary/5 rounded-xl border border-primary/20 p-4 space-y-3 shadow-inner" : "bg-muted/30 rounded-xl border border-border p-4 space-y-3"}>
+                        <p className="text-sm font-semibold text-foreground">{editingId ? "Sửa dịch vụ" : "Thêm dịch vụ mới"}</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {/* Nhóm dịch vụ - Combobox */}
                             <div className="relative" ref={nhomRef}>
@@ -176,8 +201,8 @@ export default function SettingCoHoiButton({ dmDichVu }: Props) {
                                 />
                             </div>
                         </div>
-                        <div className="flex gap-3 items-end">
-                            <div className="flex-1">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                            <div className="flex-1 w-full">
                                 <label className={labelClass}>Giá trị trung bình (VNĐ)</label>
                                 <input
                                     type="text"
@@ -188,14 +213,26 @@ export default function SettingCoHoiButton({ dmDichVu }: Props) {
                                     className="input-modern"
                                 />
                             </div>
-                            <button
-                                onClick={handleAdd}
-                                disabled={loading}
-                                className="btn-premium-primary px-5 py-2.5 text-sm flex items-center gap-2 shrink-0"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Thêm
-                            </button>
+                            <div className="flex justify-end items-center gap-2 shrink-0">
+                                {editingId && (
+                                    <button
+                                        onClick={handleCancelEdit}
+                                        disabled={loading}
+                                        className="btn-premium-secondary px-4 py-2.5 text-sm flex items-center gap-2"
+                                    >
+                                        <X className="w-4 h-4" />
+                                        Hủy
+                                    </button>
+                                )}
+                                <button
+                                    onClick={handleAdd}
+                                    disabled={loading}
+                                    className="btn-premium-primary px-5 py-2.5 text-sm flex items-center gap-2"
+                                >
+                                    {editingId ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                                    {editingId ? "Cập nhật" : "Thêm"}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -231,14 +268,24 @@ export default function SettingCoHoiButton({ dmDichVu }: Props) {
                                                         <span className="text-sm font-medium text-foreground truncate">{item.DICH_VU}</span>
                                                         <span className="text-xs text-muted-foreground whitespace-nowrap">{formatCurrency(item.GIA_TRI_TB)}</span>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleDelete(item.ID)}
-                                                        disabled={loading}
-                                                        className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors opacity-0 group-hover:opacity-100 shrink-0 ml-2"
-                                                        title="Xóa"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
+                                                    <div className="flex items-center">
+                                                        <button
+                                                            onClick={() => handleEdit(item)}
+                                                            disabled={loading}
+                                                            className="p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
+                                                            title="Sửa"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(item.ID)}
+                                                            disabled={loading}
+                                                            className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shrink-0 ml-1"
+                                                            title="Xóa"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
