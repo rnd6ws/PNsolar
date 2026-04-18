@@ -128,6 +128,20 @@ export async function exportBaoGiaPDF(data: any) {
         });
     } catch { /* skip */ }
 
+    // ─── Mộc ───
+    let mocData: string | null = null;
+    try {
+        const resp = await fetch('/images/MOC.jpg');
+        if (resp.ok) {
+            const blob = await resp.blob();
+            mocData = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+        }
+    } catch { /* skip */ }
+
     // ════════════════════════════════════════════
     // HEADER
     // ════════════════════════════════════════════
@@ -168,10 +182,13 @@ export async function exportBaoGiaPDF(data: any) {
     doc.text('LẮP ĐẶT HỆ THỐNG ĐIỆN NĂNG LƯỢNG MẶT TRỜI', (colR + pageW - margin) / 2, y, { align: 'center' });
     y += 6;
 
+    const colRW = pageW - margin - colR;
+
     setFont('normal'); doc.setFontSize(12);
     doc.text(`Điện thoại: ${ng?.SO_DIEN_THOAI || ''}`, margin, y);
-    doc.text(`Địa chỉ: ${kh?.DIA_CHI || ''}`, colR, y);
-    y += 5;
+    let diaChiLines = doc.splitTextToSize(`Địa chỉ: ${kh?.DIA_CHI || ''}`, colRW);
+    doc.text(diaChiLines, colR, y);
+    y += Math.max(1, diaChiLines.length) * 5;
 
     doc.text(`Email: ${ng?.EMAIL || ''}`, margin, y);
     doc.text(`Điện thoại: ${kh?.DIEN_THOAI || ''}`, colR, y);
@@ -180,8 +197,9 @@ export async function exportBaoGiaPDF(data: any) {
 
     doc.text(`Chức vụ: ${ng?.CHUC_VU || ''}`, margin, y);
     setFont('bold');
-    doc.text(`Người nhận: Khách Hàng ${kh?.TEN_KH || data.MA_KH}`, colR, y);
-    y += 6;
+    let nguoiNhanLines = doc.splitTextToSize(`Người nhận: Khách Hàng ${kh?.TEN_KH || data.MA_KH}`, colRW);
+    doc.text(nguoiNhanLines, colR, y);
+    y += Math.max(1, nguoiNhanLines.length) * 6;
 
     setFont('normal'); doc.setFontSize(12);
     doc.text('Công ty TNHH Phúc Nguyên Solar trân trọng báo giá hệ thống điện năng lượng mặt trời như sau', margin, y);
@@ -324,32 +342,42 @@ export async function exportBaoGiaPDF(data: any) {
                 const vals = JSON.parse(dk.GIA_TRI);
                 if (Array.isArray(vals)) {
                     const labels = (dk.NOI_DUNG || '').split('\n').map((l: string) => l.trim()).filter((l: string) => l);
+                    const labelW = COL_VALUE - COL_CONTENT - 5;
 
-                    // Dòng đầu: header + label đầu tiên ngang nhau
                     setFont('bold');
                     doc.text(`- ${hangMuc}`, margin, y);
+                    
                     if (labels.length > 0) {
                         setFont('normal');
-                        doc.text(labels[0], COL_CONTENT, y);
-                        if (vals[0] !== undefined) {
-                            doc.setTextColor(204, 0, 0); setFont('bold');
-                            doc.text(`${vals[0]}`, COL_VALUE, y, { align: 'right' });
-                            doc.setTextColor(0, 0, 0); setFont('normal');
+                        const lLines = doc.splitTextToSize(labels[0], labelW);
+                        for (let ri = 0; ri < lLines.length; ri++) {
+                            if (y > pageH - 10) { doc.addPage(); y = margin; }
+                            doc.text(lLines[ri], COL_CONTENT, y);
+                            if (ri === 0 && vals[0] !== undefined) {
+                                doc.setTextColor(204, 0, 0); setFont('bold');
+                                doc.text(`${vals[0]}`, COL_VALUE, y, { align: 'right' });
+                                doc.setTextColor(0, 0, 0); setFont('normal');
+                            }
+                            y += 4.5;
                         }
+                    } else {
+                        y += 4.5;
                     }
-                    y += 4.5;
 
                     // Các dòng tiếp: chỉ label + value
                     for (let vi = 1; vi < labels.length; vi++) {
-                        if (y > pageH - 10) { doc.addPage(); y = margin; }
                         setFont('normal');
-                        doc.text(labels[vi], COL_CONTENT, y);
-                        if (vi < vals.length && vals[vi] !== undefined) {
-                            doc.setTextColor(204, 0, 0); setFont('bold');
-                            doc.text(`${vals[vi]}`, COL_VALUE, y, { align: 'right' });
-                            doc.setTextColor(0, 0, 0); setFont('normal');
+                        const lLines = doc.splitTextToSize(labels[vi], labelW);
+                        for (let ri = 0; ri < lLines.length; ri++) {
+                            if (y > pageH - 10) { doc.addPage(); y = margin; }
+                            doc.text(lLines[ri], COL_CONTENT, y);
+                            if (ri === 0 && vi < vals.length && vals[vi] !== undefined) {
+                                doc.setTextColor(204, 0, 0); setFont('bold');
+                                doc.text(`${vals[vi]}`, COL_VALUE, y, { align: 'right' });
+                                doc.setTextColor(0, 0, 0); setFont('normal');
+                            }
+                            y += 4.5;
                         }
-                        y += 4.5;
                     }
                 }
             } catch { /* skip */ }
@@ -361,15 +389,17 @@ export async function exportBaoGiaPDF(data: any) {
         if (isThanhToan && dkttList.length > 0) {
             setFont('bold');
             doc.text(`- ${hangMuc}:`, margin, y);
-            // Dòng đầu DKTT ngang với header
-            setFont('normal');
-            doc.text(`+ ${dkttList[0].DOT_THANH_TOAN}: Thanh toán ${dkttList[0].PT_THANH_TOAN}% ${dkttList[0].NOI_DUNG_YEU_CAU || ''}`, COL_CONTENT, y);
-            y += 4;
-
-            for (let di = 1; di < dkttList.length; di++) {
-                if (y > pageH - 10) { doc.addPage(); y = margin; }
-                doc.text(`+ ${dkttList[di].DOT_THANH_TOAN}: Thanh toán ${dkttList[di].PT_THANH_TOAN}% ${dkttList[di].NOI_DUNG_YEU_CAU || ''}`, COL_CONTENT, y);
-                y += 4;
+            const pTextW = contentW - (COL_CONTENT - margin) - 2;
+            
+            for (let di = 0; di < dkttList.length; di++) {
+                setFont('normal');
+                const text = `+ ${dkttList[di].DOT_THANH_TOAN}: Thanh toán ${dkttList[di].PT_THANH_TOAN}% ${dkttList[di].NOI_DUNG_YEU_CAU || ''}`;
+                const textLines = doc.splitTextToSize(text, pTextW);
+                for (let ri = 0; ri < textLines.length; ri++) {
+                    if (y > pageH - 10) { doc.addPage(); y = margin; }
+                    doc.text(textLines[ri], COL_CONTENT, y);
+                    y += 4;
+                }
             }
             dkttInserted = true;
             y += 3; // khoảng cách sau mục
@@ -410,12 +440,16 @@ export async function exportBaoGiaPDF(data: any) {
         setFont('bold');
         doc.text('- Điều kiện thanh toán:', margin, y);
         setFont('normal');
-        doc.text(`+ ${dkttList[0].DOT_THANH_TOAN}: Thanh toán ${dkttList[0].PT_THANH_TOAN}% ${dkttList[0].NOI_DUNG_YEU_CAU || ''}`, COL_CONTENT, y);
-        y += 4;
-        for (let di = 1; di < dkttList.length; di++) {
-            if (y > pageH - 10) { doc.addPage(); y = margin; }
-            doc.text(`+ ${dkttList[di].DOT_THANH_TOAN}: Thanh toán ${dkttList[di].PT_THANH_TOAN}% ${dkttList[di].NOI_DUNG_YEU_CAU || ''}`, COL_CONTENT, y);
-            y += 4;
+        const pTextW = contentW - (COL_CONTENT - margin) - 2;
+        
+        for (let di = 0; di < dkttList.length; di++) {
+            const text = `+ ${dkttList[di].DOT_THANH_TOAN}: Thanh toán ${dkttList[di].PT_THANH_TOAN}% ${dkttList[di].NOI_DUNG_YEU_CAU || ''}`;
+            const textLines = doc.splitTextToSize(text, pTextW);
+            for (let ri = 0; ri < textLines.length; ri++) {
+                if (y > pageH - 10) { doc.addPage(); y = margin; }
+                doc.text(textLines[ri], COL_CONTENT, y);
+                y += 4;
+            }
         }
     }
 
@@ -423,7 +457,7 @@ export async function exportBaoGiaPDF(data: any) {
     // FOOTER
     // ════════════════════════════════════════════
     y += 4;
-    if (y > pageH - 30) { doc.addPage(); y = margin; }
+    if (y > pageH - 55) { doc.addPage(); y = margin; }
 
     setFont('normal'); doc.setFontSize(11);
     doc.text('Hiệu lực báo giá có giá trị trong vòng 1 tuần kể từ ngày báo giá', margin, y);
@@ -436,6 +470,28 @@ export async function exportBaoGiaPDF(data: any) {
     setFont('bold'); doc.setFontSize(12);
     doc.text('XÁC NHẬN CỦA KHÁCH HÀNG', margin + contentW / 4, y, { align: 'center' });
     doc.text('XÁC NHẬN BÁO GIÁ', margin + (contentW * 3) / 4, y, { align: 'center' });
+
+    y += 5;
+
+    if (mocData) {
+        try {
+            const props = doc.getImageProperties(mocData);
+            const ratio = props.width / props.height;
+            const mocW = 35;
+            const mocH = mocW / ratio;
+            doc.addImage(mocData, 'JPEG', margin + (contentW * 3) / 4 - mocW / 2, y, mocW, mocH);
+            y += mocH + 5;
+        } catch (e) {
+            const mocW = 35;
+            const mocH = 35;
+            doc.addImage(mocData, 'JPEG', margin + (contentW * 3) / 4 - mocW / 2, y, mocW, mocH);
+            y += mocH + 5;
+        }
+    } else {
+        y += 35;
+    }
+    
+    doc.text('NGUYỄN THANH LONG', margin + (contentW * 3) / 4, y, { align: 'center' });
 
     // ═══ SAVE ═══
     doc.save(`BaoGia_${data.MA_BAO_GIA || 'export'}.pdf`);

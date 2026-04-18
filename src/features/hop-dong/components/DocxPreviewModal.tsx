@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Printer, Loader2, FileText } from "lucide-react";
 
 interface Props {
@@ -63,9 +64,31 @@ const PREVIEW_CSS = `
 .btn-docx-close:hover { background: #1e293b; color: #f1f5f9; border-color: #64748b; }
 
 @media print {
-    body > *:not(#docx-print-target) { display: none !important; }
-    #docx-print-target { display: block !important; position: fixed; inset: 0; z-index: 99999; background: #fff; overflow: auto; }
-    #docx-print-target .docx-wrapper > section.docx { box-shadow: none !important; margin: 0 !important; }
+    body > * { display: none !important; }
+    body > #docx-print-target {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+        background: #fff !important;
+        overflow: visible !important;
+        padding: 0 !important;
+    }
+    #docx-print-target .docx-wrapper {
+        background: #fff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    #docx-print-target section.docx {
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        break-after: page;
+        page-break-after: always;
+    }
+    #docx-print-target section.docx:last-child {
+        break-after: auto;
+        page-break-after: auto;
+    }
 }
 #docx-print-target { display: none; }
 `;
@@ -73,6 +96,7 @@ const PREVIEW_CSS = `
 export default function DocxPreviewModal({ isOpen, onClose, docxBlob, title, subtitle }: Props) {
     const containerRef = useRef<HTMLDivElement>(null);
     const printTargetRef = useRef<HTMLDivElement>(null);
+    const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const styleInjected = useRef(false);
@@ -85,6 +109,12 @@ export default function DocxPreviewModal({ isOpen, onClose, docxBlob, title, sub
         el.textContent = PREVIEW_CSS;
         document.head.appendChild(el);
         styleInjected.current = true;
+    }, []);
+
+    // Tạo node print target trực tiếp dưới body để CSS print ổn định
+    useEffect(() => {
+        if (typeof document === "undefined") return;
+        setPrintRoot(document.body);
     }, []);
 
     // Ngăn body scroll khi mở
@@ -107,10 +137,12 @@ export default function DocxPreviewModal({ isOpen, onClose, docxBlob, title, sub
 
         setLoading(true);
         setError(null);
+        containerRef.current.innerHTML = "";
+        if (printTargetRef.current) printTargetRef.current.innerHTML = "";
 
         // Dynamic import để tránh SSR issues
         import("docx-preview").then(({ renderAsync }) => {
-            const options = {
+            const previewOptions = {
                 className: "docx-rendered",
                 inWrapper: true,
                 ignoreWidth: false,
@@ -123,13 +155,18 @@ export default function DocxPreviewModal({ isOpen, onClose, docxBlob, title, sub
                 renderFooters: true,
                 renderFootnotes: true,
                 renderEndnotes: true,
+                experimental: true,
+            };
+            const printOptions = {
+                ...previewOptions,
+                inWrapper: false,
             };
 
             // Render vào preview container
             Promise.all([
-                renderAsync(docxBlob, containerRef.current!, undefined, options),
+                renderAsync(docxBlob, containerRef.current!, undefined, previewOptions),
                 printTargetRef.current
-                    ? renderAsync(docxBlob.slice(0), printTargetRef.current!, undefined, options)
+                    ? renderAsync(docxBlob.slice(0), printTargetRef.current!, undefined, printOptions)
                     : Promise.resolve(),
             ])
                 .then(() => setLoading(false))
@@ -142,24 +179,32 @@ export default function DocxPreviewModal({ isOpen, onClose, docxBlob, title, sub
             setError("Không thể tải thư viện preview.");
             setLoading(false);
         });
-    }, [isOpen, docxBlob]);
+    }, [isOpen, docxBlob, printRoot]);
 
     const handlePrint = () => {
         const printTarget = document.getElementById("docx-print-target");
-        if (printTarget) {
-            printTarget.style.display = "block";
-            window.print();
-            // Ẩn lại sau khi print dialog đóng
-            setTimeout(() => { printTarget.style.display = "none"; }, 1000);
-        }
+        if (!printTarget || loading || error) return;
+
+        const cleanup = () => { printTarget.style.display = "none"; };
+        printTarget.style.display = "block";
+        window.addEventListener("afterprint", cleanup, { once: true });
+
+        // Chờ đủ 2 frame để browser hoàn tất layout trước khi print
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                window.print();
+            });
+        });
     };
 
     if (!isOpen) return null;
 
     return (
         <>
-            {/* Target riêng cho print — ẩn bình thường, hiện khi print */}
-            <div id="docx-print-target" ref={printTargetRef} />
+            {/* Target riêng cho print đặt trực tiếp ở body để tránh bị parent ẩn khi in */}
+            {printRoot
+                ? createPortal(<div id="docx-print-target" ref={printTargetRef} />, printRoot)
+                : null}
 
             {/* Overlay */}
             <div className="docx-preview-wrap" role="dialog" aria-modal="true">
