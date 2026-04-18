@@ -73,7 +73,7 @@ function groupChiTiets(chiTiets: any[]) {
 function getSystemSpecs(dkbg: any[]) {
     const keys = ['Công suất tấm pin', 'Công suất inverter', 'Công suất lưu trữ'];
     return keys.map(k => {
-        const dk = dkbg.find((d: any) => d.HANG_MUC === k);
+        const dk = dkbg.find((d: any) => d.HANG_MUC === k && d.AN_HIEN);
         return dk ? { label: k, value: dk.GIA_TRI || '' } : null;
     }).filter(Boolean) as { label: string; value: string }[];
 }
@@ -243,17 +243,18 @@ export async function exportBaoGiaExcel(data: any) {
 
         const grpRow = ws.getRow(row);
         grpRow.getCell(1).value = roman;
-        ws.mergeCells(`B${row}:I${row}`);
+        ws.mergeCells(`B${row}:H${row}`);
         grpRow.getCell(2).value = group.nhom;
-        grpRow.getCell(10).value = group.subtotal;
-        grpRow.getCell(10).numFmt = '#,##0';
+        grpRow.getCell(9).value = group.subtotal;
+        grpRow.getCell(9).numFmt = '#,##0';
+        grpRow.getCell(10).value = '';
 
         for (let ci = 1; ci <= 10; ci++) {
             const cell = grpRow.getCell(ci);
             cell.font = { name: F, bold: true, size: 12 };
             cell.fill = GROUP_FILL;
             cell.border = THIN_BORDER;
-            if (ci === 10) cell.alignment = { horizontal: 'right' };
+            if (ci === 9) cell.alignment = { horizontal: 'right' };
         }
         grpRow.height = 18;
         row++;

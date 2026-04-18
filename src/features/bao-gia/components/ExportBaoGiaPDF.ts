@@ -72,7 +72,7 @@ function groupChiTiets(chiTiets: any[]) {
 function getSystemSpecs(dkbg: any[]) {
     const keys = ['Công suất tấm pin', 'Công suất inverter', 'Công suất lưu trữ'];
     return keys.map(k => {
-        const dk = dkbg.find((d: any) => d.HANG_MUC === k);
+        const dk = dkbg.find((d: any) => d.HANG_MUC === k && d.AN_HIEN);
         return dk ? { label: k, value: dk.GIA_TRI || '' } : null;
     }).filter(Boolean) as { label: string; value: string }[];
 }
@@ -209,8 +209,8 @@ export async function exportBaoGiaPDF(data: any) {
         tableBody.push([
             { content: roman, styles: { fontStyle: 'bold', fillColor: [176, 224, 230] } },
             { content: group.nhom, colSpan: 7, styles: { fontStyle: 'bold', fillColor: [176, 224, 230] } },
-            { content: '', styles: { fillColor: [176, 224, 230] } },
             { content: fmtMoney(group.subtotal), styles: { fontStyle: 'bold', fillColor: [176, 224, 230], halign: 'right' as const } },
+            { content: '', styles: { fillColor: [176, 224, 230] } },
         ]);
         for (let i = 0; i < group.items.length; i++) {
             const ct = group.items[i];
