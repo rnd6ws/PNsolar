@@ -1096,9 +1096,16 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                                 }
 
                                                 // Trường hợp thông thường: textarea + input đơn
+                                                const isGiaTriTemplate = ['Công suất tấm pin', 'Công suất inverter', 'Công suất lưu trữ'].includes((row.HANG_MUC || '').trim());
+                                                const hasGiaTri = row.GIA_TRI !== null && row.GIA_TRI !== undefined;
+                                                const hasNoiDung = row.NOI_DUNG !== null && row.NOI_DUNG !== undefined;
+                                                
+                                                const showGiaTri = hasGiaTri || (isGiaTriTemplate && !hasNoiDung);
+                                                const showNoiDung = hasNoiDung || !showGiaTri;
+
                                                 return (
                                                     <>
-                                                        {row.NOI_DUNG !== null && row.NOI_DUNG !== undefined && (
+                                                        {showNoiDung && (
                                                             <div>
                                                                 {/* <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Nội dung</label> */}
                                                                 <textarea value={row.NOI_DUNG || ''} onChange={e => setDkBaoGiaRows(prev => prev.map(r => r._id === row._id ? { ...r, NOI_DUNG: e.target.value } : r))}
@@ -1108,7 +1115,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                                                     placeholder="Nhập nội dung..." />
                                                             </div>
                                                         )}
-                                                        {(row.GIA_TRI !== null && row.GIA_TRI !== undefined) && (
+                                                        {showGiaTri && (
                                                             <div>
                                                                 {/* <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Giá trị</label> */}
                                                                 <input type="text" value={row.GIA_TRI || ''} onChange={e => setDkBaoGiaRows(prev => prev.map(r => r._id === row._id ? { ...r, GIA_TRI: e.target.value } : r))}

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackageCheck } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackageCheck, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { PermissionGuard, usePermissions } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -16,6 +16,8 @@ import { exportHopDongMuaBanDocx } from "../utils/exportHopDongMuaBan";
 import AddEditBanGiaoModal from "@/features/ban-giao/components/AddEditBanGiaoModal";
 import ViewBanGiaoModal from "@/features/ban-giao/components/ViewBanGiaoModal";
 import { getBanGiaoById } from "@/features/ban-giao/action";
+import DocxPreviewModal from "./DocxPreviewModal";
+import { generateHopDongBlob } from "../utils/generateHopDongBlob";
 
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString("vi-VN");
 const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
@@ -40,6 +42,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
     const [loadingBanGiao, setLoadingBanGiao] = useState(false);
     const [viewBanGiaoModal, setViewBanGiaoModal] = useState<{ open: boolean; data: any | null }>({ open: false, data: null });
     const [loadingViewBanGiao, setLoadingViewBanGiao] = useState(false);
+    const [previewModal, setPreviewModal] = useState<{ open: boolean; blob: Blob | null; title: string; subtitle: string; loadingId: string | null }>({ open: false, blob: null, title: "", subtitle: "", loadingId: null });
 
     const handleViewBanGiao = async (banGiaoId: string) => {
         setLoadingViewBanGiao(true);
@@ -118,6 +121,26 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
 
     const handleExportPL = (item: any) => {
         setVatModal({ open: true, item, loading: false });
+    };
+
+    const handlePreview = async (item: any) => {
+        const loaiLabel = item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp"
+            : item.LOAI_HD === "Mua bán" ? "Hợp đồng Mua bán"
+            : "Hợp đồng Dân dụng";
+        setPreviewModal(prev => ({ ...prev, loadingId: item.ID }));
+        try {
+            const result = await getHopDongById(item.ID);
+            if (result.success && result.data) {
+                const { blob } = await generateHopDongBlob(result.data);
+                setPreviewModal({ open: true, blob, title: loaiLabel, subtitle: `Số: ${item.SO_HD}`, loadingId: null });
+            } else {
+                toast.error(result.message || "Không thể tải dữ liệu");
+                setPreviewModal(prev => ({ ...prev, loadingId: null }));
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Lỗi khi tải xem trước");
+            setPreviewModal(prev => ({ ...prev, loadingId: null }));
+        }
     };
 
     const doExportPL = async (coVat: boolean) => {
@@ -291,6 +314,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 <td className={`${tdClass} text-right`}>
                                     <div className="flex items-center justify-end gap-1">
                                         <button onClick={() => handleView(item)} disabled={loadingView} className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground group-hover:text-primary hover:text-primary" title="Xem"><Eye className="w-4 h-4" /></button>
+                                        <button onClick={() => handlePreview(item)} disabled={previewModal.loadingId === item.ID} className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-violet-600 dark:group-hover:text-violet-500 hover:text-violet-700 disabled:opacity-50" title="Xem trước & In">{previewModal.loadingId === item.ID ? <span className="w-4 h-4 block border-2 border-violet-400 border-t-transparent rounded-full animate-spin" /> : <Printer className="w-4 h-4" />}</button>
                                         <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-green-600 dark:group-hover:text-green-500 hover:text-green-700" title="Xuất HĐ + Phụ Lục Word"><BookDown className="w-4 h-4" /></button>
                                         {/* Nút xuất Phụ Lục riêng: ẩn đi (đã tích hợp vào nút xuất HĐ) */}
                                         <button onClick={() => handleExportPL(item)} disabled={item.LOAI_HD === "Công nghiệp"} className="hidden p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-500 hover:text-blue-700 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:group-hover:text-muted-foreground" title={item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp không có phụ lục" : "Xuất Phụ Lục HĐ"}><FileSpreadsheet className="w-4 h-4" /></button>
@@ -387,6 +411,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                     </>
                                 )}
                                 <button onClick={() => handleView(item)} disabled={loadingView} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold"><Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span></button>
+                                <button onClick={() => handlePreview(item)} disabled={previewModal.loadingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-violet-100 dark:hover:bg-violet-900/30 text-muted-foreground hover:text-violet-700 rounded-lg transition-colors text-xs font-semibold disabled:opacity-50" title="Xem trước & In">{previewModal.loadingId === item.ID ? <span className="w-4 h-4 block border-2 border-violet-400 border-t-transparent rounded-full animate-spin" /> : <Printer className="w-4 h-4" />} <span className="hidden sm:inline">In</span></button>
                                 <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-green-100 dark:hover:bg-green-900/30 text-muted-foreground hover:text-green-700 rounded-lg transition-colors text-xs font-semibold" title="Xuất HĐ + Phụ Lục Word"><BookDown className="w-4 h-4" /> <span className="hidden sm:inline">HĐ</span></button>
                                 {/* Nút xuất Phụ Lục riêng: ẩn đi (đã tích hợp vào nút xuất HĐ) */}
                                 <button onClick={() => handleExportPL(item)} disabled={item.LOAI_HD === "Công nghiệp"} className="hidden flex-1 justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-muted-foreground hover:text-blue-700 rounded-lg transition-colors text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-muted/50 disabled:hover:text-muted-foreground" title={item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp không có phụ lục" : "Xuất Phụ Lục"}><FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">PL</span></button>
@@ -434,6 +459,13 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                 confirmText="Xóa hợp đồng"
             />
             <ViewHopDongModal isOpen={viewModal} onClose={() => { setViewModal(false); setViewData(null); }} data={viewData} />
+            <DocxPreviewModal
+                isOpen={previewModal.open}
+                onClose={() => setPreviewModal({ open: false, blob: null, title: "", subtitle: "", loadingId: null })}
+                docxBlob={previewModal.blob}
+                title={previewModal.title}
+                subtitle={previewModal.subtitle}
+            />
             <AddEditHopDongModal isOpen={editModal} onClose={() => { setEditModal(false); setEditData(null); }} onSuccess={() => { setEditModal(false); setEditData(null); }} editData={editData} />
             <AddEditBanGiaoModal
                 isOpen={banGiaoModal.open}
