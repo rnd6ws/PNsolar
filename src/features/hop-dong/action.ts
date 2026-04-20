@@ -143,6 +143,7 @@ export async function getHopDongList(filters: {
                 OR: [
                     { NGUOI_TAO: staff.MA_NV },
                     { KHTN_REL: { SALES_PT: staff.MA_NV } },
+                    { KHTN_REL: { KY_THUAT_PT: { has: staff.MA_NV } } },
                 ]
             });
         } else {
@@ -219,6 +220,7 @@ export async function getHopDongStats() {
                     OR: [
                         { NGUOI_TAO: maNv },
                         { KHTN_REL: { SALES_PT: maNv } },
+                        { KHTN_REL: { KY_THUAT_PT: { has: maNv } } },
                     ]
                 };
             } else {

@@ -461,6 +461,11 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     // ═══ Submit ═══
     const handleSubmit = () => {
         if (!maKH) { toast.error("Vui lòng chọn khách hàng!"); setActiveTab("general"); return; }
+        if (!maCH) {
+            toast.error(coHois.length === 0 ? "Khách hàng chưa có cơ hội, vui lòng tạo cơ hội trước!" : "Vui lòng chọn cơ hội!");
+            setActiveTab("general");
+            return;
+        }
         if (validRows.length === 0) { toast.error("Vui lòng chọn ít nhất 1 hàng hóa!"); setActiveTab("details"); return; }
 
         const header = {
@@ -605,7 +610,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
 
                         {/* Cơ hội */}
                         <div className="space-y-1.5 relative" ref={chRef}>
-                            <label className="text-sm font-semibold text-muted-foreground">Cơ hội</label>
+                            <label className="text-sm font-semibold text-muted-foreground">Cơ hội <span className="text-destructive">*</span></label>
                             {!maKH ? (
                                 <p className="text-xs text-muted-foreground italic p-2.5 border border-dashed border-border rounded-lg">Chọn khách hàng trước</p>
                             ) : (
@@ -616,7 +621,6 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                     </button>
                                     {chOpen && (
                                         <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto">
-                                            <button type="button" onClick={() => { setMaCH(""); setSelectedCH(null); setChOpen(false); }} className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-muted-foreground transition-colors">-- Không chọn --</button>
                                             {coHois.length === 0 && (<div className="p-3 text-center text-xs text-muted-foreground">Chưa có cơ hội nào cho KH này</div>)}
                                             {coHois.map(ch => (
                                                 <button key={ch.MA_CH} type="button" onClick={() => handleSelectCH(ch)} className="w-full text-left px-3 py-2.5 hover:bg-muted transition-colors">

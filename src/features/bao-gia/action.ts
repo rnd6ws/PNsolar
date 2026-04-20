@@ -129,6 +129,7 @@ export async function getBaoGiaList(filters: {
                 OR: [
                     { NGUOI_GUI: staff.MA_NV },
                     { KH_REL: { SALES_PT: staff.MA_NV } },
+                    { KH_REL: { KY_THUAT_PT: { has: staff.MA_NV } } },
                 ]
             });
         } else {
@@ -182,6 +183,7 @@ export async function getBaoGiaStats() {
                 baseWhere.OR = [
                     { NGUOI_GUI: staff.MA_NV },
                     { KH_REL: { SALES_PT: staff.MA_NV } },
+                    { KH_REL: { KY_THUAT_PT: { has: staff.MA_NV } } },
                 ];
             } else {
                 baseWhere.NGUOI_GUI = 'NONE';
@@ -371,10 +373,10 @@ export async function createBaoGia(
                             type: 'BAO_GIA',
                             recipientId: emp.ID,
                             link: `/bao-gia?query=${encodeURIComponent(maBaoGia)}`,
-                        }).catch(() => {});
+                        }).catch(() => { });
                     }
                 })
-                .catch(() => {});
+                .catch(() => { });
         }
 
         return { success: true, message: 'Tạo báo giá thành công!' };
