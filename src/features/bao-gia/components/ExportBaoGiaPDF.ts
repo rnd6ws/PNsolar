@@ -69,6 +69,25 @@ function groupChiTiets(chiTiets: any[]) {
     return groups;
 }
 
+function normalizeCustomKey(value?: string | null) {
+    return (value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function getCustomValue(ct: any, keys: string[]) {
+    const customRows = Array.isArray(ct?.HH_CUSTOM) ? ct.HH_CUSTOM : [];
+    const normalizedKeys = keys.map(normalizeCustomKey);
+    const matched = customRows.find((item: any) => {
+        const title = normalizeCustomKey(item?.TIEU_DE);
+        return normalizedKeys.some(k => title === k || title.includes(k) || k.includes(title));
+    });
+    return (matched?.NOI_DUNG || '').toString();
+}
+
 function getSystemSpecs(dkbg: any[]) {
     const keys = ['Công suất tấm pin', 'Công suất inverter', 'Công suất lưu trữ'];
     return keys.map(k => {
@@ -179,7 +198,8 @@ export async function exportBaoGiaPDF(data: any) {
     setFont('bold'); doc.setFontSize(12);
     doc.text(`Người gửi: ${ng?.HO_TEN || ''}`, margin, y);
     doc.setFontSize(14);
-    doc.text('LẮP ĐẶT HỆ THỐNG ĐIỆN NĂNG LƯỢNG MẶT TRỜI', (colR + pageW - margin) / 2, y, { align: 'center' });
+    const docTitle = data.TEN_BAO_GIA || 'LẮP ĐẶT HỆ THỐNG ĐIỆN NĂNG LƯỢNG MẶT TRỜI';
+    doc.text(docTitle, (colR + pageW - margin) / 2, y, { align: 'center' });
     y += 6;
 
     const colRW = pageW - margin - colR;
@@ -233,9 +253,13 @@ export async function exportBaoGiaPDF(data: any) {
         for (let i = 0; i < group.items.length; i++) {
             const ct = group.items[i];
             const hh = ct.HH_REL || {};
+            const tenHang = hh.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH || '';
+            const model = hh.MODEL || getCustomValue(ct, ['Mã hiệu/Mô tả', 'Mã hiệu', 'Mô tả']);
+            const xuatXu = hh.XUAT_XU || getCustomValue(ct, ['Xuất xứ']);
+            const baoHanh = hh.BAO_HANH || getCustomValue(ct, ['Bảo hành']);
             tableBody.push([
-                `${gi + 1}.${i + 1}`, hh.TEN_HH || ct.MA_HH || '', ct.DON_VI_TINH || '',
-                hh.MODEL || '', hh.XUAT_XU || '', hh.BAO_HANH || '',
+                `${gi + 1}.${i + 1}`, tenHang, ct.DON_VI_TINH || '',
+                model, xuatXu, baoHanh,
                 ct.SO_LUONG || 0, fmtMoney(ct.GIA_BAN || 0), fmtMoney(ct.THANH_TIEN || 0),
                 ct.GHI_CHU || '',
             ]);
@@ -346,7 +370,7 @@ export async function exportBaoGiaPDF(data: any) {
 
                     setFont('bold');
                     doc.text(`- ${hangMuc}`, margin, y);
-                    
+
                     if (labels.length > 0) {
                         setFont('normal');
                         const lLines = doc.splitTextToSize(labels[0], labelW);
@@ -390,7 +414,7 @@ export async function exportBaoGiaPDF(data: any) {
             setFont('bold');
             doc.text(`- ${hangMuc}:`, margin, y);
             const pTextW = contentW - (COL_CONTENT - margin) - 2;
-            
+
             for (let di = 0; di < dkttList.length; di++) {
                 setFont('normal');
                 const text = `+ ${dkttList[di].DOT_THANH_TOAN}: Thanh toán ${dkttList[di].PT_THANH_TOAN}% ${dkttList[di].NOI_DUNG_YEU_CAU || ''}`;
@@ -441,7 +465,7 @@ export async function exportBaoGiaPDF(data: any) {
         doc.text('- Điều kiện thanh toán:', margin, y);
         setFont('normal');
         const pTextW = contentW - (COL_CONTENT - margin) - 2;
-        
+
         for (let di = 0; di < dkttList.length; di++) {
             const text = `+ ${dkttList[di].DOT_THANH_TOAN}: Thanh toán ${dkttList[di].PT_THANH_TOAN}% ${dkttList[di].NOI_DUNG_YEU_CAU || ''}`;
             const textLines = doc.splitTextToSize(text, pTextW);
@@ -490,7 +514,7 @@ export async function exportBaoGiaPDF(data: any) {
     } else {
         y += 35;
     }
-    
+
     doc.text('NGUYỄN THANH LONG', margin + (contentW * 3) / 4, y, { align: 'center' });
 
     // ═══ SAVE ═══

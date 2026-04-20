@@ -193,7 +193,7 @@ function EmployeePermRow({
                 className="w-full flex items-center gap-3 px-5 py-4 bg-card hover:bg-muted/30 transition-colors text-left"
             >
                 {/* Avatar */}
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center font-bold text-primary text-sm shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center font-bold text-primary text-sm shrink-0">
                     {emp.HINH_CA_NHAN
                         ? <img src={emp.HINH_CA_NHAN} alt={emp.HO_TEN} className="w-full h-full object-cover rounded-lg" />
                         : emp.HO_TEN.charAt(0).toUpperCase()
