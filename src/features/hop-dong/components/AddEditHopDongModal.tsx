@@ -421,6 +421,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
 
     const handleSubmit = () => {
         if (!maKH) { toast.error("Vui lòng chọn khách hàng!"); setActiveTab("general"); return; }
+        if (!maCH) { toast.error("Vui lòng chọn cơ hội!"); setActiveTab("general"); return; }
         if (validRows.length === 0) { toast.error("Vui lòng thêm ít nhất 1 hàng hóa!"); setActiveTab("details"); return; }
         const header = { NGAY_HD: ngayHD, MA_KH: maKH, MA_CH: maCH || null, MA_BAO_GIA: maBaoGia || null, LOAI_HD: loaiHD, PT_VAT: ptVat, TT_UU_DAI: ttUuDai, TEP_DINH_KEM: tepDinhKems, NGUOI_TAO: nguoiTao || null };
         const details = [...validRows]
@@ -605,7 +606,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
 
                         {/* Cơ hội */}
                         <div className="space-y-1.5 relative" ref={chRef}>
-                            <label className="text-sm font-semibold text-muted-foreground">Cơ hội</label>
+                            <label className="text-sm font-semibold text-muted-foreground">Cơ hội <span className="text-destructive">*</span></label>
                             {!maKH ? <p className="text-xs text-muted-foreground italic p-2.5 border border-dashed border-border rounded-lg">Chọn khách hàng trước</p> : (
                                 <div className="relative">
                                     <button type="button" onClick={() => setChOpen(!chOpen)} className="input-modern w-full text-left flex items-center justify-between">
@@ -614,13 +615,17 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                     </button>
                                     {chOpen && (
                                         <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto">
-                                            <button type="button" onClick={() => { setMaCH(""); setSelectedCH(null); setChOpen(false); }} className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-muted-foreground">-- Không chọn --</button>
-                                            {coHois.map((ch: any) => (
-                                                <button key={ch.MA_CH} type="button" onClick={() => { setMaCH(ch.MA_CH); setSelectedCH(ch); setChOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-muted transition-colors">
-                                                    <p className="text-sm font-medium">{ch.MA_CH}</p>
-                                                    <p className="text-xs text-muted-foreground">{new Date(ch.NGAY_TAO).toLocaleDateString("vi-VN")} • {ch.TINH_TRANG}</p>
-                                                </button>
-                                            ))}
+                                            {/* <button type="button" onClick={() => { setMaCH(""); setSelectedCH(null); setChOpen(false); }} className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-muted-foreground">-- Không chọn --</button> */}
+                                            {coHois.length === 0 ? (
+                                                <div className="p-3 text-center text-sm text-muted-foreground">Khách hàng chưa có cơ hội</div>
+                                            ) : (
+                                                coHois.map((ch: any) => (
+                                                    <button key={ch.MA_CH} type="button" onClick={() => { setMaCH(ch.MA_CH); setSelectedCH(ch); setChOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-muted transition-colors">
+                                                        <p className="text-sm font-medium">{ch.MA_CH}</p>
+                                                        <p className="text-xs text-muted-foreground">{new Date(ch.NGAY_TAO).toLocaleDateString("vi-VN")} • {ch.TINH_TRANG}</p>
+                                                    </button>
+                                                ))
+                                            )}
                                         </div>
                                     )}
                                 </div>

@@ -67,7 +67,13 @@ export async function getKhaoSatList(params?: {
                     }
                 } : {},
                 nguoi && nguoi !== "all" ? { NGUOI_KHAO_SAT: { contains: nguoi } } : {},
-                staffMaNv ? { NGUOI_KHAO_SAT: { contains: staffMaNv } } : {},
+                staffMaNv ? {
+                    OR: [
+                        { NGUOI_KHAO_SAT: { contains: staffMaNv } },
+                        { KHTN_REL: { SALES_PT: staffMaNv } },
+                        { KHTN_REL: { KY_THUAT_PT: { has: staffMaNv } } }
+                    ]
+                } : {},
             ],
         };
 
@@ -134,7 +140,13 @@ export async function getKhaoSatStats() {
             if (nv?.MA_NV) staffMaNv = nv.MA_NV;
         }
 
-        const baseWhere = staffMaNv ? { NGUOI_KHAO_SAT: { contains: staffMaNv } } : {};
+        const baseWhere = staffMaNv ? {
+            OR: [
+                { NGUOI_KHAO_SAT: { contains: staffMaNv } },
+                { KHTN_REL: { SALES_PT: staffMaNv } },
+                { KHTN_REL: { KY_THUAT_PT: { has: staffMaNv } } }
+            ]
+        } : {};
 
         const [total, thisMonth] = await Promise.all([
             prisma.kHAO_SAT.count({ where: baseWhere }),

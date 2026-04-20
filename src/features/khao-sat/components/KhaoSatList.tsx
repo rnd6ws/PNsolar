@@ -267,10 +267,15 @@ export default function KhaoSatList({
                                             </button>
                                             <button
                                                 onClick={() => setImageUploadItem(item)}
-                                                className="p-1.5 hover:bg-indigo-500/10 text-muted-foreground group-hover:text-indigo-500 hover:text-indigo-600 rounded transition-colors"
+                                                className="p-1.5 hover:bg-indigo-500/10 text-muted-foreground group-hover:text-indigo-500 hover:text-indigo-600 rounded transition-colors relative"
                                                 title="Ảnh khảo sát"
                                             >
                                                 <Images className="w-4 h-4" />
+                                                {item.HINH_ANH && (item.HINH_ANH.length || (typeof item.HINH_ANH === 'string' ? JSON.parse(item.HINH_ANH).length : 0)) > 0 && (
+                                                    <span className="absolute top-0 right-0 text-[10px] font-bold text-indigo-600">
+                                                        {item.HINH_ANH.length || (typeof item.HINH_ANH === 'string' ? JSON.parse(item.HINH_ANH).length : 0)}
+                                                    </span>
+                                                )}
                                             </button>
                                             <button
                                                 onClick={() => setEditItem(item)}
@@ -358,8 +363,15 @@ export default function KhaoSatList({
                                         <DropdownMenuItem className="text-orange-600 focus:text-orange-700 dark:text-orange-400 dark:focus:text-orange-300 cursor-pointer focus:bg-orange-50 dark:focus:bg-orange-900/20" onClick={(e) => { e.stopPropagation(); setChiTietEditItem(item); }}>
                                             <ClipboardEdit className="w-4 h-4 mr-2 text-orange-600 dark:text-orange-400" />Ghi nhận KS
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-purple-600 focus:text-purple-700 dark:text-purple-400 dark:focus:text-purple-300 cursor-pointer focus:bg-purple-50 dark:focus:bg-purple-900/20" onClick={(e) => { e.stopPropagation(); setImageUploadItem(item); }}>
-                                            <Images className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />Ảnh KS
+                                        <DropdownMenuItem className="text-purple-600 focus:text-purple-700 dark:text-purple-400 dark:focus:text-purple-300 cursor-pointer focus:bg-purple-50 dark:focus:bg-purple-900/20 flex items-center justify-between" onClick={(e) => { e.stopPropagation(); setImageUploadItem(item); }}>
+                                            <div className="flex items-center">
+                                                <Images className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />Ảnh KS
+                                            </div>
+                                            {item.HINH_ANH && (item.HINH_ANH.length || (typeof item.HINH_ANH === 'string' ? JSON.parse(item.HINH_ANH).length : 0)) > 0 && (
+                                                <span className="ml-2 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 py-0.5 px-1.5 rounded-md text-[10px] font-bold">
+                                                    {item.HINH_ANH.length || (typeof item.HINH_ANH === 'string' ? JSON.parse(item.HINH_ANH).length : 0)}
+                                                </span>
+                                            )}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="text-sky-600 focus:text-sky-700 dark:text-sky-400 dark:focus:text-sky-300 cursor-pointer focus:bg-sky-50 dark:focus:bg-sky-900/20" onClick={(e) => { e.stopPropagation(); setEditItem(item); }}>
                                             <Pencil className="w-4 h-4 mr-2 text-sky-600 dark:text-sky-400" />Sửa
