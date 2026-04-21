@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, FileDown, FileSpreadsheet, Loader2, Copy } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, FileDown, FileSpreadsheet, Loader2, Copy, FileSignature } from "lucide-react";
 import { toast } from "sonner";
 import { PermissionGuard } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -11,6 +11,7 @@ import AddEditBaoGiaModal from "./AddEditBaoGiaModal";
 import ViewBaoGiaModal from "./ViewBaoGiaModal";
 import { exportBaoGiaPDF } from "./ExportBaoGiaPDF";
 import { exportBaoGiaExcel } from "./ExportBaoGiaExcel";
+import { exportGiaoNhanPdf } from "../utils/exportGiaoNhan";
 
 // ─── Format helpers ─────────────────────────────────────────
 const fmtDate = (d: string | Date) => {
@@ -35,6 +36,7 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
     const [viewData, setViewData] = useState<any>(null);
     const [loadingView, setLoadingView] = useState(false);
     const [exportingId, setExportingId] = useState<string | null>(null);
+    const [exportingGiaoNhanId, setExportingGiaoNhanId] = useState<string | null>(null);
     const [copyModal, setCopyModal] = useState(false);
     const [copyData, setCopyData] = useState<any>(null);
     const [loadingCopy, setLoadingCopy] = useState(false);
@@ -125,6 +127,25 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
     const handleCopySuccess = () => {
         setCopyModal(false);
         setCopyData(null);
+    };
+
+    // ═══ Export Biên Bản Giao Nhận ══════════════════════════
+    const handleExportGiaoNhan = async (item: any) => {
+        setExportingGiaoNhanId(item.ID);
+        try {
+            const result = await getBaoGiaById(item.ID);
+            if (!result.success || !result.data) {
+                toast.error('Không thể tải dữ liệu báo giá');
+                return;
+            }
+            await exportGiaoNhanPdf(result.data);
+            toast.success('Đã xuất biên bản giao nhận!');
+        } catch (err: any) {
+            console.error('[ExportGiaoNhan]', err);
+            toast.error(err?.message || 'Lỗi khi xuất biên bản giao nhận');
+        } finally {
+            setExportingGiaoNhanId(null);
+        }
     };
 
     // ═══ Export PDF / Excel ════════════════════════════════
@@ -225,11 +246,10 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
                                     )}
                                     {show("loai") && (
                                         <td className={tdClass}>
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                                                item.LOAI_BAO_GIA === "Dân dụng"
-                                                    ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                                                    : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                            }`}>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${item.LOAI_BAO_GIA === "Dân dụng"
+                                                ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                                                : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                                }`}>
                                                 {item.LOAI_BAO_GIA}
                                             </span>
                                         </td>
@@ -270,6 +290,14 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
                                             >
                                                 {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
                                             </button>
+                                            <button
+                                                onClick={() => handleExportGiaoNhan(item)}
+                                                disabled={exportingGiaoNhanId === item.ID}
+                                                className="p-1.5 hover:bg-purple-500/10 rounded-lg transition-colors text-muted-foreground hover:text-purple-600"
+                                                title="Xuất Biên Bản Giao Nhận"
+                                            >
+                                                {exportingGiaoNhanId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
+                                            </button>
                                             <PermissionGuard moduleKey="bao-gia" level="edit">
                                                 <button
                                                     onClick={() => handleCopy(item)}
@@ -308,63 +336,65 @@ export default function BaoGiaList({ data, visibleColumns, viewMode = "list" }: 
 
             {/* ═══ Mobile Cards ═══ */}
             {viewMode === "card" && (
-            <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-                {sortedData.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">Không có dữ liệu</div>
-                ) : (
-                    sortedData.map((item: any) => (
-                        <div key={item.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-2">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-bold text-primary">{item.MA_BAO_GIA}</p>
-                                    <p className="text-xs text-muted-foreground">{fmtDate(item.NGAY_BAO_GIA)}</p>
-                                </div>
-                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                                    item.LOAI_BAO_GIA === "Dân dụng"
+                <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
+                    {sortedData.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">Không có dữ liệu</div>
+                    ) : (
+                        sortedData.map((item: any) => (
+                            <div key={item.ID} className="bg-background border border-border rounded-xl p-4 shadow-sm flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="font-bold text-primary">{item.MA_BAO_GIA}</p>
+                                        <p className="text-xs text-muted-foreground">{fmtDate(item.NGAY_BAO_GIA)}</p>
+                                    </div>
+                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${item.LOAI_BAO_GIA === "Dân dụng"
                                         ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                                         : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                }`}>
-                                    {item.LOAI_BAO_GIA}
-                                </span>
-                            </div>
-
-                            <div className="flex items-center justify-between mt-1">
-                                <div>
-                                    <p className="text-sm font-medium">{item.KH_REL?.TEN_KH || item.MA_KH}</p>
-                                    {item.MA_CH && <p className="text-xs text-muted-foreground">CH: {item.MA_CH}</p>}
+                                        }`}>
+                                        {item.LOAI_BAO_GIA}
+                                    </span>
                                 </div>
-                                <p className="text-lg font-bold text-primary">{fmtMoney(item.TONG_TIEN)}</p>
-                            </div>
 
-                            {/* Footer: Actions */}
-                            <div className="flex items-center gap-2 pt-1 border-t border-border">
-                                <button onClick={() => handleView(item)} disabled={loadingView} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
-                                    <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
-                                </button>
-                                <button onClick={() => handleExport(item, 'pdf')} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors text-xs font-semibold" title="Xuất PDF">
-                                    {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />} <span className="hidden sm:inline">PDF</span>
-                                </button>
-                                <button onClick={() => handleExport(item, 'excel')} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-green-500/10 text-muted-foreground hover:text-green-600 rounded-lg transition-colors text-xs font-semibold" title="Xuất Excel">
-                                    {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />} <span className="hidden sm:inline">Excel</span>
-                                </button>
-                                <PermissionGuard moduleKey="bao-gia" level="edit">
-                                    <button onClick={() => handleCopy(item)} disabled={loadingCopy} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-500 rounded-lg transition-colors text-xs font-semibold" title="Copy báo giá">
-                                        {loadingCopy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />} <span className="hidden sm:inline">Copy</span>
+                                <div className="flex items-center justify-between mt-1">
+                                    <div>
+                                        <p className="text-sm font-medium">{item.KH_REL?.TEN_KH || item.MA_KH}</p>
+                                        {item.MA_CH && <p className="text-xs text-muted-foreground">CH: {item.MA_CH}</p>}
+                                    </div>
+                                    <p className="text-lg font-bold text-primary">{fmtMoney(item.TONG_TIEN)}</p>
+                                </div>
+
+                                {/* Footer: Actions */}
+                                <div className="flex items-center gap-2 pt-1 border-t border-border">
+                                    <button onClick={() => handleView(item)} disabled={loadingView} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold">
+                                        <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
                                     </button>
-                                    <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
-                                        <Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
+                                    <button onClick={() => handleExport(item, 'pdf')} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors text-xs font-semibold" title="Xuất PDF">
+                                        {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />} <span className="hidden sm:inline">PDF</span>
                                     </button>
-                                </PermissionGuard>
-                                <PermissionGuard moduleKey="bao-gia" level="delete">
-                                    <button onClick={() => setDeleteItem(item)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
-                                        <Trash2 className="w-4 h-4" />
+                                    <button onClick={() => handleExport(item, 'excel')} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-green-500/10 text-muted-foreground hover:text-green-600 rounded-lg transition-colors text-xs font-semibold" title="Xuất Excel">
+                                        {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />} <span className="hidden sm:inline">Excel</span>
                                     </button>
-                                </PermissionGuard>
+                                    <button onClick={() => handleExportGiaoNhan(item)} disabled={exportingGiaoNhanId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-purple-500/10 text-muted-foreground hover:text-purple-600 rounded-lg transition-colors text-xs font-semibold" title="Xuất Biên Bản Giao Nhận">
+                                        {exportingGiaoNhanId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />} <span className="hidden sm:inline">Giao nhận</span>
+                                    </button>
+                                    <PermissionGuard moduleKey="bao-gia" level="edit">
+                                        <button onClick={() => handleCopy(item)} disabled={loadingCopy} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-500 rounded-lg transition-colors text-xs font-semibold" title="Copy báo giá">
+                                            {loadingCopy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />} <span className="hidden sm:inline">Copy</span>
+                                        </button>
+                                        <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
+                                            <Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
+                                        </button>
+                                    </PermissionGuard>
+                                    <PermissionGuard moduleKey="bao-gia" level="delete">
+                                        <button onClick={() => setDeleteItem(item)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </PermissionGuard>
+                                </div>
                             </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                        ))
+                    )}
+                </div>
             )}
 
             {/* ═══ Delete Dialog ═══ */}
