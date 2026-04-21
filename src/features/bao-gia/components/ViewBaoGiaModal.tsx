@@ -143,7 +143,7 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                                                 <td className="px-3 py-2.5 text-muted-foreground">{idx + 1}</td>
                                                 <td className="px-3 py-2.5">
                                                     <p className="font-medium text-foreground">{ct.HH_REL?.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH || "—"}</p>
-                                                    <p className="text-[10px] text-muted-foreground">{ct.MA_HH || "Hàng hóa custom"}</p>
+                                                    <p className="text-[10px] text-muted-foreground">{ct.MA_HH || ""}</p>
                                                 </td>
                                                 <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{ct.NHOM_HH || ct.HH_REL?.NHOM_HH || "—"}</td>
                                                 <td className="px-3 py-2.5 text-muted-foreground">{ct.DON_VI_TINH}</td>

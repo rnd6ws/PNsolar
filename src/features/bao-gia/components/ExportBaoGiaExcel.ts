@@ -133,7 +133,7 @@ export async function exportBaoGiaExcel(data: any) {
         const resp = await fetch('/logoPN.jpg');
         const buf = await resp.arrayBuffer();
         const imgId = wb.addImage({ buffer: new Uint8Array(buf) as any, extension: 'jpeg' });
-        ws.addImage(imgId, { tl: { col: 0, row: 0 }, ext: { width: 90, height: 90 } });
+        ws.addImage(imgId, { tl: { col: 0, row: 0.3 }, ext: { width: 90, height: 90 } });
     } catch { /* skip */ }
 
     // ── Mộc ──
@@ -161,28 +161,30 @@ export async function exportBaoGiaExcel(data: any) {
     // ════════════════════════════════════════════
     // HEADER CÔNG TY
     // ════════════════════════════════════════════
+    const headerIndent = '                '; // 14 spaces để cách logo
+
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.name;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.name;
     ws.getCell(`B${row}`).font = { name: F, bold: true, size: 14, color: { argb: 'FF003366' } };
     row++;
 
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.address;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.address;
     ws.getCell(`B${row}`).font = { name: F, size: 10 };
     row++;
 
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.office;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.office;
     ws.getCell(`B${row}`).font = { name: F, size: 10 };
     row++;
 
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.phone;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.phone;
     ws.getCell(`B${row}`).font = { name: F, size: 10 };
     row++;
 
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.website;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.website;
     ws.getCell(`B${row}`).font = { name: F, size: 10, color: { argb: 'FF0066CC' }, underline: true };
     row++;
 
