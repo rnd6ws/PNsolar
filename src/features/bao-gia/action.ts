@@ -13,6 +13,7 @@ const BAO_GIA_INCLUDE = {
         select: {
             TEN_KH: true, MA_KH: true, TEN_VT: true,
             DIEN_THOAI: true, EMAIL: true, DIA_CHI: true,
+            NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, SDT: true, EMAIL: true } },
         },
     },
     NGUOI_GUI_REL: {
