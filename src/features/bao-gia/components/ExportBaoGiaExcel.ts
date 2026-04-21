@@ -70,6 +70,25 @@ function groupChiTiets(chiTiets: any[]) {
     return groups;
 }
 
+function normalizeCustomKey(value?: string | null) {
+    return (value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function getCustomValue(ct: any, keys: string[]) {
+    const customRows = Array.isArray(ct?.HH_CUSTOM) ? ct.HH_CUSTOM : [];
+    const normalizedKeys = keys.map(normalizeCustomKey);
+    const matched = customRows.find((item: any) => {
+        const title = normalizeCustomKey(item?.TIEU_DE);
+        return normalizedKeys.some(k => title === k || title.includes(k) || k.includes(title));
+    });
+    return (matched?.NOI_DUNG || '').toString();
+}
+
 function getSystemSpecs(dkbg: any[]) {
     const keys = ['Công suất tấm pin', 'Công suất inverter', 'Công suất lưu trữ'];
     return keys.map(k => {
@@ -114,7 +133,7 @@ export async function exportBaoGiaExcel(data: any) {
         const resp = await fetch('/logoPN.jpg');
         const buf = await resp.arrayBuffer();
         const imgId = wb.addImage({ buffer: new Uint8Array(buf) as any, extension: 'jpeg' });
-        ws.addImage(imgId, { tl: { col: 0, row: 0 }, ext: { width: 90, height: 90 } });
+        ws.addImage(imgId, { tl: { col: 0, row: 0.3 }, ext: { width: 90, height: 90 } });
     } catch { /* skip */ }
 
     // ── Mộc ──
@@ -142,28 +161,30 @@ export async function exportBaoGiaExcel(data: any) {
     // ════════════════════════════════════════════
     // HEADER CÔNG TY
     // ════════════════════════════════════════════
+    const headerIndent = '                '; // 14 spaces để cách logo
+
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.name;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.name;
     ws.getCell(`B${row}`).font = { name: F, bold: true, size: 14, color: { argb: 'FF003366' } };
     row++;
 
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.address;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.address;
     ws.getCell(`B${row}`).font = { name: F, size: 10 };
     row++;
 
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.office;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.office;
     ws.getCell(`B${row}`).font = { name: F, size: 10 };
     row++;
 
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.phone;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.phone;
     ws.getCell(`B${row}`).font = { name: F, size: 10 };
     row++;
 
     ws.mergeCells(`B${row}:J${row}`);
-    ws.getCell(`B${row}`).value = COMPANY.website;
+    ws.getCell(`B${row}`).value = headerIndent + COMPANY.website;
     ws.getCell(`B${row}`).font = { name: F, size: 10, color: { argb: 'FF0066CC' }, underline: true };
     row++;
 
@@ -190,7 +211,8 @@ export async function exportBaoGiaExcel(data: any) {
     ws.getCell(`A${row}`).value = `Người gửi: ${ng?.HO_TEN || ''}`;
     ws.getCell(`A${row}`).font = { name: F, bold: true, size: 12 };
     ws.mergeCells(`E${row}:J${row}`);
-    ws.getCell(`E${row}`).value = 'LẮP ĐẶT HỆ THỐNG ĐIỆN NĂNG LƯỢNG MẶT TRỜI';
+    const docTitle = data.TEN_BAO_GIA || 'LẮP ĐẶT HỆ THỐNG ĐIỆN NĂNG LƯỢNG MẶT TRỜI';
+    ws.getCell(`E${row}`).value = docTitle;
     ws.getCell(`E${row}`).font = { name: F, bold: true, size: 14, color: { argb: 'FF003366' } };
     ws.getCell(`E${row}`).alignment = { horizontal: 'center' };
     ws.getRow(row).height = 22;
@@ -284,18 +306,22 @@ export async function exportBaoGiaExcel(data: any) {
         for (let i = 0; i < group.items.length; i++) {
             const ct = group.items[i];
             const hh = ct.HH_REL || {};
+            const tenHang = hh.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH || '';
+            const model = hh.MODEL || getCustomValue(ct, ['Mã hiệu/Mô tả', 'Mã hiệu', 'Mô tả']);
+            const xuatXu = hh.XUAT_XU || getCustomValue(ct, ['Xuất xứ']);
+            const baoHanh = hh.BAO_HANH || getCustomValue(ct, ['Bảo hành']);
             const r = ws.getRow(row);
 
             r.getCell(1).value = `${gi + 1}.${i + 1}`;
             r.getCell(1).alignment = { horizontal: 'center' };
-            r.getCell(2).value = hh.TEN_HH || ct.MA_HH || '';
+            r.getCell(2).value = tenHang;
             r.getCell(2).alignment = { wrapText: true };
             r.getCell(3).value = ct.DON_VI_TINH || '';
             r.getCell(3).alignment = { horizontal: 'center' };
-            r.getCell(4).value = hh.MODEL || '';
+            r.getCell(4).value = model;
             r.getCell(4).alignment = { wrapText: true };
-            r.getCell(5).value = hh.XUAT_XU || '';
-            r.getCell(6).value = hh.BAO_HANH || '';
+            r.getCell(5).value = xuatXu;
+            r.getCell(6).value = baoHanh;
             r.getCell(7).value = ct.SO_LUONG || 0;
             r.getCell(7).alignment = { horizontal: 'right' };
             r.getCell(8).value = ct.GIA_BAN || 0;

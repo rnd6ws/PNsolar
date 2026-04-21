@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useTransition, useRef } from "react";
-import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, ExternalLink, X, CreditCard, ScrollText, Eye, EyeOff, Table2 } from "lucide-react";
+import { Plus, Trash2, Search, Loader2, ChevronDown, FileText, Package, Upload, ExternalLink, X, CreditCard, ScrollText, Eye, EyeOff, Table2, SlidersHorizontal } from "lucide-react";
 import Modal from "@/components/Modal";
+import FormCreatableSelect, { type Option as CreatableOption } from "@/components/FormCreatableSelect";
 import { toast } from "sonner";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import Image from "next/image";
@@ -27,6 +28,48 @@ interface NhomHHOption { MA_NHOM: string; TEN_NHOM: string }
 interface NVOption { ID: string; MA_NV: string; HO_TEN: string; CHUC_VU?: string | null; SO_DIEN_THOAI?: string | null; EMAIL?: string | null }
 
 const DEFAULT_NHOM = 'VẬT TƯ CHÍNH';
+const BAO_GIA_TITLE_OPTIONS: CreatableOption[] = [
+    { label: "LẮP ĐẶT HỆ THỐNG ĐIỆN NĂNG LƯỢNG MẶT TRỜI", value: "LẮP ĐẶT HỆ THỐNG ĐIỆN NĂNG LƯỢNG MẶT TRỜI" },
+    { label: "CUNG CẤP THIẾT BỊ ĐIỆN NĂNG LƯỢNG MẶT TRỜI", value: "CUNG CẤP THIẾT BỊ ĐIỆN NĂNG LƯỢNG MẶT TRỜI" },
+];
+const DEFAULT_BAO_GIA_TITLE = BAO_GIA_TITLE_OPTIONS[0]?.value ?? "";
+
+const HH_CUSTOM_FIELDS = [
+    { title: "Mã hiệu/Mô tả", placeholder: "Nhập mã hiệu hoặc mô tả" },
+    { title: "Xuất xứ", placeholder: "Nhập xuất xứ" },
+    { title: "Bảo hành", placeholder: "Nhập bảo hành" },
+];
+
+const normalizeText = (value?: string | null) =>
+    (value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+const normalizeHhCustom = (rows?: Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>) =>
+    (rows || [])
+        .map(item => ({
+            TIEU_DE: typeof item?.TIEU_DE === "string" ? item.TIEU_DE.trim() : "",
+            NOI_DUNG: typeof item?.NOI_DUNG === "string" ? item.NOI_DUNG : "",
+        }))
+        .filter(item => item.TIEU_DE || item.NOI_DUNG);
+
+const buildDefaultHhCustomDraft = (rows?: Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>) => {
+    const normalizedRows = normalizeHhCustom(rows);
+    return HH_CUSTOM_FIELDS.map(field => {
+        const fieldKey = normalizeText(field.title);
+        const matched = normalizedRows.find(item => {
+            const titleKey = normalizeText(item.TIEU_DE);
+            return titleKey === fieldKey || titleKey.includes(fieldKey) || fieldKey.includes(titleKey);
+        });
+        return {
+            TIEU_DE: field.title,
+            NOI_DUNG: matched?.NOI_DUNG || "",
+        };
+    });
+};
 
 interface Props {
     isOpen: boolean;
@@ -37,6 +80,7 @@ interface Props {
 }
 
 const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v) : "0";
+const formatTenBaoGia = (value: string) => value.replace(/\s+/g, " ").trim().toLocaleUpperCase("vi-VN");
 
 let _counter = 0;
 const tempId = () => `_tmp_${++_counter}_${Date.now()}`;
@@ -62,6 +106,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
 
     // ═══ Header state ═══
     const [ngayBaoGia, setNgayBaoGia] = useState("");
+    const [tenBaoGia, setTenBaoGia] = useState(DEFAULT_BAO_GIA_TITLE);
     const [maKH, setMaKH] = useState("");
     const [selectedKH, setSelectedKH] = useState<KHOption | null>(null);
     const [maCH, setMaCH] = useState("");
@@ -86,6 +131,9 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     const [chiTiets, setChiTiets] = useState<BaoGiaChiTietRow[]>([]);
     const [dkttRows, setDkttRows] = useState<DkttBgRow[]>([]);
     const [dkBaoGiaRows, setDkBaoGiaRows] = useState<DkBaoGiaRow[]>([]);
+    const [hhCustomModalOpen, setHhCustomModalOpen] = useState(false);
+    const [hhCustomTargetRowId, setHhCustomTargetRowId] = useState<string | null>(null);
+    const [hhCustomDraft, setHhCustomDraft] = useState<Array<{ TIEU_DE: string; NOI_DUNG: string }>>([]);
 
     // ═══ Nhóm hàng hóa sub-tabs ═══
     const [nhomHHList, setNhomHHList] = useState<NhomHHOption[]>([]);
@@ -126,6 +174,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
 
         if (editData) {
             setNgayBaoGia(editData.NGAY_BAO_GIA ? editData.NGAY_BAO_GIA.slice(0, 10) : "");
+            setTenBaoGia(editData.TEN_BAO_GIA || DEFAULT_BAO_GIA_TITLE);
             setMaKH(editData.MA_KH || "");
             setSelectedKH(editData.KH_REL ? { ID: "", MA_KH: editData.MA_KH, TEN_KH: editData.KH_REL.TEN_KH } : null);
             setMaCH(editData.MA_CH || "");
@@ -141,8 +190,11 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             const rows: BaoGiaChiTietRow[] = (editData.CHI_TIETS || []).map((ct: any) => ({
                 _id: tempId(),
                 _dbId: ct.ID,
-                _tenHH: ct.HH_REL?.TEN_HH || ct.MA_HH,
-                MA_HH: ct.MA_HH,
+                _tenHH: ct.HH_REL?.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH,
+                _isNgoaiNhom: !ct.MA_HH,
+                MA_HH: ct.MA_HH || "",
+                TEN_HH_CUSTOM: ct.TEN_HH_CUSTOM || null,
+                HH_CUSTOM: normalizeHhCustom(ct.HH_CUSTOM),
                 NHOM_HH: ct.NHOM_HH || ct.HH_REL?.NHOM_HH || DEFAULT_NHOM,
                 DON_VI_TINH: ct.DON_VI_TINH,
                 GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT || 0,
@@ -186,6 +238,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             // ═══ COPY mode: ngày = hôm nay, KH/NV/tệp/ghi chú reset, loại BG & VAT giữ nguyên, các tab còn lại copy ═══
             const today = new Date().toISOString().slice(0, 10);
             setNgayBaoGia(today);
+            setTenBaoGia(copyData.TEN_BAO_GIA || DEFAULT_BAO_GIA_TITLE);
             // Khách hàng: xóa để chọn lại
             setMaKH(""); setSelectedKH(null);
             // Cơ hội: reset
@@ -203,8 +256,11 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             // Chi tiết hàng hóa: copy nguyên (bỏ _dbId để tạo mới)
             const rows: BaoGiaChiTietRow[] = (copyData.CHI_TIETS || []).map((ct: any) => ({
                 _id: tempId(),
-                _tenHH: ct.HH_REL?.TEN_HH || ct.MA_HH,
-                MA_HH: ct.MA_HH,
+                _tenHH: ct.HH_REL?.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH,
+                _isNgoaiNhom: !ct.MA_HH,
+                MA_HH: ct.MA_HH || "",
+                TEN_HH_CUSTOM: ct.TEN_HH_CUSTOM || null,
+                HH_CUSTOM: normalizeHhCustom(ct.HH_CUSTOM),
                 NHOM_HH: ct.NHOM_HH || ct.HH_REL?.NHOM_HH || DEFAULT_NHOM,
                 DON_VI_TINH: ct.DON_VI_TINH,
                 GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT || 0,
@@ -241,6 +297,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
         } else {
             const today = new Date().toISOString().slice(0, 10);
             setNgayBaoGia(today);
+            setTenBaoGia(DEFAULT_BAO_GIA_TITLE);
             setMaKH(""); setSelectedKH(null);
             setMaCH(""); setSelectedCH(null);
             setLoaiBaoGia("Dân dụng");
@@ -254,6 +311,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
         setKhQuery(""); setKhResults([]); setKhOpen(false);
         setNvQuery(""); setNvResults([]); setNvOpen(false);
         setHhRowId(null); setHhQuery(""); setHhResults([]); setShowNhomPicker(false);
+        setHhCustomModalOpen(false); setHhCustomTargetRowId(null); setHhCustomDraft([]);
     }, [isOpen, editData, copyData]);
 
     useEffect(() => { chiTietsRef.current = chiTiets; }, [chiTiets]);
@@ -364,6 +422,8 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             _id: tempId(), _tenHH: "", MA_HH: "", NHOM_HH: activeNhomTab,
             DON_VI_TINH: "", GIA_BAN_CHUA_VAT: 0, GIA_BAN: 0,
             SO_LUONG: 1, THANH_TIEN: 0, GHI_CHU: "",
+            _isNgoaiNhom: false,
+            HH_CUSTOM: [],
         };
         setChiTiets(prev => [...prev, newRow]);
     }, [activeNhomTab]);
@@ -385,6 +445,9 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                 NHOM_HH: hh.NHOM_HH || "", DON_VI_TINH: hh.DON_VI_TINH,
                 GIA_BAN: giaBan, GIA_BAN_CHUA_VAT: Math.round(giaBanChuaVat),
                 THANH_TIEN: Math.round(thanhTien),
+                _isNgoaiNhom: false,
+                TEN_HH_CUSTOM: null,
+                HH_CUSTOM: [],
             };
         }));
     }, [ptVat, ngayBaoGia, loaiBaoGia]);
@@ -399,7 +462,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
     // ═══ Khi PT_VAT thay đổi → recalc GIA_BAN_CHUA_VAT cho tất cả dòng ═══
     useEffect(() => {
         setChiTiets(prev => prev.map(row => {
-            if (!row.MA_HH) return row;
+            if (!row.MA_HH && !row._isNgoaiNhom) return row;
             const giaBanChuaVat = ptVat > 0 ? row.GIA_BAN / (1 + ptVat / 100) : row.GIA_BAN;
             return { ...row, GIA_BAN_CHUA_VAT: Math.round(giaBanChuaVat) };
         }));
@@ -448,18 +511,98 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loaiBaoGia]);
 
-    const removeRow = useCallback((id: string) => { setChiTiets(prev => prev.filter(row => row._id !== id)); }, []);
+    const removeRow = useCallback((id: string) => {
+        setChiTiets(prev => prev.filter(row => row._id !== id));
+        if (hhCustomTargetRowId === id) {
+            setHhCustomModalOpen(false);
+            setHhCustomTargetRowId(null);
+            setHhCustomDraft([]);
+        }
+    }, [hhCustomTargetRowId]);
+
+    const switchNgoaiNhomMode = useCallback((rowId: string, isNgoaiNhom: boolean) => {
+        setChiTiets(prev => prev.map(row => {
+            if (row._id !== rowId) return row;
+            if (isNgoaiNhom) {
+                return {
+                    ...row,
+                    MA_HH: "",
+                    _tenHH: "",
+                    _isNgoaiNhom: true,
+                    HH_CUSTOM: normalizeHhCustom(row.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>),
+                };
+            }
+            return {
+                ...row,
+                _isNgoaiNhom: false,
+                TEN_HH_CUSTOM: null,
+                HH_CUSTOM: [],
+            };
+        }));
+    }, []);
+
+    const openHhCustomModal = useCallback((rowId: string) => {
+        const row = chiTietsRef.current.find(r => r._id === rowId);
+        if (!row || !row._isNgoaiNhom) return;
+        setHhCustomTargetRowId(rowId);
+        setHhCustomDraft(buildDefaultHhCustomDraft(row.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>));
+        setHhCustomModalOpen(true);
+    }, []);
+
+    const closeHhCustomModal = useCallback(() => {
+        setHhCustomModalOpen(false);
+        setHhCustomTargetRowId(null);
+        setHhCustomDraft([]);
+    }, []);
+
+    const saveHhCustomModal = useCallback(() => {
+        if (!hhCustomTargetRowId) return;
+        const normalized = normalizeHhCustom(hhCustomDraft);
+        setChiTiets(prev => prev.map(row => row._id === hhCustomTargetRowId ? { ...row, HH_CUSTOM: normalized } : row));
+        closeHhCustomModal();
+    }, [hhCustomDraft, hhCustomTargetRowId, closeHhCustomModal]);
+
+    const getFilledHhCustomCount = useCallback((row: BaoGiaChiTietRow) => {
+        const normalized = normalizeHhCustom(row.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>);
+        return normalized.filter(item => item.NOI_DUNG).length;
+    }, []);
+    const getHhCustomValue = useCallback((row: BaoGiaChiTietRow, title: string) => {
+        const fieldKey = normalizeText(title);
+        const normalized = normalizeHhCustom(row.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>);
+        const matched = normalized.find(item => {
+            const titleKey = normalizeText(item.TIEU_DE);
+            return titleKey === fieldKey || titleKey.includes(fieldKey) || fieldKey.includes(titleKey);
+        });
+        return matched?.NOI_DUNG || "";
+    }, []);
+
+    const updateHhCustomField = useCallback((rowId: string, title: string, value: string) => {
+        setChiTiets(prev => prev.map(row => {
+            if (row._id !== rowId) return row;
+            const normalized = normalizeHhCustom(row.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>);
+            const defaultDraft = buildDefaultHhCustomDraft(normalized);
+            const knownFieldKeys = HH_CUSTOM_FIELDS.map(field => normalizeText(field.title));
+            const extraRows = normalized.filter(item => !knownFieldKeys.includes(normalizeText(item.TIEU_DE)));
+            const nextKnownRows = defaultDraft.map(item => normalizeText(item.TIEU_DE) === normalizeText(title)
+                ? { ...item, NOI_DUNG: value }
+                : item);
+            return { ...row, HH_CUSTOM: normalizeHhCustom([...nextKnownRows, ...extraRows]) };
+        }));
+    }, []);
 
     // ═══ Totals ═══
     const thanhTienTotal = chiTiets.reduce((s, r) => s + r.THANH_TIEN, 0);
     const ttVat = ptVat > 0 ? thanhTienTotal * ptVat / (100 + ptVat) : 0;
     const tongTien = thanhTienTotal + ttUuDai;
 
-    const validRows = chiTiets.filter(r => r.MA_HH);
+    const validRows = chiTiets.filter(r => r.MA_HH || (r._isNgoaiNhom && r.TEN_HH_CUSTOM));
     const activeHhRow = hhRowId ? chiTiets.find(r => r._id === hhRowId) : null;
+    const activeHhCustomRow = hhCustomTargetRowId ? chiTiets.find(r => r._id === hhCustomTargetRowId) : null;
 
     // ═══ Submit ═══
     const handleSubmit = () => {
+        const normalizedTenBaoGia = tenBaoGia.trim();
+        if (!normalizedTenBaoGia) { toast.error("Vui lòng nhập tên báo giá!"); setActiveTab("general"); return; }
         if (!maKH) { toast.error("Vui lòng chọn khách hàng!"); setActiveTab("general"); return; }
         if (!maCH) {
             toast.error(coHois.length === 0 ? "Khách hàng chưa có cơ hội, vui lòng tạo cơ hội trước!" : "Vui lòng chọn cơ hội!");
@@ -469,7 +612,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
         if (validRows.length === 0) { toast.error("Vui lòng chọn ít nhất 1 hàng hóa!"); setActiveTab("details"); return; }
 
         const header = {
-            NGAY_BAO_GIA: ngayBaoGia, MA_KH: maKH, MA_CH: maCH || null,
+            NGAY_BAO_GIA: ngayBaoGia, TEN_BAO_GIA: formatTenBaoGia(normalizedTenBaoGia), MA_KH: maKH, MA_CH: maCH || null,
             NGUOI_GUI: nguoiGui || null,
             LOAI_BAO_GIA: loaiBaoGia, PT_VAT: ptVat, TT_UU_DAI: ttUuDai,
             GHI_CHU: ghiChu || null,
@@ -483,7 +626,9 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                 return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
             })
             .map(ct => ({
-                MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || null,
+                MA_HH: ct.MA_HH || "", NHOM_HH: ct.NHOM_HH || null,
+                TEN_HH_CUSTOM: ct.TEN_HH_CUSTOM || null,
+                HH_CUSTOM: normalizeHhCustom(ct.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>),
                 DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT,
                 GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG,
                 THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null,
@@ -557,6 +702,15 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             {activeTab === "general" && (
                 <div className="space-y-6 animate-in fade-in duration-200">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-sm font-semibold text-muted-foreground">Tên báo giá <span className="text-destructive">*</span></label>
+                            <FormCreatableSelect
+                                value={tenBaoGia}
+                                onChange={(value) => setTenBaoGia(value)}
+                                options={BAO_GIA_TITLE_OPTIONS}
+                                placeholder="Nhập tên báo giá..."
+                            />
+                        </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-semibold text-muted-foreground">Ngày báo giá</label>
                             <input type="date" value={ngayBaoGia} onChange={e => setNgayBaoGia(e.target.value)} className="input-modern" />
@@ -749,7 +903,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
             {/* ═══ TAB 2: CHI TIẾT HÀNG HÓA (grouped by NHOM_HH) ═══ */}
             {activeTab === "details" && (() => {
                 const groupRows = chiTiets.filter(r => (r.NHOM_HH || DEFAULT_NHOM) === activeNhomTab);
-                const groupValid = groupRows.filter(r => r.MA_HH);
+                const groupValid = groupRows.filter(r => r.MA_HH || (r._isNgoaiNhom && r.TEN_HH_CUSTOM));
                 const availableNhoms = nhomHHList.filter(n => !activeGroups.includes(n.TEN_NHOM));
 
                 return (
@@ -757,7 +911,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                         {/* Sub-tabs nhóm + nút thêm nhóm */}
                         <div className="flex items-center gap-2 flex-wrap">
                             {activeGroups.map(nhom => {
-                                const count = chiTiets.filter(r => (r.NHOM_HH || DEFAULT_NHOM) === nhom && r.MA_HH).length;
+                                const count = chiTiets.filter(r => (r.NHOM_HH || DEFAULT_NHOM) === nhom && (r.MA_HH || (r._isNgoaiNhom && r.TEN_HH_CUSTOM))).length;
                                 return (
                                     <div key={nhom} role="button" tabIndex={0} onClick={() => setActiveNhomTab(nhom)}
                                         draggable
@@ -835,7 +989,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                         <div className="flex items-center justify-between">
                             <div>
                                 <h3 className="text-sm font-bold text-foreground">{activeNhomTab}</h3>
-                                <p className="text-xs text-muted-foreground mt-0.5">{groupRows.length} dòng ({groupValid.length} đã chọn HH)</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{groupRows.length} dòng ({groupValid.length} hợp lệ)</p>
                             </div>
                             <button type="button" onClick={addEmptyRow} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors">
                                 <Plus className="w-4 h-4" /> Thêm dòng
@@ -856,7 +1010,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                             <tr className="bg-primary/10 border-b">
                                                 <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] w-8">#</th>
                                                 <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[200px]">Hàng hóa</th>
-                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] w-12">ĐVT</th>
+                                                <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[84px] w-24">ĐVT</th>
                                                 <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-right text-[10px] w-[100px]">Giá chưa VAT</th>
                                                 <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-center text-[10px] min-w-[90px] w-28">Giá bán</th>
                                                 <th className="px-1.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-[10px] min-w-[60px] w-16">SL</th>
@@ -867,7 +1021,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                         </thead>
                                         <tbody>
                                             {groupRows.map((row, idx) => (
-                                                <tr key={row._id} className={`border-b transition-colors ${row.MA_HH ? "hover:bg-muted/30" : "bg-yellow-50/50 dark:bg-yellow-900/5"}`}>
+                                                <tr key={row._id} className={`border-b transition-colors ${row.MA_HH ? "hover:bg-muted/30" : row._isNgoaiNhom ? "bg-orange-50/50 dark:bg-orange-900/5" : "bg-yellow-50/50 dark:bg-yellow-900/5"}`}>
                                                     <td className="px-1.5 py-1.5 text-center text-muted-foreground">{idx + 1}</td>
                                                     <td className="px-1.5 py-1.5 relative" data-hh-row-id={row._id}>
                                                         {row.MA_HH ? (
@@ -880,24 +1034,84 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                                                     <Search className="w-3 h-3" />
                                                                 </button>
                                                             </div>
+                                                        ) : row._isNgoaiNhom ? (
+                                                            <div className="flex flex-col gap-1">
+                                                                <div className="flex items-center gap-1">
+                                                                    <textarea
+                                                                        rows={1}
+                                                                        value={row.TEN_HH_CUSTOM || ""}
+                                                                        onChange={e => updateRow(row._id!, "TEN_HH_CUSTOM", e.target.value)}
+                                                                        onInput={e => autoResizeTextarea(e.currentTarget)}
+                                                                        ref={el => autoResizeTextarea(el)}
+                                                                        placeholder="Tên hàng hóa..."
+                                                                        className="flex-1 px-1.5 py-1 border border-orange-300 rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-orange-400/50 min-h-[32px] resize-none overflow-hidden"
+                                                                    />
+                                                                    {/* Tạm ẩn nút cấu hình modal
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openHhCustomModal(row._id!)}
+                                                                        className="shrink-0 p-1 text-sky-700 border border-sky-300 rounded hover:bg-sky-50 transition-colors"
+                                                                        title={`Cấu hình thông tin custom cho file in${getFilledHhCustomCount(row) > 0 ? ` (${getFilledHhCustomCount(row)})` : ""}`}
+                                                                        aria-label={`Cấu hình thông tin custom cho file in${getFilledHhCustomCount(row) > 0 ? ` (${getFilledHhCustomCount(row)})` : ""}`}
+                                                                    >
+                                                                        <SlidersHorizontal className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                    */}
+                                                                    <button type="button" onClick={() => switchNgoaiNhomMode(row._id!, false)} className="shrink-0 p-0.5 hover:bg-muted rounded text-orange-500 hover:text-muted-foreground" title="Chuyển sang chọn từ DMHH">
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                                </div>
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
+                                                                    {HH_CUSTOM_FIELDS.map(field => (
+                                                                        <React.Fragment key={field.title}>
+                                                                            <input
+                                                                                type="text"
+                                                                                list={field.title === "Bảo hành" ? `bh-list-${row._id}` : undefined}
+                                                                                value={getHhCustomValue(row, field.title)}
+                                                                                onChange={e => updateHhCustomField(row._id!, field.title, e.target.value)}
+                                                                                placeholder={field.title}
+                                                                                className="w-full px-1.5 py-1 border border-orange-200 rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-orange-400/40"
+                                                                            />
+                                                                            {field.title === "Bảo hành" && (
+                                                                                <datalist id={`bh-list-${row._id}`}>
+                                                                                    <option value="1 năm" />
+                                                                                    <option value="2 năm" />
+                                                                                    <option value="5 năm" />
+                                                                                </datalist>
+                                                                            )}
+                                                                        </React.Fragment>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
                                                         ) : (
-                                                            <div className="relative">
-                                                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                                                                <input type="text" value={hhRowId === row._id ? hhQuery : ""} onChange={e => { setHhRowId(row._id!); setHhQuery(e.target.value); }} onFocus={() => { setHhRowId(row._id!); setHhQuery(""); }} placeholder="Chọn hàng hóa..." className="w-full pl-7 pr-2 py-1 border border-border rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                                                            <div className="flex items-center gap-1">
+                                                                <div className="relative flex-1">
+                                                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                                                                    <input type="text" value={hhRowId === row._id ? hhQuery : ""} onChange={e => { setHhRowId(row._id!); setHhQuery(e.target.value); }} onFocus={() => { setHhRowId(row._id!); setHhQuery(""); }} placeholder="Chọn hàng hóa..." className="w-full pl-7 pr-2 py-1 border border-border rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                                                                </div>
+                                                                <button type="button" onClick={() => switchNgoaiNhomMode(row._id!, true)} className="shrink-0 p-1 text-orange-600 border border-orange-300 rounded hover:bg-orange-50 transition-colors" title="Vật tư ngoài nhóm - nhập tay" aria-label="Vật tư ngoài nhóm - nhập tay">
+                                                                    <Plus className="w-3.5 h-3.5" />
+                                                                </button>
                                                             </div>
                                                         )}
                                                     </td>
-                                                    <td className="px-1.5 py-1.5 text-muted-foreground">{row.DON_VI_TINH || "—"}</td>
-                                                    <td className="px-1.5 py-1.5 text-right text-muted-foreground">{row.MA_HH ? fmtMoney(row.GIA_BAN_CHUA_VAT) : "—"}</td>
+                                                    <td className="px-1.5 py-1.5 min-w-[84px] w-24">
+                                                        {row._isNgoaiNhom ? (
+                                                            <input type="text" value={row.DON_VI_TINH || ""} onChange={e => updateRow(row._id!, "DON_VI_TINH", e.target.value)} placeholder="ĐVT" className="w-full px-1.5 py-1 border border-orange-300 rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-orange-400/50" />
+                                                        ) : (
+                                                            <span className="text-muted-foreground">{row.DON_VI_TINH || "—"}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-1.5 py-1.5 text-right text-muted-foreground">{(row.MA_HH || row._isNgoaiNhom) ? fmtMoney(row.GIA_BAN_CHUA_VAT) : "—"}</td>
                                                     <td className="px-1.5 py-1.5">
-                                                        <input type="text" inputMode="numeric" value={row.GIA_BAN > 0 ? fmtMoney(row.GIA_BAN) : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); updateRow(row._id!, "GIA_BAN", parseInt(raw, 10) || 0); }} disabled={!row.MA_HH} className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
+                                                        <input type="text" inputMode="numeric" value={row.GIA_BAN > 0 ? fmtMoney(row.GIA_BAN) : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); updateRow(row._id!, "GIA_BAN", parseInt(raw, 10) || 0); }} disabled={!row.MA_HH && !row._isNgoaiNhom} className={`w-full px-1.5 py-1 border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 disabled:opacity-40 ${row._isNgoaiNhom ? "border-orange-300 focus:ring-orange-400/50" : "border-border focus:ring-primary/30"}`} />
                                                     </td>
                                                     <td className="px-1.5 py-1.5">
-                                                        <input type="number" min="0" step="1" value={row.SO_LUONG || ""} onChange={e => handleSoLuongChange(row._id!, parseFloat(e.target.value) || 0)} disabled={!row.MA_HH} className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
+                                                        <input type="number" min="0" step="1" value={row.SO_LUONG || ""} onChange={e => handleSoLuongChange(row._id!, parseFloat(e.target.value) || 0)} disabled={!row.MA_HH && !row._isNgoaiNhom} className={`w-full px-1.5 py-1 border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 disabled:opacity-40 ${row._isNgoaiNhom ? "border-orange-300 focus:ring-orange-400/50" : "border-border focus:ring-primary/30"}`} />
                                                     </td>
-                                                    <td className="px-1.5 py-1.5 text-right font-bold text-foreground">{row.MA_HH ? fmtMoney(row.THANH_TIEN) : "—"}</td>
+                                                    <td className="px-1.5 py-1.5 text-right font-bold text-foreground">{(row.MA_HH || row._isNgoaiNhom) ? fmtMoney(row.THANH_TIEN) : "—"}</td>
                                                     <td className="px-1.5 py-1.5">
-                                                        <input type="text" value={row.GHI_CHU || ""} onChange={e => updateRow(row._id!, "GHI_CHU", e.target.value)} disabled={!row.MA_HH} placeholder="..." className="w-full px-1 py-1 border border-border rounded text-[11px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
+                                                        <input type="text" value={row.GHI_CHU || ""} onChange={e => updateRow(row._id!, "GHI_CHU", e.target.value)} disabled={!row.MA_HH && !row._isNgoaiNhom} placeholder="..." className={`w-full px-1 py-1 border rounded text-[11px] bg-background focus:outline-none focus:ring-1 disabled:opacity-40 ${row._isNgoaiNhom ? "border-orange-300 focus:ring-orange-400/50" : "border-border focus:ring-primary/30"}`} />
                                                     </td>
                                                     <td className="px-1.5 py-1.5">
                                                         <button type="button" onClick={() => removeRow(row._id!)} className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors">
@@ -1024,8 +1238,6 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                     ) : (
                         <div className="space-y-3">
                             {dkBaoGiaRows.map((row, idx) => {
-                                const prevRow = idx > 0 ? dkBaoGiaRows[idx - 1] : null;
-                                const isNewGroup = !prevRow || prevRow.HANG_MUC !== row.HANG_MUC;
                                 return (
                                     <div key={row._id} className={`border rounded-xl overflow-hidden transition-all ${row.AN_HIEN ? 'border-border bg-card' : 'border-border/50 bg-muted/20 opacity-60'}`}>
                                         {/* Header row */}
@@ -1103,7 +1315,7 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                                                 const isGiaTriTemplate = ['Công suất tấm pin', 'Công suất inverter', 'Công suất lưu trữ'].includes((row.HANG_MUC || '').trim());
                                                 const hasGiaTri = row.GIA_TRI !== null && row.GIA_TRI !== undefined;
                                                 const hasNoiDung = row.NOI_DUNG !== null && row.NOI_DUNG !== undefined;
-                                                
+
                                                 const showGiaTri = hasGiaTri || (isGiaTriTemplate && !hasNoiDung);
                                                 const showNoiDung = hasNoiDung || !showGiaTri;
 
@@ -1139,6 +1351,49 @@ export default function AddEditBaoGiaModal({ isOpen, onClose, onSuccess, editDat
                 </div>
             )}
 
+            <Modal
+                isOpen={hhCustomModalOpen}
+                onClose={closeHhCustomModal}
+                title="Thông tin hàng hóa custom"
+                subtitle="Dành cho hàng hóa ngoài nhóm khi cần điền dữ liệu theo file in"
+                icon={Package}
+                size="lg"
+                footer={
+                    <>
+                        <span className="text-xs text-muted-foreground">
+                            {activeHhCustomRow?.TEN_HH_CUSTOM || "Hàng hóa custom"}
+                        </span>
+                        <div className="flex gap-3">
+                            <button type="button" onClick={closeHhCustomModal} className="btn-premium-secondary">Hủy</button>
+                            <button type="button" onClick={saveHhCustomModal} className="btn-premium-primary">Lưu thông tin</button>
+                        </div>
+                    </>
+                }
+            >
+                {activeHhCustomRow ? (
+                    <div className="space-y-4">
+                        <div className="rounded-lg border border-orange-200 bg-orange-50/60 px-3 py-2 text-xs text-orange-700">
+                            Hàng hóa: <strong>{activeHhCustomRow.TEN_HH_CUSTOM || "Chưa nhập tên hàng hóa"}</strong>
+                        </div>
+                        <div className="space-y-3">
+                            {HH_CUSTOM_FIELDS.map((field, idx) => (
+                                <div key={field.title} className="space-y-1.5">
+                                    <label className="text-sm font-semibold text-muted-foreground">{field.title}</label>
+                                    <input
+                                        type="text"
+                                        value={hhCustomDraft[idx]?.NOI_DUNG || ""}
+                                        onChange={e => setHhCustomDraft(prev => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, NOI_DUNG: e.target.value } : item))}
+                                        placeholder={field.placeholder}
+                                        className="input-modern"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-sm text-muted-foreground">Không tìm thấy dòng hàng hóa để nhập thông tin.</div>
+                )}
+            </Modal>
 
             {hhRowId && typeof window !== 'undefined' && createPortal(
                 <div ref={hhDropdownRef} style={hhDropdownStyle} className="bg-card border border-border rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150">

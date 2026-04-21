@@ -645,6 +645,7 @@ model BAO_GIA {
   ID         String @id @default(auto()) @map("_id") @db.ObjectId
   MA_BAO_GIA String @unique // BG-YYMMDD-001
 
+  TEN_BAO_GIA  String? //"LẮP ĐẶT HỆ THỐNG ĐIỆN NĂNG LƯỢNG MẶT TRỜI"; "CUNG CẤP THIẾT BỊ ĐIỆN NĂNG LƯỢNG MẶT TRỜI". chọn 1 trong 2 hoặc tự điền mặc định input UpperCase
   NGAY_BAO_GIA DateTime @default(now())
 
   // Khách hàng — lưu MA_KH, relation sang KHTN
@@ -723,6 +724,11 @@ model DIEU_KHOAN_BG {
   @@map("DIEU_KHOAN_BG")
 }
 
+type HH_CUSTOM {
+  TIEU_DE  String? //Mã hiệu/Mô tả; Xuất xứ; Bảo Hành
+  NOI_DUNG String?
+}
+
 // ===== BÁO GIÁ CHI TIẾT (Quotation Detail) =====
 model BAO_GIA_CT {
   ID String @id @default(auto()) @map("_id") @db.ObjectId
@@ -730,9 +736,11 @@ model BAO_GIA_CT {
   MA_BAO_GIA  String
   BAO_GIA_REL BAO_GIA @relation(fields: [MA_BAO_GIA], references: [MA_BAO_GIA], onDelete: Cascade)
 
-  // Hàng hóa — lưu MA_HH, relation sang DMHH
-  MA_HH  String
-  HH_REL DMHH   @relation(fields: [MA_HH], references: [MA_HH])
+  // Hàng hóa — lưu MA_HH (rỗng nếu là vật tư ngoài nhóm), relation sang DMHH (optional)
+  MA_HH         String      @default("")
+  HH_REL        DMHH?       @relation(fields: [MA_HH], references: [MA_HH])
+  TEN_HH_CUSTOM String? // Tên hàng hóa nhập tay (khi không chọn từ DMHH)
+  HH_CUSTOM     HH_CUSTOM[] // Hàng hóa custom
 
   NHOM_HH          String? // Nhóm hàng hóa
   DON_VI_TINH      String

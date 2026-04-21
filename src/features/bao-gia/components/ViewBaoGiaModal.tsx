@@ -42,6 +42,12 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                         <FileText className="w-4 h-4 text-primary" /> Thông tin chung
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-muted/20 rounded-xl p-4 border border-border/50">
+                        <div className="space-y-1 md:col-span-2 lg:col-span-3">
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Tên báo giá</p>
+                            <p className="text-sm font-bold text-foreground">
+                                {data.TEN_BAO_GIA || "LẮP ĐẶT HỆ THỐNG ĐIỆN NĂNG LƯỢNG MẶT TRỜI"}
+                            </p>
+                        </div>
                         <div className="space-y-1">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Ngày báo giá</p>
                             <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /><p className="text-sm font-medium">{fmtDate(data.NGAY_BAO_GIA)}</p></div>
@@ -136,8 +142,8 @@ export default function ViewBaoGiaModal({ isOpen, onClose, data }: Props) {
                                             <tr key={ct.ID || idx} className="border-b hover:bg-muted/30 transition-colors">
                                                 <td className="px-3 py-2.5 text-muted-foreground">{idx + 1}</td>
                                                 <td className="px-3 py-2.5">
-                                                    <p className="font-medium text-foreground">{ct.HH_REL?.TEN_HH || ct.MA_HH}</p>
-                                                    <p className="text-[10px] text-muted-foreground">{ct.MA_HH}</p>
+                                                    <p className="font-medium text-foreground">{ct.HH_REL?.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH || "—"}</p>
+                                                    <p className="text-[10px] text-muted-foreground">{ct.MA_HH || ""}</p>
                                                 </td>
                                                 <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{ct.NHOM_HH || ct.HH_REL?.NHOM_HH || "—"}</td>
                                                 <td className="px-3 py-2.5 text-muted-foreground">{ct.DON_VI_TINH}</td>
