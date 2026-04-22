@@ -182,8 +182,8 @@ export default function ViewHopDongModal({ isOpen, onClose, data }: Props) {
                                                     <tr key={ct.ID} className="border-b last:border-0 border-border hover:bg-muted/20 transition-colors">
                                                         <td className="px-4 py-3 text-muted-foreground font-medium">{idx + 1}</td>
                                                         <td className="px-4 py-3">
-                                                            <p className="font-bold text-foreground">{ct.HH_REL?.TEN_HH || ct.MA_HH}</p>
-                                                            <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{ct.MA_HH}</p>
+                                                            <p className="font-bold text-foreground">{ct.HH_REL?.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH || "—"}</p>
+                                                            <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{ct.MA_HH || (ct.TEN_HH_CUSTOM ? "Ngoài nhóm" : "—")}</p>
                                                         </td>
                                                         <td className="px-4 py-3 text-muted-foreground font-medium">{ct.DON_VI_TINH || "—"}</td>
                                                         <td className="px-4 py-3 text-right font-medium">{fmtMoney(ct.GIA_BAN)}</td>

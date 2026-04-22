@@ -1,11 +1,18 @@
 import { z } from 'zod';
 
 
+export const hhCustomSchema = z.object({
+    TIEU_DE: z.string().optional().nullable(),
+    NOI_DUNG: z.string().optional().nullable(),
+});
+
 // ===== Zod Schema cho HOP_DONG_CT (chi tiết) =====
 export const hopDongChiTietSchema = z.object({
-    MA_HH: z.string().min(1, 'Vui lòng chọn hàng hóa'),
+    MA_HH: z.string().default(''),
+    TEN_HH_CUSTOM: z.string().optional().nullable(),
+    HH_CUSTOM: z.array(hhCustomSchema).optional(),
     NHOM_HH: z.string().optional().nullable(),
-    DON_VI_TINH: z.string().min(1, 'Đơn vị tính không được trống'),
+    DON_VI_TINH: z.string().default(''),
     GIA_BAN_CHUA_VAT: z.number().min(0).default(0),
     GIA_BAN: z.number().min(0, 'Giá bán phải >= 0'),
     SO_LUONG: z.number().min(0.01, 'Số lượng phải > 0'),
@@ -30,12 +37,14 @@ export const hopDongSchema = z.object({
 // ===== Types =====
 export type HopDongInput = z.infer<typeof hopDongSchema>;
 export type HopDongChiTietInput = z.infer<typeof hopDongChiTietSchema>;
+export type HhCustomInput = z.infer<typeof hhCustomSchema>;
 
 // Chi tiết item dùng trên client (có thêm trường UI)
 export interface HopDongChiTietRow extends HopDongChiTietInput {
     _id?: string;       // ID tạm cho client (nanoid)
     _dbId?: string;     // ID từ database (khi edit)
     _tenHH?: string;    // Tên HH hiển thị
+    _isNgoaiNhom?: boolean; // true = vật tư ngoài nhóm (nhập tay)
 }
 
 // Dữ liệu hợp đồng đầy đủ khi lấy từ server
@@ -221,4 +230,3 @@ export const DEFAULT_DK_HD: DkHdTemplate[] = [
         LOAI_HD: 'Mua bán',
     },
 ];
-

@@ -21,6 +21,43 @@ const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v)
 let _counter = 0;
 const tempId = () => `_tmp_${++_counter}_${Date.now()}`;
 
+const HH_CUSTOM_FIELDS = [
+    { title: "Mã hiệu/Mô tả" },
+    { title: "Xuất xứ" },
+    { title: "Bảo hành" },
+];
+
+const normalizeText = (value?: string | null) =>
+    (value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+const normalizeHhCustom = (rows?: Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>) =>
+    (rows || [])
+        .map(item => ({
+            TIEU_DE: typeof item?.TIEU_DE === "string" ? item.TIEU_DE.trim() : "",
+            NOI_DUNG: typeof item?.NOI_DUNG === "string" ? item.NOI_DUNG : "",
+        }))
+        .filter(item => item.TIEU_DE || item.NOI_DUNG);
+
+const buildDefaultHhCustomDraft = (rows?: Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>) => {
+    const normalizedRows = normalizeHhCustom(rows);
+    return HH_CUSTOM_FIELDS.map(field => {
+        const fieldKey = normalizeText(field.title);
+        const matched = normalizedRows.find(item => {
+            const titleKey = normalizeText(item.TIEU_DE);
+            return titleKey === fieldKey || titleKey.includes(fieldKey) || fieldKey.includes(titleKey);
+        });
+        return {
+            TIEU_DE: field.title,
+            NOI_DUNG: matched?.NOI_DUNG || "",
+        };
+    });
+};
+
 const autoResizeTextarea = (el: HTMLTextAreaElement | null) => {
     if (!el) return;
     el.style.height = 'auto';
@@ -244,8 +281,12 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
             setTtUuDai(editData.TT_UU_DAI || 0);
             setTepDinhKems(editData.TEP_DINH_KEM || []);
             const rows: HopDongChiTietRow[] = (editData.HOP_DONG_CT || []).map((ct: any) => ({
-                _id: tempId(), _dbId: ct.ID, _tenHH: ct.HH_REL?.TEN_HH || ct.MA_HH,
-                MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || ct.HH_REL?.NHOM_HH || DEFAULT_NHOM,
+                _id: tempId(), _dbId: ct.ID, _tenHH: ct.HH_REL?.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH,
+                _isNgoaiNhom: !ct.MA_HH,
+                MA_HH: ct.MA_HH || "",
+                TEN_HH_CUSTOM: ct.TEN_HH_CUSTOM || null,
+                HH_CUSTOM: normalizeHhCustom(ct.HH_CUSTOM),
+                NHOM_HH: ct.NHOM_HH || ct.HH_REL?.NHOM_HH || DEFAULT_NHOM,
                 DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT || 0,
                 GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG, THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || "",
             }));
@@ -358,7 +399,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
 
     useEffect(() => {
         setChiTiets(prev => prev.map(row => {
-            if (!row.MA_HH) return row;
+            if (!row.MA_HH && !row._isNgoaiNhom) return row;
             const giaBanChuaVat = ptVat > 0 ? row.GIA_BAN / (1 + ptVat / 100) : row.GIA_BAN;
             return { ...row, GIA_BAN_CHUA_VAT: Math.round(giaBanChuaVat) };
         }));
@@ -370,21 +411,76 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
         const sl = cur?.SO_LUONG || 1;
         const result = await getGiaBanForProductHD(hh.MA_HH, sl, ngayHD || undefined, loaiHD);
         const giaBan = result?.giaBan || 0;
-        setChiTiets(prev => prev.map(r => r._id !== rowId ? r : recalcRow({ ...r, MA_HH: hh.MA_HH, _tenHH: hh.TEN_HH, NHOM_HH: hh.NHOM_HH || "", DON_VI_TINH: hh.DON_VI_TINH, GIA_BAN: giaBan })));
+        setChiTiets(prev => prev.map(r => r._id !== rowId ? r : recalcRow({
+            ...r,
+            MA_HH: hh.MA_HH,
+            _tenHH: hh.TEN_HH,
+            NHOM_HH: hh.NHOM_HH || "",
+            DON_VI_TINH: hh.DON_VI_TINH,
+            GIA_BAN: giaBan,
+            _isNgoaiNhom: false,
+            TEN_HH_CUSTOM: null,
+            HH_CUSTOM: [],
+        })));
     }, [ptVat, ngayHD, loaiHD, recalcRow]);
 
     const updateRow = useCallback((id: string, field: string, value: any) => {
         setChiTiets(prev => prev.map(r => r._id !== id ? r : recalcRow({ ...r, [field]: value })));
     }, [recalcRow]);
 
+    const switchNgoaiNhomMode = useCallback((rowId: string, isNgoaiNhom: boolean) => {
+        setChiTiets(prev => prev.map(row => {
+            if (row._id !== rowId) return row;
+            if (isNgoaiNhom) {
+                return {
+                    ...row,
+                    MA_HH: "",
+                    _tenHH: "",
+                    _isNgoaiNhom: true,
+                    HH_CUSTOM: normalizeHhCustom(row.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>),
+                };
+            }
+            return {
+                ...row,
+                _isNgoaiNhom: false,
+                TEN_HH_CUSTOM: null,
+                HH_CUSTOM: [],
+            };
+        }));
+    }, []);
+
+    const getHhCustomValue = useCallback((row: HopDongChiTietRow, title: string) => {
+        const fieldKey = normalizeText(title);
+        const normalized = normalizeHhCustom(row.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>);
+        const matched = normalized.find(item => {
+            const titleKey = normalizeText(item.TIEU_DE);
+            return titleKey === fieldKey || titleKey.includes(fieldKey) || fieldKey.includes(titleKey);
+        });
+        return matched?.NOI_DUNG || "";
+    }, []);
+
+    const updateHhCustomField = useCallback((rowId: string, title: string, value: string) => {
+        setChiTiets(prev => prev.map(row => {
+            if (row._id !== rowId) return row;
+            const normalized = normalizeHhCustom(row.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>);
+            const defaultDraft = buildDefaultHhCustomDraft(normalized);
+            const knownFieldKeys = HH_CUSTOM_FIELDS.map(field => normalizeText(field.title));
+            const extraRows = normalized.filter(item => !knownFieldKeys.includes(normalizeText(item.TIEU_DE)));
+            const nextKnownRows = defaultDraft.map(item => normalizeText(item.TIEU_DE) === normalizeText(title)
+                ? { ...item, NOI_DUNG: value }
+                : item);
+            return { ...row, HH_CUSTOM: normalizeHhCustom([...nextKnownRows, ...extraRows]) };
+        }));
+    }, []);
+
     const addEmptyRow = useCallback(() => {
-        setChiTiets(prev => [...prev, { _id: tempId(), _tenHH: "", MA_HH: "", NHOM_HH: activeNhomTab, DON_VI_TINH: "", GIA_BAN_CHUA_VAT: 0, GIA_BAN: 0, SO_LUONG: 1, THANH_TIEN: 0, GHI_CHU: "" }]);
+        setChiTiets(prev => [...prev, { _id: tempId(), _tenHH: "", MA_HH: "", NHOM_HH: activeNhomTab, DON_VI_TINH: "", GIA_BAN_CHUA_VAT: 0, GIA_BAN: 0, SO_LUONG: 1, THANH_TIEN: 0, GHI_CHU: "", _isNgoaiNhom: false, HH_CUSTOM: [] }]);
     }, [activeNhomTab]);
 
     const thanhTienTotal = chiTiets.reduce((s, r) => s + r.THANH_TIEN, 0);
     const ttVat = ptVat > 0 ? thanhTienTotal * ptVat / (100 + ptVat) : 0;
     const tongTien = thanhTienTotal + ttUuDai;
-    const validRows = chiTiets.filter(r => r.MA_HH);
+    const validRows = chiTiets.filter(r => r.MA_HH || (r._isNgoaiNhom && r.TEN_HH_CUSTOM));
 
     useEffect(() => {
         setDkttRows(prev => {
@@ -430,7 +526,18 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                 const bIdx = activeGroups.indexOf(b.NHOM_HH || DEFAULT_NHOM);
                 return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
             })
-            .map(ct => ({ MA_HH: ct.MA_HH, NHOM_HH: ct.NHOM_HH || null, DON_VI_TINH: ct.DON_VI_TINH, GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT, GIA_BAN: ct.GIA_BAN, SO_LUONG: ct.SO_LUONG, THANH_TIEN: ct.THANH_TIEN, GHI_CHU: ct.GHI_CHU || null }));
+            .map(ct => ({
+                MA_HH: ct.MA_HH || "",
+                TEN_HH_CUSTOM: ct.TEN_HH_CUSTOM || null,
+                HH_CUSTOM: normalizeHhCustom(ct.HH_CUSTOM as Array<{ TIEU_DE?: string | null; NOI_DUNG?: string | null }>),
+                NHOM_HH: ct.NHOM_HH || null,
+                DON_VI_TINH: ct.DON_VI_TINH,
+                GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT,
+                GIA_BAN: ct.GIA_BAN,
+                SO_LUONG: ct.SO_LUONG,
+                THANH_TIEN: ct.THANH_TIEN,
+                GHI_CHU: ct.GHI_CHU || null
+            }));
         const dktt = dkttRows.filter(d => d.LAN_THANH_TOAN);
         const ttk = thongTinRows.filter(t => t.TIEU_DE && t.TIEU_DE.trim() !== "").map(t => ({ TIEU_DE: t.TIEU_DE, NOI_DUNG: t.NOI_DUNG }));
         const dkHd = dkHdRows.filter(d => d.HANG_MUC && d.HANG_MUC.trim() !== "").map(d => ({ HANG_MUC: d.HANG_MUC, NOI_DUNG: d.NOI_DUNG, AN_HIEN: d.AN_HIEN }));
@@ -564,8 +671,11 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                     if (details && details.length > 0) {
                                                         const newRows: HopDongChiTietRow[] = details.map((d: any) => ({
                                                             _id: tempId(),
-                                                            _tenHH: d.HH_REL?.TEN_HH || d.MA_HH,
-                                                            MA_HH: d.MA_HH,
+                                                            _tenHH: d.HH_REL?.TEN_HH || d.TEN_HH_CUSTOM || d.MA_HH,
+                                                            _isNgoaiNhom: !d.MA_HH,
+                                                            MA_HH: d.MA_HH || "",
+                                                            TEN_HH_CUSTOM: d.TEN_HH_CUSTOM || null,
+                                                            HH_CUSTOM: normalizeHhCustom(d.HH_CUSTOM),
                                                             NHOM_HH: d.NHOM_HH || d.HH_REL?.NHOM_HH || DEFAULT_NHOM,
                                                             DON_VI_TINH: d.DON_VI_TINH,
                                                             GIA_BAN_CHUA_VAT: d.GIA_BAN_CHUA_VAT || 0,
@@ -836,7 +946,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                         {/* Sub-tabs nhóm */}
                         <div className="flex items-center gap-2 flex-wrap">
                             {activeGroups.map(nhom => {
-                                const count = chiTiets.filter(r => (r.NHOM_HH || DEFAULT_NHOM) === nhom && r.MA_HH).length;
+                                const count = chiTiets.filter(r => (r.NHOM_HH || DEFAULT_NHOM) === nhom && (r.MA_HH || (r._isNgoaiNhom && r.TEN_HH_CUSTOM))).length;
                                 return (
                                     <div key={nhom} role="button" tabIndex={0} onClick={() => setActiveNhomTab(nhom)}
                                         draggable
@@ -916,7 +1026,7 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                         </tr></thead>
                                         <tbody>
                                             {groupRows.map((row, idx) => (
-                                                <tr key={row._id} className={`border-b transition-colors ${row.MA_HH ? "hover:bg-muted/30" : "bg-yellow-50/50 dark:bg-yellow-900/5"}`}>
+                                                <tr key={row._id} className={`border-b transition-colors ${row.MA_HH ? "hover:bg-muted/30" : row._isNgoaiNhom ? "bg-orange-50/50 dark:bg-orange-900/5" : "bg-yellow-50/50 dark:bg-yellow-900/5"}`}>
                                                     <td className="px-1.5 py-1.5 text-center text-muted-foreground">{idx + 1}</td>
                                                     <td className="px-1.5 py-1.5 relative" data-hh-row-id={row._id}>
                                                         {row.MA_HH ? (
@@ -924,15 +1034,64 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                                 <div className="min-w-0 flex-1"><p className="font-medium text-foreground">{row._tenHH || row.MA_HH}</p><p className="text-[10px] text-muted-foreground">{row.MA_HH}</p></div>
                                                                 <button type="button" onClick={() => { const td = document.querySelector(`td[data-hh-row-id="${row._id}"]`) as HTMLElement; if (td) setHhDropdownStyle(calcDropdownStyle(td, 280, 300)); setHhRowId(row._id!); setHhQuery(""); }} className="p-0.5 hover:bg-muted rounded text-muted-foreground shrink-0"><Search className="w-3 h-3" /></button>
                                                             </div>
+                                                        ) : row._isNgoaiNhom ? (
+                                                            <div className="flex flex-col gap-1">
+                                                                <div className="flex items-center gap-1">
+                                                                    <textarea
+                                                                        rows={1}
+                                                                        value={row.TEN_HH_CUSTOM || ""}
+                                                                        onChange={e => updateRow(row._id!, "TEN_HH_CUSTOM", e.target.value)}
+                                                                        onInput={e => autoResizeTextarea(e.currentTarget)}
+                                                                        ref={el => autoResizeTextarea(el)}
+                                                                        placeholder="Tên hàng hóa..."
+                                                                        className="flex-1 px-1.5 py-1 border border-orange-300 rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-orange-400/50 min-h-[32px] resize-none overflow-hidden"
+                                                                    />
+                                                                    <button type="button" onClick={() => switchNgoaiNhomMode(row._id!, false)} className="shrink-0 p-0.5 hover:bg-muted rounded text-orange-500 hover:text-muted-foreground" title="Chuyển sang chọn từ DMHH">
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                                </div>
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
+                                                                    {HH_CUSTOM_FIELDS.map(field => (
+                                                                        <React.Fragment key={field.title}>
+                                                                            <input
+                                                                                type="text"
+                                                                                list={field.title === "Bảo hành" ? `bh-list-${row._id}` : undefined}
+                                                                                value={getHhCustomValue(row, field.title)}
+                                                                                onChange={e => updateHhCustomField(row._id!, field.title, e.target.value)}
+                                                                                placeholder={field.title}
+                                                                                className="w-full px-1.5 py-1 border border-orange-200 rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-orange-400/40"
+                                                                            />
+                                                                            {field.title === "Bảo hành" && (
+                                                                                <datalist id={`bh-list-${row._id}`}>
+                                                                                    <option value="1 năm" />
+                                                                                    <option value="2 năm" />
+                                                                                    <option value="5 năm" />
+                                                                                </datalist>
+                                                                            )}
+                                                                        </React.Fragment>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
                                                         ) : (
-                                                            <div className="relative">
-                                                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                                                                <input type="text" value={hhRowId === row._id ? hhQuery : ""} onChange={e => { setHhRowId(row._id!); setHhQuery(e.target.value); }} onFocus={() => { const td = document.querySelector(`td[data-hh-row-id="${row._id}"]`) as HTMLElement; if (td) setHhDropdownStyle(calcDropdownStyle(td, 280, 300)); setHhRowId(row._id!); setHhQuery(""); }} placeholder="Chọn hàng hóa..." className="w-full pl-7 pr-2 py-1 border border-border rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                                                            <div className="flex items-center gap-1">
+                                                                <div className="relative flex-1">
+                                                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                                                                    <input type="text" value={hhRowId === row._id ? hhQuery : ""} onChange={e => { setHhRowId(row._id!); setHhQuery(e.target.value); }} onFocus={() => { const td = document.querySelector(`td[data-hh-row-id="${row._id}"]`) as HTMLElement; if (td) setHhDropdownStyle(calcDropdownStyle(td, 280, 300)); setHhRowId(row._id!); setHhQuery(""); }} placeholder="Chọn hàng hóa..." className="w-full pl-7 pr-2 py-1 border border-border rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                                                                </div>
+                                                                <button type="button" onClick={() => switchNgoaiNhomMode(row._id!, true)} className="shrink-0 p-1 text-orange-600 border border-orange-300 rounded hover:bg-orange-50 transition-colors" title="Vật tư ngoài nhóm - nhập tay" aria-label="Vật tư ngoài nhóm - nhập tay">
+                                                                    <Plus className="w-3.5 h-3.5" />
+                                                                </button>
                                                             </div>
                                                         )}
                                                     </td>
-                                                    <td className="px-1.5 py-1.5 text-muted-foreground">{row.DON_VI_TINH || "—"}</td>
-                                                    <td className="px-1.5 py-1.5 text-right text-muted-foreground">{row.MA_HH ? fmtMoney(row.GIA_BAN_CHUA_VAT) : "—"}</td>
+                                                    <td className="px-1.5 py-1.5 min-w-[84px] w-24">
+                                                        {row._isNgoaiNhom ? (
+                                                            <input type="text" value={row.DON_VI_TINH || ""} onChange={e => updateRow(row._id!, "DON_VI_TINH", e.target.value)} placeholder="ĐVT" className="w-full px-1.5 py-1 border border-orange-300 rounded text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-orange-400/50" />
+                                                        ) : (
+                                                            <span className="text-muted-foreground">{row.DON_VI_TINH || "—"}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-1.5 py-1.5 text-right text-muted-foreground">{(row.MA_HH || row._isNgoaiNhom) ? fmtMoney(row.GIA_BAN_CHUA_VAT) : "—"}</td>
                                                     <td className="px-1.5 py-1.5">
                                                         <input type="text"
                                                             inputMode="numeric"
@@ -941,13 +1100,13 @@ export default function AddEditHopDongModal({ isOpen, onClose, onSuccess, editDa
                                                                 const raw = e.target.value.replace(/[^0-9]/g, "");
                                                                 updateRow(row._id!, "GIA_BAN", parseInt(raw, 10) || 0);
                                                             }}
-                                                            disabled={!row.MA_HH}
-                                                            className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
+                                                            disabled={!row.MA_HH && !row._isNgoaiNhom}
+                                                            className={`w-full px-1.5 py-1 border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 disabled:opacity-40 ${row._isNgoaiNhom ? "border-orange-300 focus:ring-orange-400/50" : "border-border focus:ring-primary/30"}`} />
                                                     </td>
                                                     <td className="px-1.5 py-1.5">
-                                                        <input type="number" min="0" step="1" value={row.SO_LUONG || ""} onChange={e => updateRow(row._id!, "SO_LUONG", parseFloat(e.target.value) || 0)} disabled={!row.MA_HH} className="w-full px-1.5 py-1 border border-border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-40" />
+                                                        <input type="number" min="0" step="1" value={row.SO_LUONG || ""} onChange={e => updateRow(row._id!, "SO_LUONG", parseFloat(e.target.value) || 0)} disabled={!row.MA_HH && !row._isNgoaiNhom} className={`w-full px-1.5 py-1 border rounded text-right text-[12px] bg-background focus:outline-none focus:ring-1 disabled:opacity-40 ${row._isNgoaiNhom ? "border-orange-300 focus:ring-orange-400/50" : "border-border focus:ring-primary/30"}`} />
                                                     </td>
-                                                    <td className="px-1.5 py-1.5 text-right font-bold">{row.MA_HH ? fmtMoney(row.THANH_TIEN) : "—"}</td>
+                                                    <td className="px-1.5 py-1.5 text-right font-bold">{(row.MA_HH || row._isNgoaiNhom) ? fmtMoney(row.THANH_TIEN) : "—"}</td>
                                                     <td className="px-1.5 py-1.5">
                                                         <button type="button" onClick={() => setChiTiets(prev => prev.filter(r => r._id !== row._id))} className="p-1 hover:bg-destructive/10 text-destructive rounded transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                                                     </td>

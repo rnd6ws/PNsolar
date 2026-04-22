@@ -107,6 +107,16 @@ function calculateHeaderTotals(chiTiets: HopDongChiTietInput[], ptVat: number, t
     };
 }
 
+function sanitizeHhCustom(custom: any): { TIEU_DE: string | null; NOI_DUNG: string | null }[] {
+    if (!Array.isArray(custom)) return [];
+    return custom
+        .map((item: any) => ({
+            TIEU_DE: typeof item?.TIEU_DE === 'string' ? item.TIEU_DE.trim() || null : null,
+            NOI_DUNG: typeof item?.NOI_DUNG === 'string' ? item.NOI_DUNG.trim() || null : null,
+        }))
+        .filter((item: { TIEU_DE: string | null; NOI_DUNG: string | null }) => item.TIEU_DE || item.NOI_DUNG);
+}
+
 // ─── Danh sách Hợp đồng ────────────────────────────────────
 export async function getHopDongList(filters: {
     query?: string;
@@ -375,7 +385,7 @@ export async function createHopDong(
         const kh = await prisma.kHTN.findUnique({ where: { MA_KH: parsed.data.MA_KH }, select: { MA_KH: true, TEN_KH: true } });
         if (!kh) return { success: false, message: 'Khách hàng không tồn tại.' };
 
-        // Validate MA_CH nếu có
+        // Validate MA_CH neu co
         if (parsed.data.MA_CH) {
             const ch = await prisma.cO_HOI.findUnique({ where: { MA_CH: parsed.data.MA_CH }, select: { MA_CH: true } });
             if (!ch) return { success: false, message: 'Cơ hội không tồn tại.' };
@@ -388,16 +398,19 @@ export async function createHopDong(
             if (!bg) return { success: false, message: 'Báo giá không tồn tại.' };
         }
 
-        // Validate tất cả MA_HH
-        const maHHs = [...new Set(calculatedDetails.map(ct => ct.MA_HH))];
-        const hhRecords = await prisma.dMHH.findMany({
-            where: { MA_HH: { in: maHHs } },
-            select: { MA_HH: true },
-        });
-        const hhSet = new Set(hhRecords.map(h => h.MA_HH));
-        for (let i = 0; i < calculatedDetails.length; i++) {
-            if (!hhSet.has(calculatedDetails[i].MA_HH)) {
-                return { success: false, message: `Dòng ${i + 1}: Mã HH "${calculatedDetails[i].MA_HH}" không tồn tại.` };
+        // Validate tat ca MA_HH (bo qua dong ngoai nhom - MA_HH rong)
+        const maHHs = [...new Set(calculatedDetails.filter(ct => ct.MA_HH).map(ct => ct.MA_HH))];
+        if (maHHs.length > 0) {
+            const hhRecords = await prisma.dMHH.findMany({
+                where: { MA_HH: { in: maHHs } },
+                select: { MA_HH: true },
+            });
+            const hhSet = new Set(hhRecords.map(h => h.MA_HH));
+            for (let i = 0; i < calculatedDetails.length; i++) {
+                const ct = calculatedDetails[i];
+                if (ct.MA_HH && !hhSet.has(ct.MA_HH)) {
+                    return { success: false, message: `Dòng ${i + 1}: Mã HH "${ct.MA_HH}" không tồn tại.` };
+                }
             }
         }
 
@@ -429,7 +442,9 @@ export async function createHopDong(
                 ...totals,
                 HOP_DONG_CT: {
                     create: calculatedDetails.map(ct => ({
-                        MA_HH: ct.MA_HH,
+                        MA_HH: ct.MA_HH || '',
+                        TEN_HH_CUSTOM: (ct as any).TEN_HH_CUSTOM || null,
+                        HH_CUSTOM: sanitizeHhCustom((ct as any).HH_CUSTOM),
                         NHOM_HH: ct.NHOM_HH || null,
                         DON_VI_TINH: ct.DON_VI_TINH,
                         GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT,
@@ -568,6 +583,21 @@ export async function updateHopDong(
             const bg = await prisma.bAO_GIA.findUnique({ where: { MA_BAO_GIA: maBaoGia }, select: { MA_BAO_GIA: true } });
             if (!bg) return { success: false, message: 'Báo giá không tồn tại.' };
         }
+        // Validate tat ca MA_HH (bo qua dong ngoai nhom - MA_HH rong)
+        const maHHs = [...new Set(calculatedDetails.filter(ct => ct.MA_HH).map(ct => ct.MA_HH))];
+        if (maHHs.length > 0) {
+            const hhRecords = await prisma.dMHH.findMany({
+                where: { MA_HH: { in: maHHs } },
+                select: { MA_HH: true },
+            });
+            const hhSet = new Set(hhRecords.map(h => h.MA_HH));
+            for (let i = 0; i < calculatedDetails.length; i++) {
+                const ct = calculatedDetails[i];
+                if (ct.MA_HH && !hhSet.has(ct.MA_HH)) {
+                    return { success: false, message: `Dòng ${i + 1}: Mã HH "${ct.MA_HH}" không tồn tại.` };
+                }
+            }
+        }
 
         // Xóa chi tiết + DKTT + THONG_TIN_KHAC + DK_HD cũ
         await prisma.hOP_DONG_CT.deleteMany({ where: { SO_HD: existing.SO_HD } });
@@ -590,7 +620,9 @@ export async function updateHopDong(
                 ...totals,
                 HOP_DONG_CT: {
                     create: calculatedDetails.map(ct => ({
-                        MA_HH: ct.MA_HH,
+                        MA_HH: ct.MA_HH || '',
+                        TEN_HH_CUSTOM: (ct as any).TEN_HH_CUSTOM || null,
+                        HH_CUSTOM: sanitizeHhCustom((ct as any).HH_CUSTOM),
                         NHOM_HH: ct.NHOM_HH || null,
                         DON_VI_TINH: ct.DON_VI_TINH,
                         GIA_BAN_CHUA_VAT: ct.GIA_BAN_CHUA_VAT,
