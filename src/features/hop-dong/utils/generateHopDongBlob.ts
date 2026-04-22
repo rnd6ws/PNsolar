@@ -15,6 +15,24 @@ const getTTK = (ttk: any[], tieuDe: string) => ttk.find((t: any) => t.TIEU_DE ==
 const getDKHD = (dk: any[], hangMuc: string) => dk.find((d: any) => d.HANG_MUC === hangMuc)?.NOI_DUNG || "";
 const stripHonorific = (name: string) => name.replace(/^(Ông|Bà|ông|bà)\s+/i, "").trim();
 
+const normalizeCustomKey = (value?: string | null) =>
+    (value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+const getCustomValue = (ct: any, keys: string[]) => {
+    const customRows = Array.isArray(ct?.HH_CUSTOM) ? ct.HH_CUSTOM : [];
+    const normalizedKeys = keys.map(normalizeCustomKey);
+    const matched = customRows.find((item: any) => {
+        const title = normalizeCustomKey(item?.TIEU_DE);
+        return normalizedKeys.some(k => title === k || title.includes(k) || k.includes(title));
+    });
+    return (matched?.NOI_DUNG || "").toString();
+};
+
 function renderDocx(arrayBuffer: ArrayBuffer, templateData: Record<string, any>): Blob {
     const zip = new PizZip(arrayBuffer);
     const doc = new Docxtemplater(zip, {
@@ -97,15 +115,18 @@ export async function generateDanDungBlob(item: any): Promise<Blob> {
             const donGia = coVat ? (ct.GIA_BAN_CHUA_VAT || 0) : (ct.GIA_BAN || 0);
             const thanhTien = Math.round(donGia * ct.SO_LUONG);
             tongNhom += thanhTien;
-            const tenHH = ct.HH_REL?.TEN_HH || ct.MA_HH;
+            const tenHH = ct.HH_REL?.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH || "";
             const moTa = ct.HH_REL?.MO_TA || ct.GHI_CHU || "";
+            const model = ct.HH_REL?.MODEL || getCustomValue(ct, ["Mã hiệu/Mô tả", "Mã hiệu", "Mô tả", "Model"]);
+            const xuatXu = ct.HH_REL?.XUAT_XU || getCustomValue(ct, ["Xuất xứ"]);
+            const baoHanh = ct.HH_REL?.BAO_HANH || getCustomValue(ct, ["Bảo hành"]);
             return {
                 STT: `${gi + 1}.${ci + 1}`,
                 TEN_HH: moTa.trim() ? `${tenHH}\n${moTa.trim()}` : tenHH,
                 DVT: ct.DON_VI_TINH || ct.HH_REL?.DON_VI_TINH || "",
-                MODEL: ct.HH_REL?.MODEL || "",
-                XUAT_XU: ct.HH_REL?.XUAT_XU || "",
-                BAO_HANH: ct.HH_REL?.BAO_HANH || "",
+                MODEL: model,
+                XUAT_XU: xuatXu,
+                BAO_HANH: baoHanh,
                 SL: ct.SO_LUONG,
                 DON_GIA: fmtNum(donGia),
                 THANH_TIEN: fmtNum(thanhTien),
@@ -234,15 +255,18 @@ export async function generateMuaBanBlob(item: any): Promise<Blob> {
             const donGia = ct.GIA_BAN || 0;
             const thanhTien = Math.round(donGia * ct.SO_LUONG);
             tongNhom += thanhTien;
-            const tenHH = ct.HH_REL?.TEN_HH || ct.MA_HH;
+            const tenHH = ct.HH_REL?.TEN_HH || ct.TEN_HH_CUSTOM || ct.MA_HH || "";
             const moTa = ct.HH_REL?.MO_TA || ct.GHI_CHU || "";
+            const model = ct.HH_REL?.MODEL || getCustomValue(ct, ["Mã hiệu/Mô tả", "Mã hiệu", "Mô tả", "Model"]);
+            const xuatXu = ct.HH_REL?.XUAT_XU || getCustomValue(ct, ["Xuất xứ"]);
+            const baoHanh = ct.HH_REL?.BAO_HANH || getCustomValue(ct, ["Bảo hành"]);
             return {
                 STT: `${gi + 1}.${ci + 1}`,
                 TEN_HH: moTa.trim() ? `${tenHH}\n${moTa.trim()}` : tenHH,
                 DVT: ct.DON_VI_TINH || ct.HH_REL?.DON_VI_TINH || "",
-                MODEL: ct.HH_REL?.MODEL || "",
-                XUAT_XU: ct.HH_REL?.XUAT_XU || "",
-                BAO_HANH: ct.HH_REL?.BAO_HANH || "",
+                MODEL: model,
+                XUAT_XU: xuatXu,
+                BAO_HANH: baoHanh,
                 SL: ct.SO_LUONG,
                 DON_GIA: fmtNum(donGia),
                 THANH_TIEN: fmtNum(thanhTien),

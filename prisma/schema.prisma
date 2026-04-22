@@ -969,8 +969,11 @@ model HOP_DONG_CT {
   SO_HD  String
   HD_REL HOP_DONG @relation(fields: [SO_HD], references: [SO_HD], onDelete: Cascade)
 
-  MA_HH  String
-  HH_REL DMHH   @relation(fields: [MA_HH], references: [MA_HH])
+  // Hàng hóa — lưu MA_HH (rỗng nếu là vật tư ngoài nhóm), relation sang DMHH (optional)
+  MA_HH         String      @default("")
+  HH_REL        DMHH?       @relation(fields: [MA_HH], references: [MA_HH])
+  TEN_HH_CUSTOM String? // Tên hàng hóa nhập tay (khi không chọn từ DMHH)
+  HH_CUSTOM     HH_CUSTOM[] // Hàng hóa custom
 
   NHOM_HH          String? // Nhóm hàng hóa
   DON_VI_TINH      String
