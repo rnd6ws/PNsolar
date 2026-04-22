@@ -355,6 +355,17 @@ const moduleGroups: ModuleGroup[] = [
                 available: true,
                 moduleKey: "phan-quyen",
             },
+            {
+                name: "Hướng dẫn sử dụng",
+                description: "Xem nhanh tài liệu hướng dẫn sử dụng PDF ngay trong hệ thống.",
+                href: "/huong-dan-su-dung",
+                icon: HelpCircle,
+                color: "text-sky-600 dark:text-sky-400",
+                bgColor: "bg-sky-50 dark:bg-sky-950/50",
+                gradientFrom: "from-sky-500/10",
+                gradientTo: "to-cyan-500/10",
+                available: true,
+            },
         ],
     },
 ];

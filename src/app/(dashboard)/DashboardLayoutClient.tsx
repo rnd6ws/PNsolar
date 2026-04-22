@@ -54,6 +54,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
     '/nhan-vien': 'Nhân viên',
     '/settings': 'Cài đặt',
     '/phan-quyen': 'Phân quyền',
+    '/huong-dan-su-dung': 'Hướng dẫn sử dụng',
     '/ban-giao': 'Bàn giao',
     '/de-nghi-tt': 'Đề nghị thanh toán',
     '/bao-cao-nhan-su': 'Báo cáo nhân sự',
