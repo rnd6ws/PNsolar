@@ -4,7 +4,7 @@ import { useState, useMemo, Fragment } from "react";
 import { toast } from "sonner";
 import {
     ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Pencil, Trash2, Eye, CreditCard,
-    FileText, CalendarDays, DollarSign, Landmark, ChevronDown, ChevronRight,
+    FileText, CalendarDays, Landmark, ChevronDown, ChevronRight, Printer, FileArchive
 } from "lucide-react";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -17,6 +17,7 @@ import type { GroupByKey } from "./DeNghiTTPageClient";
 import ViewDeNghiTTModal from "./ViewDeNghiTTModal";
 import AddEditDeNghiTTModal from "./AddEditDeNghiTTModal";
 import AddEditThanhToanModal from "@/features/thanh-toan/components/AddEditThanhToanModal";
+import { exportDeNghiTTPdf } from "../utils/exportDeNghiTT";
 
 interface Props {
     data: any[];
@@ -42,6 +43,7 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
     const [editItem, setEditItem] = useState<any | null>(null);
     const [thanhToanItem, setThanhToanItem] = useState<any | null>(null);
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+    const [previewingId, setPreviewingId] = useState<string | null>(null);
 
     // ─── Sort ─────────────────────────────────────────────────
     const sortedData = useMemo(() => {
@@ -123,6 +125,18 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
     };
 
     const col = (key: ColumnKey) => visibleColumns.includes(key);
+
+    const handleExportPdf = async (item: any) => {
+        setPreviewingId(item.ID);
+        try {
+            await exportDeNghiTTPdf(item);
+            toast.success("Đã tải file PDF đề nghị thanh toán");
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : "Không thể tạo file PDF");
+        } finally {
+            setPreviewingId(null);
+        }
+    };
 
     // ─── Empty state ──────────────────────────────────────────
     if (sortedData.length === 0) {
@@ -207,6 +221,18 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
                         title="Xem chi tiết"
                     >
                         <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => handleExportPdf(item)}
+                        disabled={previewingId === item.ID}
+                        className="p-1.5 rounded-lg hover:bg-violet-500/10 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50"
+                        title="Tải PDF"
+                    >
+                        {previewingId === item.ID ? (
+                            <span className="block w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <FileArchive className="w-4 h-4" />
+                        )}
                     </button>
                     <PermissionGuard moduleKey="thanh-toan" level="add">
                         <button
@@ -352,6 +378,13 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
                                     <DropdownMenuContent align="end" className="w-36 rounded-xl">
                                         <DropdownMenuItem onClick={() => setViewItem(item)} className="gap-2 cursor-pointer">
                                             <Eye className="w-4 h-4" /> Xem
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => handleExportPdf(item)}
+                                            disabled={previewingId === item.ID}
+                                            className="gap-2 cursor-pointer text-blue-600 focus:text-blue-600 focus:bg-blue-500/10"
+                                        >
+                                            <FileArchive className="w-4 h-4" /> Tải PDF
                                         </DropdownMenuItem>
                                         <PermissionGuard moduleKey="thanh-toan" level="add">
                                             <DropdownMenuItem onClick={() => setThanhToanItem(item)} className="gap-2 cursor-pointer text-emerald-600 focus:text-emerald-600 focus:bg-emerald-500/10">

@@ -86,7 +86,7 @@ export async function getDeNghiTTList(filters: {
                 where,
                 include: {
                     KHTN_REL: { select: { TEN_KH: true, MA_KH: true } },
-                    HD_REL: { select: { SO_HD: true, TONG_TIEN: true } },
+                    HD_REL: { select: { SO_HD: true, NGAY_HD: true, TONG_TIEN: true } },
                     TK_REL: { select: { SO_TK: true, TEN_TK: true, TEN_NGAN_HANG: true } },
                     NGUOI_TAO_REL: { select: { HO_TEN: true, MA_NV: true } },
                 },
@@ -107,6 +107,12 @@ export async function getDeNghiTTList(filters: {
                 NGAY_DE_NGHI: d.NGAY_DE_NGHI.toISOString(),
                 CREATED_AT: d.CREATED_AT.toISOString(),
                 UPDATED_AT: d.UPDATED_AT.toISOString(),
+                HD_REL: d.HD_REL
+                    ? {
+                        ...d.HD_REL,
+                        NGAY_HD: d.HD_REL.NGAY_HD ? d.HD_REL.NGAY_HD.toISOString() : null,
+                    }
+                    : null,
             })),
             pagination: {
                 page,
