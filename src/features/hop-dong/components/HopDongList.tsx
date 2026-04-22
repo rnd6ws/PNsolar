@@ -16,7 +16,7 @@ import { exportHopDongMuaBanDocx } from "../utils/exportHopDongMuaBan";
 import AddEditBanGiaoModal from "@/features/ban-giao/components/AddEditBanGiaoModal";
 import ViewBanGiaoModal from "@/features/ban-giao/components/ViewBanGiaoModal";
 import { getBanGiaoById } from "@/features/ban-giao/action";
-import DocxPreviewModal from "./DocxPreviewModal";
+import DocxPreviewModal from "@/components/DocxPreviewModal";
 import { generateHopDongBlob } from "../utils/generateHopDongBlob";
 
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString("vi-VN");
@@ -42,7 +42,21 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
     const [loadingBanGiao, setLoadingBanGiao] = useState(false);
     const [viewBanGiaoModal, setViewBanGiaoModal] = useState<{ open: boolean; data: any | null }>({ open: false, data: null });
     const [loadingViewBanGiao, setLoadingViewBanGiao] = useState(false);
-    const [previewModal, setPreviewModal] = useState<{ open: boolean; blob: Blob | null; title: string; subtitle: string; loadingId: string | null }>({ open: false, blob: null, title: "", subtitle: "", loadingId: null });
+    const [previewModal, setPreviewModal] = useState<{
+        open: boolean;
+        blob: Blob | null;
+        title: string;
+        subtitle: string;
+        loadingId: string | null;
+        fixedTableLayout: boolean;
+    }>({
+        open: false,
+        blob: null,
+        title: "",
+        subtitle: "",
+        loadingId: null,
+        fixedTableLayout: false,
+    });
 
     const handleViewBanGiao = async (banGiaoId: string) => {
         setLoadingViewBanGiao(true);
@@ -132,7 +146,14 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
             const result = await getHopDongById(item.ID);
             if (result.success && result.data) {
                 const { blob } = await generateHopDongBlob(result.data);
-                setPreviewModal({ open: true, blob, title: loaiLabel, subtitle: `Số: ${item.SO_HD}`, loadingId: null });
+                setPreviewModal({
+                    open: true,
+                    blob,
+                    title: loaiLabel,
+                    subtitle: `Số: ${item.SO_HD}`,
+                    loadingId: null,
+                    fixedTableLayout: result.data.LOAI_HD === "Mua bán",
+                });
             } else {
                 toast.error(result.message || "Không thể tải dữ liệu");
                 setPreviewModal(prev => ({ ...prev, loadingId: null }));
@@ -461,10 +482,21 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
             <ViewHopDongModal isOpen={viewModal} onClose={() => { setViewModal(false); setViewData(null); }} data={viewData} />
             <DocxPreviewModal
                 isOpen={previewModal.open}
-                onClose={() => setPreviewModal({ open: false, blob: null, title: "", subtitle: "", loadingId: null })}
+                onClose={() =>
+                    setPreviewModal({
+                        open: false,
+                        blob: null,
+                        title: "",
+                        subtitle: "",
+                        loadingId: null,
+                        fixedTableLayout: false,
+                    })
+                }
                 docxBlob={previewModal.blob}
                 title={previewModal.title}
                 subtitle={previewModal.subtitle}
+                printButtonText="In hợp đồng"
+                fixedTableLayout={previewModal.fixedTableLayout}
             />
             <AddEditHopDongModal isOpen={editModal} onClose={() => { setEditModal(false); setEditData(null); }} onSuccess={() => { setEditModal(false); setEditData(null); }} editData={editData} />
             <AddEditBanGiaoModal
@@ -614,3 +646,4 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         </>
     );
 }
+

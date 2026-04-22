@@ -719,10 +719,10 @@ export default function HangHoaClient({
                 {/* Stats Bar */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                     {[
-                        { label: 'Tổng hàng hóa', value: initialPagination?.total ?? 0, icon: Package, iconBg: '#6366f1', cardBg: 'rgba(99, 102, 241, 0.06)' },
-                        { label: 'Phân loại', value: [...new Set(initialProducts.map((p: Product) => p.MA_PHAN_LOAI))].length, icon: Tag, iconBg: '#10b981', cardBg: 'rgba(16, 185, 129, 0.06)' },
-                        { label: 'Dòng hàng', value: [...new Set(initialProducts.map((p: Product) => p.MA_DONG_HANG))].length, icon: Box, iconBg: '#f59e0b', cardBg: 'rgba(245, 158, 11, 0.06)' },
-                        { label: 'Tổng trang', value: initialPagination?.totalPages ?? 1, icon: Search, iconBg: '#8b5cf6', cardBg: 'rgba(139, 92, 246, 0.06)' },
+                        { label: 'Tổng hàng hóa', value: initialPagination?.total ?? 0, icon: Package, iconBg: '#6366f1', cardBg: 'rgba(99, 102, 241, 0.16)' },
+                        { label: 'Phân loại', value: [...new Set(initialProducts.map((p: Product) => p.MA_PHAN_LOAI))].length, icon: Tag, iconBg: '#10b981', cardBg: 'rgba(16, 185, 129, 0.16)' },
+                        { label: 'Dòng hàng', value: [...new Set(initialProducts.map((p: Product) => p.MA_DONG_HANG))].length, icon: Box, iconBg: '#f59e0b', cardBg: 'rgba(245, 158, 11, 0.16)' },
+                        { label: 'Tổng trang', value: initialPagination?.totalPages ?? 1, icon: Search, iconBg: '#8b5cf6', cardBg: 'rgba(139, 92, 246, 0.16)' },
                     ].map((stat) => (
                         <div key={stat.label} className="group rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border border-transparent" style={{ backgroundColor: stat.cardBg }}>
                             <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: stat.iconBg }}>
@@ -1154,105 +1154,105 @@ export default function HangHoaClient({
 
                     {/* Mobile View (Cards) */}
                     {viewMode === "card" && (
-                    <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
-                        {sortedProducts.map((prod: Product) => (
-                            <div key={prod.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-3">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-11 h-11 rounded-lg bg-muted border border-border flex items-center justify-center shadow-sm shrink-0">
-                                            {prod.HINH_ANH ? (
-                                                <img src={prod.HINH_ANH} alt={prod.TEN_HH} className="w-full h-full object-cover rounded-lg" />
-                                            ) : (
-                                                <Box className="w-5 h-5 text-muted-foreground opacity-50" />
-                                            )}
+                        <div className="lg:hidden flex flex-col gap-4 p-4 bg-muted/10">
+                            {sortedProducts.map((prod: Product) => (
+                                <div key={prod.ID} className="bg-background border border-border rounded-xl p-5 shadow-sm flex flex-col gap-3">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-11 h-11 rounded-lg bg-muted border border-border flex items-center justify-center shadow-sm shrink-0">
+                                                {prod.HINH_ANH ? (
+                                                    <img src={prod.HINH_ANH} alt={prod.TEN_HH} className="w-full h-full object-cover rounded-lg" />
+                                                ) : (
+                                                    <Box className="w-5 h-5 text-muted-foreground opacity-50" />
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="font-medium text-foreground text-base leading-tight">{prod.TEN_HH}</p>
+                                                {/* <p className="text-xs text-primary font-medium font-mono uppercase mt-0.5">{prod.MA_HH}</p> */}
+                                            </div>
                                         </div>
-                                        <div className="min-w-0">
-                                            <p className="font-medium text-foreground text-base leading-tight">{prod.TEN_HH}</p>
-                                            {/* <p className="text-xs text-primary font-medium font-mono uppercase mt-0.5">{prod.MA_HH}</p> */}
-                                        </div>
+                                        {prod.HIEU_LUC !== false ? (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shrink-0">
+                                                <CheckCircle2 className="w-3 h-3" />
+                                                Có
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-600 border border-red-500/20 shrink-0">
+                                                <XCircle className="w-3 h-3" />
+                                                Không
+                                            </span>
+                                        )}
                                     </div>
-                                    {prod.HIEU_LUC !== false ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shrink-0">
-                                            <CheckCircle2 className="w-3 h-3" />
-                                            Có
+                                    <div className="flex flex-wrap gap-2">
+                                        {prod.NHOM_HH && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-500/10 text-violet-600 border border-violet-500/20">
+                                                {prod.NHOM_HH}
+                                            </span>
+                                        )}
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-blue-500/10 text-blue-600 border-blue-500/20">
+                                            <Tag className="w-3 h-3" />{prod.PHAN_LOAI_REL?.TEN_PHAN_LOAI || prod.MA_PHAN_LOAI}
                                         </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-600 border border-red-500/20 shrink-0">
-                                            <XCircle className="w-3 h-3" />
-                                            Không
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-secondary text-secondary-foreground border border-border">
+                                            {prod.DONG_HANG_REL?.TEN_DONG_HANG || prod.MA_DONG_HANG}
                                         </span>
-                                    )}
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {prod.NHOM_HH && (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-500/10 text-violet-600 border border-violet-500/20">
-                                            {prod.NHOM_HH}
-                                        </span>
-                                    )}
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-blue-500/10 text-blue-600 border-blue-500/20">
-                                        <Tag className="w-3 h-3" />{prod.PHAN_LOAI_REL?.TEN_PHAN_LOAI || prod.MA_PHAN_LOAI}
-                                    </span>
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-secondary text-secondary-foreground border border-border">
-                                        {prod.DONG_HANG_REL?.TEN_DONG_HANG || prod.MA_DONG_HANG}
-                                    </span>
-                                    <span className="text-[11px] text-primary font-medium px-2 py-0.5 bg-muted rounded-md">{prod.MODEL}</span>
-                                </div>
-                                <div className="text-xs text-muted-foreground space-y-0.5">
-                                    <div>ĐVT: <span className="text-foreground">{prod.DON_VI_TINH}</span></div>
-                                    {prod.XUAT_XU && <div>Xuất xứ: <span className="text-foreground">{prod.XUAT_XU}</span></div>}
-                                    {prod.BAO_HANH && <div>Bảo hành: <span className="text-primary font-medium">{prod.BAO_HANH}</span></div>}
-                                    {giaNhapMap[prod.MA_HH] && (
-                                        <div className="flex items-center gap-1">
-                                            Giá nhập:
-                                            <button
-                                                onClick={() => handleShowHistory(prod)}
-                                                className="text-primary font-semibold hover:underline"
-                                            >
-                                                {new Intl.NumberFormat('vi-VN').format(giaNhapMap[prod.MA_HH].DON_GIA)} ₫
-                                            </button>
-                                        </div>
-                                    )}
-                                    {giaBanMap[prod.MA_HH] && giaBanMap[prod.MA_HH].length > 0 && (
-                                        <div className="flex flex-col gap-0.5 mt-1">
-                                            <button
-                                                onClick={() => handleShowGiaBanHistory(prod)}
-                                                className="text-left hover:opacity-80 transition-opacity"
-                                            >
-                                                <span className="text-muted-foreground font-medium">Giá bán:</span>
-                                                {giaBanMap[prod.MA_HH].map((gb, idx) => (
-                                                    <div key={idx} className="flex items-center gap-1">
-                                                        <span className="text-muted-foreground">{gb.GOI_GIA}:</span>
-                                                        <span className="text-rose-600 font-semibold hover:underline">{new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫</span>
-                                                    </div>
-                                                ))}
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-2 pt-1 border-t">
-                                    <button
-                                        onClick={() => setViewProduct(prod)}
-                                        className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold"
-                                    >
-                                        <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
-                                    </button>
-                                    <PermissionGuard moduleKey="hang-hoa" level="edit">
-                                        <button onClick={() => setEditProduct(prod)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
-                                            <Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
+                                        <span className="text-[11px] text-primary font-medium px-2 py-0.5 bg-muted rounded-md">{prod.MODEL}</span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground space-y-0.5">
+                                        <div>ĐVT: <span className="text-foreground">{prod.DON_VI_TINH}</span></div>
+                                        {prod.XUAT_XU && <div>Xuất xứ: <span className="text-foreground">{prod.XUAT_XU}</span></div>}
+                                        {prod.BAO_HANH && <div>Bảo hành: <span className="text-primary font-medium">{prod.BAO_HANH}</span></div>}
+                                        {giaNhapMap[prod.MA_HH] && (
+                                            <div className="flex items-center gap-1">
+                                                Giá nhập:
+                                                <button
+                                                    onClick={() => handleShowHistory(prod)}
+                                                    className="text-primary font-semibold hover:underline"
+                                                >
+                                                    {new Intl.NumberFormat('vi-VN').format(giaNhapMap[prod.MA_HH].DON_GIA)} ₫
+                                                </button>
+                                            </div>
+                                        )}
+                                        {giaBanMap[prod.MA_HH] && giaBanMap[prod.MA_HH].length > 0 && (
+                                            <div className="flex flex-col gap-0.5 mt-1">
+                                                <button
+                                                    onClick={() => handleShowGiaBanHistory(prod)}
+                                                    className="text-left hover:opacity-80 transition-opacity"
+                                                >
+                                                    <span className="text-muted-foreground font-medium">Giá bán:</span>
+                                                    {giaBanMap[prod.MA_HH].map((gb, idx) => (
+                                                        <div key={idx} className="flex items-center gap-1">
+                                                            <span className="text-muted-foreground">{gb.GOI_GIA}:</span>
+                                                            <span className="text-rose-600 font-semibold hover:underline">{new Intl.NumberFormat('vi-VN').format(gb.DON_GIA)} ₫</span>
+                                                        </div>
+                                                    ))}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 pt-1 border-t">
+                                        <button
+                                            onClick={() => setViewProduct(prod)}
+                                            className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold"
+                                        >
+                                            <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span>
                                         </button>
-                                    </PermissionGuard>
-                                    <PermissionGuard moduleKey="hang-hoa" level="delete">
-                                        <button onClick={() => setDeleteProduct(prod)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </PermissionGuard>
+                                        <PermissionGuard moduleKey="hang-hoa" level="edit">
+                                            <button onClick={() => setEditProduct(prod)} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold">
+                                                <Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span>
+                                            </button>
+                                        </PermissionGuard>
+                                        <PermissionGuard moduleKey="hang-hoa" level="delete">
+                                            <button onClick={() => setDeleteProduct(prod)} className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </PermissionGuard>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                        {initialProducts.length === 0 && (
-                            <div className="p-8 text-center text-muted-foreground italic text-sm">Chưa có hàng hóa nào được thêm.</div>
-                        )}
-                    </div>
+                            ))}
+                            {initialProducts.length === 0 && (
+                                <div className="p-8 text-center text-muted-foreground italic text-sm">Chưa có hàng hóa nào được thêm.</div>
+                            )}
+                        </div>
                     )}
 
                     {/* Pagination */}

@@ -91,9 +91,9 @@ export default function GiaBanPageClient({
     }, [data]);
 
     const stats = [
-        { label: 'Tổng giá bán', value: pagination.total, icon: DollarSign, iconBg: '#6366f1', cardBg: 'rgba(99, 102, 241, 0.06)' },
-        { label: 'Hàng hóa', value: uniqueHH, icon: Package, iconBg: '#10b981', cardBg: 'rgba(16, 185, 129, 0.06)' },
-        { label: 'Giá TB', value: avgPrice > 0 ? new Intl.NumberFormat('vi-VN').format(avgPrice) + ' ₫' : '—', icon: TrendingUp, iconBg: '#8b5cf6', cardBg: 'rgba(139, 92, 246, 0.06)' },
+        { label: 'Tổng giá bán', value: pagination.total, icon: DollarSign, iconBg: '#6366f1', cardBg: 'rgba(99, 102, 241, 0.16)' },
+        { label: 'Hàng hóa', value: uniqueHH, icon: Package, iconBg: '#10b981', cardBg: 'rgba(16, 185, 129, 0.16)' },
+        { label: 'Giá TB', value: avgPrice > 0 ? new Intl.NumberFormat('vi-VN').format(avgPrice) + ' ₫' : '—', icon: TrendingUp, iconBg: '#8b5cf6', cardBg: 'rgba(139, 92, 246, 0.16)' },
     ];
 
     return (

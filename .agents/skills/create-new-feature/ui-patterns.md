@@ -486,7 +486,7 @@ const statCards = [
         key: "total" as const,
         icon: Users2,
         iconBg: "#6366f1",       // indigo-500
-        cardBg: "rgba(99, 102, 241, 0.06)",
+        cardBg: "rgba(99, 102, 241, 0.16)",
         borderActive: "#6366f1",
         filterVal: "all",
     },
@@ -495,7 +495,7 @@ const statCards = [
         key: "val2" as const,
         icon: UserPlus,
         iconBg: "#10b981",       // emerald-500
-        cardBg: "rgba(16, 185, 129, 0.06)",
+        cardBg: "rgba(16, 185, 129, 0.16)",
         borderActive: "#10b981",
         filterVal: "Filter2",
     },
@@ -504,7 +504,7 @@ const statCards = [
         key: "val3" as const,
         icon: UserCog,
         iconBg: "#f59e0b",       // amber-500
-        cardBg: "rgba(245, 158, 11, 0.06)",
+        cardBg: "rgba(245, 158, 11, 0.16)",
         borderActive: "#f59e0b",
         filterVal: "Filter3",
     },
@@ -513,7 +513,7 @@ const statCards = [
         key: "val4" as const,
         icon: UserCheck,
         iconBg: "#8b5cf6",       // violet-500
-        cardBg: "rgba(139, 92, 246, 0.06)",
+        cardBg: "rgba(139, 92, 246, 0.16)",
         borderActive: "#8b5cf6",
         filterVal: "Filter4",
     },

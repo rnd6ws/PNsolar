@@ -40,7 +40,7 @@ export interface DeNghiTTFull {
     NGUOI_TAO: string | null;
     CREATED_AT: string;
     KHTN_REL?: { TEN_KH: string; MA_KH: string };
-    HD_REL?: { SO_HD: string; TONG_TIEN: number };
+    HD_REL?: { SO_HD: string; NGAY_HD?: string | null; TONG_TIEN: number };
     TK_REL?: { SO_TK: string; TEN_TK: string; TEN_NGAN_HANG: string } | null;
     NGUOI_TAO_REL?: { HO_TEN: string; MA_NV: string } | null;
 }

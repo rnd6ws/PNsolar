@@ -11,6 +11,8 @@ interface Props {
     docxBlob: Blob | null;
     title?: string;
     subtitle?: string;
+    printButtonText?: string;
+    fixedTableLayout?: boolean;
 }
 
 // CSS inject một lần
@@ -63,6 +65,18 @@ const PREVIEW_CSS = `
 }
 .btn-docx-close:hover { background: #1e293b; color: #f1f5f9; border-color: #64748b; }
 
+.docx-preview-wrap.table-layout-fixed .docx-preview-body section.docx table {
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+}
+.docx-preview-wrap.table-layout-fixed .docx-preview-body section.docx td,
+.docx-preview-wrap.table-layout-fixed .docx-preview-body section.docx th {
+    box-sizing: border-box !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    vertical-align: middle !important;
+}
+
 @media print {
     body > * { display: none !important; }
     body > #docx-print-target {
@@ -89,17 +103,37 @@ const PREVIEW_CSS = `
         break-after: auto;
         page-break-after: auto;
     }
+    #docx-print-target[data-table-fixed="1"] section.docx table {
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+    }
+    #docx-print-target[data-table-fixed="1"] section.docx td,
+    #docx-print-target[data-table-fixed="1"] section.docx th {
+        box-sizing: border-box !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+        vertical-align: middle !important;
+    }
 }
 #docx-print-target { display: none; }
 `;
 
-export default function DocxPreviewModal({ isOpen, onClose, docxBlob, title, subtitle }: Props) {
+export default function DocxPreviewModal({
+    isOpen,
+    onClose,
+    docxBlob,
+    title,
+    subtitle,
+    printButtonText,
+    fixedTableLayout = false,
+}: Props) {
     const containerRef = useRef<HTMLDivElement>(null);
     const printTargetRef = useRef<HTMLDivElement>(null);
     const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const styleInjected = useRef(false);
+    const printText = printButtonText || "In tài liệu";
 
     // Inject CSS
     useEffect(() => {
@@ -203,18 +237,25 @@ export default function DocxPreviewModal({ isOpen, onClose, docxBlob, title, sub
         <>
             {/* Target riêng cho print đặt trực tiếp ở body để tránh bị parent ẩn khi in */}
             {printRoot
-                ? createPortal(<div id="docx-print-target" ref={printTargetRef} />, printRoot)
+                ? createPortal(
+                    <div
+                        id="docx-print-target"
+                        ref={printTargetRef}
+                        data-table-fixed={fixedTableLayout ? "1" : "0"}
+                    />,
+                    printRoot
+                )
                 : null}
 
             {/* Overlay */}
-            <div className="docx-preview-wrap" role="dialog" aria-modal="true">
+            <div className={`docx-preview-wrap ${fixedTableLayout ? "table-layout-fixed" : ""}`} role="dialog" aria-modal="true">
                 {/* Toolbar */}
                 <div className="docx-preview-toolbar">
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                         <FileText style={{ width: 20, height: 20, color: "#60a5fa", flexShrink: 0 }} />
                         <div style={{ minWidth: 0 }}>
                             <div style={{ fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                {title || "Xem trước hợp đồng"}
+                                {title || "Xem trước tài liệu"}
                             </div>
                             {subtitle && (
                                 <div style={{ fontSize: 12, color: "#94a3b8" }}>{subtitle}</div>
@@ -227,10 +268,10 @@ export default function DocxPreviewModal({ isOpen, onClose, docxBlob, title, sub
                             className="btn-docx-print"
                             onClick={handlePrint}
                             disabled={loading || !!error}
-                            title="In hợp đồng"
+                            title={printText}
                         >
                             <Printer style={{ width: 16, height: 16 }} />
-                            In hợp đồng
+                            {printText}
                         </button>
                         <button className="btn-docx-close" onClick={onClose}>
                             <X style={{ width: 14, height: 14 }} />
