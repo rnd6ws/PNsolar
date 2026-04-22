@@ -255,7 +255,7 @@ function renderRichText(
 function buildTemplateData(item: DeNghiTTExportData) {
     const tongTienHD = Number(item.HD_REL?.TONG_TIEN || 0);
     const tienDeNghi = Number(item.SO_TIEN_DE_NGHI || 0);
-    const tyLe = tongTienHD > 0 ? ((tienDeNghi / tongTienHD) * 100).toFixed(2) : "0.00";
+    const tyLe = tongTienHD > 0 ? String(Math.round((tienDeNghi / tongTienHD) * 100)) : "0";
     const { NGAY, THANG, NAM } = getDateParts(item.NGAY_DE_NGHI);
     const soHD = item.HD_REL?.SO_HD || item.SO_HD || "";
 
