@@ -1,4 +1,4 @@
-﻿import PizZip from "pizzip";
+import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import jsPDF from "jspdf";
 import { soThanhChu } from "@/features/hop-dong/utils/exportHopDong";
@@ -255,7 +255,8 @@ function renderRichText(
 function buildTemplateData(item: DeNghiTTExportData) {
     const tongTienHD = Number(item.HD_REL?.TONG_TIEN || 0);
     const tienDeNghi = Number(item.SO_TIEN_DE_NGHI || 0);
-    const tyLe = tongTienHD > 0 ? String(Math.round((tienDeNghi / tongTienHD) * 100)) : "0";
+    const tyLeNum = tongTienHD > 0 ? Math.round((tienDeNghi / tongTienHD) * 100) : 0;
+    const tyLe = String(tyLeNum);
     const { NGAY, THANG, NAM } = getDateParts(item.NGAY_DE_NGHI);
     const soHD = item.HD_REL?.SO_HD || item.SO_HD || "";
 
@@ -274,6 +275,7 @@ function buildTemplateData(item: DeNghiTTExportData) {
             NAM,
         },
         soHD,
+        tyLeNum,
     };
 }
 
@@ -324,7 +326,7 @@ export async function exportDeNghiTTPdf(item: DeNghiTTExportData): Promise<void>
         throw new Error("Chuc nang xuat PDF chi ho tro tren trinh duyet.");
     }
 
-    const { templateData, soHD } = buildTemplateData(item);
+    const { templateData, soHD, tyLeNum } = buildTemplateData(item);
     const safeMa = (item.MA_DE_NGHI || soHD || "export").replace(/[^\w.-]+/g, "_");
     const pdfFileName = `DeNghiThanhToan_${safeMa}.pdf`;
 
@@ -368,7 +370,8 @@ export async function exportDeNghiTTPdf(item: DeNghiTTExportData): Promise<void>
 
         drawCenteredLine("Cộng Hòa Xã Hội Chủ Nghĩa Việt Nam", 12, "bold", 7);
         drawCenteredLine("Độc Lập - Tự Do - Hạnh Phúc", 12, "bold", 14);
-        drawCenteredLine("ĐỀ NGHỊ THANH TOÁN TẠM ỨNG", 21, "bold", 10);
+        const title = tyLeNum < 100 ? "ĐỀ NGHỊ TẠM ỨNG" : "ĐỀ NGHỊ THANH TOÁN";
+        drawCenteredLine(title, 21, "bold", 10);
         drawCenteredLine("-----o0o-----", 11, "normal", 9);
 
         y = renderRichText(doc, [
