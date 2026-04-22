@@ -157,6 +157,11 @@ export async function getBaoGiaList(filters: {
                 include: {
                     KH_REL: { select: { TEN_KH: true, MA_KH: true } },
                     CO_HOI_REL: { select: { MA_CH: true, NGAY_TAO: true, GIA_TRI_DU_KIEN: true } },
+                    HOP_DONG: {
+                        select: { SO_HD: true, DUYET: true, CREATED_AT: true },
+                        orderBy: { CREATED_AT: 'desc' },
+                        take: 1,
+                    },
                     _count: { select: { CHI_TIETS: true } },
                 },
                 skip: (page - 1) * limit,
