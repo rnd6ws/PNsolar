@@ -105,10 +105,10 @@ async function NhanVienContent({
             {/* Stat Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {[
-                    { label: 'Tổng nhân viên', value: totalNV, icon: Users2, iconBg: '#6366f1', cardBg: 'rgba(99, 102, 241, 0.06)' },
-                    { label: 'Đang hoạt động', value: activeCount, icon: UserCheck, iconBg: '#10b981', cardBg: 'rgba(16, 185, 129, 0.06)' },
-                    { label: 'Tạm nghỉ', value: inactiveCount, icon: TrendingUp, iconBg: '#f59e0b', cardBg: 'rgba(245, 158, 11, 0.06)' },
-                    { label: 'Mới tháng này', value: thisMonthCount, icon: UserPlus, iconBg: '#ef4444', cardBg: 'rgba(239, 68, 68, 0.06)' },
+                    { label: 'Tổng nhân viên', value: totalNV, icon: Users2, iconBg: '#6366f1', cardBg: 'rgba(99, 102, 241, 0.16)' },
+                    { label: 'Đang hoạt động', value: activeCount, icon: UserCheck, iconBg: '#10b981', cardBg: 'rgba(16, 185, 129, 0.16)' },
+                    { label: 'Tạm nghỉ', value: inactiveCount, icon: TrendingUp, iconBg: '#f59e0b', cardBg: 'rgba(245, 158, 11, 0.16)' },
+                    { label: 'Mới tháng này', value: thisMonthCount, icon: UserPlus, iconBg: '#ef4444', cardBg: 'rgba(239, 68, 68, 0.16)' },
                 ].map((stat) => (
                     <div key={stat.label} className="group rounded-xl p-3.5 md:p-4 flex items-center gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border border-transparent" style={{ backgroundColor: stat.cardBg }}>
                         <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105" style={{ backgroundColor: stat.iconBg }}>

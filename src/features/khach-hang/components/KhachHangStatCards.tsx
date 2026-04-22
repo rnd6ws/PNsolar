@@ -21,7 +21,7 @@ const statCards = [
         key: "total" as const,
         icon: Users2,
         iconBg: "#6366f1",       // indigo-500
-        cardBg: "rgba(99, 102, 241, 0.06)",
+        cardBg: "rgba(99, 102, 241, 0.16)",
         borderActive: "#6366f1",
         filterVal: "all",
     },
@@ -30,7 +30,7 @@ const statCards = [
         key: "tiemNang" as const,
         icon: UserPlus,
         iconBg: "#10b981",       // emerald-500
-        cardBg: "rgba(16, 185, 129, 0.06)",
+        cardBg: "rgba(16, 185, 129, 0.16)",
         borderActive: "#10b981",
         filterVal: "Khách tiềm năng",
     },
@@ -39,7 +39,7 @@ const statCards = [
         key: "dangTrienKhai" as const,
         icon: UserCog,
         iconBg: "#f59e0b",       // amber-500
-        cardBg: "rgba(245, 158, 11, 0.06)",
+        cardBg: "rgba(245, 158, 11, 0.16)",
         borderActive: "#f59e0b",
         filterVal: "Khách đang triển khai",
     },
@@ -48,7 +48,7 @@ const statCards = [
         key: "duyTri" as const,
         icon: UserCheck,
         iconBg: "#8b5cf6",       // violet-500
-        cardBg: "rgba(139, 92, 246, 0.06)",
+        cardBg: "rgba(139, 92, 246, 0.16)",
         borderActive: "#8b5cf6",
         filterVal: "Khách đang sử dụng/ Duy trì",
     },
@@ -57,7 +57,7 @@ const statCards = [
         key: "khongHoatDong" as const,
         icon: UserX,
         iconBg: "#ef4444",       // red-500
-        cardBg: "rgba(239, 68, 68, 0.06)",
+        cardBg: "rgba(239, 68, 68, 0.16)",
         borderActive: "#ef4444",
         filterVal: "Khách không hoạt động",
     },

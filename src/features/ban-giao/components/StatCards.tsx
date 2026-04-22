@@ -20,7 +20,7 @@ const statCards = [
         key: "total" as const,
         icon: PackageCheck,
         iconBg: "#6366f1",       // indigo-500
-        cardBg: "rgba(99, 102, 241, 0.06)",
+        cardBg: "rgba(99, 102, 241, 0.16)",
         borderActive: "#6366f1",
         filterVal: "all",
     },
@@ -29,7 +29,7 @@ const statCards = [
         key: "conBaoHanh" as const,
         icon: ShieldCheck,
         iconBg: "#10b981",       // emerald-500
-        cardBg: "rgba(16, 185, 129, 0.06)",
+        cardBg: "rgba(16, 185, 129, 0.16)",
         borderActive: "#10b981",
         filterVal: "con_bao_hanh",
     },
@@ -38,7 +38,7 @@ const statCards = [
         key: "hetBaoHanh" as const,
         icon: ShieldOff,
         iconBg: "#f59e0b",       // amber-500
-        cardBg: "rgba(245, 158, 11, 0.06)",
+        cardBg: "rgba(245, 158, 11, 0.16)",
         borderActive: "#f59e0b",
         filterVal: "het_bao_hanh",
     },
@@ -47,7 +47,7 @@ const statCards = [
         key: "khongBaoHanh" as const,
         icon: ShieldAlert,
         iconBg: "#8b5cf6",       // violet-500
-        cardBg: "rgba(139, 92, 246, 0.06)",
+        cardBg: "rgba(139, 92, 246, 0.16)",
         borderActive: "#8b5cf6",
         filterVal: "khong_bao_hanh",
     },

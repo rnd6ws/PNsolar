@@ -15,7 +15,7 @@ const statCards = [
         key: "totalContracts" as const,
         icon: FileText,
         iconBg: "#6366f1",       // indigo-500
-        cardBg: "rgba(99, 102, 241, 0.06)",
+        cardBg: "rgba(99, 102, 241, 0.16)",
         borderActive: "#6366f1",
     },
     {
@@ -23,7 +23,7 @@ const statCards = [
         key: "totalRevenue" as const,
         icon: DollarSign,
         iconBg: "#10b981",       // emerald-500
-        cardBg: "rgba(16, 185, 129, 0.06)",
+        cardBg: "rgba(16, 185, 129, 0.16)",
         borderActive: "#10b981",
     },
     {
@@ -31,7 +31,7 @@ const statCards = [
         key: "totalCollected" as const,
         icon: CreditCard,
         iconBg: "#f59e0b",       // amber-500
-        cardBg: "rgba(245, 158, 11, 0.06)",
+        cardBg: "rgba(245, 158, 11, 0.16)",
         borderActive: "#f59e0b",
     },
     {
@@ -39,7 +39,7 @@ const statCards = [
         key: "remainingAmount" as const,
         icon: Clock,
         iconBg: "#8b5cf6",       // violet-500
-        cardBg: "rgba(139, 92, 246, 0.06)",
+        cardBg: "rgba(139, 92, 246, 0.16)",
         borderActive: "#8b5cf6",
     },
 ];

@@ -19,7 +19,7 @@ const cards = [
         key: "total" as const,
         icon: ClipboardList,
         iconBg: "#6366f1",       // indigo-500
-        cardBg: "rgba(99, 102, 241, 0.06)",
+        cardBg: "rgba(99, 102, 241, 0.16)",
         borderActive: "#6366f1",
         filterVal: "all",
     },
@@ -28,7 +28,7 @@ const cards = [
         key: "thisMonth" as const,
         icon: CalendarCheck2,
         iconBg: "#10b981",       // emerald-500
-        cardBg: "rgba(16, 185, 129, 0.06)",
+        cardBg: "rgba(16, 185, 129, 0.16)",
         borderActive: "#10b981",
         filterVal: "month",
     },

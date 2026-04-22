@@ -14,10 +14,10 @@ interface Props {
 
 export default function StatCards({ stats }: Props) {
     const cards = [
-        { label: "Tổng thanh toán", value: stats.total, icon: CreditCard, iconBg: "#6366f1", cardBg: "rgba(99,102,241,0.06)", isMoney: false },
-        { label: "Tổng tiền TT", value: stats.tongThanhToan, icon: DollarSign, iconBg: "#10b981", cardBg: "rgba(16,185,129,0.06)", isMoney: true },
-        { label: "Trong tháng này", value: stats.thangNay, icon: CalendarDays, iconBg: "#f59e0b", cardBg: "rgba(245,158,11,0.06)", isMoney: false },
-        { label: "Tổng hoàn tiền", value: stats.tongHoanTien, icon: RefreshCcw, iconBg: "#ef4444", cardBg: "rgba(239,68,68,0.06)", isMoney: true },
+        { label: "Tổng thanh toán", value: stats.total, icon: CreditCard, iconBg: "#6366f1", cardBg: "rgba(99,102,241,0.16)", isMoney: false },
+        { label: "Tổng tiền TT", value: stats.tongThanhToan, icon: DollarSign, iconBg: "#10b981", cardBg: "rgba(16,185,129,0.16)", isMoney: true },
+        { label: "Trong tháng này", value: stats.thangNay, icon: CalendarDays, iconBg: "#f59e0b", cardBg: "rgba(245,158,11,0.16)", isMoney: false },
+        { label: "Tổng hoàn tiền", value: stats.tongHoanTien, icon: RefreshCcw, iconBg: "#ef4444", cardBg: "rgba(239,68,68,0.16)", isMoney: true },
     ];
 
     return (
