@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Printer, Loader2, FileText } from "lucide-react";
+import { FileText, Loader2, Printer, X } from "lucide-react";
 
 interface Props {
     isOpen: boolean;
@@ -15,107 +15,153 @@ interface Props {
     fixedTableLayout?: boolean;
 }
 
-// CSS inject một lần
 const PREVIEW_CSS = `
+#docx-preview-modal-root {
+    position: relative;
+    z-index: 9999;
+}
 .docx-preview-wrap {
-    position: fixed; inset: 0; z-index: 9999;
-    background: rgba(0,0,0,0.7);
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(6px);
-    display: flex; flex-direction: column;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 .docx-preview-toolbar {
     flex-shrink: 0;
-    display: flex; align-items: center; justify-content: space-between;
-    background: #0f172a; color: #f1f5f9;
-    padding: 10px 20px; gap: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0f172a;
+    color: #f1f5f9;
+    padding: 10px 20px;
+    gap: 12px;
     border-bottom: 1px solid #1e293b;
 }
 .docx-preview-body {
-    flex: 1; overflow-y: auto;
+    flex: 1;
+    overflow: auto;
     background: #1e293b;
-    display: flex; flex-direction: column; align-items: center;
+    display: flex;
+    justify-content: center;
     padding: 24px 16px 40px;
 }
-/* Override docx-preview styles */
+.docx-preview-content {
+    display: inline-block;
+    min-width: fit-content;
+}
 .docx-preview-body .docx-wrapper {
     background: transparent !important;
     padding: 0 !important;
 }
 .docx-preview-body .docx-wrapper > section.docx {
-    box-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
     margin: 8px auto !important;
 }
+.docx-preview-body .docx-wrapper > section.docx:last-child {
+    margin-bottom: 0 !important;
+}
 .btn-docx-print {
-    display: flex; align-items: center; gap: 6px;
-    background: #16a34a; color: #fff;
-    border: none; border-radius: 8px;
-    padding: 8px 20px; font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
     white-space: nowrap;
 }
-.btn-docx-print:hover { background: #15803d; }
-.btn-docx-print:disabled { background: #4b7a5e; cursor: not-allowed; }
-.btn-docx-close {
-    display: flex; align-items: center; gap: 4px;
-    background: transparent; color: #94a3b8;
-    border: 1px solid #334155; border-radius: 8px;
-    padding: 8px 14px; font-size: 13px;
-    cursor: pointer; transition: all 0.15s;
+.btn-docx-print:hover {
+    background: #15803d;
 }
-.btn-docx-close:hover { background: #1e293b; color: #f1f5f9; border-color: #64748b; }
-
+.btn-docx-print:disabled {
+    background: #4b7a5e;
+    cursor: not-allowed;
+}
+.btn-docx-close {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btn-docx-close:hover {
+    background: #1e293b;
+    color: #f1f5f9;
+    border-color: #64748b;
+}
 .docx-preview-wrap.table-layout-fixed .docx-preview-body section.docx table {
     table-layout: fixed !important;
     border-collapse: collapse !important;
 }
+.docx-preview-wrap.table-layout-fixed .docx-preview-body section.docx tr,
 .docx-preview-wrap.table-layout-fixed .docx-preview-body section.docx td,
 .docx-preview-wrap.table-layout-fixed .docx-preview-body section.docx th {
-    box-sizing: border-box !important;
-    overflow-wrap: anywhere !important;
-    word-break: break-word !important;
-    vertical-align: middle !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
 }
 
 @media print {
-    body > * { display: none !important; }
-    body > #docx-print-target {
-        display: block !important;
-        position: static !important;
-        width: 100% !important;
-        height: auto !important;
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
         background: #fff !important;
+    }
+    body {
+        overflow: visible !important;
+    }
+    body > * {
+        display: none !important;
+    }
+    body > #docx-preview-modal-root {
+        display: block !important;
+    }
+    #docx-preview-modal-root {
+        position: static !important;
+    }
+    #docx-preview-modal-root .docx-preview-wrap {
+        position: static !important;
+        inset: auto !important;
+        display: block !important;
+        background: #fff !important;
+        backdrop-filter: none !important;
+        overflow: visible !important;
+    }
+    #docx-preview-modal-root .docx-preview-toolbar {
+        display: none !important;
+    }
+    #docx-preview-modal-root .docx-preview-body {
+        display: block !important;
         overflow: visible !important;
         padding: 0 !important;
-    }
-    #docx-print-target .docx-wrapper {
         background: #fff !important;
-        padding: 0 !important;
-        margin: 0 !important;
     }
-    #docx-print-target section.docx {
-        box-shadow: none !important;
+    #docx-preview-modal-root .docx-preview-content {
+        display: block !important;
+        min-width: 0 !important;
+    }
+    #docx-preview-modal-root section.docx {
         margin: 0 auto !important;
         break-after: page;
         page-break-after: always;
     }
-    #docx-print-target section.docx:last-child {
+    #docx-preview-modal-root section.docx:last-child {
         break-after: auto;
         page-break-after: auto;
     }
-    #docx-print-target[data-table-fixed="1"] section.docx table {
-        table-layout: fixed !important;
-        border-collapse: collapse !important;
-    }
-    #docx-print-target[data-table-fixed="1"] section.docx td,
-    #docx-print-target[data-table-fixed="1"] section.docx th {
-        box-sizing: border-box !important;
-        overflow-wrap: anywhere !important;
-        word-break: break-word !important;
-        vertical-align: middle !important;
-    }
 }
-#docx-print-target { display: none; }
 `;
 
 export default function DocxPreviewModal({
@@ -128,16 +174,21 @@ export default function DocxPreviewModal({
     fixedTableLayout = false,
 }: Props) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const printTargetRef = useRef<HTMLDivElement>(null);
-    const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null);
+    const styleInjected = useRef(false);
+    const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const styleInjected = useRef(false);
     const printText = printButtonText || "In tài liệu";
 
-    // Inject CSS
     useEffect(() => {
-        if (styleInjected.current) return;
+        if (styleInjected.current || typeof document === "undefined") return;
+
+        const existingStyle = document.getElementById("docx-preview-modal-styles");
+        if (existingStyle) {
+            styleInjected.current = true;
+            return;
+        }
+
         const el = document.createElement("style");
         el.id = "docx-preview-modal-styles";
         el.textContent = PREVIEW_CSS;
@@ -145,85 +196,84 @@ export default function DocxPreviewModal({
         styleInjected.current = true;
     }, []);
 
-    // Tạo node print target trực tiếp dưới body để CSS print ổn định
     useEffect(() => {
         if (typeof document === "undefined") return;
-        setPrintRoot(document.body);
+        setPortalRoot(document.body);
     }, []);
 
-    // Ngăn body scroll khi mở
     useEffect(() => {
-        if (isOpen) document.body.style.overflow = "hidden";
-        else document.body.style.overflow = "";
-        return () => { document.body.style.overflow = ""; };
+        if (!isOpen) {
+            document.body.style.overflow = "";
+            return;
+        }
+
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = "";
+        };
     }, [isOpen]);
 
-    // ESC để đóng
     useEffect(() => {
-        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        if (!isOpen) return;
+
+        const handler = (event: KeyboardEvent) => {
+            if (event.key === "Escape") onClose();
+        };
+
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [onClose]);
+    }, [isOpen, onClose]);
 
-    // Render docx vào container khi blob thay đổi
     useEffect(() => {
         if (!isOpen || !docxBlob || !containerRef.current) return;
 
+        let cancelled = false;
+        const target = containerRef.current;
+
         setLoading(true);
         setError(null);
-        containerRef.current.innerHTML = "";
-        if (printTargetRef.current) printTargetRef.current.innerHTML = "";
+        target.innerHTML = "";
 
-        // Dynamic import để tránh SSR issues
-        import("docx-preview").then(({ renderAsync }) => {
-            const previewOptions = {
-                className: "docx-rendered",
-                inWrapper: true,
-                ignoreWidth: false,
-                ignoreHeight: false,
-                ignoreFonts: false,
-                breakPages: true,
-                useBase64URL: true,
-                renderChanges: false,
-                renderHeaders: true,
-                renderFooters: true,
-                renderFootnotes: true,
-                renderEndnotes: true,
-                experimental: true,
-            };
-            const printOptions = {
-                ...previewOptions,
-                inWrapper: false,
-            };
-
-            // Render vào preview container
-            Promise.all([
-                renderAsync(docxBlob, containerRef.current!, undefined, previewOptions),
-                printTargetRef.current
-                    ? renderAsync(docxBlob.slice(0), printTargetRef.current!, undefined, printOptions)
-                    : Promise.resolve(),
-            ])
-                .then(() => setLoading(false))
-                .catch(err => {
-                    console.error("docx-preview error:", err);
-                    setError("Không thể hiển thị preview. Vui lòng thử lại.");
-                    setLoading(false);
+        import("docx-preview")
+            .then(async ({ renderAsync }) => {
+                await renderAsync(docxBlob, target, undefined, {
+                    inWrapper: true,
+                    hideWrapperOnPrint: true,
+                    ignoreWidth: false,
+                    ignoreHeight: false,
+                    ignoreFonts: false,
+                    breakPages: true,
+                    ignoreLastRenderedPageBreak: false,
+                    useBase64URL: true,
+                    renderChanges: false,
+                    renderHeaders: true,
+                    renderFooters: true,
+                    renderFootnotes: true,
+                    renderEndnotes: true,
+                    experimental: true,
                 });
-        }).catch(() => {
-            setError("Không thể tải thư viện preview.");
-            setLoading(false);
-        });
-    }, [isOpen, docxBlob, printRoot]);
+
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            })
+            .catch((renderError) => {
+                if (cancelled) return;
+
+                console.error("docx-preview error:", renderError);
+                setError("Không thể hiển thị preview. Vui lòng thử lại.");
+                setLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+            target.innerHTML = "";
+        };
+    }, [isOpen, docxBlob]);
 
     const handlePrint = () => {
-        const printTarget = document.getElementById("docx-print-target");
-        if (!printTarget || loading || error) return;
+        if (loading || error || !containerRef.current?.childElementCount) return;
 
-        const cleanup = () => { printTarget.style.display = "none"; };
-        printTarget.style.display = "block";
-        window.addEventListener("afterprint", cleanup, { once: true });
-
-        // Chờ đủ 2 frame để browser hoàn tất layout trước khi print
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 window.print();
@@ -231,35 +281,33 @@ export default function DocxPreviewModal({
         });
     };
 
-    if (!isOpen) return null;
+    if (!isOpen || !portalRoot) return null;
 
-    return (
-        <>
-            {/* Target riêng cho print đặt trực tiếp ở body để tránh bị parent ẩn khi in */}
-            {printRoot
-                ? createPortal(
-                    <div
-                        id="docx-print-target"
-                        ref={printTargetRef}
-                        data-table-fixed={fixedTableLayout ? "1" : "0"}
-                    />,
-                    printRoot
-                )
-                : null}
-
-            {/* Overlay */}
-            <div className={`docx-preview-wrap ${fixedTableLayout ? "table-layout-fixed" : ""}`} role="dialog" aria-modal="true">
-                {/* Toolbar */}
+    return createPortal(
+        <div id="docx-preview-modal-root">
+            <div
+                className={`docx-preview-wrap ${fixedTableLayout ? "table-layout-fixed" : ""}`}
+                role="dialog"
+                aria-modal="true"
+            >
                 <div className="docx-preview-toolbar">
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                         <FileText style={{ width: 20, height: 20, color: "#60a5fa", flexShrink: 0 }} />
                         <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            <div
+                                style={{
+                                    fontWeight: 700,
+                                    fontSize: 15,
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                }}
+                            >
                                 {title || "Xem trước tài liệu"}
                             </div>
-                            {subtitle && (
+                            {subtitle ? (
                                 <div style={{ fontSize: 12, color: "#94a3b8" }}>{subtitle}</div>
-                            )}
+                            ) : null}
                         </div>
                     </div>
 
@@ -280,24 +328,43 @@ export default function DocxPreviewModal({
                     </div>
                 </div>
 
-                {/* Body */}
                 <div className="docx-preview-body" onClick={onClose}>
-                    <div style={{ width: "100%", maxWidth: 900 }} onClick={e => e.stopPropagation()}>
-                        {loading && (
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "80px 0", color: "#94a3b8" }}>
+                    <div className="docx-preview-content" onClick={(event) => event.stopPropagation()}>
+                        {loading ? (
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 12,
+                                    padding: "80px 0",
+                                    color: "#94a3b8",
+                                }}
+                            >
                                 <Loader2 style={{ width: 36, height: 36, animation: "spin 1s linear infinite" }} />
                                 <span style={{ fontSize: 14 }}>Đang tải xem trước...</span>
                             </div>
-                        )}
-                        {error && (
+                        ) : null}
+
+                        {error ? (
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0" }}>
-                                <div style={{ background: "#7f1d1d", color: "#fca5a5", borderRadius: 12, padding: "20px 32px", maxWidth: 400, textAlign: "center" }}>
+                                <div
+                                    style={{
+                                        background: "#7f1d1d",
+                                        color: "#fca5a5",
+                                        borderRadius: 12,
+                                        padding: "20px 32px",
+                                        maxWidth: 400,
+                                        textAlign: "center",
+                                    }}
+                                >
                                     <div style={{ fontWeight: 700, marginBottom: 6 }}>Lỗi hiển thị</div>
                                     <div style={{ fontSize: 13 }}>{error}</div>
                                 </div>
                             </div>
-                        )}
-                        {/* docx-preview render target */}
+                        ) : null}
+
                         <div
                             ref={containerRef}
                             style={{ display: loading || error ? "none" : "block" }}
@@ -305,6 +372,7 @@ export default function DocxPreviewModal({
                     </div>
                 </div>
             </div>
-        </>
+        </div>,
+        portalRoot
     );
 }

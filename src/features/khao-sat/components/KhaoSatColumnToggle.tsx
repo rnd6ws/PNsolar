@@ -7,7 +7,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export type KhaoSatColumnKey = "ma" | "ngay" | "nguoi" | "loai" | "diaChi" | "khachHang";
+export type KhaoSatColumnKey = "ma" | "ngay" | "nguoi" | "loai" | "diaChi" | "khachHang" | "nguoiLienHe";
 
 export const KS_ALL_COLUMNS: { key: KhaoSatColumnKey; label: string }[] = [
     { key: "ma", label: "Mã khảo sát" },
@@ -16,6 +16,7 @@ export const KS_ALL_COLUMNS: { key: KhaoSatColumnKey; label: string }[] = [
     { key: "loai", label: "Loại công trình" },
     { key: "diaChi", label: "Địa chỉ CT" },
     { key: "khachHang", label: "Khách hàng" },
+    { key: "nguoiLienHe", label: "Người liên hệ" },
 ];
 
 interface Props {

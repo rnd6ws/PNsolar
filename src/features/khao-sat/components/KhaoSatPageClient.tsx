@@ -7,7 +7,7 @@ import FilterSelect from "@/components/FilterSelect";
 import KhaoSatColumnToggle, { type KhaoSatColumnKey, KS_ALL_COLUMNS } from "./KhaoSatColumnToggle";
 import KhaoSatList from "./KhaoSatList";
 
-const DEFAULT_COLS: KhaoSatColumnKey[] = ["ngay", "nguoi", "loai", "diaChi", "khachHang"];
+const DEFAULT_COLS: KhaoSatColumnKey[] = ["ngay", "nguoi", "loai", "khachHang", "nguoiLienHe", "diaChi"];
 
 type StringOption = { value: string; label: string };
 
