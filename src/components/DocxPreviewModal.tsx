@@ -136,15 +136,19 @@ body {
 #docx-preview-frame-root .docx-wrapper > section.docx:last-child {
     margin-bottom: 0 !important;
 }
-#docx-preview-frame-root table td,
-#docx-preview-frame-root table th {
+#docx-preview-frame-root section.docx {
+    overflow: visible !important;
+}
+#docx-preview-frame-root section.docx table td,
+#docx-preview-frame-root section.docx table th {
+    box-sizing: border-box;
     overflow-wrap: break-word;
     word-break: normal;
 }
-#docx-preview-frame-root table td span,
-#docx-preview-frame-root table th span {
-    overflow-wrap: anywhere !important;
-    word-break: normal !important;
+#docx-preview-frame-root section.docx table td span,
+#docx-preview-frame-root section.docx table th span {
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 @media print {
     html, body {
@@ -165,12 +169,7 @@ body {
     }
     #docx-preview-frame-root section.docx {
         margin: 0 auto !important;
-        break-after: page;
-        page-break-after: always;
-    }
-    #docx-preview-frame-root section.docx:last-child {
-        break-after: auto;
-        page-break-after: auto;
+        overflow: visible !important;
     }
 }
 `;
@@ -188,30 +187,72 @@ const IFRAME_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
-type TableRenderHint = {
-    hasFloatingPosition: boolean;
-    isFixedLayout: boolean;
-    widthTwip: number | null;
-    positionXTwip: number | null;
-    gridWidthsTwip: number[];
-};
-
-type PageRenderHint = {
-    pageWidthTwip: number | null;
-    pageHeightTwip: number | null;
-    marginTopTwip: number | null;
-    marginRightTwip: number | null;
-    marginBottomTwip: number | null;
-    marginLeftTwip: number | null;
-    pageNumberStart: number;
-    hasPageNumberField: boolean;
-};
+const PRINT_IFRAME_HTML = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+        body {
+            overflow: visible;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        #docx-print-frame-root section.docx {
+            margin: 0 auto !important;
+            overflow: visible !important;
+            box-shadow: none !important;
+        }
+        #docx-print-frame-root section.docx > article {
+            margin-bottom: 0 !important;
+        }
+        #docx-print-frame-root section.docx table td,
+        #docx-print-frame-root section.docx table th {
+            box-sizing: border-box;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+        #docx-print-frame-root section.docx table td span,
+        #docx-print-frame-root section.docx table th span {
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+        @page {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="docx-print-frame-root"></div>
+</body>
+</html>`;
 
 type ParagraphTabStopHint = {
     positionTwip: number | null;
     leader: string | null;
     style: string | null;
 };
+
+type TableRenderHint = {
+    isFixedLayout: boolean;
+    widthTwip: number | null;
+    gridWidthsTwip: number[];
+    positionXTwip: number | null;
+};
+
+type PageViewportHint = {
+    widthTwip: number | null;
+    heightTwip: number | null;
+};
+
+const WORD_NAMESPACE = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const DEFAULT_TAB_STOP_TWIP = 720;
+const MAX_TAB_STOPS = 50;
+const TAB_TAIL_CLASS = "docx-tab-tail";
 
 function getWordAttr(element: Element | null, name: string): string | null {
     if (!element) return null;
@@ -228,30 +269,162 @@ function twipToPt(value: number): string {
     return `${value / 20}pt`;
 }
 
+function resolveViewportSize(viewportHint: PageViewportHint): { width: string; height: string } {
+    return {
+        width: viewportHint.widthTwip != null ? twipToPt(viewportHint.widthTwip) : "8.27in",
+        height: viewportHint.heightTwip != null ? twipToPt(viewportHint.heightTwip) : "11.69in",
+    };
+}
+
+function findWordAncestor(node: Node | null, localName: string): Element | null {
+    let current = node?.parentNode ?? null;
+
+    while (current) {
+        if (current.nodeType === Node.ELEMENT_NODE) {
+            const element = current as Element;
+            if (element.namespaceURI === WORD_NAMESPACE && element.localName === localName) {
+                return element;
+            }
+        }
+
+        current = current.parentNode;
+    }
+
+    return null;
+}
+
+function getWordTextContent(element: Element | null): string {
+    if (!element) return "";
+
+    return Array.from(element.getElementsByTagNameNS(WORD_NAMESPACE, "t"))
+        .map((textNode) => textNode.textContent ?? "")
+        .join("");
+}
+
+function paragraphHasTabCharacter(paragraphNode: Element): boolean {
+    const tabNodes = Array.from(paragraphNode.getElementsByTagNameNS(WORD_NAMESPACE, "tab"));
+    return tabNodes.some((tabNode) => findWordAncestor(tabNode, "r") != null);
+}
+
+function computePixelToPoint(iframeDocument: Document): number {
+    const container = iframeDocument.body ?? iframeDocument.documentElement;
+    if (!container) return 72 / 96;
+
+    const temp = iframeDocument.createElement("div");
+    temp.style.width = "100pt";
+    temp.style.position = "absolute";
+    temp.style.visibility = "hidden";
+    temp.style.pointerEvents = "none";
+    container.appendChild(temp);
+
+    const measuredWidth = temp.offsetWidth;
+    temp.remove();
+
+    return measuredWidth > 0 ? 100 / measuredWidth : 72 / 96;
+}
+
+function waitForNextFrame(targetWindow: Window | null | undefined): Promise<void> {
+    return new Promise((resolve) => {
+        const schedule = targetWindow?.requestAnimationFrame?.bind(targetWindow) ?? requestAnimationFrame;
+        schedule(() => resolve());
+    });
+}
+
+function waitForTimeout(targetWindow: Window | null | undefined, timeoutMs: number): Promise<void> {
+    return new Promise((resolve) => {
+        const schedule = targetWindow?.setTimeout?.bind(targetWindow) ?? window.setTimeout.bind(window);
+        schedule(() => resolve(), timeoutMs);
+    });
+}
+
+async function waitForStableFrameLayout(iframeDocument: Document, settleMs = 0): Promise<void> {
+    const targetWindow = iframeDocument.defaultView;
+    const fontFaceSet = (iframeDocument as Document & { fonts?: { ready?: Promise<unknown> } }).fonts;
+
+    try {
+        await fontFaceSet?.ready;
+    } catch {
+        // Ignore font loading issues and continue with the best available layout.
+    }
+
+    if (settleMs > 0) {
+        await waitForTimeout(targetWindow, settleMs);
+    }
+
+    await waitForNextFrame(targetWindow);
+    await waitForNextFrame(targetWindow);
+}
+
+async function normalizePreviewDocxBlob(docxBlob: Blob): Promise<Blob> {
+    const [{ default: PizZip }] = await Promise.all([import("pizzip")]);
+    const buffer = await docxBlob.arrayBuffer();
+    const zip = new PizZip(buffer);
+    const documentEntry = zip.file("word/document.xml");
+    const documentXml = documentEntry?.asText();
+
+    if (!documentXml || typeof DOMParser === "undefined" || typeof XMLSerializer === "undefined") {
+        return docxBlob;
+    }
+
+    const xml = new DOMParser().parseFromString(documentXml, "application/xml");
+    const pageBreakNodes = Array.from(xml.getElementsByTagNameNS(WORD_NAMESPACE, "lastRenderedPageBreak"));
+    let changed = false;
+
+    pageBreakNodes.forEach((pageBreakNode) => {
+        const isInsideTable = findWordAncestor(pageBreakNode, "tbl") != null;
+        const runNode = findWordAncestor(pageBreakNode, "r");
+
+        if (!isInsideTable || !runNode) {
+            return;
+        }
+
+        if (getWordTextContent(runNode).trim().length !== 0) {
+            return;
+        }
+
+        pageBreakNode.parentNode?.removeChild(pageBreakNode);
+        changed = true;
+    });
+
+    if (!changed) {
+        return docxBlob;
+    }
+
+    zip.file("word/document.xml", new XMLSerializer().serializeToString(xml));
+
+    return zip.generate({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }) as Blob;
+}
+
 async function extractTableHints(docxBlob: Blob): Promise<TableRenderHint[]> {
     const [{ default: PizZip }] = await Promise.all([import("pizzip")]);
     const buffer = await docxBlob.arrayBuffer();
     const zip = new PizZip(buffer);
     const documentXml = zip.file("word/document.xml")?.asText();
-    if (!documentXml || typeof DOMParser === "undefined") return [];
+
+    if (!documentXml || typeof DOMParser === "undefined") {
+        return [];
+    }
 
     const xml = new DOMParser().parseFromString(documentXml, "application/xml");
-    const wordNamespace = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-    const body = xml.getElementsByTagNameNS(wordNamespace, "body")[0];
-    if (!body) return [];
+    const body = xml.getElementsByTagNameNS(WORD_NAMESPACE, "body")[0];
+    if (!body) {
+        return [];
+    }
 
-    return Array.from(body.getElementsByTagNameNS(wordNamespace, "tbl")).map((tableNode) => {
-        const tableProperties = tableNode.getElementsByTagNameNS(wordNamespace, "tblPr")[0] ?? null;
-        const tablePosition = tableProperties?.getElementsByTagNameNS(wordNamespace, "tblpPr")[0] ?? null;
-        const tableLayout = tableProperties?.getElementsByTagNameNS(wordNamespace, "tblLayout")[0] ?? null;
-        const tableWidth = tableProperties?.getElementsByTagNameNS(wordNamespace, "tblW")[0] ?? null;
-        const tableGrid = tableNode.getElementsByTagNameNS(wordNamespace, "tblGrid")[0] ?? null;
+    return Array.from(body.getElementsByTagNameNS(WORD_NAMESPACE, "tbl")).map((tableNode) => {
+        const tableProperties = tableNode.getElementsByTagNameNS(WORD_NAMESPACE, "tblPr")[0] ?? null;
+        const tableLayout = tableProperties?.getElementsByTagNameNS(WORD_NAMESPACE, "tblLayout")[0] ?? null;
+        const tableWidth = tableProperties?.getElementsByTagNameNS(WORD_NAMESPACE, "tblW")[0] ?? null;
+        const tablePosition = tableProperties?.getElementsByTagNameNS(WORD_NAMESPACE, "tblpPr")[0] ?? null;
+        const tableGrid = tableNode.getElementsByTagNameNS(WORD_NAMESPACE, "tblGrid")[0] ?? null;
         const gridColumns = tableGrid
-            ? Array.from(tableGrid.getElementsByTagNameNS(wordNamespace, "gridCol"))
+            ? Array.from(tableGrid.getElementsByTagNameNS(WORD_NAMESPACE, "gridCol"))
             : [];
 
         return {
-            hasFloatingPosition: !!tablePosition,
             isFixedLayout: getWordAttr(tableLayout, "type") === "fixed",
             widthTwip: parseTwip(getWordAttr(tableWidth, "w")),
             positionXTwip: parseTwip(getWordAttr(tablePosition, "tblpX")),
@@ -262,188 +435,230 @@ async function extractTableHints(docxBlob: Blob): Promise<TableRenderHint[]> {
     });
 }
 
-async function extractPageHints(docxBlob: Blob): Promise<PageRenderHint[]> {
+async function extractPageViewportHint(docxBlob: Blob): Promise<PageViewportHint> {
     const [{ default: PizZip }] = await Promise.all([import("pizzip")]);
     const buffer = await docxBlob.arrayBuffer();
     const zip = new PizZip(buffer);
     const documentXml = zip.file("word/document.xml")?.asText();
-    if (!documentXml || typeof DOMParser === "undefined") return [];
 
-    const footerEntries = zip.file(/word\/footer\d+\.xml/) ?? [];
-    const hasPageNumberField = footerEntries.some((entry) => {
-        const content = entry.asText();
-        return content.includes("PAGE");
-    });
-
-    const xml = new DOMParser().parseFromString(documentXml, "application/xml");
-    const wordNamespace = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-    const sectionNodes = Array.from(xml.getElementsByTagNameNS(wordNamespace, "sectPr"));
-
-    return sectionNodes.map((sectionNode) => {
-        const pageSize = sectionNode.getElementsByTagNameNS(wordNamespace, "pgSz")[0] ?? null;
-        const pageMargins = sectionNode.getElementsByTagNameNS(wordNamespace, "pgMar")[0] ?? null;
-        const pageNumberType = sectionNode.getElementsByTagNameNS(wordNamespace, "pgNumType")[0] ?? null;
-
+    if (!documentXml || typeof DOMParser === "undefined") {
         return {
-            pageWidthTwip: parseTwip(getWordAttr(pageSize, "w")),
-            pageHeightTwip: parseTwip(getWordAttr(pageSize, "h")),
-            marginTopTwip: parseTwip(getWordAttr(pageMargins, "top")),
-            marginRightTwip: parseTwip(getWordAttr(pageMargins, "right")),
-            marginBottomTwip: parseTwip(getWordAttr(pageMargins, "bottom")),
-            marginLeftTwip: parseTwip(getWordAttr(pageMargins, "left")),
-            pageNumberStart: parseTwip(getWordAttr(pageNumberType, "start")) ?? 1,
-            hasPageNumberField,
+            widthTwip: null,
+            heightTwip: null,
         };
+    }
+
+    const xml = new DOMParser().parseFromString(documentXml, "application/xml");
+    const sectionNodes = Array.from(xml.getElementsByTagNameNS(WORD_NAMESPACE, "sectPr"));
+
+    let widthTwip: number | null = null;
+    let heightTwip: number | null = null;
+
+    sectionNodes.forEach((sectionNode) => {
+        const pageSize = sectionNode.getElementsByTagNameNS(WORD_NAMESPACE, "pgSz")[0] ?? null;
+        const nextWidth = parseTwip(getWordAttr(pageSize, "w"));
+        const nextHeight = parseTwip(getWordAttr(pageSize, "h"));
+
+        if (nextWidth != null) {
+            widthTwip = widthTwip == null ? nextWidth : Math.max(widthTwip, nextWidth);
+        }
+
+        if (nextHeight != null) {
+            heightTwip = heightTwip == null ? nextHeight : Math.max(heightTwip, nextHeight);
+        }
     });
+
+    return {
+        widthTwip,
+        heightTwip,
+    };
 }
 
-async function extractParagraphTabHints(docxBlob: Blob): Promise<ParagraphTabStopHint[][]> {
+async function extractParagraphTabHints(docxBlob: Blob): Promise<{
+    defaultTabStopTwip: number | null;
+    paragraphs: ParagraphTabStopHint[][];
+}> {
     const [{ default: PizZip }] = await Promise.all([import("pizzip")]);
     const buffer = await docxBlob.arrayBuffer();
     const zip = new PizZip(buffer);
     const documentXml = zip.file("word/document.xml")?.asText();
-    if (!documentXml || typeof DOMParser === "undefined") return [];
+    if (!documentXml || typeof DOMParser === "undefined") {
+        return {
+            defaultTabStopTwip: DEFAULT_TAB_STOP_TWIP,
+            paragraphs: [],
+        };
+    }
 
     const xml = new DOMParser().parseFromString(documentXml, "application/xml");
-    const wordNamespace = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-    const body = xml.getElementsByTagNameNS(wordNamespace, "body")[0];
-    if (!body) return [];
+    const body = xml.getElementsByTagNameNS(WORD_NAMESPACE, "body")[0];
+    const settingsXml = zip.file("word/settings.xml")?.asText();
+    const settings = settingsXml
+        ? new DOMParser().parseFromString(settingsXml, "application/xml")
+        : null;
+    const defaultTabStopNode = settings?.getElementsByTagNameNS(WORD_NAMESPACE, "defaultTabStop")[0] ?? null;
 
-    return Array.from(body.getElementsByTagNameNS(wordNamespace, "p")).map((paragraphNode) => {
-        const paragraphProperties = paragraphNode.getElementsByTagNameNS(wordNamespace, "pPr")[0] ?? null;
-        const tabsNode = paragraphProperties?.getElementsByTagNameNS(wordNamespace, "tabs")[0] ?? null;
-        const tabNodes = tabsNode ? Array.from(tabsNode.getElementsByTagNameNS(wordNamespace, "tab")) : [];
+    if (!body) {
+        return {
+            defaultTabStopTwip: parseTwip(getWordAttr(defaultTabStopNode, "val")) ?? DEFAULT_TAB_STOP_TWIP,
+            paragraphs: [],
+        };
+    }
 
-        return tabNodes.map((tabNode) => ({
-            positionTwip: parseTwip(getWordAttr(tabNode, "pos")),
-            leader: getWordAttr(tabNode, "leader"),
-            style: getWordAttr(tabNode, "val"),
-        }));
+    return {
+        defaultTabStopTwip: parseTwip(getWordAttr(defaultTabStopNode, "val")) ?? DEFAULT_TAB_STOP_TWIP,
+        paragraphs: Array.from(body.getElementsByTagNameNS(WORD_NAMESPACE, "p"))
+            .filter((paragraphNode) => paragraphHasTabCharacter(paragraphNode))
+            .map((paragraphNode) => {
+                const paragraphProperties = paragraphNode.getElementsByTagNameNS(WORD_NAMESPACE, "pPr")[0] ?? null;
+                const tabsNode = paragraphProperties?.getElementsByTagNameNS(WORD_NAMESPACE, "tabs")[0] ?? null;
+                const tabNodes = tabsNode ? Array.from(tabsNode.getElementsByTagNameNS(WORD_NAMESPACE, "tab")) : [];
+
+                return tabNodes.map((tabNode) => ({
+                    positionTwip: parseTwip(getWordAttr(tabNode, "pos")),
+                    leader: getWordAttr(tabNode, "leader"),
+                    style: getWordAttr(tabNode, "val"),
+                }));
+            }),
+    };
+}
+
+function resetParagraphTabStops(tabSpans: HTMLElement[]) {
+    tabSpans.forEach((tabSpan) => {
+        tabSpan.innerHTML = "&emsp;";
+        tabSpan.style.wordSpacing = "";
+        tabSpan.style.textDecoration = "inherit";
+        tabSpan.style.textDecorationStyle = "";
     });
 }
 
-function applyTableHints(iframeDocument: Document, tableHints: TableRenderHint[]) {
+function unwrapParagraphTabTail(paragraph: HTMLParagraphElement) {
+    const existingTail = Array.from(paragraph.children).find((child) => child.classList.contains(TAB_TAIL_CLASS));
+    if (!existingTail) return;
+
+    while (existingTail.firstChild) {
+        paragraph.insertBefore(existingTail.firstChild, existingTail);
+    }
+
+    existingTail.remove();
+}
+
+function resolveParagraphTabStops(
+    tabStops: ParagraphTabStopHint[],
+    defaultTabStopPt: number,
+    paragraphWidthPt: number
+) {
+    const resolvedTabStops = tabStops
+        .map((tabStop) => ({
+            positionPt: tabStop.positionTwip != null ? tabStop.positionTwip / 20 : defaultTabStopPt,
+            leader: tabStop.leader,
+            style: tabStop.style ?? "left",
+        }))
+        .filter((tabStop): tabStop is { positionPt: number; leader: string | null; style: string } => tabStop.positionPt != null)
+        .sort((left, right) => left.positionPt - right.positionPt)
+        .map((tabStop) => ({
+            pos: tabStop.positionPt,
+            leader: tabStop.leader,
+            style: tabStop.style,
+        }));
+
+    if (resolvedTabStops.length === 0) {
+        resolvedTabStops.push({
+            pos: defaultTabStopPt,
+            leader: null,
+            style: "left",
+        });
+    }
+
+    const lastStop = resolvedTabStops[resolvedTabStops.length - 1];
+
+    for (
+        let nextPosition = lastStop.pos + defaultTabStopPt;
+        nextPosition < paragraphWidthPt && resolvedTabStops.length < MAX_TAB_STOPS;
+        nextPosition += defaultTabStopPt
+    ) {
+        resolvedTabStops.push({
+            pos: nextPosition,
+            leader: null,
+            style: "left",
+        });
+    }
+
+    return resolvedTabStops;
+}
+
+function applyTableHints(iframeDocument: Document, tableHints: TableRenderHint[], rootSelector: string) {
     const renderedTables = Array.from(
-        iframeDocument.querySelectorAll<HTMLTableElement>("#docx-preview-frame-root section.docx article table")
+        iframeDocument.querySelectorAll<HTMLTableElement>(`${rootSelector} section.docx article table`)
     );
 
     renderedTables.forEach((table, index) => {
         const hint = tableHints[index];
         if (!hint) return;
 
+        table.style.maxWidth = "none";
+
         if (hint.isFixedLayout) {
-            table.style.setProperty("table-layout", "fixed");
+            table.style.tableLayout = "fixed";
         }
 
         if (hint.widthTwip != null) {
-            table.style.setProperty("width", twipToPt(hint.widthTwip));
+            const width = twipToPt(hint.widthTwip);
+            table.style.width = width;
         }
-
-        const renderedColumns = table.querySelectorAll<HTMLTableColElement>("colgroup > col");
-        hint.gridWidthsTwip.forEach((width, columnIndex) => {
-            renderedColumns[columnIndex]?.style.setProperty("width", twipToPt(width));
-        });
-
-        if (!hint.hasFloatingPosition) return;
-
-        table.style.setProperty("float", "none");
-        table.style.setProperty("display", "table");
-        table.style.removeProperty("margin-right");
 
         if (hint.positionXTwip != null) {
-            table.style.setProperty("position", "relative");
-            table.style.setProperty("left", twipToPt(hint.positionXTwip));
-            table.style.removeProperty("margin-left");
+            table.style.marginLeft = twipToPt(hint.positionXTwip);
         }
+
+        const renderedColumns = Array.from(table.querySelectorAll<HTMLTableColElement>("colgroup > col"));
+        hint.gridWidthsTwip.forEach((widthTwip, columnIndex) => {
+            const renderedColumn = renderedColumns[columnIndex];
+            if (!renderedColumn) return;
+
+            const width = twipToPt(widthTwip);
+            renderedColumn.style.width = width;
+        });
     });
 }
 
-function applyPageHints(iframeDocument: Document, pageHints: PageRenderHint[]) {
-    if (pageHints.length === 0) return;
-
-    const renderedPages = Array.from(
-        iframeDocument.querySelectorAll<HTMLElement>("#docx-preview-frame-root section.docx")
+function preserveEmptyParagraphSpacing(iframeDocument: Document, rootSelector: string) {
+    const renderedParagraphs = Array.from(
+        iframeDocument.querySelectorAll<HTMLParagraphElement>(`${rootSelector} section.docx article p`)
     );
-    if (renderedPages.length === 0) return;
 
-    const primaryPageHint = pageHints[0];
+    renderedParagraphs.forEach((paragraph) => {
+        if (paragraph.closest("table")) return;
+        if (paragraph.childElementCount !== 0) return;
+        if ((paragraph.textContent ?? "").trim().length !== 0) return;
 
-    if (primaryPageHint.pageWidthTwip != null && primaryPageHint.pageHeightTwip != null) {
-        const pageStyle = iframeDocument.createElement("style");
-        pageStyle.textContent = `@page { size: ${twipToPt(primaryPageHint.pageWidthTwip)} ${twipToPt(primaryPageHint.pageHeightTwip)}; margin: 0; }`;
-        iframeDocument.head.appendChild(pageStyle);
-    }
-
-    renderedPages.forEach((page, index) => {
-        const hint = pageHints[Math.min(index, pageHints.length - 1)] ?? primaryPageHint;
-
-        if (hint.pageWidthTwip != null) {
-            page.style.setProperty("width", twipToPt(hint.pageWidthTwip));
-        }
-
-        if (hint.pageHeightTwip != null) {
-            page.style.setProperty("min-height", twipToPt(hint.pageHeightTwip));
-            page.style.setProperty("height", twipToPt(hint.pageHeightTwip));
-        }
-
-        if (hint.marginTopTwip != null) {
-            page.style.setProperty("padding-top", twipToPt(hint.marginTopTwip));
-        }
-
-        if (hint.marginRightTwip != null) {
-            page.style.setProperty("padding-right", twipToPt(hint.marginRightTwip));
-        }
-
-        if (hint.marginBottomTwip != null) {
-            page.style.setProperty("padding-bottom", twipToPt(hint.marginBottomTwip));
-        }
-
-        if (hint.marginLeftTwip != null) {
-            page.style.setProperty("padding-left", twipToPt(hint.marginLeftTwip));
-        }
-
-        if (!hint.hasPageNumberField) return;
-
-        const footer = page.querySelector<HTMLElement>(":scope > footer");
-        if (!footer) return;
-
-        const numberTargets = Array.from(footer.querySelectorAll<HTMLElement>("p, span"))
-            .filter((element) => /^\d+$/.test((element.textContent || "").trim()));
-        const target = numberTargets[numberTargets.length - 1];
-        if (!target) return;
-
-        target.textContent = String(hint.pageNumberStart + index);
+        paragraph.textContent = "\u00A0";
     });
 }
 
-function recalculateTabStop(tabSpan: HTMLElement, tabStops: ParagraphTabStopHint[]) {
-    if (tabStops.length === 0) return;
-
+function recalculateTabStop(
+    tabSpan: HTMLElement,
+    tabStops: ParagraphTabStopHint[],
+    defaultTabStopPt: number,
+    pixelToPoint: number
+) {
     const paragraph = tabSpan.closest("p");
     if (!paragraph) return;
 
     const paragraphRect = paragraph.getBoundingClientRect();
-    const tabRect = tabSpan.getBoundingClientRect();
     const paragraphStyles = getComputedStyle(paragraph);
+    const resolvedTabStops = resolveParagraphTabStops(tabStops, defaultTabStopPt, paragraphRect.width * pixelToPoint);
+
     const marginLeft = Number.parseFloat(paragraphStyles.marginLeft || "0") || 0;
     const paragraphOffsetLeft = paragraphRect.left + marginLeft;
-    const currentLeftPt = (tabRect.left - paragraphOffsetLeft) * (72 / 96);
-    const nextStop = tabStops
-        .map((tabStop) => ({
-            positionPt: tabStop.positionTwip != null ? tabStop.positionTwip / 20 : null,
-            leader: tabStop.leader,
-            style: tabStop.style,
-        }))
-        .filter((tabStop): tabStop is { positionPt: number; leader: string | null; style: string | null } => tabStop.positionPt != null)
-        .sort((left, right) => left.positionPt - right.positionPt)
-        .find((tabStop) => tabStop.style !== "clear" && tabStop.positionPt > currentLeftPt);
+    const currentLeftPt = (tabSpan.getBoundingClientRect().left - paragraphOffsetLeft) * pixelToPoint;
+    const nextStop = resolvedTabStops.find((tabStop) => tabStop.style !== "clear" && tabStop.pos > currentLeftPt);
 
     if (!nextStop) return;
 
     const allTabSpans = Array.from(paragraph.querySelectorAll<HTMLElement>(".docx-tab-stop"));
     const nextTabIndex = allTabSpans.indexOf(tabSpan) + 1;
     const range = paragraph.ownerDocument.createRange();
-    range.setStart(tabSpan, 0);
+    range.setStart(tabSpan, 1);
 
     if (nextTabIndex < allTabSpans.length) {
         range.setEndBefore(allTabSpans[nextTabIndex]);
@@ -452,18 +667,17 @@ function recalculateTabStop(tabSpan: HTMLElement, tabStops: ParagraphTabStopHint
     }
 
     const trailingRect = range.getBoundingClientRect();
-    let targetWidthPt = nextStop.positionPt - currentLeftPt;
+    let targetWidthPt = nextStop.pos - currentLeftPt;
 
     if (nextStop.style === "right" || nextStop.style === "center") {
         const multiplier = nextStop.style === "center" ? 0.5 : 1;
-        const offsetPt = (trailingRect.left + trailingRect.width * multiplier - paragraphOffsetLeft) * (72 / 96);
-        targetWidthPt = nextStop.positionPt - offsetPt;
+        const offsetPt = (trailingRect.left + trailingRect.width * multiplier - (paragraphRect.left - marginLeft)) * pixelToPoint;
+        targetWidthPt = nextStop.pos - offsetPt;
     }
 
     tabSpan.innerHTML = "&nbsp;";
-    tabSpan.style.wordSpacing = `${Math.max(targetWidthPt, 1).toFixed(0)}pt`;
     tabSpan.style.textDecoration = "inherit";
-    tabSpan.style.display = "inline";
+    tabSpan.style.wordSpacing = `${Math.max(targetWidthPt, 1).toFixed(0)}pt`;
 
     if (nextStop.leader === "dot" || nextStop.leader === "middleDot") {
         tabSpan.style.textDecoration = "underline";
@@ -474,19 +688,96 @@ function recalculateTabStop(tabSpan: HTMLElement, tabStops: ParagraphTabStopHint
     }
 }
 
-function applyParagraphTabHints(iframeDocument: Document, paragraphTabHints: ParagraphTabStopHint[][]) {
+function applySingleLeftTabTailWrapper(
+    paragraph: HTMLParagraphElement,
+    tabSpan: HTMLElement,
+    tabStops: ParagraphTabStopHint[],
+    defaultTabStopPt: number,
+    pixelToPoint: number
+) {
+    if (tabStops.length !== 1) return;
+
+    const paragraphRect = paragraph.getBoundingClientRect();
+    const paragraphStyles = getComputedStyle(paragraph);
+    const resolvedTabStops = resolveParagraphTabStops(tabStops, defaultTabStopPt, paragraphRect.width * pixelToPoint);
+    const marginLeft = Number.parseFloat(paragraphStyles.marginLeft || "0") || 0;
+    const paragraphOffsetLeft = paragraphRect.left + marginLeft;
+    const currentLeftPt = (tabSpan.getBoundingClientRect().left - paragraphOffsetLeft) * pixelToPoint;
+    const nextStop = resolvedTabStops.find((tabStop) => tabStop.style !== "clear" && tabStop.pos > currentLeftPt);
+
+    if (!nextStop || nextStop.style !== "left") return;
+
+    const followingNodes: ChildNode[] = [];
+    let sibling = tabSpan.nextSibling;
+
+    while (sibling) {
+        const nextSibling = sibling.nextSibling;
+        followingNodes.push(sibling);
+        sibling = nextSibling;
+    }
+
+    if (followingNodes.length === 0) return;
+    if (!followingNodes.some((node) => (node.textContent ?? "").trim().length !== 0)) return;
+
+    const tail = paragraph.ownerDocument.createElement("span");
+    tail.className = TAB_TAIL_CLASS;
+    tail.style.display = "inline-block";
+    tail.style.width = `calc(100% - ${nextStop.pos.toFixed(2)}pt)`;
+    tail.style.verticalAlign = "top";
+    tail.style.whiteSpace = "pre-wrap";
+    tail.style.overflowWrap = "break-word";
+    tail.style.wordBreak = "normal";
+
+    followingNodes.forEach((node) => tail.appendChild(node));
+    paragraph.appendChild(tail);
+}
+
+function applyParagraphTabHints(
+    iframeDocument: Document,
+    paragraphTabHints: { defaultTabStopTwip: number | null; paragraphs: ParagraphTabStopHint[][] },
+    rootSelector: string
+) {
     const renderedParagraphs = Array.from(
-        iframeDocument.querySelectorAll<HTMLParagraphElement>("#docx-preview-frame-root section.docx article p")
-    );
+        iframeDocument.querySelectorAll<HTMLParagraphElement>(`${rootSelector} section.docx article p`)
+    ).filter((paragraph) => paragraph.querySelector(".docx-tab-stop"));
+    const defaultTabStopPt = (paragraphTabHints.defaultTabStopTwip ?? DEFAULT_TAB_STOP_TWIP) / 20;
+    const pixelToPoint = computePixelToPoint(iframeDocument);
 
     renderedParagraphs.forEach((paragraph, index) => {
-        const tabHints = paragraphTabHints[index];
-        if (!tabHints || tabHints.length === 0) return;
+        unwrapParagraphTabTail(paragraph);
 
         const tabSpans = Array.from(paragraph.querySelectorAll<HTMLElement>(".docx-tab-stop"));
-        tabSpans.forEach((tabSpan) => recalculateTabStop(tabSpan, tabHints));
+        if (tabSpans.length === 0) return;
+
+        resetParagraphTabStops(tabSpans);
+
+        const tabHints = paragraphTabHints.paragraphs[index] ?? [];
+        tabSpans.forEach((tabSpan) => recalculateTabStop(tabSpan, tabHints, defaultTabStopPt, pixelToPoint));
+
+        if (tabSpans.length === 1) {
+            applySingleLeftTabTailWrapper(paragraph, tabSpans[0], tabHints, defaultTabStopPt, pixelToPoint);
+        }
     });
 }
+
+async function syncRenderedLayout(
+    iframeDocument: Document,
+    rootSelector: string,
+    paragraphTabHints: { defaultTabStopTwip: number | null; paragraphs: ParagraphTabStopHint[][] },
+    tableHints: TableRenderHint[]
+) {
+    const targetWindow = iframeDocument.defaultView;
+
+    await waitForStableFrameLayout(iframeDocument, 120);
+    applyTableHints(iframeDocument, tableHints, rootSelector);
+    await waitForNextFrame(targetWindow);
+    applyParagraphTabHints(iframeDocument, paragraphTabHints, rootSelector);
+
+    preserveEmptyParagraphSpacing(iframeDocument, rootSelector);
+    await waitForStableFrameLayout(iframeDocument, 120);
+    applyParagraphTabHints(iframeDocument, paragraphTabHints, rootSelector);
+}
+
 
 export default function DocxPreviewModal({
     isOpen,
@@ -497,6 +788,7 @@ export default function DocxPreviewModal({
     printButtonText,
 }: Props) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const syncPreviewLayoutRef = useRef<(() => Promise<void>) | null>(null);
     const styleInjected = useRef(false);
     const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
     const [loading, setLoading] = useState(false);
@@ -565,6 +857,7 @@ export default function DocxPreviewModal({
         setLoading(true);
         setError(null);
         setPreviewReady(false);
+        syncPreviewLayoutRef.current = null;
 
         iframeDocument.open();
         iframeDocument.write(IFRAME_HTML);
@@ -577,14 +870,19 @@ export default function DocxPreviewModal({
             return;
         }
 
+        let cleanupBeforePrint: (() => void) | null = null;
+
         Promise.all([
             import("docx-preview"),
-            extractTableHints(docxBlob),
-            extractPageHints(docxBlob),
-            extractParagraphTabHints(docxBlob),
+            normalizePreviewDocxBlob(docxBlob),
         ])
-            .then(async ([{ renderAsync }, tableHints, pageHints, paragraphTabHints]) => {
-                await renderAsync(docxBlob, target as HTMLElement, undefined, {
+            .then(async ([{ renderAsync }, previewBlob]) => {
+                const [paragraphTabHints, tableHints] = await Promise.all([
+                    extractParagraphTabHints(previewBlob),
+                    extractTableHints(previewBlob),
+                ]);
+
+                await renderAsync(previewBlob, target as HTMLElement, undefined, {
                     inWrapper: true,
                     hideWrapperOnPrint: true,
                     ignoreWidth: false,
@@ -601,9 +899,31 @@ export default function DocxPreviewModal({
                     experimental: true,
                 });
 
-                applyPageHints(iframeDocument, pageHints);
-                applyParagraphTabHints(iframeDocument, paragraphTabHints);
-                applyTableHints(iframeDocument, tableHints);
+                await waitForStableFrameLayout(iframeDocument, 900);
+
+                const syncPreviewLayout = async () => {
+                    await syncRenderedLayout(
+                        iframeDocument,
+                        "#docx-preview-frame-root",
+                        paragraphTabHints,
+                        tableHints
+                    );
+                };
+
+                syncPreviewLayoutRef.current = syncPreviewLayout;
+                await syncPreviewLayout();
+
+                const printWindow = iframe.contentWindow;
+                if (printWindow) {
+                    const handleBeforePrint = () => {
+                        void syncPreviewLayout();
+                    };
+
+                    printWindow.addEventListener("beforeprint", handleBeforePrint);
+                    cleanupBeforePrint = () => {
+                        printWindow.removeEventListener("beforeprint", handleBeforePrint);
+                    };
+                }
 
                 if (!cancelled) {
                     setPreviewReady(true);
@@ -622,6 +942,8 @@ export default function DocxPreviewModal({
         return () => {
             cancelled = true;
             setPreviewReady(false);
+            syncPreviewLayoutRef.current = null;
+            cleanupBeforePrint?.();
 
             const cleanupDocument = iframe.contentDocument;
             if (!cleanupDocument) return;
@@ -632,18 +954,103 @@ export default function DocxPreviewModal({
         };
     }, [isOpen, docxBlob]);
 
-    const handlePrint = () => {
-        if (loading || error || !previewReady) return;
+    const handlePrint = async () => {
+        if (loading || error || !previewReady || typeof document === "undefined" || !docxBlob) return;
 
-        const printWindow = iframeRef.current?.contentWindow;
-        if (!printWindow) return;
+        const previewBlob = await normalizePreviewDocxBlob(docxBlob);
+        const pageViewportHint = await extractPageViewportHint(previewBlob);
+        const viewportSize = resolveViewportSize(pageViewportHint);
 
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                printWindow.focus();
-                printWindow.print();
+        const printIframe = document.createElement("iframe");
+        printIframe.setAttribute("aria-hidden", "true");
+        printIframe.style.position = "fixed";
+        printIframe.style.left = "-200vw";
+        printIframe.style.top = "0";
+        printIframe.style.width = viewportSize.width;
+        printIframe.style.height = viewportSize.height;
+        printIframe.style.border = "0";
+        printIframe.style.opacity = "0";
+        printIframe.style.visibility = "hidden";
+        printIframe.style.pointerEvents = "none";
+        document.body.appendChild(printIframe);
+
+        const cleanup = () => {
+            printIframe.parentNode?.removeChild(printIframe);
+        };
+
+        try {
+            const printDocument = printIframe.contentDocument;
+            const printWindow = printIframe.contentWindow;
+            if (!printDocument || !printWindow) {
+                cleanup();
+                return;
+            }
+
+            printDocument.open();
+            printDocument.write(PRINT_IFRAME_HTML);
+            printDocument.close();
+
+            const printTarget = printDocument.getElementById("docx-print-frame-root");
+            if (!printTarget) {
+                cleanup();
+                return;
+            }
+
+            const [{ renderAsync }, paragraphTabHints, tableHints] = await Promise.all([
+                import("docx-preview"),
+                extractParagraphTabHints(previewBlob),
+                extractTableHints(previewBlob),
+            ]);
+
+            await renderAsync(previewBlob, printTarget as HTMLElement, undefined, {
+                inWrapper: false,
+                hideWrapperOnPrint: false,
+                ignoreWidth: false,
+                ignoreHeight: false,
+                ignoreFonts: false,
+                breakPages: true,
+                ignoreLastRenderedPageBreak: false,
+                useBase64URL: true,
+                renderChanges: false,
+                renderHeaders: true,
+                renderFooters: true,
+                renderFootnotes: true,
+                renderEndnotes: true,
+                experimental: true,
             });
-        });
+
+            await waitForStableFrameLayout(printDocument, 900);
+            await syncRenderedLayout(
+                printDocument,
+                "#docx-print-frame-root",
+                paragraphTabHints,
+                tableHints
+            );
+
+            await new Promise<void>((resolve) => {
+                let resolved = false;
+
+                const finish = () => {
+                    if (resolved) return;
+                    resolved = true;
+                    cleanup();
+                    resolve();
+                };
+
+                printWindow.addEventListener("afterprint", finish, { once: true });
+                void waitForTimeout(printWindow, 1500).then(finish);
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        printWindow.focus();
+                        printWindow.print();
+                    });
+                });
+            });
+        } catch (printError) {
+            console.error("docx print error:", printError);
+            cleanup();
+        }
     };
 
     if (!isOpen || !portalRoot) return null;

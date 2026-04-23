@@ -1,9 +1,10 @@
 "use client";
 import { useState, useMemo } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackageCheck, Printer } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackageCheck, Printer, Loader2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { PermissionGuard, usePermissions } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Modal from "@/components/Modal";
 import { deleteHopDong, getHopDongById, duyetHopDong } from "../action";
 import type { ColumnKey } from "./ColumnToggleButton";
@@ -55,6 +56,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         subtitle: "",
         loadingId: null,
     });
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
     const handleViewBanGiao = async (banGiaoId: string) => {
         setLoadingViewBanGiao(true);
@@ -248,7 +250,50 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
 
     const show = (key: ColumnKey) => visibleColumns.includes(key);
     const thClass = "h-9 px-3 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[12px] cursor-pointer group hover:text-foreground whitespace-nowrap";
-    const tdClass = "px-3 py-2 align-middle text-[13px] whitespace-nowrap";
+    const tdClass = "px-3 py-2 align-middle text-[13px]";
+    const overflowTriggerClass = "rounded-lg p-1.5 text-muted-foreground transition-colors group-hover:text-foreground hover:bg-muted hover:text-foreground";
+
+    const renderOverflowMenu = (item: any, triggerClassName = overflowTriggerClass) => (
+        <DropdownMenu open={openMenuId === item.ID} onOpenChange={(open) => setOpenMenuId(open ? item.ID : null)}>
+            <DropdownMenuTrigger asChild>
+                <button
+                    type="button"
+                    className={`${triggerClassName} ${openMenuId === item.ID ? "bg-primary/5 text-primary ring-1 ring-primary/20 hover:bg-primary/10 hover:text-primary" : ""}`}
+                    title="Thêm thao tác"
+                >
+                    <MoreHorizontal className="h-4 w-4" />
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                <DropdownMenuItem
+                    onClick={() => handleView(item)}
+                    disabled={loadingView}
+                    className="gap-2 cursor-pointer text-primary focus:bg-primary/10 focus:text-primary"
+                >
+                    {loadingView ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Eye className="h-4 w-4 text-primary" />}
+                    Xem chi tiết
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                    onClick={() => handlePreview(item)}
+                    disabled={previewModal.loadingId === item.ID}
+                    className="gap-2 cursor-pointer text-violet-600 focus:bg-violet-500/10 focus:text-violet-600"
+                >
+                    {previewModal.loadingId === item.ID ? <Loader2 className="h-4 w-4 animate-spin text-violet-600" /> : <Printer className="h-4 w-4 text-violet-600" />}
+                    Xem & In nhanh
+                </DropdownMenuItem>
+                <PermissionGuard moduleKey="hop-dong" level="delete">
+                    <DropdownMenuItem
+                        onClick={() => setDeleteItem(item)}
+                        disabled={item.DUYET === "Đã duyệt"}
+                        className="gap-2 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                    >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                        Xóa
+                    </DropdownMenuItem>
+                </PermissionGuard>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
 
     return (
         <>
@@ -276,12 +321,12 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                         ) : sortedData.map((item: any, idx: number) => (
                             <tr key={item.ID} className="border-b hover:bg-muted/30 transition-all group">
                                 <td className={`${tdClass} text-muted-foreground`}>{idx + 1}</td>
-                                <td className={`${tdClass}`}>
-                                    <button onClick={() => handleView(item)} disabled={loadingView} className="font-semibold text-primary hover:text-primary/80 hover:underline transition-all text-left cursor-pointer">
+                                <td className={`${tdClass} min-w-[120px]`}>
+                                    <button onClick={() => handleView(item)} disabled={loadingView} className="font-semibold text-primary hover:text-primary/80 hover:underline transition-all text-left cursor-pointer" title={item.SO_HD}>
                                         {item.SO_HD}
                                     </button>
                                 </td>
-                                <td className={`${tdClass} text-center`}>
+                                <td className={`${tdClass} text-center whitespace-nowrap`}>
                                     {!item.DUYET || item.DUYET === "Chờ duyệt" ? (
                                         <div className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800/50 transition-all hover:shadow-sm">
                                             <span className="pl-2.5 pr-1.5 py-0.5 text-yellow-700 dark:text-yellow-400 text-[11px] font-medium">Chờ duyệt</span>
@@ -307,23 +352,23 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 </td>
                                 {show("ngayHD") && <td className={tdClass}>{fmtDate(item.NGAY_HD)}</td>}
                                 {show("khachHang") && (
-                                    <td className={tdClass}>
-                                        <p className="font-medium">{item.KHTN_REL?.TEN_KH || item.MA_KH}</p>
-                                        <p className="text-xs text-muted-foreground">{item.MA_KH}</p>
+                                    <td className={`${tdClass} min-w-[150px]`}>
+                                        <p className="font-medium" title={item.KHTN_REL?.TEN_KH || item.MA_KH}>{item.KHTN_REL?.TEN_KH || item.MA_KH}</p>
+                                        <p className="text-xs text-muted-foreground" title={item.MA_KH}>{item.MA_KH}</p>
                                     </td>
                                 )}
-                                {show("coHoi") && <td className={tdClass}>{item.MA_CH ? <p className="text-xs font-medium">{item.MA_CH}</p> : <span className="text-muted-foreground">—</span>}</td>}
-                                {show("baoGia") && <td className={tdClass}>{item.MA_BAO_GIA ? <p className="text-xs font-medium">{item.MA_BAO_GIA}</p> : <span className="text-muted-foreground">—</span>}</td>}
+                                {show("coHoi") && <td className={`${tdClass} min-w-[110px]`}>{item.MA_CH ? <p className="text-xs font-medium" title={item.MA_CH}>{item.MA_CH}</p> : <span className="text-muted-foreground">—</span>}</td>}
+                                {show("baoGia") && <td className={`${tdClass} min-w-[110px]`}>{item.MA_BAO_GIA ? <p className="text-xs font-medium" title={item.MA_BAO_GIA}>{item.MA_BAO_GIA}</p> : <span className="text-muted-foreground">—</span>}</td>}
                                 {show("loai") && (
-                                    <td className={`${tdClass} text-center`}>
+                                    <td className={`${tdClass} text-center whitespace-nowrap`}>
                                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${item.LOAI_HD === "Dân dụng" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}>
                                             {item.LOAI_HD}
                                         </span>
                                     </td>
                                 )}
-                                {show("tongTien") && <td className={`${tdClass} text-right font-bold`}>{fmtMoney(item.TONG_TIEN)}</td>}
+                                {show("tongTien") && <td className={`${tdClass} text-right font-bold whitespace-nowrap`}>{fmtMoney(item.TONG_TIEN)}</td>}
                                 {show("daTT") && (
-                                    <td className={`${tdClass} text-right font-semibold text-emerald-600 dark:text-emerald-400`}>
+                                    <td className={`${tdClass} text-right font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap`}>
                                         {item.THANH_TOAN?.length > 0
                                             ? fmtMoney(item.THANH_TOAN.reduce((s: number, t: any) => s + (t.SO_TIEN_THANH_TOAN || 0), 0))
                                             : <span className="text-muted-foreground font-normal">—</span>}
@@ -331,9 +376,9 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 )}
                                 <td className={`${tdClass} text-right`}>
                                     <div className="flex items-center justify-end gap-1">
-                                        <button onClick={() => handleView(item)} disabled={loadingView} className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted-foreground group-hover:text-primary hover:text-primary" title="Xem"><Eye className="w-4 h-4" /></button>
-                                        <button onClick={() => handlePreview(item)} disabled={previewModal.loadingId === item.ID} className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-violet-600 dark:group-hover:text-violet-500 hover:text-violet-700 disabled:opacity-50" title="Xem trước & In">{previewModal.loadingId === item.ID ? <span className="w-4 h-4 block border-2 border-violet-400 border-t-transparent rounded-full animate-spin" /> : <Printer className="w-4 h-4" />}</button>
-                                        <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-green-600 dark:group-hover:text-green-500 hover:text-green-700" title="Xuất HĐ + Phụ Lục Word"><BookDown className="w-4 h-4" /></button>
+                                        <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-green-600 dark:group-hover:text-green-500 hover:text-green-700" title="Xuất HĐ + Phụ Lục Word">
+                                            {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookDown className="w-4 h-4" />}
+                                        </button>
                                         {/* Nút xuất Phụ Lục riêng: ẩn đi (đã tích hợp vào nút xuất HĐ) */}
                                         <button onClick={() => handleExportPL(item)} disabled={item.LOAI_HD === "Công nghiệp"} className="hidden p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-500 hover:text-blue-700 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:group-hover:text-muted-foreground" title={item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp không có phụ lục" : "Xuất Phụ Lục HĐ"}><FileSpreadsheet className="w-4 h-4" /></button>
                                         <PermissionGuard moduleKey="hop-dong" level="edit">
@@ -349,16 +394,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                         <PermissionGuard moduleKey="hop-dong" level="edit">
                                             <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground group-hover:text-blue-500 hover:text-blue-600" title="Sửa"><Pencil className="w-4 h-4" /></button>
                                         </PermissionGuard>
-                                        <PermissionGuard moduleKey="hop-dong" level="delete">
-                                            <button
-                                                onClick={() => setDeleteItem(item)}
-                                                disabled={item.DUYET === "Đã duyệt"}
-                                                className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground group-hover:text-destructive hover:text-destructive disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:group-hover:text-muted-foreground disabled:hover:text-muted-foreground"
-                                                title={item.DUYET === "Đã duyệt" ? "Không thể xóa hợp đồng đã duyệt" : "Xóa"}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </PermissionGuard>
+                                        {renderOverflowMenu(item)}
                                     </div>
                                 </td>
                             </tr>
@@ -428,9 +464,9 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                         <button onClick={() => openDuyetConfirm(item, "Không duyệt")} className="flex-none p-2 bg-muted/50 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors border border-transparent hover:border-red-200" title="Không duyệt"><XCircle className="w-4 h-4" /></button>
                                     </>
                                 )}
-                                <button onClick={() => handleView(item)} disabled={loadingView} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors text-xs font-semibold"><Eye className="w-4 h-4" /> <span className="hidden sm:inline">Chi tiết</span></button>
-                                <button onClick={() => handlePreview(item)} disabled={previewModal.loadingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-violet-100 dark:hover:bg-violet-900/30 text-muted-foreground hover:text-violet-700 rounded-lg transition-colors text-xs font-semibold disabled:opacity-50" title="Xem trước & In">{previewModal.loadingId === item.ID ? <span className="w-4 h-4 block border-2 border-violet-400 border-t-transparent rounded-full animate-spin" /> : <Printer className="w-4 h-4" />} <span className="hidden sm:inline">In</span></button>
-                                <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-green-100 dark:hover:bg-green-900/30 text-muted-foreground hover:text-green-700 rounded-lg transition-colors text-xs font-semibold" title="Xuất HĐ + Phụ Lục Word"><BookDown className="w-4 h-4" /> <span className="hidden sm:inline">HĐ</span></button>
+                                <button onClick={() => handleExport(item)} disabled={exportingId === item.ID} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-green-100 dark:hover:bg-green-900/30 text-muted-foreground hover:text-green-700 rounded-lg transition-colors text-xs font-semibold" title="Xuất HĐ + Phụ Lục Word">
+                                    {exportingId === item.ID ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookDown className="w-4 h-4" />} <span className="hidden sm:inline">HĐ</span>
+                                </button>
                                 {/* Nút xuất Phụ Lục riêng: ẩn đi (đã tích hợp vào nút xuất HĐ) */}
                                 <button onClick={() => handleExportPL(item)} disabled={item.LOAI_HD === "Công nghiệp"} className="hidden flex-1 justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-muted-foreground hover:text-blue-700 rounded-lg transition-colors text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-muted/50 disabled:hover:text-muted-foreground" title={item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp không có phụ lục" : "Xuất Phụ Lục"}><FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">PL</span></button>
                                 <PermissionGuard moduleKey="ban-giao" level="add">
@@ -446,16 +482,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 <PermissionGuard moduleKey="hop-dong" level="edit">
                                     <button onClick={() => handleEdit(item)} disabled={loadingEdit} className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors text-xs font-semibold"><Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Sửa</span></button>
                                 </PermissionGuard>
-                                <PermissionGuard moduleKey="hop-dong" level="delete">
-                                    <button
-                                        onClick={() => setDeleteItem(item)}
-                                        disabled={item.DUYET === "Đã duyệt"}
-                                        className="flex-none p-2 bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-muted/50 disabled:hover:text-muted-foreground"
-                                        title={item.DUYET === "Đã duyệt" ? "Không thể xóa hợp đồng đã duyệt" : "Xóa"}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </PermissionGuard>
+                                {renderOverflowMenu(item, "flex-none p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors")}
                             </div>
                         </div>
                     ))}
