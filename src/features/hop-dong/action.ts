@@ -39,7 +39,7 @@ async function generateSoHD(maKH: string, loaiHD?: string): Promise<string> {
     const yyyy = String(now.getFullYear());
     const datePrefix = `${dd}${mm}${yyyy}`;
 
-    // ── Hợp đồng Mua bán: DDMMYYYY/HDMB-PNS-001 ──
+    // ── Hợp đồng Mua bán: DDMMYYYY/HDMB-PNS-01 ──
     if (loaiHD === 'Mua bán') {
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
@@ -62,7 +62,23 @@ async function generateSoHD(maKH: string, loaiHD?: string): Promise<string> {
             select: { TEN_VT: true }
         });
         if (kh?.TEN_VT?.trim()) {
-            seqOrVt = kh.TEN_VT.trim();
+            const tenVt = kh.TEN_VT.trim();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+            const countKh = await prisma.hOP_DONG.count({
+                where: {
+                    MA_KH: maKH,
+                    CREATED_AT: { gte: startOfDay, lte: endOfDay },
+                    LOAI_HD: { not: 'Mua bán' }
+                },
+            });
+
+            if (countKh > 0) {
+                seqOrVt = `${tenVt}-${String(countKh + 1).padStart(2, '0')}`;
+            } else {
+                seqOrVt = tenVt;
+            }
         }
     }
 
