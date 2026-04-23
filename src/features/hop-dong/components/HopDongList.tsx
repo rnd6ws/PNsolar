@@ -48,14 +48,12 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         title: string;
         subtitle: string;
         loadingId: string | null;
-        fixedTableLayout: boolean;
     }>({
         open: false,
         blob: null,
         title: "",
         subtitle: "",
         loadingId: null,
-        fixedTableLayout: false,
     });
 
     const handleViewBanGiao = async (banGiaoId: string) => {
@@ -152,7 +150,6 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                     title: loaiLabel,
                     subtitle: `Số: ${item.SO_HD}`,
                     loadingId: null,
-                    fixedTableLayout: result.data.LOAI_HD === "Mua bán",
                 });
             } else {
                 toast.error(result.message || "Không thể tải dữ liệu");
@@ -489,14 +486,12 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                         title: "",
                         subtitle: "",
                         loadingId: null,
-                        fixedTableLayout: false,
                     })
                 }
                 docxBlob={previewModal.blob}
                 title={previewModal.title}
                 subtitle={previewModal.subtitle}
                 printButtonText="In hợp đồng"
-                fixedTableLayout={previewModal.fixedTableLayout}
             />
             <AddEditHopDongModal isOpen={editModal} onClose={() => { setEditModal(false); setEditData(null); }} onSuccess={() => { setEditModal(false); setEditData(null); }} editData={editData} />
             <AddEditBanGiaoModal

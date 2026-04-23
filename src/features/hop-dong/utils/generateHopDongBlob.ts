@@ -33,13 +33,6 @@ const getCustomValue = (ct: any, keys: string[]) => {
     return (matched?.NOI_DUNG || "").toString();
 };
 
-const SOFT_BREAK = "\u200B";
-
-const addPreviewWrapHints = (value?: string | null) =>
-    (value || "")
-        .replace(/([/\\()\-*])/g, `$1${SOFT_BREAK}`)
-        .replace(/(\d),(\d)/g, `$1,${SOFT_BREAK}$2`);
-
 function renderDocx(arrayBuffer: ArrayBuffer, templateData: Record<string, any>): Blob {
     const zip = new PizZip(arrayBuffer);
     const doc = new Docxtemplater(zip, {
@@ -127,15 +120,13 @@ export async function generateDanDungBlob(item: any): Promise<Blob> {
             const model = ct.HH_REL?.MODEL || getCustomValue(ct, ["Mã hiệu/Mô tả", "Mã hiệu", "Mô tả", "Model"]);
             const xuatXu = ct.HH_REL?.XUAT_XU || getCustomValue(ct, ["Xuất xứ"]);
             const baoHanh = ct.HH_REL?.BAO_HANH || getCustomValue(ct, ["Bảo hành"]);
-            const tenHangPreview = addPreviewWrapHints(tenHH);
-            const moTaPreview = addPreviewWrapHints(moTa.trim());
             return {
                 STT: `${gi + 1}.${ci + 1}`,
-                TEN_HH: moTaPreview ? `${tenHangPreview}\n${moTaPreview}` : tenHangPreview,
+                TEN_HH: moTa.trim() ? `${tenHH}\n${moTa.trim()}` : tenHH,
                 DVT: ct.DON_VI_TINH || ct.HH_REL?.DON_VI_TINH || "",
-                MODEL: addPreviewWrapHints(model),
-                XUAT_XU: addPreviewWrapHints(xuatXu),
-                BAO_HANH: addPreviewWrapHints(baoHanh),
+                MODEL: model,
+                XUAT_XU: xuatXu,
+                BAO_HANH: baoHanh,
                 SL: ct.SO_LUONG,
                 DON_GIA: fmtNum(donGia),
                 THANH_TIEN: fmtNum(thanhTien),
@@ -271,11 +262,11 @@ export async function generateMuaBanBlob(item: any): Promise<Blob> {
             const baoHanh = ct.HH_REL?.BAO_HANH || getCustomValue(ct, ["Bảo hành"]);
             return {
                 STT: `${gi + 1}.${ci + 1}`,
-                TEN_HH: addPreviewWrapHints(moTa.trim()) ? `${addPreviewWrapHints(tenHH)}\n${addPreviewWrapHints(moTa.trim())}` : addPreviewWrapHints(tenHH),
+                TEN_HH: moTa.trim() ? `${tenHH}\n${moTa.trim()}` : tenHH,
                 DVT: ct.DON_VI_TINH || ct.HH_REL?.DON_VI_TINH || "",
-                MODEL: addPreviewWrapHints(model),
-                XUAT_XU: addPreviewWrapHints(xuatXu),
-                BAO_HANH: addPreviewWrapHints(baoHanh),
+                MODEL: model,
+                XUAT_XU: xuatXu,
+                BAO_HANH: baoHanh,
                 SL: ct.SO_LUONG,
                 DON_GIA: fmtNum(donGia),
                 THANH_TIEN: fmtNum(thanhTien),
