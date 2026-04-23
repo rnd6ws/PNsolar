@@ -19,7 +19,8 @@ interface Props {
         NGUOI_KHAO_SAT_REL: { HO_TEN: string; MA_NV: string } | null;
         KHTN_REL: { TEN_KH: string; MA_KH: string } | null;
         CO_HOI_REL: { MA_CH: string } | null;
-        NGUOI_LIEN_HE_REL: { TENNGUOI_LIENHE: string } | null;
+        NGUOI_LIEN_HE: string | null;
+        NGUOI_LIEN_HE_REL: { TENNGUOI_LIENHE: string; SDT?: string | null } | null;
         KHAO_SAT_CT: {
             ID: string;
             NHOM_KS: string;
@@ -141,6 +142,17 @@ export default function KhaoSatDetailModal({ item, onClose, nguoiKhaoSatName }: 
                                 <InfoCard icon={Calendar} label="Ngày khảo sát" value={formatDate(item.NGAY_KHAO_SAT)} />
                                 <InfoCard icon={User} label="Nhân viên khảo sát" value={renderNguoiKSTags(finalNguoiKSName)} className="md:col-span-2 lg:col-span-1" />
                                 <InfoCard icon={User} label="Khách hàng" value={item.KHTN_REL?.TEN_KH || "—"} className="md:col-span-2 lg:col-span-3" />
+                                <InfoCard 
+                                    icon={User} 
+                                    label="Người liên hệ" 
+                                    value={
+                                        <div className="flex items-center flex-wrap whitespace-pre-wrap">
+                                            <span>{item.NGUOI_LIEN_HE_REL?.TENNGUOI_LIENHE || item.NGUOI_LIEN_HE || "—"}</span>
+                                            {item.NGUOI_LIEN_HE_REL?.SDT && <span> - {item.NGUOI_LIEN_HE_REL.SDT}</span>}
+                                        </div>
+                                    } 
+                                    className="md:col-span-2 lg:col-span-3" 
+                                />
                                 <InfoCard icon={MapPin} label="Địa chỉ" value={item.DIA_CHI || "—"} className="md:col-span-2 lg:col-span-3" linkMap={item.LINK_MAP ?? undefined} />
                                 <InfoCard icon={MapPin} label="Địa điểm lắp đặt" value={item.DIA_CHI_CONG_TRINH || "—"} className="md:col-span-2 lg:col-span-3" />
                                 <InfoCard icon={Building2} label="Hạng mục" value={item.HANG_MUC || "—"} className="md:col-span-2 lg:col-span-2" />

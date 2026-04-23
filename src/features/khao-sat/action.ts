@@ -86,7 +86,7 @@ export async function getKhaoSatList(params?: {
                     NGUOI_KHAO_SAT_REL: { select: { HO_TEN: true, MA_NV: true } },
                     KHTN_REL: { select: { TEN_KH: true, MA_KH: true, DIA_CHI: true, DIEN_THOAI: true, EMAIL: true, NGUOI_DAI_DIEN: { select: { NGUOI_DD: true, SDT: true, EMAIL: true } } } },
                     CO_HOI_REL: { select: { MA_CH: true } },
-                    NGUOI_LIEN_HE_REL: { select: { TENNGUOI_LIENHE: true } },
+                    NGUOI_LIEN_HE_REL: { select: { TENNGUOI_LIENHE: true, SDT: true } },
                     KHAO_SAT_CT: true,
                 },
                 orderBy: { NGAY_KHAO_SAT: "desc" },

@@ -40,7 +40,7 @@ type KhaoSatItem = {
     NGUOI_KHAO_SAT_REL: { HO_TEN: string; MA_NV: string } | null;
     KHTN_REL: { TEN_KH: string; MA_KH: string } | null;
     CO_HOI_REL: { MA_CH: string } | null;
-    NGUOI_LIEN_HE_REL: { TENNGUOI_LIENHE: string } | null;
+    NGUOI_LIEN_HE_REL: { TENNGUOI_LIENHE: string; SDT?: string | null } | null;
     HINH_ANH: { STT: number; TEN_HINH: string; URL_HINH: string }[];
     KHAO_SAT_CT: any[];
 };
@@ -189,6 +189,11 @@ export default function KhaoSatList({
                                     Khách hàng
                                 </th>
                             )}
+                            {show("nguoiLienHe") && (
+                                <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
+                                    Người liên hệ
+                                </th>
+                            )}
                             {show("diaChi") && (
                                 <th className="h-11 px-2 align-middle font-bold text-muted-foreground tracking-widest text-[12px] text-center">
                                     Địa điểm lắp đặt
@@ -231,6 +236,16 @@ export default function KhaoSatList({
                                 {show("khachHang") && (
                                     <td className="px-2 py-3 align-middle text-center text-xs">
                                         {item.KHTN_REL?.TEN_KH || "—"}
+                                    </td>
+                                )}
+                                {show("nguoiLienHe") && (
+                                    <td className="px-2 py-3 align-middle text-center text-xs">
+                                        {item.NGUOI_LIEN_HE_REL?.TENNGUOI_LIENHE ? (
+                                            <div className="flex flex-col gap-0.5 items-center">
+                                                <span className="font-medium text-foreground">{item.NGUOI_LIEN_HE_REL.TENNGUOI_LIENHE}</span>
+                                                {item.NGUOI_LIEN_HE_REL.SDT && <span className="text-muted-foreground text-[12px]">{item.NGUOI_LIEN_HE_REL.SDT}</span>}
+                                            </div>
+                                        ) : item.NGUOI_LIEN_HE || "—"}
                                     </td>
                                 )}
                                 {show("diaChi") && (
@@ -324,97 +339,106 @@ export default function KhaoSatList({
             </div>
 
             {viewMode === "card" && (
-            <div className="lg:hidden grid grid-cols-1 gap-2 p-1">
-                {sorted.length === 0 && (
-                    <div className="text-center py-16 text-muted-foreground text-sm italic border rounded-xl border-dashed">
-                        Chưa có phiếu khảo sát nào
-                    </div>
-                )}
-                {sorted.map((item, idx) => (
-                    <div key={item.ID} className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setDetailItem(item)}>
-                        <div className="flex justify-between items-start mb-3">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
-                                    {show("ma") ? item.MA_KHAO_SAT : `#${idx + 1}`}
-                                </span>
-                                {show("ngay") && (
-                                    <span className="text-sm text-primary bg-primary/10 px-2 py-0.5 rounded-md font-medium">
-                                        {formatDate(item.NGAY_KHAO_SAT)}
+                <div className="lg:hidden grid grid-cols-1 gap-2 p-1">
+                    {sorted.length === 0 && (
+                        <div className="text-center py-16 text-muted-foreground text-sm italic border rounded-xl border-dashed">
+                            Chưa có phiếu khảo sát nào
+                        </div>
+                    )}
+                    {sorted.map((item, idx) => (
+                        <div key={item.ID} className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setDetailItem(item)}>
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
+                                        {show("ma") ? item.MA_KHAO_SAT : `#${idx + 1}`}
                                     </span>
+                                    {show("ngay") && (
+                                        <span className="text-sm text-primary bg-primary/10 px-2 py-0.5 rounded-md font-medium">
+                                            {formatDate(item.NGAY_KHAO_SAT)}
+                                        </span>
+                                    )}
+                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button onClick={(e) => e.stopPropagation()} className="p-1.5 -m-1.5 hover:bg-muted data-[state=open]:bg-primary/10 text-muted-foreground hover:text-foreground data-[state=open]:text-primary rounded transition-colors" title="Thao tác">
+                                            <MoreHorizontal className="w-5 h-5" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                                        <DropdownMenuItem className="text-blue-600 focus:text-blue-700 dark:text-blue-400 dark:focus:text-blue-300 cursor-pointer focus:bg-blue-50 dark:focus:bg-blue-900/20" onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}>
+                                            <Eye className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />Xem chi tiết
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-emerald-600 focus:text-emerald-700 dark:text-emerald-400 dark:focus:text-emerald-300 cursor-pointer focus:bg-emerald-50 dark:focus:bg-emerald-900/20" onClick={(e) => { e.stopPropagation(); handleExport(item, e as any); }} disabled={exportingId === item.ID}>
+                                            {exportingId === item.ID
+                                                ? <Loader2 className="w-4 h-4 mr-2 animate-spin text-emerald-600 dark:text-emerald-400" />
+                                                : <FileDown className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />}
+                                            Xuất Word
+                                        </DropdownMenuItem>
+                                        <PermissionGuard moduleKey="khao-sat" level="edit">
+                                            <DropdownMenuItem className="text-orange-600 focus:text-orange-700 dark:text-orange-400 dark:focus:text-orange-300 cursor-pointer focus:bg-orange-50 dark:focus:bg-orange-900/20" onClick={(e) => { e.stopPropagation(); setChiTietEditItem(item); }}>
+                                                <ClipboardEdit className="w-4 h-4 mr-2 text-orange-600 dark:text-orange-400" />Ghi nhận KS
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-purple-600 focus:text-purple-700 dark:text-purple-400 dark:focus:text-purple-300 cursor-pointer focus:bg-purple-50 dark:focus:bg-purple-900/20 flex items-center justify-between" onClick={(e) => { e.stopPropagation(); setImageUploadItem(item); }}>
+                                                <div className="flex items-center">
+                                                    <Images className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />Ảnh KS
+                                                </div>
+                                                {item.HINH_ANH && (item.HINH_ANH.length || (typeof item.HINH_ANH === 'string' ? JSON.parse(item.HINH_ANH).length : 0)) > 0 && (
+                                                    <span className="ml-2 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 py-0.5 px-1.5 rounded-md text-[10px] font-bold">
+                                                        {item.HINH_ANH.length || (typeof item.HINH_ANH === 'string' ? JSON.parse(item.HINH_ANH).length : 0)}
+                                                    </span>
+                                                )}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-sky-600 focus:text-sky-700 dark:text-sky-400 dark:focus:text-sky-300 cursor-pointer focus:bg-sky-50 dark:focus:bg-sky-900/20" onClick={(e) => { e.stopPropagation(); setEditItem(item); }}>
+                                                <Pencil className="w-4 h-4 mr-2 text-sky-600 dark:text-sky-400" />Sửa
+                                            </DropdownMenuItem>
+                                        </PermissionGuard>
+                                        <PermissionGuard moduleKey="khao-sat" level="delete">
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                <Trash2 className="w-4 h-4 mr-2 text-destructive" />Xóa
+                                            </DropdownMenuItem>
+                                        </PermissionGuard>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+
+                            <div className="space-y-2 text-sm mt-4">
+                                {show("loai") && (
+                                    <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                        <span className="text-muted-foreground whitespace-nowrap">Loại công trình:</span>
+                                        <span className="font-medium text-right line-clamp-2">{item.LOAI_CONG_TRINH}</span>
+                                    </div>
+                                )}
+                                {show("nguoi") && (
+                                    <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                        <span className="text-muted-foreground whitespace-nowrap">Người KS:</span>
+                                        <span className="text-right">{renderNguoiKSTags(item.NGUOI_KHAO_SAT, "end")}</span>
+                                    </div>
+                                )}
+                                {show("khachHang") && (
+                                    <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                        <span className="text-muted-foreground whitespace-nowrap">Khách hàng:</span>
+                                        <span className="text-right line-clamp-2">{item.KHTN_REL?.TEN_KH || "—"}</span>
+                                    </div>
+                                )}
+                                {show("nguoiLienHe") && (
+                                    <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
+                                        <span className="text-muted-foreground whitespace-nowrap">Người liên hệ:</span>
+                                        <span className="text-right flex flex-col items-end">
+                                            <span className="font-medium">{item.NGUOI_LIEN_HE_REL?.TENNGUOI_LIENHE || item.NGUOI_LIEN_HE || "—"}</span>
+                                            {item.NGUOI_LIEN_HE_REL?.SDT && <span className="text-muted-foreground text-[11px]">{item.NGUOI_LIEN_HE_REL.SDT}</span>}
+                                        </span>
+                                    </div>
+                                )}
+                                {show("diaChi") && (
+                                    <div className="flex justify-between items-start pt-1 gap-4">
+                                        <span className="text-muted-foreground whitespace-nowrap">Địa điểm:</span>
+                                        <span className="text-right line-clamp-3">{item.DIA_CHI_CONG_TRINH || item.DIA_CHI || "—"}</span>
+                                    </div>
                                 )}
                             </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button onClick={(e) => e.stopPropagation()} className="p-1.5 -m-1.5 hover:bg-muted data-[state=open]:bg-primary/10 text-muted-foreground hover:text-foreground data-[state=open]:text-primary rounded transition-colors" title="Thao tác">
-                                        <MoreHorizontal className="w-5 h-5" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-44 rounded-xl">
-                                    <DropdownMenuItem className="text-blue-600 focus:text-blue-700 dark:text-blue-400 dark:focus:text-blue-300 cursor-pointer focus:bg-blue-50 dark:focus:bg-blue-900/20" onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}>
-                                        <Eye className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />Xem chi tiết
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-emerald-600 focus:text-emerald-700 dark:text-emerald-400 dark:focus:text-emerald-300 cursor-pointer focus:bg-emerald-50 dark:focus:bg-emerald-900/20" onClick={(e) => { e.stopPropagation(); handleExport(item, e as any); }} disabled={exportingId === item.ID}>
-                                        {exportingId === item.ID
-                                            ? <Loader2 className="w-4 h-4 mr-2 animate-spin text-emerald-600 dark:text-emerald-400" />
-                                            : <FileDown className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />}
-                                        Xuất Word
-                                    </DropdownMenuItem>
-                                    <PermissionGuard moduleKey="khao-sat" level="edit">
-                                        <DropdownMenuItem className="text-orange-600 focus:text-orange-700 dark:text-orange-400 dark:focus:text-orange-300 cursor-pointer focus:bg-orange-50 dark:focus:bg-orange-900/20" onClick={(e) => { e.stopPropagation(); setChiTietEditItem(item); }}>
-                                            <ClipboardEdit className="w-4 h-4 mr-2 text-orange-600 dark:text-orange-400" />Ghi nhận KS
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-purple-600 focus:text-purple-700 dark:text-purple-400 dark:focus:text-purple-300 cursor-pointer focus:bg-purple-50 dark:focus:bg-purple-900/20 flex items-center justify-between" onClick={(e) => { e.stopPropagation(); setImageUploadItem(item); }}>
-                                            <div className="flex items-center">
-                                                <Images className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />Ảnh KS
-                                            </div>
-                                            {item.HINH_ANH && (item.HINH_ANH.length || (typeof item.HINH_ANH === 'string' ? JSON.parse(item.HINH_ANH).length : 0)) > 0 && (
-                                                <span className="ml-2 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 py-0.5 px-1.5 rounded-md text-[10px] font-bold">
-                                                    {item.HINH_ANH.length || (typeof item.HINH_ANH === 'string' ? JSON.parse(item.HINH_ANH).length : 0)}
-                                                </span>
-                                            )}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-sky-600 focus:text-sky-700 dark:text-sky-400 dark:focus:text-sky-300 cursor-pointer focus:bg-sky-50 dark:focus:bg-sky-900/20" onClick={(e) => { e.stopPropagation(); setEditItem(item); }}>
-                                            <Pencil className="w-4 h-4 mr-2 text-sky-600 dark:text-sky-400" />Sửa
-                                        </DropdownMenuItem>
-                                    </PermissionGuard>
-                                    <PermissionGuard moduleKey="khao-sat" level="delete">
-                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                            <Trash2 className="w-4 h-4 mr-2 text-destructive" />Xóa
-                                        </DropdownMenuItem>
-                                    </PermissionGuard>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                         </div>
-
-                        <div className="space-y-2 text-sm mt-4">
-                            {show("loai") && (
-                                <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
-                                    <span className="text-muted-foreground whitespace-nowrap">Loại công trình:</span>
-                                    <span className="font-medium text-right line-clamp-2">{item.LOAI_CONG_TRINH}</span>
-                                </div>
-                            )}
-                            {show("nguoi") && (
-                                <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
-                                    <span className="text-muted-foreground whitespace-nowrap">Người KS:</span>
-                                    <span className="text-right">{renderNguoiKSTags(item.NGUOI_KHAO_SAT, "end")}</span>
-                                </div>
-                            )}
-                            {show("khachHang") && (
-                                <div className="flex justify-between items-center pb-2 border-b border-border/50 gap-4">
-                                    <span className="text-muted-foreground whitespace-nowrap">Khách hàng:</span>
-                                    <span className="text-right line-clamp-2">{item.KHTN_REL?.TEN_KH || "—"}</span>
-                                </div>
-                            )}
-                            {show("diaChi") && (
-                                <div className="flex justify-between items-start pt-1 gap-4">
-                                    <span className="text-muted-foreground whitespace-nowrap">Địa điểm:</span>
-                                    <span className="text-right line-clamp-3">{item.DIA_CHI_CONG_TRINH || item.DIA_CHI || "—"}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
             )}
 
             {/* Edit Modal (Info) */}

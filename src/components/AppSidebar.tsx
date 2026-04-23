@@ -113,7 +113,7 @@ const navGroups: NavGroup[] = [
             { name: "Hạng mục KS", href: "/hang-muc-ks", icon: ClipboardCheck, moduleKey: "hang-muc-ks" },
             { name: "Cài đặt", href: "/settings", icon: Settings, moduleKey: "settings" },
             { name: "Phân quyền", href: "/phan-quyen", icon: Shield, moduleKey: "phan-quyen" },
-            { name: "Trợ giúp", href: "#", icon: HelpCircle, moduleKey: null },
+            { name: "Hướng dẫn sử dụng", href: "/huong-dan-su-dung", icon: HelpCircle, moduleKey: null },
         ],
     },
 ];
