@@ -228,7 +228,7 @@ export async function createKhachHang(data: any) {
         const initialLichSu = `${timestamp} Tạo mới khách hàng tiềm năng`;
 
         let maKh = "";
-        const prefix = data.TEN_VT ? `KHTN-${data.TEN_VT.replace(/\\s+/g, '_').substring(0, 10).toUpperCase()}` : `KHTN-KHAC`;
+        const prefix = data.TEN_VT ? `KHTN-${data.TEN_VT.replace(/\\s+/g, '_').substring(0, 20).toUpperCase()}` : `KHTN-KHAC`;
 
         const lastKh = await prisma.kHTN.findFirst({
             where: { MA_KH: { startsWith: prefix } },
