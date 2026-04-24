@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackageCheck, Printer, Loader2, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackageCheck, Printer, Loader2, MoreHorizontal, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { PermissionGuard, usePermissions } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -19,14 +19,23 @@ import ViewBanGiaoModal from "@/features/ban-giao/components/ViewBanGiaoModal";
 import { getBanGiaoById } from "@/features/ban-giao/action";
 import DocxPreviewModal from "@/components/DocxPreviewModal";
 import { generateHopDongBlob } from "../utils/generateHopDongBlob";
+import AddEditDeNghiTTModal from "@/features/de-nghi-tt/components/AddEditDeNghiTTModal";
+import AddEditThanhToanModal from "@/features/thanh-toan/components/AddEditThanhToanModal";
 
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString("vi-VN");
 const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
+const getNetThanhToan = (payments?: Array<{ LOAI_THANH_TOAN?: string | null; SO_TIEN_THANH_TOAN?: number | null }>) =>
+    payments?.reduce((sum, payment) => {
+        const amount = payment.SO_TIEN_THANH_TOAN || 0;
+        return payment.LOAI_THANH_TOAN === "Hoàn tiền" ? sum - amount : sum + amount;
+    }, 0) || 0;
 
 interface Props { data: any[]; visibleColumns: ColumnKey[]; viewMode?: "list" | "card"; }
+type OverflowAction = "preview";
+type PaymentActionType = "de-nghi" | "thanh-toan";
 
 export default function HopDongList({ data, visibleColumns, viewMode = "list" }: Props) {
-    const { isAdmin } = usePermissions();
+    const { isAdmin, canAdd } = usePermissions();
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
     const [editModal, setEditModal] = useState(false);
@@ -41,6 +50,9 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
     const [duyetConfirm, setDuyetConfirm] = useState<{ open: boolean; id: string; soHD: string; tenKH: string; action: "Đã duyệt" | "Không duyệt"; loading: boolean }>({ open: false, id: "", soHD: "", tenKH: "", action: "Đã duyệt", loading: false });
     const [banGiaoModal, setBanGiaoModal] = useState<{ open: boolean; prefillHD: any | null }>({ open: false, prefillHD: null });
     const [loadingBanGiao, setLoadingBanGiao] = useState(false);
+    const [paymentActionModal, setPaymentActionModal] = useState<{ open: boolean; item: any | null; loadingAction: PaymentActionType | null }>({ open: false, item: null, loadingAction: null });
+    const [deNghiTTModal, setDeNghiTTModal] = useState<{ open: boolean; prefillData: any | null }>({ open: false, prefillData: null });
+    const [thanhToanModal, setThanhToanModal] = useState<{ open: boolean; prefillData: any | null }>({ open: false, prefillData: null });
     const [viewBanGiaoModal, setViewBanGiaoModal] = useState<{ open: boolean; data: any | null }>({ open: false, data: null });
     const [loadingViewBanGiao, setLoadingViewBanGiao] = useState(false);
     const [previewModal, setPreviewModal] = useState<{
@@ -57,6 +69,12 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         loadingId: null,
     });
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [overflowLoading, setOverflowLoading] = useState<{ id: string | null; action: OverflowAction | null }>({ id: null, action: null });
+
+    const isOverflowLoading = (itemId: string, action?: OverflowAction) => {
+        if (overflowLoading.id !== itemId) return false;
+        return action ? overflowLoading.action === action : true;
+    };
 
     const handleViewBanGiao = async (banGiaoId: string) => {
         setLoadingViewBanGiao(true);
@@ -88,6 +106,61 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         } finally {
             setLoadingBanGiao(false);
         }
+    };
+
+    const openPaymentActionModal = (item: any) => {
+        setPaymentActionModal({ open: true, item, loadingAction: null });
+    };
+
+    const closePaymentActionModal = () => {
+        setPaymentActionModal({ open: false, item: null, loadingAction: null });
+    };
+
+    const handleCreateDeNghiTT = async () => {
+        const item = paymentActionModal.item;
+        if (!item) return;
+
+        setPaymentActionModal(prev => ({ ...prev, loadingAction: "de-nghi" }));
+        try {
+            const result = await getHopDongById(item.ID);
+            if (result.success && result.data) {
+                setDeNghiTTModal({
+                    open: true,
+                    prefillData: {
+                        MA_KH: result.data.MA_KH,
+                        TEN_KH: result.data.KHTN_REL?.TEN_KH || result.data.MA_KH,
+                        SO_HD: result.data.SO_HD,
+                        NGAY_HD: result.data.NGAY_HD,
+                        TONG_TIEN: result.data.TONG_TIEN,
+                        LOAI_HD: result.data.LOAI_HD,
+                        DKTT_HD: result.data.DKTT_HD || [],
+                    },
+                });
+                closePaymentActionModal();
+            } else {
+                toast.error(result.message || "Không thể tải dữ liệu hợp đồng");
+                setPaymentActionModal(prev => ({ ...prev, loadingAction: null }));
+            }
+        } catch {
+            toast.error("Có lỗi xảy ra khi lấy dữ liệu hợp đồng");
+            setPaymentActionModal(prev => ({ ...prev, loadingAction: null }));
+        }
+    };
+
+    const handleCreateThanhToan = () => {
+        const item = paymentActionModal.item;
+        if (!item) return;
+
+        setThanhToanModal({
+            open: true,
+            prefillData: {
+                MA_KH: item.MA_KH,
+                TEN_KH: item.KHTN_REL?.TEN_KH || item.MA_KH,
+                SO_HD: item.SO_HD,
+                SO_TIEN: 0,
+            },
+        });
+        closePaymentActionModal();
     };
 
     const openDuyetConfirm = (item: any, action: "Đã duyệt" | "Không duyệt") => {
@@ -137,10 +210,14 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         setVatModal({ open: true, item, loading: false });
     };
 
-    const handlePreview = async (item: any) => {
+    const handlePreview = async (item: any, options?: { fromOverflow?: boolean }) => {
         const loaiLabel = item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp"
             : item.LOAI_HD === "Mua bán" ? "Hợp đồng Mua bán"
             : "Hợp đồng Dân dụng";
+        if (options?.fromOverflow) {
+            setOverflowLoading({ id: item.ID, action: "preview" });
+            setOpenMenuId(item.ID);
+        }
         setPreviewModal(prev => ({ ...prev, loadingId: item.ID }));
         try {
             const result = await getHopDongById(item.ID);
@@ -160,6 +237,11 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         } catch (err: any) {
             toast.error(err.message || "Lỗi khi tải xem trước");
             setPreviewModal(prev => ({ ...prev, loadingId: null }));
+        } finally {
+            if (options?.fromOverflow) {
+                setOverflowLoading({ id: null, action: null });
+                setOpenMenuId(null);
+            }
         }
     };
 
@@ -234,10 +316,15 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
 
     const handleView = async (item: any) => {
         setLoadingView(true);
-        const result = await getHopDongById(item.ID);
-        setLoadingView(false);
-        if (result.success && result.data) { setViewData(result.data); setViewModal(true); }
-        else toast.error(result.message || "Không thể tải chi tiết");
+        try {
+            const result = await getHopDongById(item.ID);
+            if (result.success && result.data) { setViewData(result.data); setViewModal(true); }
+            else toast.error(result.message || "Không thể tải chi tiết");
+        } catch {
+            toast.error("Có lỗi xảy ra khi lấy chi tiết hợp đồng");
+        } finally {
+            setLoadingView(false);
+        }
     };
 
     const handleEdit = async (item: any) => {
@@ -248,52 +335,70 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         else toast.error(result.message || "Không thể tải chi tiết");
     };
 
+    const canCreateDeNghiTT = canAdd("de-nghi-tt");
+    const canCreateThanhToanDirect = canAdd("thanh-toan");
+    const canOpenPaymentAction = canCreateDeNghiTT || canCreateThanhToanDirect;
+
     const show = (key: ColumnKey) => visibleColumns.includes(key);
     const thClass = "h-9 px-3 align-middle font-bold text-muted-foreground uppercase tracking-widest text-[12px] cursor-pointer group hover:text-foreground whitespace-nowrap";
     const tdClass = "px-3 py-2 align-middle text-[13px]";
     const overflowTriggerClass = "rounded-lg p-1.5 text-muted-foreground transition-colors group-hover:text-foreground hover:bg-muted hover:text-foreground";
 
-    const renderOverflowMenu = (item: any, triggerClassName = overflowTriggerClass) => (
-        <DropdownMenu open={openMenuId === item.ID} onOpenChange={(open) => setOpenMenuId(open ? item.ID : null)}>
-            <DropdownMenuTrigger asChild>
-                <button
-                    type="button"
-                    className={`${triggerClassName} ${openMenuId === item.ID ? "bg-primary/5 text-primary ring-1 ring-primary/20 hover:bg-primary/10 hover:text-primary" : ""}`}
-                    title="Thêm thao tác"
-                >
-                    <MoreHorizontal className="h-4 w-4" />
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-xl">
-                <DropdownMenuItem
-                    onClick={() => handleView(item)}
-                    disabled={loadingView}
-                    className="gap-2 cursor-pointer text-primary focus:bg-primary/10 focus:text-primary"
-                >
-                    {loadingView ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Eye className="h-4 w-4 text-primary" />}
-                    Xem chi tiết
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                    onClick={() => handlePreview(item)}
-                    disabled={previewModal.loadingId === item.ID}
-                    className="gap-2 cursor-pointer text-violet-600 focus:bg-violet-500/10 focus:text-violet-600"
-                >
-                    {previewModal.loadingId === item.ID ? <Loader2 className="h-4 w-4 animate-spin text-violet-600" /> : <Printer className="h-4 w-4 text-violet-600" />}
-                    Xem & In nhanh
-                </DropdownMenuItem>
-                <PermissionGuard moduleKey="hop-dong" level="delete">
-                    <DropdownMenuItem
-                        onClick={() => setDeleteItem(item)}
-                        disabled={item.DUYET === "Đã duyệt"}
-                        className="gap-2 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+    const renderOverflowMenu = (item: any, triggerClassName = overflowTriggerClass) => {
+        const menuBusy = isOverflowLoading(item.ID);
+
+        return (
+            <DropdownMenu
+                open={openMenuId === item.ID}
+                onOpenChange={(open) => {
+                    if (!open && menuBusy) return;
+                    setOpenMenuId(open ? item.ID : null);
+                }}
+            >
+                <DropdownMenuTrigger asChild>
+                    <button
+                        type="button"
+                        className={`${triggerClassName} ${openMenuId === item.ID ? "bg-primary/5 text-primary ring-1 ring-primary/20 hover:bg-primary/10 hover:text-primary" : ""} ${menuBusy ? "text-primary" : ""}`}
+                        title="Thêm thao tác"
+                        aria-busy={menuBusy}
                     >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                        Xóa
+                        {menuBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+                    </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                    <DropdownMenuItem
+                        onClick={() => handleView(item)}
+                        disabled={loadingView}
+                        className="gap-2 cursor-pointer text-primary focus:bg-primary/10 focus:text-primary"
+                    >
+                        <Eye className="h-4 w-4 text-primary" />
+                        Xem chi tiết
                     </DropdownMenuItem>
-                </PermissionGuard>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
+                    <DropdownMenuItem
+                        onSelect={(event) => {
+                            event.preventDefault();
+                            void handlePreview(item, { fromOverflow: true });
+                        }}
+                        disabled={previewModal.loadingId === item.ID || menuBusy}
+                        className="gap-2 cursor-pointer text-violet-600 focus:bg-violet-500/10 focus:text-violet-600"
+                    >
+                        {previewModal.loadingId === item.ID ? <Loader2 className="h-4 w-4 animate-spin text-violet-600" /> : <Printer className="h-4 w-4 text-violet-600" />}
+                        Xem & In nhanh
+                    </DropdownMenuItem>
+                    <PermissionGuard moduleKey="hop-dong" level="delete">
+                        <DropdownMenuItem
+                            onClick={() => setDeleteItem(item)}
+                            disabled={item.DUYET === "Đã duyệt"}
+                            className="gap-2 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                            Xóa
+                        </DropdownMenuItem>
+                    </PermissionGuard>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        );
+    };
 
     return (
         <>
@@ -370,7 +475,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 {show("daTT") && (
                                     <td className={`${tdClass} text-right font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap`}>
                                         {item.THANH_TOAN?.length > 0
-                                            ? fmtMoney(item.THANH_TOAN.reduce((s: number, t: any) => s + (t.SO_TIEN_THANH_TOAN || 0), 0))
+                                            ? fmtMoney(getNetThanhToan(item.THANH_TOAN))
                                             : <span className="text-muted-foreground font-normal">—</span>}
                                     </td>
                                 )}
@@ -381,6 +486,15 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                         </button>
                                         {/* Nút xuất Phụ Lục riêng: ẩn đi (đã tích hợp vào nút xuất HĐ) */}
                                         <button onClick={() => handleExportPL(item)} disabled={item.LOAI_HD === "Công nghiệp"} className="hidden p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-500 hover:text-blue-700 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:group-hover:text-muted-foreground" title={item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp không có phụ lục" : "Xuất Phụ Lục HĐ"}><FileSpreadsheet className="w-4 h-4" /></button>
+                                        {canOpenPaymentAction && (
+                                            <button
+                                                onClick={() => openPaymentActionModal(item)}
+                                                className="p-1.5 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-amber-600 dark:group-hover:text-amber-500 hover:text-amber-700"
+                                                title="Tạo đề nghị / thanh toán"
+                                            >
+                                                <CreditCard className="w-4 h-4" />
+                                            </button>
+                                        )}
                                         <PermissionGuard moduleKey="hop-dong" level="edit">
                                             <button
                                                 onClick={() => handleBanGiao(item)}
@@ -469,6 +583,15 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 </button>
                                 {/* Nút xuất Phụ Lục riêng: ẩn đi (đã tích hợp vào nút xuất HĐ) */}
                                 <button onClick={() => handleExportPL(item)} disabled={item.LOAI_HD === "Công nghiệp"} className="hidden flex-1 justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-muted-foreground hover:text-blue-700 rounded-lg transition-colors text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-muted/50 disabled:hover:text-muted-foreground" title={item.LOAI_HD === "Công nghiệp" ? "Hợp đồng Công nghiệp không có phụ lục" : "Xuất Phụ Lục"}><FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">PL</span></button>
+                                {canOpenPaymentAction && (
+                                    <button
+                                        onClick={() => openPaymentActionModal(item)}
+                                        className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-muted-foreground hover:text-amber-700 rounded-lg transition-colors text-xs font-semibold"
+                                        title="Tạo đề nghị / thanh toán"
+                                    >
+                                        <CreditCard className="w-4 h-4" /> <span className="hidden sm:inline">Thanh toán</span>
+                                    </button>
+                                )}
                                 <PermissionGuard moduleKey="ban-giao" level="add">
                                     <button
                                         onClick={() => handleBanGiao(item)}
@@ -527,11 +650,70 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                 onSuccess={() => setBanGiaoModal({ open: false, prefillHD: null })}
                 prefillHD={banGiaoModal.prefillHD}
             />
+            <AddEditDeNghiTTModal
+                isOpen={deNghiTTModal.open}
+                onClose={() => setDeNghiTTModal({ open: false, prefillData: null })}
+                onSuccess={() => setDeNghiTTModal({ open: false, prefillData: null })}
+                prefillData={deNghiTTModal.prefillData || undefined}
+            />
+            <AddEditThanhToanModal
+                isOpen={thanhToanModal.open}
+                onClose={() => setThanhToanModal({ open: false, prefillData: null })}
+                onSuccess={() => setThanhToanModal({ open: false, prefillData: null })}
+                prefillData={thanhToanModal.prefillData || undefined}
+            />
             <ViewBanGiaoModal
                 isOpen={viewBanGiaoModal.open}
                 onClose={() => setViewBanGiaoModal({ open: false, data: null })}
                 data={viewBanGiaoModal.data}
             />
+
+            <Modal
+                isOpen={paymentActionModal.open}
+                onClose={closePaymentActionModal}
+                title="Tạo chứng từ thanh toán"
+                subtitle={paymentActionModal.item?.SO_HD}
+                icon={CreditCard}
+                footer={
+                    <button onClick={closePaymentActionModal} className="btn-premium-secondary" disabled={paymentActionModal.loadingAction !== null}>Đóng</button>
+                }
+            >
+                <div className="flex flex-col gap-5 py-2">
+                    <p className="text-sm text-muted-foreground text-center">Chọn loại chứng từ muốn tạo cho hợp đồng này.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <PermissionGuard moduleKey="de-nghi-tt" level="add">
+                            <button
+                                onClick={() => void handleCreateDeNghiTT()}
+                                disabled={paymentActionModal.loadingAction !== null}
+                                className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 hover:border-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    {paymentActionModal.loadingAction === "de-nghi" ? <Loader2 className="w-6 h-6 animate-spin text-blue-600" /> : <FileText className="w-6 h-6 text-blue-600" />}
+                                </div>
+                                <div className="text-center">
+                                    <p className="font-bold text-sm text-foreground">Tạo đề nghị thanh toán</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Chọn lần thanh toán rồi lập đề nghị</p>
+                                </div>
+                            </button>
+                        </PermissionGuard>
+                        <PermissionGuard moduleKey="thanh-toan" level="add">
+                            <button
+                                onClick={handleCreateThanhToan}
+                                disabled={paymentActionModal.loadingAction !== null}
+                                className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 hover:border-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <CreditCard className="w-6 h-6 text-amber-600" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="font-bold text-sm text-foreground">Tạo thanh toán</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Mở form thanh toán cho hợp đồng đã chọn</p>
+                                </div>
+                            </button>
+                        </PermissionGuard>
+                    </div>
+                </div>
+            </Modal>
 
             <Modal
                 isOpen={duyetInfoModal.isOpen}

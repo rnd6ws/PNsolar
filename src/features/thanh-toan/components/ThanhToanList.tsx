@@ -35,6 +35,11 @@ function formatMoney(val?: number | null) {
     return new Intl.NumberFormat("vi-VN").format(val) + " ₫";
 }
 
+function getNetThanhToan(item: { LOAI_THANH_TOAN?: string | null; SO_TIEN_THANH_TOAN?: number | null }) {
+    const amount = item.SO_TIEN_THANH_TOAN || 0;
+    return item.LOAI_THANH_TOAN === "Hoàn tiền" ? -amount : amount;
+}
+
 const LOAI_BADGE: Record<string, { bg: string; text: string }> = {
     "Thanh toán": { bg: "bg-emerald-500/10", text: "text-emerald-600" },
     "Hoàn tiền":  { bg: "bg-amber-500/10",   text: "text-amber-600"   },
@@ -102,7 +107,7 @@ export default function ThanhToanList({ data, visibleColumns, viewMode = "list",
             const groupKey = groupBy === "MA_KH" ? (item.MA_KH || "unknown") : (item.SO_HD || "unknown");
             if (!groups[groupKey]) groups[groupKey] = { items: [], total: 0 };
             groups[groupKey].items.push(item);
-            groups[groupKey].total += item.SO_TIEN_THANH_TOAN || 0;
+            groups[groupKey].total += getNetThanhToan(item);
         });
         return Object.entries(groups).map(([key, { items, total }]) => {
             const label = groupBy === "MA_KH"

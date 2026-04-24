@@ -191,7 +191,7 @@ export async function getHopDongList(filters: {
                     BAO_GIA_REL: { select: { MA_BAO_GIA: true, TONG_TIEN: true } },
                     _count: { select: { HOP_DONG_CT: true } },
                     BAN_GIAO_HD: { select: { ID: true }, orderBy: { CREATED_AT: 'desc' as const }, take: 1 },
-                    THANH_TOAN: { select: { SO_TIEN_THANH_TOAN: true } },
+                    THANH_TOAN: { select: { LOAI_THANH_TOAN: true, SO_TIEN_THANH_TOAN: true } },
                 },
                 skip: (page - 1) * limit,
                 take: limit,
@@ -254,12 +254,13 @@ export async function getHopDongStats() {
             }
         }
 
-        const [total, daDuyet, sumTatCa, sumDaDuyet, sumThanhToan] = await Promise.all([
+        const [total, daDuyet, sumTatCa, sumDaDuyet, sumThanhToan, sumHoanTien] = await Promise.all([
             prisma.hOP_DONG.count({ where: baseWhere }),
             prisma.hOP_DONG.count({ where: { ...baseWhere, DUYET: 'Đã duyệt' } }),
             prisma.hOP_DONG.aggregate({ _sum: { TONG_TIEN: true }, where: baseWhere }),
             prisma.hOP_DONG.aggregate({ _sum: { TONG_TIEN: true }, where: { ...baseWhere, DUYET: 'Đã duyệt' } }),
-            prisma.tHANH_TOAN.aggregate({ _sum: { SO_TIEN_THANH_TOAN: true }, where: ttWhere }),
+            prisma.tHANH_TOAN.aggregate({ _sum: { SO_TIEN_THANH_TOAN: true }, where: { ...ttWhere, LOAI_THANH_TOAN: 'Thanh toán' } }),
+            prisma.tHANH_TOAN.aggregate({ _sum: { SO_TIEN_THANH_TOAN: true }, where: { ...ttWhere, LOAI_THANH_TOAN: 'Hoàn tiền' } }),
         ]);
 
         return {
@@ -267,7 +268,7 @@ export async function getHopDongStats() {
             daDuyet,
             tongGiaTri: sumTatCa._sum.TONG_TIEN || 0,
             tongDaDuyet: sumDaDuyet._sum.TONG_TIEN || 0,
-            tongDaThanhToan: sumThanhToan._sum.SO_TIEN_THANH_TOAN || 0,
+            tongDaThanhToan: (sumThanhToan._sum.SO_TIEN_THANH_TOAN || 0) - (sumHoanTien._sum.SO_TIEN_THANH_TOAN || 0),
         };
     } catch (error) {
         console.error('[getHopDongStats]', error);
