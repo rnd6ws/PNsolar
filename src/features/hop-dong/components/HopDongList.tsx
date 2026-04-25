@@ -1,6 +1,6 @@
 "use client";
-import { useState, useMemo } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackageCheck, Printer, Loader2, MoreHorizontal, CreditCard } from "lucide-react";
+import { Fragment, useState, useMemo } from "react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Eye, CheckCircle2, XCircle, Info, BookDown, FileSpreadsheet, FileText, PackageCheck, Printer, Loader2, MoreHorizontal, CreditCard, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { PermissionGuard, usePermissions } from "@/features/phan-quyen/components/PermissionGuard";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -21,20 +21,29 @@ import DocxPreviewModal from "@/components/DocxPreviewModal";
 import { generateHopDongBlob } from "../utils/generateHopDongBlob";
 import AddEditDeNghiTTModal from "@/features/de-nghi-tt/components/AddEditDeNghiTTModal";
 import AddEditThanhToanModal from "@/features/thanh-toan/components/AddEditThanhToanModal";
+import type { GroupByKey } from "./HopDongPageClient";
 
 const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString("vi-VN");
 const fmtMoney = (v: number) => v > 0 ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
+const getTrangThaiHopDongLabel = (item: any) => item.DUYET || "Chờ duyệt";
 const getNetThanhToan = (payments?: Array<{ LOAI_THANH_TOAN?: string | null; SO_TIEN_THANH_TOAN?: number | null }>) =>
     payments?.reduce((sum, payment) => {
         const amount = payment.SO_TIEN_THANH_TOAN || 0;
         return payment.LOAI_THANH_TOAN === "Hoàn tiền" ? sum - amount : sum + amount;
     }, 0) || 0;
+type LocalDuyetAction = "Đã duyệt" | "Chờ duyệt" | "Không duyệt";
+type ServerDuyetAction = "\u0110\u00e3 duy\u1ec7t" | "Ch\u1edd duy\u1ec7t" | "Kh\u00f4ng duy\u1ec7t";
+const mapDuyetAction = (action: LocalDuyetAction): ServerDuyetAction => {
+    if (action === "Đã duyệt") return "\u0110\u00e3 duy\u1ec7t";
+    if (action === "Không duyệt") return "Kh\u00f4ng duy\u1ec7t";
+    return "Ch\u1edd duy\u1ec7t";
+};
 
-interface Props { data: any[]; visibleColumns: ColumnKey[]; viewMode?: "list" | "card"; }
+interface Props { data: any[]; visibleColumns: ColumnKey[]; viewMode?: "list" | "card"; groupBy?: GroupByKey; }
 type OverflowAction = "preview";
 type PaymentActionType = "de-nghi" | "thanh-toan";
 
-export default function HopDongList({ data, visibleColumns, viewMode = "list" }: Props) {
+export default function HopDongList({ data, visibleColumns, viewMode = "list", groupBy = "none" }: Props) {
     const { isAdmin, canAdd } = usePermissions();
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [deleteItem, setDeleteItem] = useState<any>(null);
@@ -47,7 +56,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
     const [duyetInfoModal, setDuyetInfoModal] = useState<{ isOpen: boolean; data: any | null }>({ isOpen: false, data: null });
     const [exportingId, setExportingId] = useState<string | null>(null);
     const [vatModal, setVatModal] = useState<{ open: boolean; item: any | null; loading: boolean }>({ open: false, item: null, loading: false });
-    const [duyetConfirm, setDuyetConfirm] = useState<{ open: boolean; id: string; soHD: string; tenKH: string; action: "Đã duyệt" | "Không duyệt"; loading: boolean }>({ open: false, id: "", soHD: "", tenKH: "", action: "Đã duyệt", loading: false });
+    const [duyetConfirm, setDuyetConfirm] = useState<{ open: boolean; id: string; soHD: string; tenKH: string; action: Extract<LocalDuyetAction, "Đã duyệt" | "Không duyệt">; loading: boolean }>({ open: false, id: "", soHD: "", tenKH: "", action: "Đã duyệt", loading: false });
     const [banGiaoModal, setBanGiaoModal] = useState<{ open: boolean; prefillHD: any | null }>({ open: false, prefillHD: null });
     const [loadingBanGiao, setLoadingBanGiao] = useState(false);
     const [paymentActionModal, setPaymentActionModal] = useState<{ open: boolean; item: any | null; loadingAction: PaymentActionType | null }>({ open: false, item: null, loadingAction: null });
@@ -70,6 +79,7 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
     });
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [overflowLoading, setOverflowLoading] = useState<{ id: string | null; action: OverflowAction | null }>({ id: null, action: null });
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
     const isOverflowLoading = (itemId: string, action?: OverflowAction) => {
         if (overflowLoading.id !== itemId) return false;
@@ -158,18 +168,19 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                 TEN_KH: item.KHTN_REL?.TEN_KH || item.MA_KH,
                 SO_HD: item.SO_HD,
                 SO_TIEN: 0,
+                source: "hop-dong",
             },
         });
         closePaymentActionModal();
     };
 
-    const openDuyetConfirm = (item: any, action: "Đã duyệt" | "Không duyệt") => {
+    const openDuyetConfirm = (item: any, action: Extract<LocalDuyetAction, "Đã duyệt" | "Không duyệt">) => {
         setDuyetConfirm({ open: true, id: item.ID, soHD: item.SO_HD, tenKH: item.KHTN_REL?.TEN_KH || item.MA_KH || "", action, loading: false });
     };
 
     const confirmDuyet = async () => {
         setDuyetConfirm(prev => ({ ...prev, loading: true }));
-        const res = await duyetHopDong(duyetConfirm.id, duyetConfirm.action);
+        const res = await duyetHopDong(duyetConfirm.id, mapDuyetAction(duyetConfirm.action));
         if (res?.success) {
             toast.success(res.message || "Thành công!");
         } else {
@@ -265,8 +276,8 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         }
     };
 
-    const handleDuyet = async (id: string, action: "Đã duyệt" | "Chờ duyệt" | "Không duyệt") => {
-        const promise = duyetHopDong(id, action);
+    const handleDuyet = async (id: string, action: LocalDuyetAction) => {
+        const promise = duyetHopDong(id, mapDuyetAction(action));
         toast.promise(promise, {
             loading: "Đang xử lý...",
             success: (res) => {
@@ -305,8 +316,46 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         });
     }, [data, sortConfig]);
 
+    const groupedData = useMemo(() => {
+        if (!groupBy || groupBy === "none") {
+            return [{ label: "", items: sortedData, total: sortedData.length }];
+        }
+
+        const groups: { label: string; items: any[] }[] = [];
+        const labelMap = new Map<string, number>();
+
+        sortedData.forEach((item) => {
+            let label = "Khác";
+
+            if (groupBy === "THANG_HOP_DONG") {
+                if (item.NGAY_HD) {
+                    const d = new Date(item.NGAY_HD);
+                    const month = String(d.getMonth() + 1).padStart(2, "0");
+                    label = `Tháng ${month}/${d.getFullYear()}`;
+                } else {
+                    label = "Chưa có ngày hợp đồng";
+                }
+            } else if (groupBy === "TRANG_THAI_HOP_DONG") {
+                label = getTrangThaiHopDongLabel(item);
+            }
+
+            if (labelMap.has(label)) {
+                groups[labelMap.get(label)!].items.push(item);
+            } else {
+                labelMap.set(label, groups.length);
+                groups.push({ label, items: [item] });
+            }
+        });
+
+        return groups.map((group) => ({ ...group, total: group.items.length }));
+    }, [sortedData, groupBy]);
+
     const handleSort = (key: string) => {
         setSortConfig(prev => ({ key, direction: prev?.key === key && prev.direction === "asc" ? "desc" : "asc" }));
+    };
+
+    const toggleGroup = (key: string) => {
+        setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
     };
 
     const SortIcon = ({ columnKey }: { columnKey: string }) => {
@@ -423,7 +472,28 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                     <tbody>
                         {sortedData.length === 0 ? (
                             <tr><td colSpan={20} className="text-center py-12 text-muted-foreground">Không có dữ liệu</td></tr>
-                        ) : sortedData.map((item: any, idx: number) => (
+                        ) : groupedData.map((group, gIdx) => {
+                            const isExpanded = expandedGroups[group.label] !== false;
+
+                            return (
+                                <Fragment key={group.label || gIdx}>
+                                    {group.label && (
+                                        <tr
+                                            className="cursor-pointer border-b border-border bg-primary/5 transition-colors hover:bg-primary/10"
+                                            onClick={() => toggleGroup(group.label)}
+                                        >
+                                            <td colSpan={100} className="px-4 py-2.5">
+                                                <div className="flex w-full items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                                                        <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                                        <span className="text-xs font-normal tracking-wide text-muted-foreground">({group.total} hợp đồng)</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {(!group.label || isExpanded) && group.items.map((item: any, idx: number) => (
                             <tr key={item.ID} className="border-b hover:bg-muted/30 transition-all group">
                                 <td className={`${tdClass} text-muted-foreground`}>{idx + 1}</td>
                                 <td className={`${tdClass} min-w-[120px]`}>
@@ -513,7 +583,10 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                     </div>
                                 </td>
                             </tr>
-                        ))}
+                                    ))}
+                                </Fragment>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
@@ -523,7 +596,22 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                 <div className="flex flex-col gap-4 p-3 bg-muted/10 lg:hidden">
                     {sortedData.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">Không có dữ liệu</div>
-                    ) : sortedData.map((item: any) => (
+                    ) : groupedData.map((group, gIdx) => {
+                        const isExpanded = expandedGroups[group.label] !== false;
+
+                        return (
+                            <Fragment key={group.label || gIdx}>
+                                {group.label && (
+                                    <button
+                                        onClick={() => toggleGroup(group.label)}
+                                        className="mb-1 flex w-full items-center gap-2 rounded-xl border border-border bg-primary/5 px-4 py-2.5 transition-colors hover:bg-primary/10"
+                                    >
+                                        {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                                        <span className="text-sm font-bold text-foreground">{group.label}</span>
+                                        <span className="text-xs font-normal text-muted-foreground">({group.total} hợp đồng)</span>
+                                    </button>
+                                )}
+                                {(!group.label || isExpanded) && group.items.map((item: any) => (
                         <div key={item.ID} className="bg-background border border-border rounded-xl p-3 shadow-sm flex flex-col gap-3">
                             {/* Header: Số hợp đồng và Loại hợp đồng */}
                             <div className="flex items-start justify-between gap-2">
@@ -610,7 +698,10 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 {renderOverflowMenu(item, "flex-none p-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors")}
                             </div>
                         </div>
-                    ))}
+                                ))}
+                            </Fragment>
+                        );
+                    })}
                 </div>
             )}
 
@@ -854,4 +945,5 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
         </>
     );
 }
+
 

@@ -489,6 +489,7 @@ export default function DeNghiTTList({ data, visibleColumns, viewMode = "list", 
                         SO_HD: thanhToanItem.SO_HD,
                         SO_TIEN: thanhToanItem.SO_TIEN_DE_NGHI,
                         SO_TK: thanhToanItem.SO_TK || null,
+                        source: "de-nghi",
                     }}
                 />
             )}
