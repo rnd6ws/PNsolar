@@ -31,6 +31,7 @@ export default function ViewDeNghiTTModal({ isOpen, onClose, data }: Props) {
         SO_HD: data.SO_HD,
         SO_TIEN: data.SO_TIEN_DE_NGHI,
         SO_TK: data.SO_TK || null,
+        source: "de-nghi" as const,
     };
 
     return (

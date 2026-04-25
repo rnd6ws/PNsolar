@@ -1,5 +1,6 @@
 'use server';
 
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth';
@@ -306,23 +307,159 @@ export async function searchKhachHangForTT(query?: string) {
     }
 }
 
+function getNetThanhToan(payments?: Array<{ LOAI_THANH_TOAN?: string | null; SO_TIEN_THANH_TOAN?: number | null }>) {
+    return payments?.reduce((sum, payment) => {
+        const amount = payment.SO_TIEN_THANH_TOAN || 0;
+        return payment.LOAI_THANH_TOAN === 'Hoàn tiền' ? sum - amount : sum + amount;
+    }, 0) || 0;
+}
+
 // ─── Hợp đồng theo khách hàng ────────────────────────────
 export async function getHopDongByKHForTT(maKH: string) {
     try {
         if (!maKH) return [];
+        const where: Prisma.HOP_DONGWhereInput = { MA_KH: maKH };
+
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                where.AND = [{
+                    OR: [
+                        { NGUOI_TAO: staff.MA_NV },
+                        { KHTN_REL: { SALES_PT: staff.MA_NV } },
+                    ],
+                }];
+            } else {
+                where.AND = [{ SO_HD: 'NONE' }];
+            }
+        }
+
         const data = await prisma.hOP_DONG.findMany({
-            where: { MA_KH: maKH },
-            select: { ID: true, SO_HD: true, NGAY_HD: true, TONG_TIEN: true, LOAI_HD: true },
+            where,
+            select: {
+                ID: true,
+                SO_HD: true,
+                NGAY_HD: true,
+                TONG_TIEN: true,
+                LOAI_HD: true,
+                THANH_TOAN: {
+                    select: { LOAI_THANH_TOAN: true, SO_TIEN_THANH_TOAN: true },
+                },
+            },
             orderBy: [{ NGAY_HD: 'desc' }, { CREATED_AT: 'desc' }],
         });
-        return data.map(hd => ({ ...hd, NGAY_HD: hd.NGAY_HD.toISOString() }));
+        return data.map(({ THANH_TOAN, ...hd }) => {
+            const soTienDaThanhToan = getNetThanhToan(THANH_TOAN);
+            const soTienConLai = (hd.TONG_TIEN || 0) - soTienDaThanhToan;
+
+            return {
+                ...hd,
+                NGAY_HD: hd.NGAY_HD.toISOString(),
+                SO_TIEN_DA_THANH_TOAN: soTienDaThanhToan,
+                SO_TIEN_CON_LAI: soTienConLai,
+            };
+        });
     } catch (error) {
         console.error('[getHopDongByKHForTT]', error);
         return [];
     }
 }
 
+export async function getHopDongSummaryForTT(soHD: string) {
+    try {
+        if (!soHD) return null;
+
+        const where: Prisma.HOP_DONGWhereInput = { SO_HD: soHD };
+
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                where.AND = [{
+                    OR: [
+                        { NGUOI_TAO: staff.MA_NV },
+                        { KHTN_REL: { SALES_PT: staff.MA_NV } },
+                    ],
+                }];
+            } else {
+                where.AND = [{ SO_HD: 'NONE' }];
+            }
+        }
+
+        const hd = await prisma.hOP_DONG.findFirst({
+            where,
+            select: {
+                SO_HD: true,
+                TONG_TIEN: true,
+                THANH_TOAN: {
+                    select: { LOAI_THANH_TOAN: true, SO_TIEN_THANH_TOAN: true },
+                },
+            },
+        });
+
+        if (!hd) return null;
+
+        const soTienDaThanhToan = getNetThanhToan(hd.THANH_TOAN);
+        const soTienConLai = (hd.TONG_TIEN || 0) - soTienDaThanhToan;
+
+        return {
+            SO_HD: hd.SO_HD,
+            TONG_TIEN: hd.TONG_TIEN || 0,
+            SO_TIEN_DA_THANH_TOAN: soTienDaThanhToan,
+            SO_TIEN_CON_LAI: soTienConLai,
+        };
+    } catch (error) {
+        console.error('[getHopDongSummaryForTT]', error);
+        return null;
+    }
+}
+
 // ─── Danh sách tài khoản thanh toán (reuse) ──────────────
+export async function getDeNghiTTByHopDongForTT(soHD: string) {
+    try {
+        if (!soHD) return [];
+
+        const where: Prisma.DE_NGHI_TTWhereInput = { SO_HD: soHD };
+
+        const user = await getCurrentUser();
+        if (user?.ROLE === 'STAFF') {
+            const staff = await prisma.dSNV.findUnique({ where: { ID: user.userId }, select: { MA_NV: true } });
+            if (staff?.MA_NV) {
+                where.AND = [{
+                    OR: [
+                        { NGUOI_TAO: staff.MA_NV },
+                        { KHTN_REL: { SALES_PT: staff.MA_NV } },
+                    ],
+                }];
+            } else {
+                where.AND = [{ SO_HD: 'NONE' }];
+            }
+        }
+
+        const data = await prisma.dE_NGHI_TT.findMany({
+            where,
+            select: {
+                ID: true,
+                MA_DE_NGHI: true,
+                LAN_THANH_TOAN: true,
+                SO_TIEN_DE_NGHI: true,
+                SO_TK: true,
+                NGAY_DE_NGHI: true,
+            },
+            orderBy: [{ NGAY_DE_NGHI: 'desc' }, { CREATED_AT: 'desc' }],
+        });
+
+        return data.map((item) => ({
+            ...item,
+            NGAY_DE_NGHI: item.NGAY_DE_NGHI.toISOString(),
+        }));
+    } catch (error) {
+        console.error('[getDeNghiTTByHopDongForTT]', error);
+        return [];
+    }
+}
+
 export async function getTaiKhoanListForTT() {
     try {
         const data = await prisma.tAIKHOAN_THANHTOAN.findMany({ orderBy: { CREATED_AT: 'desc' } });

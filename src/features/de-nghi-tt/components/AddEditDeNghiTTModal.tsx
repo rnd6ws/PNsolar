@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FileText, Search, Loader2 } from "lucide-react";
 import Modal from "@/components/Modal";
+import FormSelect from "@/components/FormSelect";
 import { toast } from "sonner";
 import { createDeNghiTT, updateDeNghiTT, searchKhachHangForDNTT, getHopDongByKHForDNTT, getTaiKhoanTTList } from "../action";
 
@@ -38,15 +39,51 @@ interface TaiKhoanItem {
     LOAI_TK: string | null;
 }
 
+interface EditDeNghiTTData {
+    ID: string;
+    MA_DE_NGHI: string;
+    MA_KH: string;
+    SO_HD: string;
+    NGAY_DE_NGHI: string | Date | null;
+    LAN_THANH_TOAN: string;
+    SO_TIEN_THEO_LAN: number;
+    SO_TIEN_DE_NGHI: number;
+    SO_TK: string | null;
+    GHI_CHU: string | null;
+    KHTN_REL?: { TEN_KH: string } | null;
+}
+
+interface DeNghiTTPayload {
+    MA_KH: string;
+    SO_HD: string;
+    NGAY_DE_NGHI: string;
+    LAN_THANH_TOAN: string;
+    SO_TIEN_THEO_LAN: number;
+    SO_TIEN_DE_NGHI: number;
+    SO_TK: string | null;
+    GHI_CHU: string | null;
+}
+
 interface Props {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    editData?: any;
+    editData?: EditDeNghiTTData;
+    prefillData?: {
+        MA_KH: string;
+        TEN_KH: string;
+        SO_HD: string;
+        NGAY_HD?: string;
+        TONG_TIEN?: number;
+        LOAI_HD?: string;
+        SO_TK?: string | null;
+        DKTT_HD: DkttItem[];
+    };
 }
 
-export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editData }: Props) {
+export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editData, prefillData }: Props) {
     const isEdit = !!editData;
+    const isPrefill = !isEdit && !!prefillData;
     const [loading, setLoading] = useState(false);
 
     // KH search
@@ -73,11 +110,26 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
     const [soTienDeNghiDisplay, setSoTienDeNghiDisplay] = useState("");
     const [soTK, setSoTK] = useState("");
     const [ghiChu, setGhiChu] = useState("");
+    const moneyFormatter = useMemo(() => new Intl.NumberFormat('vi-VN'), []);
+    const hopDongOptions = useMemo(
+        () => hopDongList.map(hd => ({
+            value: hd.SO_HD,
+            label: `${hd.SO_HD} - ${moneyFormatter.format(hd.TONG_TIEN)} VND (${hd.DKTT_HD.length} lần TT)`,
+        })),
+        [hopDongList, moneyFormatter]
+    );
+    const taiKhoanOptions = useMemo(
+        () => taiKhoanList.map(tk => ({
+            value: tk.SO_TK,
+            label: `${tk.SO_TK} - ${tk.TEN_TK} (${tk.TEN_NGAN_HANG})`,
+        })),
+        [taiKhoanList]
+    );
 
     // Load TK + populate edit data khi mở modal
     useEffect(() => {
         if (isOpen) {
-            getTaiKhoanTTList().then((data: any) => setTaiKhoanList(data));
+            getTaiKhoanTTList().then((data) => setTaiKhoanList(data));
             if (editData) {
                 // Populate form from editData
                 setNgayDeNghi(editData.NGAY_DE_NGHI ? new Date(editData.NGAY_DE_NGHI).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
@@ -89,9 +141,20 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                 if (editData.KHTN_REL) {
                     setSelectedKH({ ID: '', MA_KH: editData.MA_KH, TEN_KH: editData.KHTN_REL.TEN_KH, DIEN_THOAI: null });
                 }
+            } else if (prefillData) {
+                setSelectedKH({ ID: '', MA_KH: prefillData.MA_KH, TEN_KH: prefillData.TEN_KH, DIEN_THOAI: null });
+                setSelectedHD({
+                    ID: '',
+                    SO_HD: prefillData.SO_HD,
+                    NGAY_HD: prefillData.NGAY_HD || '',
+                    TONG_TIEN: prefillData.TONG_TIEN || 0,
+                    LOAI_HD: prefillData.LOAI_HD || '',
+                    DKTT_HD: prefillData.DKTT_HD || [],
+                });
+                setSoTK(prefillData.SO_TK || '');
             }
         }
-    }, [isOpen, editData]);
+    }, [isOpen, editData, prefillData]);
 
     // Search KH
     useEffect(() => {
@@ -107,7 +170,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
 
     // Load HĐ khi chọn KH (chỉ khi tạo mới)
     useEffect(() => {
-        if (isEdit) return;
+        if (isEdit || isPrefill) return;
         if (!selectedKH) {
             setHopDongList([]);
             setSelectedHD(null);
@@ -115,12 +178,11 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
             return;
         }
         setHdLoading(true);
-        getHopDongByKHForDNTT(selectedKH.MA_KH).then((data: any) => {
+        getHopDongByKHForDNTT(selectedKH.MA_KH).then((data) => {
             setHopDongList(data);
             setHdLoading(false);
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedKH]);
+    }, [selectedKH, isEdit, isPrefill]);
 
     // Reset DKTT khi đổi HĐ (chỉ khi tạo mới, không reset khi edit)
     useEffect(() => {
@@ -128,7 +190,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
         setSelectedDKTT(null);
         setSoTienDeNghiValue(0);
         setSoTienDeNghiDisplay("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedHD]);
 
     // Khi chọn ĐKTT -> fill số tiền
@@ -174,7 +236,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
         if (isEdit) {
             // Edit mode: chỉ cập nhật số tiền, TK, ghi chú, ngày
             setLoading(true);
-            const payload: any = {
+            const payload: DeNghiTTPayload = {
                 MA_KH: editData.MA_KH,
                 SO_HD: editData.SO_HD,
                 NGAY_DE_NGHI: ngayDeNghi,
@@ -226,7 +288,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
         <Modal
             isOpen={isOpen}
             onClose={handleClose}
-            title={isEdit ? "Sửa đề nghị thanh toán" : "Tạo đề nghị thanh toán"}
+            title={isEdit ? "Sửa đề nghị thanh toán" : isPrefill ? "Tạo đề nghị thanh toán" : "Tạo đề nghị thanh toán"}
             icon={FileText}
             size="lg"
             fullHeight
@@ -241,7 +303,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                             disabled={loading}
                             className="btn-premium-primary"
                         >
-                            {loading ? "Đang xử lý..." : isEdit ? "Cập nhật" : "Lưu"}
+                            {loading ? "Đang xử lý..." : isEdit ? "Cập nhật" : isPrefill ? "Tạo đề nghị" : "Lưu"}
                         </button>
                     </div>
                 </>
@@ -289,8 +351,28 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                     </div>
                 )}
 
+                {isPrefill && prefillData && (
+                    <div className="space-y-3 p-4 bg-primary/5 rounded-xl border border-primary/20">
+                        <p className="text-xs font-semibold text-primary uppercase tracking-wider">Hợp đồng được chọn</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <span className="text-muted-foreground text-xs">Khách hàng</span>
+                                <p className="font-semibold text-foreground">{prefillData.TEN_KH}</p>
+                                <p className="text-xs text-muted-foreground">{prefillData.MA_KH}</p>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground text-xs">Hợp đồng</span>
+                                <p className="font-semibold text-foreground">{prefillData.SO_HD}</p>
+                                {prefillData.TONG_TIEN !== undefined && (
+                                    <p className="text-xs text-muted-foreground">{new Intl.NumberFormat('vi-VN').format(prefillData.TONG_TIEN || 0)} ₫</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Chọn KH / HĐ / DKTT - chỉ hiện khi tạo mới */}
-                {!isEdit && (
+                {!isEdit && !isPrefill && (
                     <>
                         {/* Chọn khách hàng */}
                         <div className="space-y-2">
@@ -349,22 +431,16 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                                 ) : hopDongList.length === 0 ? (
                                     <p className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">Khách hàng chưa có hợp đồng nào.</p>
                                 ) : (
-                                    <select
+                                    <FormSelect
+                                        name="so-hd"
                                         value={selectedHD?.SO_HD || ""}
-                                        onChange={e => {
-                                            const hd = hopDongList.find(h => h.SO_HD === e.target.value);
+                                        onChange={(value) => {
+                                            const hd = hopDongList.find(h => h.SO_HD === value);
                                             setSelectedHD(hd || null);
                                         }}
-                                        className="input-modern"
-                                        required
-                                    >
-                                        <option value="">-- Chọn hợp đồng --</option>
-                                        {hopDongList.map(hd => (
-                                            <option key={hd.ID} value={hd.SO_HD}>
-                                                {hd.SO_HD} — {new Intl.NumberFormat('vi-VN').format(hd.TONG_TIEN)} ₫ ({hd.DKTT_HD.length} lần TT)
-                                            </option>
-                                        ))}
-                                    </select>
+                                        options={hopDongOptions}
+                                        placeholder="-- Chọn hợp đồng --"
+                                    />
                                 )}
                             </div>
                         )}
@@ -383,7 +459,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                                                 className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedDKTT?.ID === dktt.ID
                                                     ? 'border-primary bg-primary/5 shadow-sm'
                                                     : 'border-border hover:border-primary/30 hover:bg-muted/30'
-                                                }`}
+                                                    }`}
                                             >
                                                 <input
                                                     type="radio"
@@ -412,15 +488,54 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                 )}
 
                 {/* Số tiền đề nghị */}
+                {!isEdit && isPrefill && selectedHD && (
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-muted-foreground">Lần thanh toán <span className="text-destructive">*</span></label>
+                        {selectedHD.DKTT_HD.length === 0 ? (
+                            <p className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">Hợp đồng chưa có điều kiện thanh toán.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {selectedHD.DKTT_HD.map(dktt => (
+                                    <label
+                                        key={dktt.ID}
+                                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedDKTT?.ID === dktt.ID
+                                            ? 'border-primary bg-primary/5 shadow-sm'
+                                            : 'border-border hover:border-primary/30 hover:bg-muted/30'
+                                            }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="dktt"
+                                            checked={selectedDKTT?.ID === dktt.ID}
+                                            onChange={() => setSelectedDKTT(dktt)}
+                                            className="accent-primary"
+                                        />
+                                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                                            <span className="text-sm font-semibold whitespace-nowrap">{dktt.LAN_THANH_TOAN}</span>
+                                            <span className="text-xs text-muted-foreground">—</span>
+                                            <span className="text-xs text-muted-foreground">{dktt.PT_THANH_TOAN}%</span>
+                                            <span className="text-xs text-muted-foreground">·</span>
+                                            <span className="text-xs font-medium text-foreground">{new Intl.NumberFormat('vi-VN').format(dktt.SO_TIEN)} ₫</span>
+                                            {dktt.NOI_DUNG_YEU_CAU && (
+                                                <span className="text-xs text-muted-foreground italic truncate ml-1">({dktt.NOI_DUNG_YEU_CAU})</span>
+                                            )}
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {(selectedDKTT || isEdit) && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {!isEdit && (
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-muted-foreground">Số tiền theo lần thanh toán</label>
-                            <div className="p-2.5 bg-muted/30 border border-border rounded-lg text-sm font-medium">
-                                {selectedDKTT && new Intl.NumberFormat('vi-VN').format(selectedDKTT.SO_TIEN)} ₫
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Số tiền theo lần thanh toán</label>
+                                <div className="p-2.5 bg-muted/30 border border-border rounded-lg text-sm font-medium">
+                                    {selectedDKTT && new Intl.NumberFormat('vi-VN').format(selectedDKTT.SO_TIEN)} ₫
+                                </div>
                             </div>
-                        </div>
                         )}
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-muted-foreground">Số tiền đề nghị <span className="text-destructive">*</span></label>
@@ -442,18 +557,13 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-muted-foreground">Số tài khoản</label>
-                            <select
+                            <FormSelect
+                                name="so-tk"
                                 value={soTK}
-                                onChange={e => setSoTK(e.target.value)}
-                                className="input-modern"
-                            >
-                                <option value="">-- Chọn tài khoản --</option>
-                                {taiKhoanList.map(tk => (
-                                    <option key={tk.ID} value={tk.SO_TK}>
-                                        {tk.SO_TK} — {tk.TEN_TK} ({tk.TEN_NGAN_HANG})
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={setSoTK}
+                                options={taiKhoanOptions}
+                                placeholder="-- Chọn tài khoản --"
+                            />
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-muted-foreground">Ghi chú</label>
