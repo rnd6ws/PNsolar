@@ -151,6 +151,10 @@ body {
     word-break: normal;
 }
 @media print {
+    @page {
+        size: A4;
+        margin: 0;
+    }
     html, body {
         background: #fff !important;
     }
@@ -169,7 +173,14 @@ body {
     }
     #docx-preview-frame-root section.docx {
         margin: 0 auto !important;
-        overflow: visible !important;
+        overflow: hidden !important;
+        break-after: page;
+        page-break-after: always;
+        box-shadow: none !important;
+    }
+    #docx-preview-frame-root section.docx:last-child {
+        break-after: auto;
+        page-break-after: auto;
     }
 }
 `;
@@ -187,50 +198,6 @@ const IFRAME_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
-const PRINT_IFRAME_HTML = `<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="utf-8" />
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            background: #fff;
-        }
-        body {
-            overflow: visible;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-        #docx-print-frame-root section.docx {
-            margin: 0 auto !important;
-            overflow: visible !important;
-            box-shadow: none !important;
-        }
-        #docx-print-frame-root section.docx > article {
-            margin-bottom: 0 !important;
-        }
-        #docx-print-frame-root section.docx table td,
-        #docx-print-frame-root section.docx table th {
-            box-sizing: border-box;
-            overflow-wrap: break-word;
-            word-break: normal;
-        }
-        #docx-print-frame-root section.docx table td span,
-        #docx-print-frame-root section.docx table th span {
-            overflow-wrap: break-word;
-            word-break: normal;
-        }
-        @page {
-            margin: 0;
-        }
-    </style>
-</head>
-<body>
-    <div id="docx-print-frame-root"></div>
-</body>
-</html>`;
-
 type ParagraphTabStopHint = {
     positionTwip: number | null;
     leader: string | null;
@@ -244,9 +211,9 @@ type TableRenderHint = {
     positionXTwip: number | null;
 };
 
-type PageViewportHint = {
-    widthTwip: number | null;
-    heightTwip: number | null;
+type ParagraphStyleTabHint = {
+    basedOnStyleId: string | null;
+    tabStops: ParagraphTabStopHint[] | null;
 };
 
 const WORD_NAMESPACE = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -259,6 +226,18 @@ function getWordAttr(element: Element | null, name: string): string | null {
     return element.getAttribute(`w:${name}`) ?? element.getAttribute(name);
 }
 
+function getDirectWordChildren(element: Element | null, localName: string): Element[] {
+    if (!element) return [];
+
+    return Array.from(element.children).filter(
+        (child) => child.namespaceURI === WORD_NAMESPACE && child.localName === localName
+    );
+}
+
+function getDirectWordChild(element: Element | null, localName: string): Element | null {
+    return getDirectWordChildren(element, localName)[0] ?? null;
+}
+
 function parseTwip(value: string | null): number | null {
     if (!value) return null;
     const parsed = Number(value);
@@ -267,13 +246,6 @@ function parseTwip(value: string | null): number | null {
 
 function twipToPt(value: number): string {
     return `${value / 20}pt`;
-}
-
-function resolveViewportSize(viewportHint: PageViewportHint): { width: string; height: string } {
-    return {
-        width: viewportHint.widthTwip != null ? twipToPt(viewportHint.widthTwip) : "8.27in",
-        height: viewportHint.heightTwip != null ? twipToPt(viewportHint.heightTwip) : "11.69in",
-    };
 }
 
 function findWordAncestor(node: Node | null, localName: string): Element | null {
@@ -435,43 +407,55 @@ async function extractTableHints(docxBlob: Blob): Promise<TableRenderHint[]> {
     });
 }
 
-async function extractPageViewportHint(docxBlob: Blob): Promise<PageViewportHint> {
-    const [{ default: PizZip }] = await Promise.all([import("pizzip")]);
-    const buffer = await docxBlob.arrayBuffer();
-    const zip = new PizZip(buffer);
-    const documentXml = zip.file("word/document.xml")?.asText();
+function parseParagraphTabStops(tabsNode: Element | null): ParagraphTabStopHint[] | null {
+    if (!tabsNode) return null;
 
-    if (!documentXml || typeof DOMParser === "undefined") {
-        return {
-            widthTwip: null,
-            heightTwip: null,
-        };
-    }
+    return getDirectWordChildren(tabsNode, "tab").map((tabNode) => ({
+        positionTwip: parseTwip(getWordAttr(tabNode, "pos")),
+        leader: getWordAttr(tabNode, "leader"),
+        style: getWordAttr(tabNode, "val"),
+    }));
+}
 
-    const xml = new DOMParser().parseFromString(documentXml, "application/xml");
-    const sectionNodes = Array.from(xml.getElementsByTagNameNS(WORD_NAMESPACE, "sectPr"));
+function extractParagraphStyles(xml: Document): Map<string, ParagraphStyleTabHint> {
+    const styleHints = new Map<string, ParagraphStyleTabHint>();
+    const styleNodes = Array.from(xml.getElementsByTagNameNS(WORD_NAMESPACE, "style"));
 
-    let widthTwip: number | null = null;
-    let heightTwip: number | null = null;
+    styleNodes.forEach((styleNode) => {
+        if (getWordAttr(styleNode, "type") !== "paragraph") return;
 
-    sectionNodes.forEach((sectionNode) => {
-        const pageSize = sectionNode.getElementsByTagNameNS(WORD_NAMESPACE, "pgSz")[0] ?? null;
-        const nextWidth = parseTwip(getWordAttr(pageSize, "w"));
-        const nextHeight = parseTwip(getWordAttr(pageSize, "h"));
+        const styleId = getWordAttr(styleNode, "styleId");
+        if (!styleId) return;
 
-        if (nextWidth != null) {
-            widthTwip = widthTwip == null ? nextWidth : Math.max(widthTwip, nextWidth);
-        }
+        const basedOnStyleId = getWordAttr(getDirectWordChild(styleNode, "basedOn"), "val");
+        const paragraphProperties = getDirectWordChild(styleNode, "pPr");
+        const tabsNode = getDirectWordChild(paragraphProperties, "tabs");
 
-        if (nextHeight != null) {
-            heightTwip = heightTwip == null ? nextHeight : Math.max(heightTwip, nextHeight);
-        }
+        styleHints.set(styleId, {
+            basedOnStyleId,
+            tabStops: parseParagraphTabStops(tabsNode),
+        });
     });
 
-    return {
-        widthTwip,
-        heightTwip,
-    };
+    return styleHints;
+}
+
+function resolveStyleTabStops(
+    styleHints: Map<string, ParagraphStyleTabHint>,
+    styleId: string | null,
+    visited = new Set<string>()
+): ParagraphTabStopHint[] | null {
+    if (!styleId || visited.has(styleId)) return null;
+
+    const styleHint = styleHints.get(styleId);
+    if (!styleHint) return null;
+
+    if (styleHint.tabStops != null) {
+        return styleHint.tabStops;
+    }
+
+    visited.add(styleId);
+    return resolveStyleTabStops(styleHints, styleHint.basedOnStyleId, visited);
 }
 
 async function extractParagraphTabHints(docxBlob: Blob): Promise<{
@@ -492,10 +476,15 @@ async function extractParagraphTabHints(docxBlob: Blob): Promise<{
     const xml = new DOMParser().parseFromString(documentXml, "application/xml");
     const body = xml.getElementsByTagNameNS(WORD_NAMESPACE, "body")[0];
     const settingsXml = zip.file("word/settings.xml")?.asText();
+    const stylesXml = zip.file("word/styles.xml")?.asText();
     const settings = settingsXml
         ? new DOMParser().parseFromString(settingsXml, "application/xml")
         : null;
+    const styles = stylesXml
+        ? new DOMParser().parseFromString(stylesXml, "application/xml")
+        : null;
     const defaultTabStopNode = settings?.getElementsByTagNameNS(WORD_NAMESPACE, "defaultTabStop")[0] ?? null;
+    const styleHints = styles ? extractParagraphStyles(styles) : new Map<string, ParagraphStyleTabHint>();
 
     if (!body) {
         return {
@@ -509,15 +498,14 @@ async function extractParagraphTabHints(docxBlob: Blob): Promise<{
         paragraphs: Array.from(body.getElementsByTagNameNS(WORD_NAMESPACE, "p"))
             .filter((paragraphNode) => paragraphHasTabCharacter(paragraphNode))
             .map((paragraphNode) => {
-                const paragraphProperties = paragraphNode.getElementsByTagNameNS(WORD_NAMESPACE, "pPr")[0] ?? null;
-                const tabsNode = paragraphProperties?.getElementsByTagNameNS(WORD_NAMESPACE, "tabs")[0] ?? null;
-                const tabNodes = tabsNode ? Array.from(tabsNode.getElementsByTagNameNS(WORD_NAMESPACE, "tab")) : [];
+                const paragraphProperties = getDirectWordChild(paragraphNode, "pPr");
+                const directTabs = parseParagraphTabStops(getDirectWordChild(paragraphProperties, "tabs"));
+                if (directTabs != null) {
+                    return directTabs;
+                }
 
-                return tabNodes.map((tabNode) => ({
-                    positionTwip: parseTwip(getWordAttr(tabNode, "pos")),
-                    leader: getWordAttr(tabNode, "leader"),
-                    style: getWordAttr(tabNode, "val"),
-                }));
+                const paragraphStyleId = getWordAttr(getDirectWordChild(paragraphProperties, "pStyle"), "val");
+                return resolveStyleTabStops(styleHints, paragraphStyleId) ?? [];
             }),
     };
 }
@@ -528,6 +516,22 @@ function resetParagraphTabStops(tabSpans: HTMLElement[]) {
         tabSpan.style.wordSpacing = "";
         tabSpan.style.textDecoration = "inherit";
         tabSpan.style.textDecorationStyle = "";
+    });
+}
+
+function resetParagraphNoWrap(paragraph: HTMLParagraphElement) {
+    paragraph.style.whiteSpace = "";
+    paragraph.querySelectorAll<HTMLElement>("span").forEach((span) => {
+        span.style.whiteSpace = "";
+    });
+}
+
+function applyCenterTabNoWrap(paragraph: HTMLParagraphElement, tabStops: ParagraphTabStopHint[]) {
+    if (!tabStops.some((tabStop) => tabStop.style === "center")) return;
+
+    paragraph.style.whiteSpace = "nowrap";
+    paragraph.querySelectorAll<HTMLElement>("span").forEach((span) => {
+        span.style.whiteSpace = "nowrap";
     });
 }
 
@@ -635,6 +639,39 @@ function preserveEmptyParagraphSpacing(iframeDocument: Document, rootSelector: s
     });
 }
 
+function replaceSingleTextNodeText(root: Element, fromText: string, toText: string) {
+    const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let currentNode = walker.nextNode();
+
+    while (currentNode) {
+        if ((currentNode.textContent ?? "").trim() === fromText) {
+            currentNode.textContent = (currentNode.textContent ?? "").replace(fromText, toText);
+            return;
+        }
+
+        currentNode = walker.nextNode();
+    }
+}
+
+function updateRenderedPageNumbers(iframeDocument: Document, rootSelector: string) {
+    const sections = Array.from(iframeDocument.querySelectorAll<HTMLElement>(`${rootSelector} section.docx`));
+
+    sections.forEach((section, index) => {
+        const footer = section.querySelector<HTMLElement>("footer");
+        if (!footer) return;
+        if ((footer.textContent ?? "").trim() !== "1") return;
+
+        replaceSingleTextNodeText(footer, "1", String(index + 1));
+    });
+}
+
+function getParagraphTabOriginLeft(paragraph: Element, paragraphStyles: CSSStyleDeclaration): number {
+    const paragraphRect = paragraph.getBoundingClientRect();
+    const textIndent = Number.parseFloat(paragraphStyles.textIndent || "0") || 0;
+
+    return paragraphRect.left + Math.min(textIndent, 0);
+}
+
 function recalculateTabStop(
     tabSpan: HTMLElement,
     tabStops: ParagraphTabStopHint[],
@@ -648,14 +685,14 @@ function recalculateTabStop(
     const paragraphStyles = getComputedStyle(paragraph);
     const resolvedTabStops = resolveParagraphTabStops(tabStops, defaultTabStopPt, paragraphRect.width * pixelToPoint);
 
-    const marginLeft = Number.parseFloat(paragraphStyles.marginLeft || "0") || 0;
-    const paragraphOffsetLeft = paragraphRect.left + marginLeft;
-    const currentLeftPt = (tabSpan.getBoundingClientRect().left - paragraphOffsetLeft) * pixelToPoint;
+    const tabOriginLeft = getParagraphTabOriginLeft(paragraph, paragraphStyles);
+    const currentLeftPt = (tabSpan.getBoundingClientRect().left - tabOriginLeft) * pixelToPoint;
+
+    const allTabSpans = Array.from(paragraph.querySelectorAll<HTMLElement>(".docx-tab-stop"));
     const nextStop = resolvedTabStops.find((tabStop) => tabStop.style !== "clear" && tabStop.pos > currentLeftPt);
 
     if (!nextStop) return;
 
-    const allTabSpans = Array.from(paragraph.querySelectorAll<HTMLElement>(".docx-tab-stop"));
     const nextTabIndex = allTabSpans.indexOf(tabSpan) + 1;
     const range = paragraph.ownerDocument.createRange();
     range.setStart(tabSpan, 1);
@@ -671,7 +708,7 @@ function recalculateTabStop(
 
     if (nextStop.style === "right" || nextStop.style === "center") {
         const multiplier = nextStop.style === "center" ? 0.5 : 1;
-        const offsetPt = (trailingRect.left + trailingRect.width * multiplier - (paragraphRect.left - marginLeft)) * pixelToPoint;
+        const offsetPt = (trailingRect.left + trailingRect.width * multiplier - tabOriginLeft) * pixelToPoint;
         targetWidthPt = nextStop.pos - offsetPt;
     }
 
@@ -688,50 +725,6 @@ function recalculateTabStop(
     }
 }
 
-function applySingleLeftTabTailWrapper(
-    paragraph: HTMLParagraphElement,
-    tabSpan: HTMLElement,
-    tabStops: ParagraphTabStopHint[],
-    defaultTabStopPt: number,
-    pixelToPoint: number
-) {
-    if (tabStops.length !== 1) return;
-
-    const paragraphRect = paragraph.getBoundingClientRect();
-    const paragraphStyles = getComputedStyle(paragraph);
-    const resolvedTabStops = resolveParagraphTabStops(tabStops, defaultTabStopPt, paragraphRect.width * pixelToPoint);
-    const marginLeft = Number.parseFloat(paragraphStyles.marginLeft || "0") || 0;
-    const paragraphOffsetLeft = paragraphRect.left + marginLeft;
-    const currentLeftPt = (tabSpan.getBoundingClientRect().left - paragraphOffsetLeft) * pixelToPoint;
-    const nextStop = resolvedTabStops.find((tabStop) => tabStop.style !== "clear" && tabStop.pos > currentLeftPt);
-
-    if (!nextStop || nextStop.style !== "left") return;
-
-    const followingNodes: ChildNode[] = [];
-    let sibling = tabSpan.nextSibling;
-
-    while (sibling) {
-        const nextSibling = sibling.nextSibling;
-        followingNodes.push(sibling);
-        sibling = nextSibling;
-    }
-
-    if (followingNodes.length === 0) return;
-    if (!followingNodes.some((node) => (node.textContent ?? "").trim().length !== 0)) return;
-
-    const tail = paragraph.ownerDocument.createElement("span");
-    tail.className = TAB_TAIL_CLASS;
-    tail.style.display = "inline-block";
-    tail.style.width = `calc(100% - ${nextStop.pos.toFixed(2)}pt)`;
-    tail.style.verticalAlign = "top";
-    tail.style.whiteSpace = "pre-wrap";
-    tail.style.overflowWrap = "break-word";
-    tail.style.wordBreak = "normal";
-
-    followingNodes.forEach((node) => tail.appendChild(node));
-    paragraph.appendChild(tail);
-}
-
 function applyParagraphTabHints(
     iframeDocument: Document,
     paragraphTabHints: { defaultTabStopTwip: number | null; paragraphs: ParagraphTabStopHint[][] },
@@ -745,6 +738,7 @@ function applyParagraphTabHints(
 
     renderedParagraphs.forEach((paragraph, index) => {
         unwrapParagraphTabTail(paragraph);
+        resetParagraphNoWrap(paragraph);
 
         const tabSpans = Array.from(paragraph.querySelectorAll<HTMLElement>(".docx-tab-stop"));
         if (tabSpans.length === 0) return;
@@ -752,11 +746,8 @@ function applyParagraphTabHints(
         resetParagraphTabStops(tabSpans);
 
         const tabHints = paragraphTabHints.paragraphs[index] ?? [];
+        applyCenterTabNoWrap(paragraph, tabHints);
         tabSpans.forEach((tabSpan) => recalculateTabStop(tabSpan, tabHints, defaultTabStopPt, pixelToPoint));
-
-        if (tabSpans.length === 1) {
-            applySingleLeftTabTailWrapper(paragraph, tabSpans[0], tabHints, defaultTabStopPt, pixelToPoint);
-        }
     });
 }
 
@@ -774,8 +765,10 @@ async function syncRenderedLayout(
     applyParagraphTabHints(iframeDocument, paragraphTabHints, rootSelector);
 
     preserveEmptyParagraphSpacing(iframeDocument, rootSelector);
+    updateRenderedPageNumbers(iframeDocument, rootSelector);
     await waitForStableFrameLayout(iframeDocument, 120);
     applyParagraphTabHints(iframeDocument, paragraphTabHints, rootSelector);
+    updateRenderedPageNumbers(iframeDocument, rootSelector);
 }
 
 
@@ -957,75 +950,14 @@ export default function DocxPreviewModal({
     const handlePrint = async () => {
         if (loading || error || !previewReady || typeof document === "undefined" || !docxBlob) return;
 
-        const previewBlob = await normalizePreviewDocxBlob(docxBlob);
-        const pageViewportHint = await extractPageViewportHint(previewBlob);
-        const viewportSize = resolveViewportSize(pageViewportHint);
-
-        const printIframe = document.createElement("iframe");
-        printIframe.setAttribute("aria-hidden", "true");
-        printIframe.style.position = "fixed";
-        printIframe.style.left = "-200vw";
-        printIframe.style.top = "0";
-        printIframe.style.width = viewportSize.width;
-        printIframe.style.height = viewportSize.height;
-        printIframe.style.border = "0";
-        printIframe.style.opacity = "0";
-        printIframe.style.visibility = "hidden";
-        printIframe.style.pointerEvents = "none";
-        document.body.appendChild(printIframe);
-
-        const cleanup = () => {
-            printIframe.parentNode?.removeChild(printIframe);
-        };
+        await syncPreviewLayoutRef.current?.();
 
         try {
-            const printDocument = printIframe.contentDocument;
-            const printWindow = printIframe.contentWindow;
-            if (!printDocument || !printWindow) {
-                cleanup();
-                return;
-            }
+            const printDocument = iframeRef.current?.contentDocument;
+            const printWindow = iframeRef.current?.contentWindow;
+            if (!printDocument || !printWindow) return;
 
-            printDocument.open();
-            printDocument.write(PRINT_IFRAME_HTML);
-            printDocument.close();
-
-            const printTarget = printDocument.getElementById("docx-print-frame-root");
-            if (!printTarget) {
-                cleanup();
-                return;
-            }
-
-            const [{ renderAsync }, paragraphTabHints, tableHints] = await Promise.all([
-                import("docx-preview"),
-                extractParagraphTabHints(previewBlob),
-                extractTableHints(previewBlob),
-            ]);
-
-            await renderAsync(previewBlob, printTarget as HTMLElement, undefined, {
-                inWrapper: false,
-                hideWrapperOnPrint: false,
-                ignoreWidth: false,
-                ignoreHeight: false,
-                ignoreFonts: false,
-                breakPages: true,
-                ignoreLastRenderedPageBreak: false,
-                useBase64URL: true,
-                renderChanges: false,
-                renderHeaders: true,
-                renderFooters: true,
-                renderFootnotes: true,
-                renderEndnotes: true,
-                experimental: true,
-            });
-
-            await waitForStableFrameLayout(printDocument, 900);
-            await syncRenderedLayout(
-                printDocument,
-                "#docx-print-frame-root",
-                paragraphTabHints,
-                tableHints
-            );
+            await waitForStableFrameLayout(printDocument, 300);
 
             await new Promise<void>((resolve) => {
                 let resolved = false;
@@ -1033,7 +965,6 @@ export default function DocxPreviewModal({
                 const finish = () => {
                     if (resolved) return;
                     resolved = true;
-                    cleanup();
                     resolve();
                 };
 
@@ -1049,7 +980,6 @@ export default function DocxPreviewModal({
             });
         } catch (printError) {
             console.error("docx print error:", printError);
-            cleanup();
         }
     };
 
