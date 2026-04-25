@@ -110,7 +110,7 @@ export default function AddEditThanhToanModal({ isOpen, onClose, onSuccess, edit
             setHopDongList(data);
             setHdLoading(false);
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedKH]);
 
     const handleSoTienChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,7 +200,7 @@ export default function AddEditThanhToanModal({ isOpen, onClose, onSuccess, edit
         <Modal
             isOpen={isOpen}
             onClose={handleClose}
-            title={isEdit ? "Sửa thanh toán" : isPrefill ? "Thanh toán đề nghị" : "Tạo thanh toán"}
+            title={isEdit ? "Sửa thanh toán" : isPrefill ? "Tạo thanh toán" : "Tạo thanh toán"}
             icon={CreditCard}
             size="lg"
             fullHeight

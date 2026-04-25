@@ -149,7 +149,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
         setSelectedDKTT(null);
         setSoTienDeNghiValue(0);
         setSoTienDeNghiDisplay("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedHD]);
 
     // Khi chọn ĐKTT -> fill số tiền
@@ -247,7 +247,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
         <Modal
             isOpen={isOpen}
             onClose={handleClose}
-            title={isEdit ? "Sửa đề nghị thanh toán" : isPrefill ? "Tạo đề nghị cho hợp đồng" : "Tạo đề nghị thanh toán"}
+            title={isEdit ? "Sửa đề nghị thanh toán" : isPrefill ? "Tạo đề nghị thanh toán" : "Tạo đề nghị thanh toán"}
             icon={FileText}
             size="lg"
             fullHeight
@@ -424,7 +424,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                                                 className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedDKTT?.ID === dktt.ID
                                                     ? 'border-primary bg-primary/5 shadow-sm'
                                                     : 'border-border hover:border-primary/30 hover:bg-muted/30'
-                                                }`}
+                                                    }`}
                                             >
                                                 <input
                                                     type="radio"
@@ -466,7 +466,7 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                                         className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedDKTT?.ID === dktt.ID
                                             ? 'border-primary bg-primary/5 shadow-sm'
                                             : 'border-border hover:border-primary/30 hover:bg-muted/30'
-                                        }`}
+                                            }`}
                                     >
                                         <input
                                             type="radio"
@@ -495,12 +495,12 @@ export default function AddEditDeNghiTTModal({ isOpen, onClose, onSuccess, editD
                 {(selectedDKTT || isEdit) && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {!isEdit && (
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-muted-foreground">Số tiền theo lần thanh toán</label>
-                            <div className="p-2.5 bg-muted/30 border border-border rounded-lg text-sm font-medium">
-                                {selectedDKTT && new Intl.NumberFormat('vi-VN').format(selectedDKTT.SO_TIEN)} ₫
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground">Số tiền theo lần thanh toán</label>
+                                <div className="p-2.5 bg-muted/30 border border-border rounded-lg text-sm font-medium">
+                                    {selectedDKTT && new Intl.NumberFormat('vi-VN').format(selectedDKTT.SO_TIEN)} ₫
+                                </div>
                             </div>
-                        </div>
                         )}
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-muted-foreground">Số tiền đề nghị <span className="text-destructive">*</span></label>

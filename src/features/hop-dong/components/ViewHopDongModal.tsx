@@ -6,7 +6,7 @@ import {
     FileText, ExternalLink, Calendar,
     User, Link as LinkIcon,
     Receipt, Paperclip,
-    AlignLeft, Calculator, Download
+    AlignLeft, Calculator, Download, CreditCard, Wallet, Landmark
 } from "lucide-react";
 import { toast } from "sonner";
 import { exportHopDongDocx } from "../utils/exportHopDong";
@@ -14,6 +14,12 @@ import { exportHopDongCNDocx } from "../utils/exportHopDongCN";
 
 const fmtDate = (d: string | Date | undefined) => d ? new Date(d).toLocaleDateString("vi-VN") : "—";
 const fmtMoney = (v: number | undefined) => (v && v > 0) ? new Intl.NumberFormat("vi-VN").format(v) + " ₫" : "0 ₫";
+const fmtSignedMoney = (v: number) => `${v < 0 ? "-" : ""}${new Intl.NumberFormat("vi-VN").format(Math.abs(v))} ₫`;
+const getNetThanhToan = (payments?: Array<{ LOAI_THANH_TOAN?: string | null; SO_TIEN_THANH_TOAN?: number | null }>) =>
+    payments?.reduce((sum, payment) => {
+        const amount = payment.SO_TIEN_THANH_TOAN || 0;
+        return payment.LOAI_THANH_TOAN === "Hoàn tiền" ? sum - amount : sum + amount;
+    }, 0) || 0;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 const PREVIEWABLE_EXTS = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv"];
@@ -48,6 +54,7 @@ const TABS = [
     { id: "thong-tin-hop-dong", label: "Thông tin hợp đồng" },
     { id: "thong-tin-khach-hang", label: "Thông tin khách hàng" },
     { id: "dieu-khoan-hop-dong", label: "Điều khoản hợp đồng" },
+    { id: "thanh-toan", label: "Thanh toán" },
     { id: "file-dinh-kem", label: "File đính kèm" },
 ];
 
@@ -63,6 +70,19 @@ export default function ViewHopDongModal({ isOpen, onClose, data }: Props) {
 
     if (!data) return null;
     const tepDinhKems: string[] = Array.isArray(data.TEP_DINH_KEM) ? data.TEP_DINH_KEM : [];
+    const deNghiThanhToans: any[] = Array.isArray(data.DE_NGHI_TT) ? data.DE_NGHI_TT : [];
+    const thanhToans: any[] = Array.isArray(data.THANH_TOAN) ? data.THANH_TOAN : [];
+    const tongDeNghi = deNghiThanhToans.reduce((sum, item) => sum + (item.SO_TIEN_DE_NGHI || 0), 0);
+    const tongThanhToan = thanhToans
+        .filter(item => item.LOAI_THANH_TOAN !== "Hoàn tiền")
+        .reduce((sum, item) => sum + (item.SO_TIEN_THANH_TOAN || 0), 0);
+    const tongHoanTien = thanhToans
+        .filter(item => item.LOAI_THANH_TOAN === "Hoàn tiền")
+        .reduce((sum, item) => sum + (item.SO_TIEN_THANH_TOAN || 0), 0);
+    const tongThucNhan = getNetThanhToan(thanhToans);
+    const soTienConLai = (data.TONG_TIEN || 0) - tongThucNhan;
+    const isTienDu = soTienConLai < 0;
+    const soTienConLaiDisplay = Math.abs(soTienConLai);
 
     const handleExport = async () => {
         setExporting(true);
@@ -317,6 +337,129 @@ export default function ViewHopDongModal({ isOpen, onClose, data }: Props) {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* FILE ĐÍNH KÈM */}
+                    {activeTab === "thanh-toan" && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+                                <div className="bg-slate-500/10 border border-slate-500/15 rounded-xl px-4 py-3">
+                                    <p className="text-[10px] text-slate-600 font-medium mb-1 uppercase tracking-wider">Tiền hợp đồng</p>
+                                    <p className="text-lg font-bold text-slate-700">{fmtMoney(data.TONG_TIEN || 0)}</p>
+                                </div>
+                                <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3">
+                                    <p className="text-[10px] text-primary font-medium mb-1 uppercase tracking-wider">Tổng đề nghị</p>
+                                    <p className="text-lg font-bold text-primary">{fmtMoney(tongDeNghi)}</p>
+                                </div>
+                                <div className="bg-emerald-500/10 border border-emerald-500/15 rounded-xl px-4 py-3">
+                                    <p className="text-[10px] text-emerald-600 font-medium mb-1 uppercase tracking-wider">Tổng thanh toán</p>
+                                    <p className="text-lg font-bold text-emerald-600">{fmtMoney(tongThanhToan)}</p>
+                                </div>
+                                <div className="bg-amber-500/10 border border-amber-500/15 rounded-xl px-4 py-3">
+                                    <p className="text-[10px] text-amber-600 font-medium mb-1 uppercase tracking-wider">Tổng hoàn tiền</p>
+                                    <p className="text-lg font-bold text-amber-600">{fmtMoney(tongHoanTien)}</p>
+                                </div>
+                                <div className="bg-indigo-500/10 border border-indigo-500/15 rounded-xl px-4 py-3">
+                                    <p className="text-[10px] text-indigo-600 font-medium mb-1 uppercase tracking-wider">Thực nhận</p>
+                                    <p className="text-lg font-bold text-indigo-600">{fmtSignedMoney(tongThucNhan)}</p>
+                                </div>
+                                <div className={`${isTienDu ? "bg-yellow-500/10 border-yellow-500/15" : "bg-rose-500/10 border-rose-500/15"} border rounded-xl px-4 py-3`}>
+                                    <p className={`text-[10px] font-medium mb-1 uppercase tracking-wider ${isTienDu ? "text-yellow-600" : "text-rose-600"}`}>
+                                        {isTienDu ? "Số tiền dư" : "Số tiền còn lại"}
+                                    </p>
+                                    <p className={`text-lg font-bold ${isTienDu ? "text-yellow-600" : "text-rose-600"}`}>{fmtMoney(soTienConLaiDisplay)}</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2.5 border-b border-border pb-2">
+                                    <Wallet className="w-5 h-5 text-primary" />
+                                    <h3 className="text-base font-bold text-foreground">Các lần đề nghị thanh toán</h3>
+                                    <span className="ml-auto text-xs font-bold bg-muted px-2.5 py-1 rounded-md text-muted-foreground">{deNghiThanhToans.length} đề nghị</span>
+                                </div>
+                                {deNghiThanhToans.length > 0 ? (
+                                    <div className="flex flex-col gap-3">
+                                        {deNghiThanhToans.map((item) => (
+                                            <div key={item.ID} className="p-4 rounded-xl border border-border bg-card shadow-xs">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-bold text-primary text-sm">{item.MA_DE_NGHI}</span>
+                                                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{item.LAN_THANH_TOAN}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                                                            <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {fmtDate(item.NGAY_DE_NGHI)}</span>
+                                                            {item.TK_REL?.SO_TK && <span className="flex items-center gap-1"><Landmark className="w-3.5 h-3.5" /> {item.TK_REL.SO_TK}</span>}
+                                                            {item.NGUOI_TAO_REL?.HO_TEN && <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {item.NGUOI_TAO_REL.HO_TEN}</span>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                        <p className="text-lg font-black text-primary leading-none">{fmtMoney(item.SO_TIEN_DE_NGHI)}</p>
+                                                        <p className="text-[11px] text-muted-foreground mt-1">Theo lần: {fmtMoney(item.SO_TIEN_THEO_LAN)}</p>
+                                                    </div>
+                                                </div>
+                                                {item.GHI_CHU && (
+                                                    <div className="mt-3 pt-3 border-t border-border/60 text-sm text-muted-foreground">
+                                                        {item.GHI_CHU}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-10 text-center text-muted-foreground bg-muted/20 border border-border border-dashed rounded-2xl">
+                                        <p className="font-semibold text-sm">Chưa có đề nghị thanh toán</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2.5 border-b border-border pb-2">
+                                    <CreditCard className="w-5 h-5 text-primary" />
+                                    <h3 className="text-base font-bold text-foreground">Các lần thanh toán / hoàn tiền</h3>
+                                    <span className="ml-auto text-xs font-bold bg-muted px-2.5 py-1 rounded-md text-muted-foreground">{thanhToans.length} giao dịch</span>
+                                </div>
+                                {thanhToans.length > 0 ? (
+                                    <div className="flex flex-col gap-3">
+                                        {thanhToans.map((item) => {
+                                            const isRefund = item.LOAI_THANH_TOAN === "Hoàn tiền";
+                                            const signedAmount = isRefund ? -(item.SO_TIEN_THANH_TOAN || 0) : (item.SO_TIEN_THANH_TOAN || 0);
+                                            return (
+                                                <div key={item.ID} className="p-4 rounded-xl border border-border bg-card shadow-xs">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className={`font-bold text-sm ${isRefund ? "text-amber-600" : "text-emerald-600"}`}>{item.MA_TT}</span>
+                                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isRefund ? "bg-amber-500/10 text-amber-600" : "bg-emerald-500/10 text-emerald-600"}`}>
+                                                                    {item.LOAI_THANH_TOAN}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                                                                <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {fmtDate(item.NGAY_THANH_TOAN)}</span>
+                                                                {item.TK_REL?.SO_TK && <span className="flex items-center gap-1"><Landmark className="w-3.5 h-3.5" /> {item.TK_REL.SO_TK}</span>}
+                                                                {item.NGUOI_TAO_REL?.HO_TEN && <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {item.NGUOI_TAO_REL.HO_TEN}</span>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <p className={`text-lg font-black leading-none ${isRefund ? "text-amber-600" : "text-emerald-600"}`}>{fmtSignedMoney(signedAmount)}</p>
+                                                        </div>
+                                                    </div>
+                                                    {item.GHI_CHU && (
+                                                        <div className="mt-3 pt-3 border-t border-border/60 text-sm text-muted-foreground">
+                                                            {item.GHI_CHU}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="py-10 text-center text-muted-foreground bg-muted/20 border border-border border-dashed rounded-2xl">
+                                        <p className="font-semibold text-sm">Chưa có giao dịch thanh toán</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 

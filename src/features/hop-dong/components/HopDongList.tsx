@@ -489,8 +489,9 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                         {canOpenPaymentAction && (
                                             <button
                                                 onClick={() => openPaymentActionModal(item)}
-                                                className="p-1.5 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-amber-600 dark:group-hover:text-amber-500 hover:text-amber-700"
-                                                title="Tạo đề nghị / thanh toán"
+                                                disabled={item.DUYET !== "Đã duyệt"}
+                                                className="p-1.5 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-lg transition-colors text-muted-foreground group-hover:text-amber-600 dark:group-hover:text-amber-500 hover:text-amber-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:group-hover:text-muted-foreground"
+                                                title={item.DUYET !== "Đã duyệt" ? "Hợp đồng chưa được duyệt" : "Tạo đề nghị / thanh toán"}
                                             >
                                                 <CreditCard className="w-4 h-4" />
                                             </button>
@@ -586,8 +587,9 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                                 {canOpenPaymentAction && (
                                     <button
                                         onClick={() => openPaymentActionModal(item)}
-                                        className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-muted-foreground hover:text-amber-700 rounded-lg transition-colors text-xs font-semibold"
-                                        title="Tạo đề nghị / thanh toán"
+                                        disabled={item.DUYET !== "Đã duyệt"}
+                                        className="flex-1 flex justify-center items-center gap-1.5 p-2 bg-muted/50 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-muted-foreground hover:text-amber-700 rounded-lg transition-colors text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-muted/50 disabled:hover:text-muted-foreground"
+                                        title={item.DUYET !== "Đã duyệt" ? "Hợp đồng chưa được duyệt" : "Tạo đề nghị / thanh toán"}
                                     >
                                         <CreditCard className="w-4 h-4" /> <span className="hidden sm:inline">Thanh toán</span>
                                     </button>
@@ -675,7 +677,9 @@ export default function HopDongList({ data, visibleColumns, viewMode = "list" }:
                 subtitle={paymentActionModal.item?.SO_HD}
                 icon={CreditCard}
                 footer={
-                    <button onClick={closePaymentActionModal} className="btn-premium-secondary" disabled={paymentActionModal.loadingAction !== null}>Đóng</button>
+                    <div className="w-full flex justify-end">
+                        <button onClick={closePaymentActionModal} className="btn-premium-secondary" disabled={paymentActionModal.loadingAction !== null}>Đóng</button>
+                    </div>
                 }
             >
                 <div className="flex flex-col gap-5 py-2">

@@ -29,6 +29,20 @@ const HOP_DONG_INCLUDE = {
     DK_HD: {
         orderBy: { ID: 'asc' as const },
     },
+    DE_NGHI_TT: {
+        include: {
+            TK_REL: { select: { SO_TK: true, TEN_TK: true, TEN_NGAN_HANG: true } },
+            NGUOI_TAO_REL: { select: { HO_TEN: true, MA_NV: true } },
+        },
+        orderBy: [{ NGAY_DE_NGHI: 'desc' as const }, { CREATED_AT: 'desc' as const }],
+    },
+    THANH_TOAN: {
+        include: {
+            TK_REL: { select: { SO_TK: true, TEN_TK: true, TEN_NGAN_HANG: true } },
+            NGUOI_TAO_REL: { select: { HO_TEN: true, MA_NV: true } },
+        },
+        orderBy: [{ NGAY_THANH_TOAN: 'desc' as const }, { CREATED_AT: 'desc' as const }],
+    },
 };
 
 // ─── Sinh số hợp đồng tự động ───────────────────────────────
@@ -306,6 +320,18 @@ export async function getHopDongById(id: string) {
                     ...data.BAO_GIA_REL,
                     NGAY_BAO_GIA: data.BAO_GIA_REL.NGAY_BAO_GIA.toISOString(),
                 } : null,
+                DE_NGHI_TT: data.DE_NGHI_TT.map((item: any) => ({
+                    ...item,
+                    NGAY_DE_NGHI: item.NGAY_DE_NGHI.toISOString(),
+                    CREATED_AT: item.CREATED_AT.toISOString(),
+                    UPDATED_AT: item.UPDATED_AT.toISOString(),
+                })),
+                THANH_TOAN: data.THANH_TOAN.map((item: any) => ({
+                    ...item,
+                    NGAY_THANH_TOAN: item.NGAY_THANH_TOAN.toISOString(),
+                    CREATED_AT: item.CREATED_AT.toISOString(),
+                    UPDATED_AT: item.UPDATED_AT.toISOString(),
+                })),
             },
         };
     } catch (error) {
